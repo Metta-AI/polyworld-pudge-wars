@@ -1,0 +1,26 @@
+# Assets the web build packs from ../polyworld_data (see
+# emscripten.nims). One file or directory per line; keeping this list
+# tight keeps the browser download small.
+characters/rpg_monsters/orc.glb
+characters/rpg_monsters/orc.profile.png
+characters/rpg_monsters/demon_king.glb
+characters/rpg_monsters/demon_king.profile.png
+characters/rpg_monsters/monsters_albedo.png
+abilities/meat_hook.png
+abilities/riftwake.png
+abilities/withering_idol.png
+items/river_treads.png
+items/longflight_brand.png
+items/bank_palisade.png
+items/hooktrap.png
+icons
+themes/editor
+ui
+fonts/Rubik-Regular.ttf
+fonts/Rubik-Bold.ttf
+terrain/handpainted_trees
+terrain/cartoon_textures
+terrain/low_poly_grass.glb
+terrain/low_poly_rocks.glb
+sounds/pudge_wars
+themes/pw.atlas.png

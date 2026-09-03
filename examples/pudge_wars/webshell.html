@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Pudge Wars</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #0b0e14;
+      }
+      canvas.emscripten {
+        border: none;
+        background-color: transparent;
+        position: absolute;
+        left: 0;
+        right: 0;
+        outline: none;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(1200px 500px at 50% -10%, #182032 0%, #0b0e14 60%);
+        color: #e2e6ef;
+        font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        z-index: 10;
+        transition: opacity 0.45s ease;
+      }
+      #boot.gone { opacity: 0; pointer-events: none; }
+      #boot h1 {
+        margin: 0;
+        font-size: 40px;
+        letter-spacing: 10px;
+        font-weight: 800;
+        color: #f0da80;
+        text-shadow: 0 2px 18px rgba(240, 218, 128, 0.25);
+      }
+      #boot .track {
+        width: 320px;
+        height: 8px;
+        background: #131824;
+        border: 1px solid #2a3345;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      #boot .track i {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: #f0da80;
+        border-radius: 4px;
+        transition: width 0.2s ease;
+      }
+      #boot .note {
+        color: #8b94a7;
+        font-size: 13px;
+        letter-spacing: 2px;
+        min-height: 16px;
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      #boot .note.error {
+        color: #dc4840;
+        animation: none;
+      }
+      @keyframes pulse { 50% { opacity: 0.45; } }
+    </style>
+  </head>
+  <body>
+    <div id="boot">
+      <h1>PUDGE WARS</h1>
+      <div class="track"><i id="bootBar"></i></div>
+      <div id="bootNote" class="note">LOADING&hellip;</div>
+    </div>
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+    <script src="recap-overlay.js"></script>
+    <script type='text/javascript'>
+      function bootError(text) {
+        var boot = document.getElementById('boot');
+        var note = document.getElementById('bootNote');
+        if (boot) boot.className = '';
+        if (note) {
+          note.className = 'note error';
+          note.textContent = text.toUpperCase();
+        }
+      }
+      function watchLine(line) {
+        if (window.pwHandleGameLine && window.pwHandleGameLine(line)) {
+          return;
+        }
+        // Fatal game output (Nim's quit message) lands on the loading
+        // screen instead of dying silently in the console, and join
+        // progress keeps the wait honest while the lobby holds.
+        // Hash mismatch is not fatal: playback continues (the tape
+        // player already counts mismatches and keeps going). Treating
+        // it as a boot error froze Observatory Featured Match under
+        // the title overlay.
+        var text = '' + line;
+        if (/hash mismatch/i.test(text)) {
+          return;
+        }
+        if (/^(join failed|error|fatal)/i.test(text)) {
+          bootError(text + ' — reload the page to retry');
+          return;
+        }
+        if (/^join:/i.test(line)) {
+          var note = document.getElementById('bootNote');
+          if (note && note.className.indexOf('error') === -1) {
+            note.dataset.live = '1';
+            note.textContent = line.replace(/^join:\s*/i, '').toUpperCase();
+          }
+        }
+      }
+      function replayParam() {
+        return new URLSearchParams(location.search).get('replay') ||
+          new URLSearchParams(location.hash.replace(/^#/, '')).get('replay');
+      }
+      var replayUrl = replayParam();
+      var Module = {
+        arguments: replayUrl ? ['--replay', '/replay.pwr'] : [],
+        preRun: [(function() {
+          if (!replayUrl) {
+            return;
+          }
+          Module.addRunDependency('replay');
+          function mountReplay(buf) {
+            var bytes = new Uint8Array(buf);
+            FS.writeFile('/replay.pwr', bytes, {encoding: 'binary'});
+            Module.removeRunDependency('replay');
+          }
+          function maybeGunzip(buf) {
+            var bytes = new Uint8Array(buf);
+            if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
+              return new Response(
+                new Blob([bytes]).stream().pipeThrough(
+                  new DecompressionStream('gzip')
+                )
+              ).arrayBuffer();
+            }
+            return Promise.resolve(buf);
+          }
+          fetch(replayUrl, {credentials: 'omit'})
+            .then(function(response) {
+              if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+              }
+              return response.arrayBuffer();
+            })
+            .then(maybeGunzip)
+            .then(mountReplay)
+            .catch(function(err) {
+              bootError('replay failed to load — ' + err);
+            });
+        })],
+        postRun: [],
+        print: function(text) {
+          console.log(text);
+          watchLine('' + text);
+        },
+        printErr: function(text) {
+          console.error(text);
+          watchLine('' + text);
+        },
+        onExit: function(status) {
+          if (status !== 0) {
+            var note = document.getElementById('bootNote');
+            if (!note || note.className.indexOf('error') === -1) {
+              bootError(
+                'the game stopped (code ' + status +
+                ') — reload the page to retry'
+              );
+            }
+          }
+        },
+        canvas: (function() {
+          var canvas = document.getElementById('canvas');
+          canvas.addEventListener(
+            "webglcontextlost",
+            function(e) {
+              console.error('WebGL context lost. You will need to reload the page.');
+              e.preventDefault();
+            }, false);
+
+          return canvas;
+        })(),
+        setStatus: function(text) {
+          // The file packager reports "Downloading data... (loaded/total)".
+          var note = document.getElementById('bootNote');
+          var bar = document.getElementById('bootBar');
+          if (!note || !bar) return;
+          var progress = text.match(/\((\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)\)/);
+          if (progress) {
+            var percent = Math.round(
+              parseFloat(progress[1]) * 100 / parseFloat(progress[2])
+            );
+            bar.style.width = percent + '%';
+            note.textContent = 'SHARPENING HOOKS — ' + percent + '%';
+          } else if (text) {
+            note.textContent = text.toUpperCase();
+          }
+        },
+        totalDependencies: 0,
+        monitorRunDependencies: function(left) {
+          this.totalDependencies = Math.max(this.totalDependencies, left);
+          if (this.totalDependencies > 0 && left === 0) {
+            Module.setStatus('Preparing the arena…');
+          }
+        },
+        onRuntimeInitialized: function() {
+          Module.setStatus('Preparing the arena…');
+          var bar = document.getElementById('bootBar');
+          if (bar) bar.style.width = '100%';
+          // The game sizes its canvas once the window comes up; that is
+          // the moment the first frame can draw. Never fade to a blank
+          // page: without a sized canvas keep the overlay and its note.
+          var canvas = document.getElementById('canvas');
+          var began = performance.now();
+          function watch() {
+            var note = document.getElementById('bootNote');
+            if (note && note.className.indexOf('error') >= 0) {
+              return;
+            }
+            if (canvas.width > 400 || canvas.height > 400) {
+              var boot = document.getElementById('boot');
+              if (boot) boot.className = 'gone';
+              return;
+            }
+            if (note && performance.now() - began > 25000 &&
+                note.dataset.live !== '1') {
+              note.textContent =
+                'STILL WORKING — IS THE HOST RUNNING? (KEEP THIS TAB IN THE FOREGROUND)';
+            }
+            requestAnimationFrame(watch);
+          }
+          requestAnimationFrame(watch);
+        }
+      };
+      window.onerror = function(message) {
+        console.info('Exception thrown, see JavaScript console');
+        bootError('something broke while loading — reload the page to retry');
+      };
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>

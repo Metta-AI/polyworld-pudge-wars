@@ -1,0 +1,36 @@
+<!doctype html>
+<title>Pudge Wars</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background: #0b1220; color: #e2e8f0; font-family: Inter, ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 16px; }
+  h1 { margin: 0 0 6px; font-size: 22px; }
+  .eyebrow { color: #94a3b8; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+  #status { display: inline-block; background: #1e293b; border-radius: 999px; padding: 6px 10px; font-weight: 800; margin: 8px 0 12px; }
+  canvas { width: 100%; max-width: 920px; height: 380px; background: #102032; border-radius: 10px; display: block; }
+  p { color: #94a3b8; }
+</style>
+<main>
+  <div class="eyebrow">Spectator</div>
+  <h1>Pudge Wars</h1>
+  <div id="status">Connecting</div>
+  <div id="scores"></div>
+  <canvas id="arena" width="920" height="380"></canvas>
+  <p>Live 2D overlay. Observatory replays use the native 3D viewer.</p>
+</main>
+<script src="/client/arena.js"></script>
+<script>
+  const websocketUrl = new URL(window.location.href)
+  websocketUrl.protocol = websocketUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+  websocketUrl.pathname = websocketUrl.pathname.replace(/\/client\/global$/, '/global')
+  const status = document.getElementById('status')
+  const scores = document.getElementById('scores')
+  const canvas = document.getElementById('arena')
+  const socket = new WebSocket(websocketUrl)
+  socket.onopen = () => { status.textContent = 'Live' }
+  socket.onmessage = (event) => {
+    const message = JSON.parse(event.data)
+    scores.textContent = scoreLine(message)
+    drawArena(canvas, message, { showNames: true })
+  }
+  socket.onclose = () => { status.textContent = 'Disconnected' }
+</script>

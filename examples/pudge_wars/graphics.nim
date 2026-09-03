@@ -1,0 +1,2528 @@
+## Window, terrain, butchers, hook ribbons, and HUD for Pudge Wars.
+
+import
+  std/[math, os, tables, times],
+  chroma, opengl, pixie, silky, vmath, windy,
+  audio, content, maps, sim, game, human, keybinds, netclient, netsim,
+  netpredict, replays, ui,
+  polyworld/[
+    actioncam, characters, chrome, common, gameuis, particles, particleshaders,
+    pathing, player, profiles, quadterrain, rtscameras, shadows, shapes,
+    tapes, viewers, worldbars
+  , visions]
+
+when not defined(emscripten):
+  # The embedded lobby server cannot run in a browser build; a wasm
+  # client is always a follower.
+  import hosting
+
+when defined(takeScreenshot):
+  import std/[os, strutils]
+
+const
+  AtlasPath = DataRoot & "/themes/pw.atlas.png"
+  AppIconPath = "examples/pudge_wars/macos/AppIcon.png"
+  WestHook = rgbx(220, 72, 64, 230)
+  EastHook = rgbx(72, 148, 230, 230)
+  ChainIron = rgbx(168, 164, 156, 240)
+  ChainDark = rgbx(78, 74, 70, 245)
+  HookBlade = rgbx(42, 40, 38, 255)
+  HookHub = rgbx(92, 88, 84, 255)
+  HookEdge = rgbx(196, 192, 184, 252)
+  HookTrail = rgbx(236, 236, 232, 170)
+  GrabGlow = rgbx(168, 72, 230, 90)
+  BlinkPuff = rgbx(72, 210, 255, 110)
+    ## Cyan leave-behind disk; MagicBurst's opening color, oversized so
+    ## it still reads at the baked 155 play-camera zoom.
+  BlinkPuffCore = rgbx(200, 96, 255, 150)
+    ## Magenta core matching the MagicBurst fade.
+  BlinkResidueSeconds = 0.55
+    ## Ground glow + silhouette linger after the hashed vanish tick.
+  RotAura = rgbx(86, 196, 64, 185)
+    ## Sick-green outline of a live Rot disk.
+  RotFill = rgbx(36, 110, 42, 55)
+    ## Ground stain inside the blight.
+  RotSick = rgbx(72, 168, 56, 95)
+    ## Foot glow on anyone standing in Rot.
+  DefaultCameraDistance = 75.0'f32
+    ## Starts at the closest shipped zoom (75–155). Clamped live by
+    ## zoomMinDistance / zoomMaxDistance.
+  DebugFillAlpha = 88'u8
+  DebugLineHalf = 0.16'f32
+  DebugTileLabelStep = 16
+  CollisionColor = rgbx(240, 218, 128, 150)
+  HookDiskColor = rgbx(236, 92, 70, 140)
+  SpawnPadColor = rgbx(96, 220, 110, 160)
+  PlayBoundsColor = rgbx(255, 214, 120, 230)
+  MidlineColor = rgbx(72, 214, 255, 230)
+  BankEdgeColor = rgbx(236, 236, 232, 210)
+  ButcherBarLift = 6.8'f32
+  ButcherBarWidth = 3.0'f32
+  GrabGlowRadius = 1.4'f32
+  PalisadeWood = rgbx(138, 94, 54, 255)
+  PalisadeBand = rgbx(78, 68, 58, 255)
+  PalisadeTop = rgbx(162, 116, 70, 255)
+  MineMark = rgbx(42, 48, 38, 120)
+  MineRing = rgbx(92, 104, 78, 150)
+  PalisadeBarLift = 2.15'f32
+  PalisadeBarWidth = 1.15'f32
+  ShurikenRadius = BaseHookRadius.float32 / WorldScale.float32
+    ## Visual head matches the sim latch disk (2.75 tiles at rank 0).
+    ## Big Hook and radius upgrades scale this 1:1.
+  ShurikenHubRadius = 1.18'f32
+  ShurikenHoleRadius = 0.47'f32
+  ShurikenHalfHeight = 0.33'f32
+  ShurikenPoints = 6
+  ShurikenFlySpin = 11.0'f32
+  ShurikenReelSpin = 2.8'f32
+  ChainLinkStep = 0.82'f32
+  ChainLinkLength = 1.28'f32
+  ChainLinkWidth = 0.72'f32
+  ChainLinkThick = 0.18'f32
+  ChainGrabWidth = 0.24'f32
+  RuneCoreRadius = RuneRadius.float32 / WorldScale.float32
+    ## Same 1-tile body the sim grabs with; the tablet sits on this.
+  RuneBobRate = 1.15'f32
+    ## Slow hover, WC3 river-rune cadence — not a bouncing gem.
+  RuneSpinRate = 0.42'f32
+    ## Slow yaw so the carved glyph stays readable at RTS distance.
+  RuneHover = 0.82'f32
+  RuneBobAmp = 0.22'f32
+  RuneTabletSides = 8
+  RuneTabletThick = 0.34'f32
+  RuneStone = rgbx(78, 72, 64, 255)
+  RuneStoneDark = rgbx(42, 38, 34, 255)
+  RuneStoneRim = rgbx(112, 104, 92, 255)
+
+type
+  GraphicsError = object of CatchableError
+  SeekCheckpoint = object
+    tick: int
+    world: World
+    replayActionIndex: int
+    hashCheck: ReplayHashCheck
+  FloatingText = object
+    ## One rising world-anchored combat number.
+    text: string
+    color: ColorRGBX
+    world: Vec3
+    born: float64
+  BlinkResidue = object
+    ## Client-only leave-behind: glow + fading butcher at blink origin.
+    origin: Vec3
+    worldOrigin: WorldPoint
+    facing: float32
+    team: Team
+    slot: int
+    born: float64
+
+proc renderPoint(position: WorldPoint): Vec3 =
+  vec3(
+    position.x.float32 / WorldScale.float32,
+    position.y.float32 / WorldScale.float32,
+    position.z.float32 / WorldScale.float32
+  )
+
+proc worldFromRender(point: Vec3): WorldPoint =
+  WorldPoint(
+    x: int32(point.x * WorldScale.float32),
+    z: int32(point.z * WorldScale.float32)
+  )
+
+proc renderFacing(value: Heading): float32 =
+  arctan2(value.x.float32, value.z.float32)
+
+proc liftPoint(position: Vec3, extra = 0.7'f32): Vec3 =
+  result = position
+  result.y = surfaceHeightNear(position.x, position.z, position.y) + extra
+
+proc tileOrigin(x, z: int): Vec3 =
+  vec3(float32(x) - HalfGrid, 0, float32(z) - HalfGrid)
+
+proc tileCenterRender(x, z: int): Vec3 =
+  tileOrigin(x, z) + vec3(0.5'f32, 0, 0.5'f32)
+
+proc addAxisBox(
+    renderer: var ShapeRenderer,
+    center: Vec3,
+    hx, hy, hz: float32,
+    color: ColorRGBX
+) =
+  ## Axis-aligned box. `hy` is half-height; the box is centered.
+  let
+    x0 = center.x - hx
+    x1 = center.x + hx
+    y0 = center.y - hy
+    y1 = center.y + hy
+    z0 = center.z - hz
+    z1 = center.z + hz
+  renderer.addQuad(
+    vec3(x0, y1, z0), vec3(x1, y1, z0), vec3(x1, y1, z1), vec3(x0, y1, z1), color
+  )
+  renderer.addQuad(
+    vec3(x0, y0, z1), vec3(x1, y0, z1), vec3(x1, y0, z0), vec3(x0, y0, z0), color
+  )
+  renderer.addQuad(
+    vec3(x1, y0, z0), vec3(x1, y0, z1), vec3(x1, y1, z1), vec3(x1, y1, z0), color
+  )
+  renderer.addQuad(
+    vec3(x0, y0, z1), vec3(x0, y0, z0), vec3(x0, y1, z0), vec3(x0, y1, z1), color
+  )
+  renderer.addQuad(
+    vec3(x0, y0, z1), vec3(x1, y0, z1), vec3(x1, y1, z1), vec3(x0, y1, z1), color
+  )
+  renderer.addQuad(
+    vec3(x1, y0, z0), vec3(x0, y0, z0), vec3(x0, y1, z0), vec3(x1, y1, z0), color
+  )
+
+proc debugTint(color: ColorRGBX, alpha = DebugFillAlpha): ColorRGBX =
+  rgbx(color.r, color.g, color.b, alpha)
+
+proc addDebugFill(
+    renderer: var ShapeRenderer,
+    x0, z0, x1, z1: float32,
+    color: ColorRGBX,
+    extra = 0.10'f32
+) =
+  let
+    a = liftPoint(vec3(x0, 0, z0), extra)
+    b = liftPoint(vec3(x1, 0, z0), extra)
+    c = liftPoint(vec3(x1, 0, z1), extra)
+    d = liftPoint(vec3(x0, 0, z1), extra)
+  renderer.addQuad(a, b, c, d, color)
+
+proc addDebugTile(
+    renderer: var ShapeRenderer,
+    x, z: int,
+    color: ColorRGBX,
+    inset = 0.06'f32,
+    extra = 0.10'f32
+) =
+  let o = tileOrigin(x, z)
+  renderer.addDebugFill(
+    o.x + inset, o.z + inset, o.x + 1 - inset, o.z + 1 - inset, color, extra
+  )
+
+proc addDebugRect(
+    renderer: var ShapeRenderer,
+    x0, z0, x1, z1: float32,
+    color: ColorRGBX,
+    halfWidth = DebugLineHalf
+) =
+  let
+    a = liftPoint(vec3(x0, 0, z0), 0.28'f32)
+    b = liftPoint(vec3(x1, 0, z0), 0.28'f32)
+    c = liftPoint(vec3(x1, 0, z1), 0.28'f32)
+    d = liftPoint(vec3(x0, 0, z1), 0.28'f32)
+  renderer.addLine(a, b, color, halfWidth)
+  renderer.addLine(b, c, color, halfWidth)
+  renderer.addLine(c, d, color, halfWidth)
+  renderer.addLine(d, a, color, halfWidth)
+
+proc addDebugRing(
+    renderer: var ShapeRenderer,
+    center: Vec3,
+    radius: float32,
+    color: ColorRGBX,
+    halfWidth = 0.08'f32
+) =
+  var points: seq[Vec3]
+  const Sides = 28
+  for i in 0 .. Sides:
+    let a = float32(i) / float32(Sides) * TAU.float32
+    points.add liftPoint(
+      center + vec3(cos(a) * radius, 0, sin(a) * radius), 0.22'f32
+    )
+  renderer.addPolyline(points, color, halfWidth)
+
+proc waterSheetAt(x, z: int): bool =
+  layers.len > WaterLayer and
+    layers[WaterLayer].tiles[z * GridTiles + x].exists
+
+proc addDebugMapOverlays(renderer: var ShapeRenderer) =
+  ## Tile tints, walk/block, and the playable AABB / river midline.
+  if showLayers:
+    for z in 0 ..< GridTiles:
+      for x in 0 ..< GridTiles:
+        if islandTile(x, z):
+          renderer.addDebugTile(x, z, debugTint(DebugIsland, 120), 0.04, 0.18)
+        elif waterSheetAt(x, z) and riverTile(x):
+          renderer.addDebugTile(x, z, debugTint(DebugWater, 100), 0.08, 0.16)
+        elif riverTile(x):
+          renderer.addDebugTile(x, z, debugTint(DebugRiver), 0.04, 0.12)
+        elif westBank(x):
+          if isWalkable(WestLayer, x, z):
+            renderer.addDebugTile(x, z, debugTint(DebugWest, 70))
+          else:
+            renderer.addDebugTile(x, z, debugTint(DebugBlocked, 130))
+        elif eastBank(x):
+          if isWalkable(EastLayer, x, z):
+            renderer.addDebugTile(x, z, debugTint(DebugEast, 70))
+          else:
+            renderer.addDebugTile(x, z, debugTint(DebugBlocked, 130))
+        elif landTile(x) or x < PlayWestMin or x > PlayEastMax or
+            z < PlayZMin or z > PlayZMax:
+          renderer.addDebugTile(x, z, debugTint(DebugBlocked, 70), 0.10, 0.08)
+  if showWalkable:
+    for z in PlayZMin .. PlayZMax:
+      for x in PlayWestMin .. PlayEastMax:
+        if riverTile(x) or waterSheetAt(x, z):
+          renderer.addDebugTile(x, z, debugTint(DebugWater, 110), 0.18, 0.20)
+        elif westBank(x) and isWalkable(WestLayer, x, z):
+          renderer.addDebugTile(x, z, debugTint(DebugWalk, 80), 0.18, 0.20)
+        elif eastBank(x) and isWalkable(EastLayer, x, z):
+          renderer.addDebugTile(x, z, debugTint(DebugWalk, 80), 0.18, 0.20)
+        else:
+          renderer.addDebugTile(x, z, debugTint(DebugNoWalk, 130), 0.18, 0.20)
+  if showPlayableBounds:
+    let
+      x0 = float32(PlayWestMin) - HalfGrid
+      x1 = float32(PlayEastMax + 1) - HalfGrid
+      z0 = float32(PlayZMin) - HalfGrid
+      z1 = float32(PlayZMax + 1) - HalfGrid
+      westEdge = float32(PlayWestMax + 1) - HalfGrid
+      eastEdge = float32(PlayEastMin) - HalfGrid
+      mid = float32(RiverCenterX) - HalfGrid + 0.5'f32
+    renderer.addDebugRect(x0, z0, x1, z1, PlayBoundsColor, 0.22'f32)
+    renderer.addLine(
+      liftPoint(vec3(mid, 0, z0), 0.32'f32),
+      liftPoint(vec3(mid, 0, z1), 0.32'f32),
+      MidlineColor,
+      0.20'f32
+    )
+    renderer.addLine(
+      liftPoint(vec3(westEdge, 0, z0), 0.32'f32),
+      liftPoint(vec3(westEdge, 0, z1), 0.32'f32),
+      BankEdgeColor,
+      0.12'f32
+    )
+    renderer.addLine(
+      liftPoint(vec3(eastEdge, 0, z0), 0.32'f32),
+      liftPoint(vec3(eastEdge, 0, z1), 0.32'f32),
+      BankEdgeColor,
+      0.12'f32
+    )
+
+proc addDebugCollisionOverlays(renderer: var ShapeRenderer) =
+  ## Unit collision disks, hook latch radius, and fountain pads.
+  if not showCollision:
+    return
+  let bodyR = PudgeCollisionRadius.float32 / WorldScale.float32
+  for pudge in run.world.pudges:
+    if pudge.state == Dying:
+      continue
+    renderer.addDebugRing(renderPoint(pudge.position), bodyR, CollisionColor)
+  for hook in run.world.hooks:
+    if hook.phase == HookIdle:
+      continue
+    renderer.addDebugRing(
+      renderPoint(hook.position),
+      hook.radius.float32 / WorldScale.float32,
+      HookDiskColor,
+      0.10'f32
+    )
+  let pad = FountainPadRadius.float32 + 0.5'f32
+  for s in 0 ..< TeamSize:
+    let west = run.world.spawnLayout.west[s]
+    let wc = tileCenterRender(west.x, west.z)
+    renderer.addDebugRect(wc.x - pad, wc.z - pad, wc.x + pad, wc.z + pad, SpawnPadColor)
+    let east = run.world.spawnLayout.east[s]
+    let ec = tileCenterRender(east.x, east.z)
+    renderer.addDebugRect(ec.x - pad, ec.z - pad, ec.x + pad, ec.z + pad, SpawnPadColor)
+
+proc xzDir(v: Vec3): Vec3 =
+  let len = hypot(v.x, v.z)
+  if len < 1e-6'f32:
+    vec3(0, 0, 1)
+  else:
+    vec3(v.x / len, 0, v.z / len)
+
+proc xzPerp(v: Vec3): Vec3 =
+  let d = xzDir(v)
+  vec3(-d.z, 0, d.x)
+
+const
+  LinkSides = 8
+  LinkInner = 0.58'f32
+
+proc addChainLink(
+    renderer: var ShapeRenderer,
+    center: Vec3,
+    along: Vec3,
+    stand: bool,
+    color: ColorRGBX,
+    size = 1.0'f32
+) =
+  ## One oval chain link. Flat links lie in XZ; standing links occupy
+  ## the throw/up plane so they interlock from the play camera.
+  let
+    axisA = xzDir(along) * (ChainLinkLength * 0.5'f32 * size)
+    axisB =
+      if stand: vec3(0, ChainLinkWidth * 0.5'f32 * size, 0)
+      else: xzPerp(along) * (ChainLinkWidth * 0.5'f32 * size)
+    thick =
+      if stand: xzPerp(along) * (ChainLinkThick * size)
+      else: vec3(0, ChainLinkThick * size, 0)
+  var
+    outer: array[LinkSides + 1, Vec3]
+    inner: array[LinkSides + 1, Vec3]
+  for i in 0 .. LinkSides:
+    let
+      a = TAU * i.float32 / LinkSides.float32
+      radial = axisA * cos(a) + axisB * sin(a)
+    outer[i] = center + radial
+    inner[i] = center + radial * LinkInner
+  for i in 0 ..< LinkSides:
+    let
+      o0 = outer[i]
+      o1 = outer[i + 1]
+      n0 = inner[i]
+      n1 = inner[i + 1]
+    renderer.addQuad(o0 + thick, o1 + thick, n1 + thick, n0 + thick, color)
+    renderer.addQuad(o0 - thick, n0 - thick, n1 - thick, o1 - thick, color)
+    renderer.addQuad(o0 + thick, o0 - thick, o1 - thick, o1 + thick, color)
+    renderer.addQuad(n0 + thick, n1 + thick, n1 - thick, n0 - thick, ChainDark)
+
+proc shurikenPoint(center: Vec3, angle, radius, y: float32): Vec3 =
+  vec3(
+    center.x + sin(angle) * radius,
+    y,
+    center.z + cos(angle) * radius
+  )
+
+proc addShuriken(
+    renderer: var ShapeRenderer,
+    center: Vec3,
+    yaw: float32,
+    teamColor: ColorRGBX,
+    radius = ShurikenRadius
+) =
+  ## Six-point iron throwing star at the chain tip. `radius` is the
+  ## sim latch disk in render units, so Big Hook and radius upgrades
+  ## grow the head 1:1 with grab size.
+  let
+    scale = radius / ShurikenRadius
+    hubR = ShurikenHubRadius * scale
+    holeR = ShurikenHoleRadius * scale
+    halfH = ShurikenHalfHeight * scale
+    topY = center.y + halfH
+    botY = center.y - halfH * 0.45'f32
+    step = TAU / ShurikenPoints.float32
+  for i in 0 ..< ShurikenPoints:
+    let
+      a = yaw + step * i.float32
+      aL = a - step * 0.5'f32
+      aR = a + step * 0.5'f32
+      tipT = shurikenPoint(center, a, radius, topY)
+      tipB = shurikenPoint(center, a, radius, botY)
+      lT = shurikenPoint(center, aL, hubR, topY)
+      lB = shurikenPoint(center, aL, hubR, botY)
+      rT = shurikenPoint(center, aR, hubR, topY)
+      rB = shurikenPoint(center, aR, hubR, botY)
+    renderer.addTriangle(lT, tipT, rT, HookBlade)
+    renderer.addQuad(lT, tipT, tipB, lB, ChainDark)
+    renderer.addQuad(rT, rB, tipB, tipT, ChainDark)
+    renderer.addTriangle(
+      shurikenPoint(center, a - step * 0.07'f32, radius * 0.80'f32, topY + 0.01'f32),
+      shurikenPoint(center, a, radius * 1.04'f32, topY + 0.01'f32),
+      shurikenPoint(center, a + step * 0.07'f32, radius * 0.80'f32, topY + 0.01'f32),
+      HookEdge
+    )
+  const HubSegs = 12
+  let hubTop = topY + 0.02'f32
+  for i in 0 ..< HubSegs:
+    let
+      a0 = yaw + TAU * i.float32 / HubSegs.float32
+      a1 = yaw + TAU * (i + 1).float32 / HubSegs.float32
+      o0 = shurikenPoint(center, a0, hubR, hubTop)
+      o1 = shurikenPoint(center, a1, hubR, hubTop)
+      i0 = shurikenPoint(center, a0, holeR, hubTop)
+      i1 = shurikenPoint(center, a1, holeR, hubTop)
+      o0b = shurikenPoint(center, a0, hubR, botY)
+      o1b = shurikenPoint(center, a1, hubR, botY)
+      i0b = shurikenPoint(center, a0, holeR, botY)
+      i1b = shurikenPoint(center, a1, holeR, botY)
+    renderer.addQuad(o0, o1, i1, i0, HookHub)
+    renderer.addQuad(i0, i1, i1b, i0b, ChainIron)
+    renderer.addQuad(o0, o0b, o1b, o1, ChainDark)
+    renderer.addQuad(
+      shurikenPoint(center, a0, holeR * 1.45'f32, hubTop + 0.01'f32),
+      shurikenPoint(center, a1, holeR * 1.45'f32, hubTop + 0.01'f32),
+      shurikenPoint(center, a1, holeR * 1.08'f32, hubTop + 0.01'f32),
+      shurikenPoint(center, a0, holeR * 1.08'f32, hubTop + 0.01'f32),
+      teamColor
+    )
+
+proc runeMix(stone, glow: ColorRGBX, glowParts, parts: int): ColorRGBX =
+  let stoneParts = parts - glowParts
+  rgbx(
+    uint8((int(stone.r) * stoneParts + int(glow.r) * glowParts) div parts),
+    uint8((int(stone.g) * stoneParts + int(glow.g) * glowParts) div parts),
+    uint8((int(stone.b) * stoneParts + int(glow.b) * glowParts) div parts),
+    255
+  )
+
+proc runeBright(color: ColorRGBX): ColorRGBX =
+  rgbx(
+    uint8(min(int(color.r) + 28, 255)),
+    uint8(min(int(color.g) + 28, 255)),
+    uint8(min(int(color.b) + 28, 255)),
+    255
+  )
+
+proc tabletPoint(origin: Vec3, yaw, x, z: float32): Vec3 =
+  let
+    cosine = cos(yaw)
+    sine = sin(yaw)
+  vec3(
+    origin.x + x * cosine - z * sine,
+    origin.y,
+    origin.z + x * sine + z * cosine
+  )
+
+proc addRunePlate(
+    renderer: var ShapeRenderer,
+    center: Vec3,
+    radius, yaw: float32,
+    sides: int,
+    color: ColorRGBX
+) =
+  ## Filled regular polygon in the XZ plane, both windings.
+  let step = TAU / sides.float32
+  for i in 0 ..< sides:
+    let
+      a0 = yaw + step * i.float32
+      a1 = yaw + step * (i + 1).float32
+      p0 = vec3(
+        center.x + cos(a0) * radius, center.y, center.z + sin(a0) * radius
+      )
+      p1 = vec3(
+        center.x + cos(a1) * radius, center.y, center.z + sin(a1) * radius
+      )
+    renderer.addTriangle(center, p0, p1, color)
+    renderer.addTriangle(center, p1, p0, color)
+
+proc addRuneWalls(
+    renderer: var ShapeRenderer,
+    center: Vec3,
+    radius, yaw, y0, y1: float32,
+    sides: int,
+    color: ColorRGBX
+) =
+  let step = TAU / sides.float32
+  for i in 0 ..< sides:
+    let
+      a0 = yaw + step * i.float32
+      a1 = yaw + step * (i + 1).float32
+      x0 = center.x + cos(a0) * radius
+      z0 = center.z + sin(a0) * radius
+      x1 = center.x + cos(a1) * radius
+      z1 = center.z + sin(a1) * radius
+    renderer.addQuad(
+      vec3(x0, y0, z0), vec3(x1, y0, z1), vec3(x1, y1, z1), vec3(x0, y1, z0),
+      color
+    )
+    renderer.addQuad(
+      vec3(x0, y0, z0), vec3(x0, y1, z0), vec3(x1, y1, z1), vec3(x1, y0, z1),
+      color
+    )
+
+proc addRuneRing(
+    renderer: var ShapeRenderer,
+    center: Vec3,
+    radius, yaw: float32,
+    sides: int,
+    color: ColorRGBX,
+    halfWidth: float32
+) =
+  var points = newSeq[Vec3](sides + 1)
+  let step = TAU / sides.float32
+  for i in 0 .. sides:
+    let a = yaw + step * i.float32
+    points[i] = vec3(
+      center.x + cos(a) * radius, center.y, center.z + sin(a) * radius
+    )
+  renderer.addPolyline(points, color, halfWidth)
+
+proc addRuneTri(
+    renderer: var ShapeRenderer,
+    origin: Vec3,
+    yaw: float32,
+    a, b, c: Vec2,
+    color: ColorRGBX
+) =
+  let
+    p0 = tabletPoint(origin, yaw, a.x, a.y)
+    p1 = tabletPoint(origin, yaw, b.x, b.y)
+    p2 = tabletPoint(origin, yaw, c.x, c.y)
+  renderer.addTriangle(p0, p1, p2, color)
+  renderer.addTriangle(p0, p2, p1, color)
+
+proc addRuneStroke(
+    renderer: var ShapeRenderer,
+    origin: Vec3,
+    yaw: float32,
+    locals: openArray[Vec2],
+    color: ColorRGBX,
+    halfWidth: float32
+) =
+  ## One carved stroke: a wide glow ribbon plus a bright core.
+  if locals.len < 2:
+    return
+  var points = newSeq[Vec3](locals.len)
+  for i, local in locals:
+    points[i] = tabletPoint(origin, yaw, local.x, local.y)
+  renderer.addPolyline(
+    points, rgbx(color.r, color.g, color.b, 120), halfWidth * 1.9'f32
+  )
+  let core = runeBright(color)
+  renderer.addPolyline(points, core, halfWidth)
+  let cap = halfWidth * 1.08'f32
+  renderer.addCircle(points[0], cap, core, 8)
+  renderer.addCircle(points[^1], cap, core, 8)
+
+proc addRuneGlyph(
+    renderer: var ShapeRenderer,
+    face: Vec3,
+    yaw: float32,
+    kind: RuneKind,
+    color: ColorRGBX
+) =
+  ## Distinct Futhark-style glyphs, one per river power. Big Hook is
+  ## invented in the same stroke language.
+  const hw = 0.095'f32
+  case kind
+  of RuneHaste:
+    # Doubled Kenaz (torch / speed): nested chevrons.
+    renderer.addRuneStroke(face, yaw, [
+      vec2(-0.46'f32, -0.14'f32),
+      vec2(0'f32, 0.50'f32),
+      vec2(0.46'f32, -0.14'f32)
+    ], color, hw)
+    renderer.addRuneStroke(face, yaw, [
+      vec2(-0.46'f32, -0.44'f32),
+      vec2(0'f32, 0.20'f32),
+      vec2(0.46'f32, -0.44'f32)
+    ], color, hw)
+  of RuneDoubleDamage:
+    # Doubled Tiwaz (warrior): two upright spears.
+    for side in [-0.26'f32, 0.26'f32]:
+      renderer.addRuneStroke(face, yaw, [
+        vec2(side, -0.50'f32),
+        vec2(side, 0.18'f32)
+      ], color, hw)
+      renderer.addRuneTri(
+        face, yaw,
+        vec2(side - 0.22'f32, 0.08'f32),
+        vec2(side, 0.52'f32),
+        vec2(side + 0.22'f32, 0.08'f32),
+        runeBright(color)
+      )
+      renderer.addRuneStroke(face, yaw, [
+        vec2(side - 0.22'f32, 0.08'f32),
+        vec2(side, 0.52'f32),
+        vec2(side + 0.22'f32, 0.08'f32)
+      ], color, hw)
+  of RuneRegen:
+    # Algiz (life): a stave with a rising fork.
+    renderer.addRuneStroke(face, yaw, [
+      vec2(0'f32, -0.52'f32),
+      vec2(0'f32, 0.52'f32)
+    ], color, hw)
+    renderer.addRuneStroke(face, yaw, [
+      vec2(-0.44'f32, 0.50'f32),
+      vec2(0'f32, 0.02'f32),
+      vec2(0.44'f32, 0.50'f32)
+    ], color, hw)
+  of RuneBigHook:
+    # Meat-hook stave: T-handle and a barbed J.
+    renderer.addRuneStroke(face, yaw, [
+      vec2(-0.36'f32, 0.50'f32),
+      vec2(0.20'f32, 0.50'f32)
+    ], color, hw)
+    renderer.addRuneStroke(face, yaw, [
+      vec2(-0.06'f32, 0.50'f32),
+      vec2(-0.06'f32, -0.02'f32),
+      vec2(0.10'f32, -0.32'f32),
+      vec2(0.28'f32, -0.46'f32),
+      vec2(0.48'f32, -0.32'f32),
+      vec2(0.48'f32, -0.12'f32),
+      vec2(0.32'f32, -0.02'f32)
+    ], color, hw)
+    renderer.addRuneStroke(face, yaw, [
+      vec2(0.28'f32, -0.46'f32),
+      vec2(0.10'f32, -0.22'f32)
+    ], color, hw)
+
+proc addRiverRune(
+    renderer: var ShapeRenderer,
+    center: Vec3,
+    waterY: float32,
+    yaw: float32,
+    kind: RuneKind
+) =
+  ## WC3 river rune: a hewn stone octagon with a glowing carved glyph
+  ## hovering over a colored caustic on the water.
+  let
+    glow = RuneColors[kind]
+    radius = RuneCoreRadius * 1.32'f32
+    y0 = center.y - RuneTabletThick * 0.5'f32
+    y1 = center.y + RuneTabletThick * 0.5'f32
+    stone = runeMix(RuneStone, glow, 1, 5)
+    well = runeMix(RuneStoneDark, glow, 2, 5)
+    rim = runeMix(RuneStoneRim, glow, 2, 5)
+    face = vec3(center.x, y1 + 0.05'f32, center.z)
+    aura = rgbx(glow.r, glow.g, glow.b, 78)
+    shaftH = 0.72'f32
+    shaftW = radius * 0.18'f32
+  var caustic = vec3(center.x, waterY + 0.14'f32, center.z)
+  renderer.addCircle(
+    caustic, radius * 2.35'f32, rgbx(glow.r, glow.g, glow.b, 72), 16
+  )
+  renderer.addCircle(
+    caustic, radius * 1.45'f32, rgbx(glow.r, glow.g, glow.b, 110), 14
+  )
+  caustic.y = waterY + 0.16'f32
+  renderer.addCircle(caustic, radius * 0.95'f32, rgbx(18, 22, 28, 80), 12)
+  var top = center
+  var bot = center
+  top.y = y1
+  bot.y = y0
+  renderer.addRuneWalls(
+    center, radius, yaw, y0, y1, RuneTabletSides, RuneStoneDark
+  )
+  renderer.addRunePlate(bot, radius, yaw, RuneTabletSides, RuneStoneDark)
+  renderer.addRunePlate(top, radius, yaw, RuneTabletSides, stone)
+  renderer.addRuneRing(
+    top, radius * 0.96'f32, yaw, RuneTabletSides, rim, 0.07'f32
+  )
+  var inset = top
+  inset.y = y1 + 0.02'f32
+  renderer.addRunePlate(
+    inset, radius * 0.76'f32, yaw, RuneTabletSides, well
+  )
+  renderer.addRuneRing(
+    face, radius * 0.70'f32, yaw, 16, rgbx(glow.r, glow.g, glow.b, 90),
+    0.034'f32
+  )
+  let
+    yAura0 = center.y - 0.04'f32
+    yAura1 = center.y + shaftH
+  renderer.addQuad(
+    vec3(center.x - shaftW, yAura0, center.z),
+    vec3(center.x + shaftW, yAura0, center.z),
+    vec3(center.x + shaftW, yAura1, center.z),
+    vec3(center.x - shaftW, yAura1, center.z),
+    aura
+  )
+  renderer.addQuad(
+    vec3(center.x - shaftW, yAura0, center.z),
+    vec3(center.x - shaftW, yAura1, center.z),
+    vec3(center.x + shaftW, yAura1, center.z),
+    vec3(center.x + shaftW, yAura0, center.z),
+    aura
+  )
+  renderer.addQuad(
+    vec3(center.x, yAura0, center.z - shaftW),
+    vec3(center.x, yAura0, center.z + shaftW),
+    vec3(center.x, yAura1, center.z + shaftW),
+    vec3(center.x, yAura1, center.z - shaftW),
+    aura
+  )
+  renderer.addQuad(
+    vec3(center.x, yAura0, center.z - shaftW),
+    vec3(center.x, yAura1, center.z - shaftW),
+    vec3(center.x, yAura1, center.z + shaftW),
+    vec3(center.x, yAura0, center.z + shaftW),
+    aura
+  )
+  renderer.addRuneGlyph(face, yaw, kind, glow)
+
+proc chainPoint(points: openArray[Vec3], span, t: float32): Vec3 =
+  if points.len == 0:
+    return
+  if span <= 1e-6'f32:
+    return points[^1]
+  var
+    want = t * span
+    walked = 0.0'f32
+  if want < 0: want = 0
+  if want > span: want = span
+  for i in 0 ..< points.len - 1:
+    let
+      delta = points[i + 1] - points[i]
+      step = hypot(delta.x, delta.z)
+    if walked + step >= want or i == points.len - 2:
+      let u =
+        if step <= 1e-6'f32: 0.0'f32
+        else: (want - walked) / step
+      return points[i] * (1.0'f32 - u) + points[i + 1] * u
+    walked += step
+  points[^1]
+
+proc chainTangent(points: openArray[Vec3], span, t: float32): Vec3 =
+  let
+    a = chainPoint(points, span, max(t - 0.02'f32, 0.0'f32))
+    b = chainPoint(points, span, min(t + 0.02'f32, 1.0'f32))
+    d = b - a
+  if hypot(d.x, d.z) < 1e-6'f32:
+    vec3(0, 0, 1)
+  else:
+    d
+
+proc fogCrossing(a, b: Vec3): Vec3 =
+  ## Walks the fog boundary along `a`→`b`. `a` and `b` must disagree
+  ## on `fogCanSee`.
+  let visA = fogCanSee(worldFromRender(a))
+  var
+    lo = 0.0'f32
+    hi = 1.0'f32
+  for _ in 0 ..< 8:
+    let
+      mid = (lo + hi) * 0.5'f32
+      p = a * (1.0'f32 - mid) + b * mid
+    if fogCanSee(worldFromRender(p)) == visA:
+      lo = mid
+    else:
+      hi = mid
+  if visA:
+    a * (1.0'f32 - lo) + b * lo
+  else:
+    a * (1.0'f32 - hi) + b * hi
+
+proc clipChainToFog(points: openArray[Vec3]): seq[seq[Vec3]] =
+  ## Visible fragments of a hook polyline. Segments that cross the fog
+  ## are cut at the boundary so the chain appears to emerge from the dark.
+  if points.len == 0:
+    return
+  var
+    current: seq[Vec3]
+    prev = points[0]
+    prevVis = fogCanSee(worldFromRender(prev))
+  if prevVis:
+    current.add prev
+  for i in 1 ..< points.len:
+    let
+      p = points[i]
+      vis = fogCanSee(worldFromRender(p))
+    if prevVis and vis:
+      current.add p
+    elif prevVis and not vis:
+      current.add fogCrossing(prev, p)
+      if current.len > 0:
+        result.add current
+      current.setLen(0)
+    elif not prevVis and vis:
+      current.add fogCrossing(prev, p)
+      current.add p
+    prev = p
+    prevVis = vis
+  if current.len > 0:
+    result.add current
+
+proc drawMeatHook(
+    renderer: var ShapeRenderer,
+    points: openArray[Vec3],
+    heading: Heading,
+    flying: bool,
+    grabbed: bool,
+    teamColor: ColorRGBX,
+    spin: float32,
+    headRadius = ShurikenRadius,
+    showHead = true
+) =
+  if points.len == 0:
+    return
+  let
+    yaw = renderFacing(heading) + spin
+    scale = headRadius / ShurikenRadius
+    hubR = ShurikenHubRadius * scale
+    headPos = liftPoint(points[^1], 1.05'f32)
+  if points.len == 1:
+    if showHead:
+      renderer.addShuriken(headPos, yaw, teamColor, headRadius)
+    return
+  var span = 0.0'f32
+  for i in 0 ..< points.len - 1:
+    let delta = points[i + 1] - points[i]
+    span += hypot(delta.x, delta.z)
+  let
+    chainSpan = max(span - hubR, 0.0'f32)
+    links = max(int(chainSpan / ChainLinkStep), 2)
+  var lifted: seq[Vec3]
+  for p in points:
+    lifted.add liftPoint(p, 0.95'f32)
+  if flying:
+    renderer.addPolyline(lifted, HookTrail, 0.10'f32)
+  if grabbed:
+    renderer.addPolyline(lifted, teamColor, ChainGrabWidth)
+  renderer.addPolyline(lifted, ChainDark, 0.11'f32)
+  for i in 0 ..< links:
+    let
+      t = i.float32 / links.float32
+      p = liftPoint(chainPoint(points, chainSpan, t), 0.98'f32)
+      tan = chainTangent(points, chainSpan, t)
+      stand = (i and 1) != 0
+      tone = if stand: ChainDark else: ChainIron
+    renderer.addChainLink(p, tan, stand, tone)
+  if showHead:
+    renderer.addShuriken(headPos, yaw, teamColor, headRadius)
+
+proc runGraphics*() =
+  startProfileTrace()
+  profileBlock "atlas":
+    let builder = newHudAtlas(2048)
+    proc placeholderIcon(): Image =
+      result = newImage(128, 128)
+      result.fill(rgba(42, 48, 62, 255))
+    proc addIcon(key, path: string) =
+      var icon: Image
+      if fileExists(path):
+        try:
+          icon = readImage(path).resize(128, 128)
+        except PixieError:
+          echo "warning: HUD icon unreadable ", path
+          icon = placeholderIcon()
+      else:
+        echo "warning: HUD icon missing ", path
+        icon = placeholderIcon()
+      if not builder.addImage(key, icon):
+        raise newException(GraphicsError, "the UI atlas is too small for " & key)
+    addIcon("hook", iconPath(HookAbilityIcon, "abilities"))
+    addIcon("blink", iconPath(BlinkAbilityIcon, "abilities"))
+    addIcon("rot", iconPath(RotAbilityIcon, "abilities"))
+    addIcon(AttackIcon, iconPath(AttackIcon))
+    for team in Team:
+      addIcon(PortraitKeys[team], portraitPath(team))
+    for kind in UpgradeKind:
+      addIcon(UpgradeIcons[kind], iconPath(UpgradeIcons[kind]))
+    for item in ShopBoots..ShopMine:
+      let name = ShopItemIcons[item]
+      if name.len == 0:
+        continue
+      let path = iconPath(name, "items")
+      if not fileExists(path):
+        continue
+      addIcon(name, path)
+    builder.addDefaultFonts()
+    builder.write(AtlasPath)
+  profileBlock "window":
+    var window: Window
+    var sk: Silky
+    (window, sk) = initGameWindow(
+      "Pudge Wars",
+      AtlasPath,
+      gameWindowSize(options.windowWidth, options.windowHeight),
+      iconPath = AppIconPath
+    )
+  profileBlock "audio":
+    initGameAudio(options.mute)
+    let keysFile =
+      if options.keysPath.len > 0: options.keysPath
+      else: "pudge_keys.cfg"
+    if loadKeyBinds(keysFile):
+      echo "keys: loaded ", keysFile
+    elif options.keysPath.len > 0:
+      echo "keys: no such file ", options.keysPath
+
+  when not defined(emscripten):
+    if netRole == NetHost:
+      var botSeatPaths: seq[string]
+      for group in options.botGroups:
+        for _ in 0 ..< group.count:
+          botSeatPaths.add group.path
+      if not startHosting(
+          options.hostPort,
+          netPlayerName(),
+          "examples/pudge_wars/emscripten",
+          run.world.killGoal,
+          run.world.runePeriod div TickRate,
+          botSeatPaths
+      ):
+        quit("cannot start the lobby server on port " & $options.hostPort)
+      echo "host: lobby open at ", hostingUrl()
+      echo "host: native clients join with --join ws://<that address>/ws"
+      if options.humanSlots.len > 0:
+        hostClaimLocal(int(options.humanSlots[0]))
+
+  profileBlock "terrain":
+    amplitude = 1.15'f32
+    treeHeight = 7.2'f32
+    seed = run.map.seed
+    initTerrain()
+    scatterGrass(500, run.map.seed)
+    scatterRocks(40, run.map.seed)
+
+  let scene = newCharacterScene(window)
+  scene.useToonShading()
+  var
+    pudgeModels: array[Team, CharacterModel]
+    pudgeClips: array[Team, array[5, int]]
+  profileBlock "models":
+    for team in Team:
+      let spec = PudgeSpecs[team]
+      let model = loadCharacterModel(spec.modelPath, spec.targetHeight)
+      pudgeModels[team] = model
+      pudgeClips[team] = [
+        model.clipIndex(spec.runClip),
+        model.clipIndex(spec.idleClip),
+        model.clipIndex(spec.deathClip),
+        model.clipIndex(spec.attackClip),
+        model.clipIndex(spec.victoryClip)
+      ]
+  profileBlock "bake":
+    bakeTerrain(rebuildWalkability = false)
+
+  var
+    particles = initParticleSystem()
+    worldBarRenderer = initWorldBarRenderer()
+    shapeRenderer = initShapeRenderer()
+    transport = initPlayer(
+      live = not run.replayMode,
+      durationTicks = run.maximumTicks,
+      # A host idles in the lobby until Enter starts the match.
+      playing = not options.pauseOnStart and netRole != NetHost,
+      speed = options.speed
+    )
+    netLobbyOpen = netRole == NetHost
+    cameraDistance = DefaultCameraDistance
+    cameraYaw = RtsCameraYaw
+    cameraPitch = RtsCameraPitch
+    cameraTarget = vec3(0, 0, 0)
+    cameraEye = vec3(0, 0, 0)
+    panning = false
+    orbiting = false
+    rmbGesture = false
+    rmbDragged = false
+    rmbOrigin = vec2(0)
+    lastDragMouse = vec2(0)
+    rightClickCommand = false
+    minimapPanning = false
+    followSelection = false
+    actionCam = initActionCam()
+    replayCheckpoints: seq[SeekCheckpoint]
+    previousPositions: Table[int32, Vec3]
+    previousFacings: Table[int32, float32]
+    previousHookPositions: Table[int32, Vec3]
+    previousRunePositions: Table[int32, Vec3]
+    previousHp: Table[int32, int32]
+    previousStates: Table[int32, PudgeState]
+    previousThrown: Table[int32, int32]
+    floatingTexts: seq[FloatingText]
+    blinkResidues: seq[BlinkResidue]
+    renderAlpha = 1.0'f32
+    animationAlpha = 0.0'f32
+    lastFrameTime = epochTime()
+  if run.replayMode:
+    transport.repeating = true
+
+  actionCam.takeManual()
+
+  var
+    fogVisionTick = int32.low
+    fogVisionTeam = int32.low
+    fogExplored: seq[bool]
+
+  proc updateTerrainVision() =
+    ## Uploads the local team's softened visible + explored terrain.
+    let team = int32(fogTeam())
+    if fogVisionTick == run.world.tick and fogVisionTeam == team:
+      return
+    if fogVisionTeam != team:
+      fogExplored.setLen(0)
+    fogVisionTick = run.world.tick
+    fogVisionTeam = team
+    var values = newSeq[uint8](GridTiles * GridTiles)
+    if team < 0:
+      for value in values.mitems:
+        value = 255
+      uploadTerrainVisibility(values)
+      return
+    if fogExplored.len != GridTiles * GridTiles:
+      fogExplored = newSeq[bool](GridTiles * GridTiles)
+    for z in 0 ..< GridTiles:
+      for x in 0 ..< GridTiles:
+        let index = z * GridTiles + x
+        if fogCanSee(worldAtTile(x, z)):
+          fogExplored[index] = true
+          values[index] = 255
+        elif fogExplored[index]:
+          values[index] = 72
+        else:
+          values[index] = 26
+    uploadTerrainVisibility(
+      blurVisibility(values, int32(GridTiles), int32(GridTiles))
+    )
+
+  proc recordedTicksNow(): int32 =
+    ## How much finished tape exists: recorded locally by the host's
+    ## sim, or streamed in from one when following.
+    if run.recorder != nil:
+      int32(run.recorder.data.hashes.len)
+    elif run.replayPlayer != nil:
+      int32(run.replayPlayer.data.hashes.len)
+    else:
+      0
+
+  proc captureCheckpoint(): SeekCheckpoint =
+    SeekCheckpoint(
+      tick: int(run.world.tick),
+      world: run.world.clone(),
+      replayActionIndex:
+        if run.replayPlayer != nil: run.replayPlayer.actionIndex else: 0,
+      hashCheck: run.hashCheck
+    )
+
+  proc captureUnitPositions() =
+    previousPositions.clear()
+    previousFacings.clear()
+    previousHookPositions.clear()
+    previousRunePositions.clear()
+    previousHp.clear()
+    previousStates.clear()
+    for pudge in run.world.pudges:
+      previousPositions[pudge.id] = renderPoint(pudge.position)
+      previousFacings[pudge.id] = renderFacing(pudge.facing)
+      previousHp[pudge.id] = pudge.hp
+      previousStates[pudge.id] = pudge.state
+      previousThrown[pudge.id] = pudge.hooksThrown
+    for hook in run.world.hooks:
+      previousHookPositions[hook.id] = renderPoint(hook.position)
+    for rune in run.world.runes:
+      previousRunePositions[rune.id] = renderPoint(rune.position)
+
+  proc unitPoint(id: int32, position: WorldPoint): Vec3 =
+    let current = renderPoint(position)
+    mix(previousPositions.getOrDefault(id, current), current, renderAlpha)
+
+  proc unitFacing(id: int32, facing: Heading): float32 =
+    let
+      current = renderFacing(facing)
+      previous = previousFacings.getOrDefault(id, current)
+    previous + shortestTurn(previous, current) * renderAlpha
+
+  proc hookPoint(id: int32, position: WorldPoint): Vec3 =
+    let current = renderPoint(position)
+    mix(previousHookPositions.getOrDefault(id, current), current, renderAlpha)
+
+  proc runePoint(id: int32, position: WorldPoint): Vec3 =
+    let current = renderPoint(position)
+    mix(previousRunePositions.getOrDefault(id, current), current, renderAlpha)
+
+  proc unitTime(ticks: int32): float32 =
+    (ticks.float32 + animationAlpha) / TickRate.float32
+
+  proc holdTime(
+      model: CharacterModel, clip: int, ticks: int32, hold: bool
+  ): float32 =
+    if hold:
+      min(ticks.float32 / TickRate.float32, clipDuration(model, clip))
+    else:
+      unitTime(ticks)
+
+  proc cameraView(): Mat4 =
+    lookAt(cameraEye, cameraTarget, vec3(0, 1, 0))
+
+  proc screenPoint(position: Vec3, viewProjection: Mat4): Vec2 =
+    ## Projects a world position into window pixel coordinates.
+    let
+      clip = viewProjection * vec4(position.x, position.y, position.z, 1)
+      panel =
+        if worldViewRect.size.x > 1 and worldViewRect.size.y > 1:
+          worldViewRect
+        else:
+          GameUiPanel(
+            origin: vec2(0),
+            size: vec2(window.size.x.float32, window.size.y.float32)
+          )
+    screenFromClip(clip, panel)
+
+  proc applyPlayViewport() =
+    ## Maps the 3D camera onto the gap between top bar and bottom HUD.
+    let
+      play = worldViewRect
+      bottom = window.size.y.float32 - play.origin.y - play.size.y
+    glViewport(
+      GLint(play.origin.x.int32),
+      GLint(bottom.int32),
+      GLsizei(max(play.size.x.int32, 1)),
+      GLsizei(max(play.size.y.int32, 1))
+    )
+
+  proc playPanel(): GameUiPanel =
+    if worldViewRect.size.x > 1 and worldViewRect.size.y > 1:
+      worldViewRect
+    else:
+      GameUiPanel(
+        origin: vec2(0),
+        size: vec2(window.size.x.float32, window.size.y.float32)
+      )
+
+  proc resetOrbit() =
+    cameraYaw = RtsCameraYaw
+    cameraPitch = RtsCameraPitch
+
+  proc takeCamera() =
+    followSelection = false
+    actionCam.takeManual()
+
+  proc updateCamera(dt: float32) =
+    ## RMB-drag pans the spectator camera across the board. A seated
+    ## butcher still walks/attacks on an RMB click; a drag is always a
+    ## pan. LMB+RMB orbits around the current look-at, then snaps back.
+    rightClickCommand = false
+    updateMinimapCamera(
+      window, sk.mousePos, cameraTarget, minimapPanning, followSelection
+    )
+    if minimapPanning:
+      takeCamera()
+      orbiting = false
+      panning = false
+
+    let
+      overUi = mouseOverUi(window, sk.mousePos)
+      mousePx = window.mousePos.vec2
+      play = playPanel()
+      onWorld = not overUi and (play.size.x <= 1 or play.contains(mousePx))
+      rightDown = window.buttonDown[MouseRight]
+      middleDown = window.buttonDown[MouseMiddle]
+
+    if menuIsOpen():
+      panning = false
+      orbiting = false
+      rmbGesture = false
+      rmbDragged = false
+      resetOrbit()
+    else:
+      if rightDown:
+        if not rmbGesture and onWorld:
+          rmbGesture = true
+          rmbOrigin = mousePx
+          lastDragMouse = mousePx
+      elif rmbGesture:
+        # RMB is the command button, held or clicked: it never pans.
+        # Only an Alt-orbit swallows the release.
+        if not orbiting and humanControlActive():
+          rightClickCommand = true
+        rmbGesture = false
+        rmbDragged = false
+
+      let altDown =
+        window.buttonDown[KeyLeftAlt] or window.buttonDown[KeyRightAlt]
+      let wantOrbit =
+        altDown and rightDown and not minimapPanning and
+        (rmbGesture or orbiting)
+      if wantOrbit:
+        if not orbiting:
+          lastDragMouse = mousePx
+          takeCamera()
+        orbiting = true
+        panning = false
+      elif orbiting:
+        orbiting = false
+        resetOrbit()
+
+      let wantPan =
+        # Only the wheel button pans (held from anywhere), plus the
+        # minimap and edge/arrow panning handled elsewhere. RMB is
+        # sacred: it commands, it never moves the camera.
+        not orbiting and not minimapPanning and middleDown
+      if wantPan:
+        if not panning:
+          lastDragMouse = mousePx
+          takeCamera()
+        panning = true
+      else:
+        panning = false
+
+      let delta = mousePx - lastDragMouse
+      lastDragMouse = mousePx
+      if orbiting:
+        cameraYaw -= delta.x * 0.008'f32
+        cameraPitch = rtsClampedPitch(cameraPitch + delta.y * 0.006'f32)
+      elif panning:
+        takeCamera()
+        let
+          speed = cameraDistance * 0.0015'f32
+          pan = rtsGroundPan(cameraYaw, delta, speed)
+        cameraTarget.x -= pan.x
+        cameraTarget.z -= pan.y
+
+      if not orbiting and not panning and not minimapPanning:
+        var keyPan = vec2(0)
+        # Arrows steer the butcher while one is alive under your hand;
+        # they pan the camera only when spectating.
+        if not (humanControlActive() and heroIndex() >= 0 and
+            run.world.pudges[heroIndex()].state != Dying):
+          if window.buttonDown[KeyLeft]: keyPan.x -= 1
+          if window.buttonDown[KeyRight]: keyPan.x += 1
+          if window.buttonDown[KeyUp]: keyPan.y -= 1
+          if window.buttonDown[KeyDown]: keyPan.y += 1
+        const EdgePixels = 12
+        let mouse = window.mousePos
+        if not overUi and mouse != ivec2(0, 0) and play.contains(mousePx):
+          if mousePx.x <= play.origin.x + EdgePixels: keyPan.x -= 1
+          elif mousePx.x >= play.origin.x + play.size.x - EdgePixels:
+            keyPan.x += 1
+          if mousePx.y <= play.origin.y + EdgePixels: keyPan.y -= 1
+          elif mousePx.y >= play.origin.y + play.size.y - EdgePixels:
+            keyPan.y += 1
+        if keyPan != vec2(0, 0):
+          takeCamera()
+          let
+            speed = cameraDistance * 1.1'f32 * dt
+            right = rtsCameraRight(cameraYaw)
+            look = rtsCameraLook(cameraYaw)
+          cameraTarget.x += (right.x * keyPan.x + look.x * keyPan.y) * speed
+          cameraTarget.z += (right.z * keyPan.x + look.z * keyPan.y) * speed
+      if followSelection and humanControlActive():
+        let
+          hero = heroGroundPoint()
+          ease = min(1.0'f32, dt * 8.0'f32)
+        cameraTarget.x = mix(cameraTarget.x, hero.x, ease)
+        cameraTarget.z = mix(cameraTarget.z, hero.z, ease)
+
+    cameraTarget.x = clamp(cameraTarget.x, -HalfGrid, HalfGrid)
+    cameraTarget.z = clamp(cameraTarget.z, -HalfGrid, HalfGrid)
+    if not overUi and window.scrollDelta.y != 0:
+      takeCamera()
+      cameraDistance = clampCameraDistance(
+        cameraDistance * pow(0.92'f32, window.scrollDelta.y)
+      )
+    cameraEye = rtsCameraEye(
+      cameraTarget, cameraDistance, cameraYaw, cameraPitch
+    )
+
+  proc emitBlinkOriginPuff(chest: Vec3) =
+    ## Leave-behind burst at the tile they hopped FROM. Stacks the
+    ## existing MagicBurst / CombatSparks vocabulary, spread and delayed
+    ## so the puff stays readable at the 155 play-camera zoom.
+    const
+      Offsets = [
+        vec3(0.0'f32, 0.0'f32, 0.0'f32),
+        vec3(1.35'f32, 0.45'f32, 0.40'f32),
+        vec3(-1.20'f32, 0.20'f32, 1.15'f32),
+        vec3(0.30'f32, 0.90'f32, -1.25'f32)
+      ]
+    for offset in Offsets:
+      let puff = chest + offset
+      particles.emitParticleBurst(MagicBurst, puff)
+      particles.emitParticleBurst(CombatSparks, puff)
+    particles.emitParticleBurst(MagicBurst, chest, 0.12'f32)
+    particles.emitParticleBurst(CombatSparks, chest, 0.12'f32)
+    particles.emitParticleBurst(MagicBurst, chest, 0.24'f32)
+    particles.emitParticleBurst(MagicBurst, chest, 0.36'f32)
+    particles.emitParticleBurst(CombatSparks, chest + vec3(0, 1.1'f32, 0), 0.18'f32)
+
+  proc emitTickParticles() =
+    for pudge in run.world.pudges:
+      var pos = unitPoint(pudge.id, pudge.position)
+      pos.y = surfaceHeightNear(pos.x, pos.z, pos.y) + 1.6'f32
+      if pudge.damageLanded:
+        particles.emitParticleBurst(CombatSparks, pos)
+      if pudge.justHeadshot or pudge.justChunked:
+        particles.emitParticleBurst(FireBurst, pos)
+      if pudge.justGrabbed:
+        particles.emitParticleBurst(MagicBurst, pos)
+        particles.emitParticleBurst(CombatSparks, pos)
+      if pudge.justRune:
+        particles.emitParticleBurst(MagicBurst, pos)
+      if pudge.justBlinked:
+        let
+          originFeet = liftPoint(renderPoint(pudge.blinkFrom), 0)
+          originChest = liftPoint(renderPoint(pudge.blinkFrom), 1.85'f32)
+          dest = liftPoint(renderPoint(pudge.position), 1.6'f32)
+        emitBlinkOriginPuff(originChest)
+        particles.emitParticleBurst(MagicBurst, dest)
+        particles.emitParticleBurst(FireBurst, dest)
+        blinkResidues.add BlinkResidue(
+          origin: originFeet,
+          worldOrigin: pudge.blinkFrom,
+          facing: previousFacings.getOrDefault(
+            pudge.id, renderFacing(pudge.facing)
+          ),
+          team: pudge.team,
+          slot: pudgeIndex(run.world, pudge.id),
+          born: epochTime()
+        )
+      if pudge.enteredRiver:
+        var splash = pos
+        splash.y = surfaceHeightNear(pos.x, pos.z, pos.y) + 0.3'f32
+        particles.emitParticleBurst(MagicBurst, splash)
+    if run.world.clashTick == run.world.tick:
+      var clash = renderPoint(run.world.clashPoint)
+      clash.y = surfaceHeightNear(clash.x, clash.z, clash.y) + 1.4'f32
+      particles.emitParticleBurst(CombatSparks, clash)
+      particles.emitParticleBurst(FireBurst, clash)
+    for rune in run.world.runes:
+      if rune.spawnTick == run.world.tick:
+        var pos = renderPoint(rune.position)
+        pos.y = surfaceHeightNear(pos.x, pos.z, pos.y) + 1.6'f32
+        particles.emitParticleBurst(MagicBurst, pos)
+    for hook in run.world.hooks:
+      if hook.phase == HookIdle:
+        continue
+      var head = hookPoint(hook.id, hook.position)
+      head.y = surfaceHeightNear(head.x, head.z, head.y) + 1.05'f32
+      if hook.phase == HookFlying and
+          hook.traveled mod WorldScale < hook.speed:
+        particles.emitParticleBurst(CombatSparks, head)
+      if hook.phase != HookFlying or hook.traveled > hook.speed:
+        continue
+      let owner = pudgeIndex(run.world, hook.ownerId)
+      if owner < 0:
+        continue
+      var origin = unitPoint(
+        run.world.pudges[owner].id,
+        run.world.pudges[owner].position
+      )
+      origin.y = surfaceHeightNear(origin.x, origin.z, origin.y) + 1.2'f32
+      particles.emitParticleBurst(MagicBurst, origin)
+
+  const SeatTints: array[PudgeCount, chroma.Color] = [
+    color(0.62, 0.78, 1.00, 1.0),   # west 1: sky
+    color(0.62, 1.00, 0.75, 1.0),   # west 2: mint
+    color(0.85, 0.70, 1.00, 1.0),   # west 3: violet
+    color(1.00, 0.72, 0.62, 1.0),   # east 1: ember
+    color(1.00, 0.92, 0.58, 1.0),   # east 2: gold
+    color(1.00, 0.65, 0.85, 1.0)    # east 3: rose
+  ]
+
+  proc seatTint(slot: int): chroma.Color =
+    ## Soft per-seat wash over the team model, WC3 player-color style.
+    if slot < 0 or slot >= PudgeCount:
+      return color(1, 1, 1, 1)
+    let base = SeatTints[slot]
+    color(
+      0.62 + base.r * 0.38,
+      0.62 + base.g * 0.38,
+      0.62 + base.b * 0.38,
+      1.0
+    )
+
+  proc pudgeLabel(id: int32): string =
+    ## Lobby names where the roster knows them; P<id> otherwise.
+    let index = pudgeIndex(run.world, id)
+    let slot =
+      if index >= 0: int(run.world.pudges[index].lobbySeat)
+      else: -1
+    var name = ""
+    if netRole == NetClient:
+      name = netSeatName(slot)
+    when not defined(emscripten):
+      if netRole == NetHost:
+        name = hostSeatName(slot)
+    if name.len == 0:
+      "P" & $id
+    else:
+      name
+
+  proc emitCombatFeedback() =
+    ## Damage and heal numbers, the kill feed, and one-shot sounds,
+    ## all from tick deltas. History seeks stay silent. Combat audio
+    ## is first-person plus whatever is on the play camera; off-map
+    ## bot hooks stay quiet.
+    let
+      now = epochTime()
+      audible = not transport.inHistory
+    proc heroIs(id: int32): bool =
+      humanControlActive() and heroIndex() >= 0 and
+        run.world.pudges[heroIndex()].id == id
+    proc inPlayView(world: Vec3): bool =
+      let panel = playPanel()
+      if panel.size.x <= 1 or panel.size.y <= 1:
+        return true
+      let clip =
+        perspective(45.0'f32, panel.aspect, 0.1'f32, 1000.0'f32) *
+        cameraView() * vec4(world.x, world.y, world.z, 1)
+      if clip.w <= 0.05:
+        return false
+      let
+        nx = clip.x / clip.w
+        ny = clip.y / clip.w
+        nz = clip.z / clip.w
+      nx >= -1.08 and nx <= 1.08 and ny >= -1.08 and ny <= 1.08 and
+        nz >= -1.05 and nz <= 1.05
+    proc hearAt(point: WorldPoint, a = 0'i32, b = 0'i32): bool =
+      heroIs(a) or heroIs(b) or inPlayView(liftPoint(renderPoint(point)))
+    for pudge in run.world.pudges:
+      if pudge.id notin previousHp:
+        continue
+      let
+        delta = pudge.hp - previousHp[pudge.id]
+        prevState = previousStates.getOrDefault(pudge.id, Alive)
+      var anchor = unitPoint(pudge.id, pudge.position)
+      anchor.y = surfaceHeightNear(anchor.x, anchor.z, anchor.y)
+      if prevState == Alive and pudge.state == Dying:
+        let killer = pudgeIndex(run.world, pudge.lastHurtBy)
+        if killer >= 0 and run.world.pudges[killer].id != pudge.id:
+          pushKillFeed(
+            pudgeLabel(run.world.pudges[killer].id) & " butchered " &
+              pudgeLabel(pudge.id),
+            run.world.pudges[killer].team
+          )
+        else:
+          if pudge.inRiver:
+            pushKillFeed(pudgeLabel(pudge.id) & " drowned", pudge.team)
+          else:
+            pushKillFeed(pudgeLabel(pudge.id) & " rotted", pudge.team)
+        if audible:
+          if heroIs(pudge.id):
+            playGameSound(SndDeath)
+          elif hearAt(pudge.position, pudge.lastHurtBy):
+            playGameSound(SndKill, 0.8)
+      if prevState == Dying and pudge.state == Alive and heroIs(pudge.id):
+        # Respawn: bring the camera home with the hero.
+        let home = renderPoint(pudge.position)
+        cameraTarget.x = home.x
+        cameraTarget.z = home.z
+      if audible:
+        if pudge.hooksThrown > previousThrown.getOrDefault(pudge.id, 0) and
+            hearAt(pudge.position, pudge.id):
+          playGameSound(SndHookThrow, 0.75)
+        if pudge.justGrabbed and
+            hearAt(pudge.position, pudge.id, pudge.hookedBy):
+          playGameSound(SndHookLatch, 0.9)
+        if pudge.damageLanded and hearAt(pudge.position, pudge.id):
+          playGameSound(SndMelee, 0.55)
+      # Combat numbers never leak through the fog: a hit you cannot
+      # see should not print its damage either.
+      if fogShownPudge(pudge):
+        if pudge.justRune:
+          var lift = anchor
+          lift.y += 3.2'f32
+          floatingTexts.add FloatingText(
+            text: RuneNames[pudge.buffKind] & "!",
+            color: RuneColors[pudge.buffKind],
+            world: lift,
+            born: now
+          )
+        if delta < 0 and prevState == Alive:
+          floatingTexts.add FloatingText(
+            text: "-" & $(-delta),
+            color: rgbx(236, 92, 70, 255),
+            world: anchor,
+            born: now
+          )
+        elif delta > 0 and prevState == Alive and pudge.state == Alive:
+          floatingTexts.add FloatingText(
+            text: "+" & $delta,
+            color: rgbx(96, 220, 110, 255),
+            world: anchor,
+            born: now
+          )
+    # Kill-streak shouts are global: fog never hides GODLIKE.
+    var
+      bestRank = 0
+      bestTitle = ""
+      bestSub = ""
+      bestTeam = WestTeam
+    for pudge in run.world.pudges:
+      if pudge.justBounty > 0 and fogShownPudge(pudge):
+        var lift = unitPoint(pudge.id, pudge.position)
+        lift.y = surfaceHeightNear(lift.x, lift.z, lift.y) + 2.4'f32
+        floatingTexts.add FloatingText(
+          text: "+" & $pudge.justBounty,
+          color: rgbx(255, 214, 120, 255),
+          world: lift,
+          born: now
+        )
+      if pudge.justFirstBlood:
+        pushKillFeed("FIRST BLOOD", pudge.team)
+      if pudge.justStreak >= 3:
+        pushKillFeed(
+          streakFeedLine(pudgeLabel(pudge.id), pudge.justStreak),
+          pudge.team
+        )
+      if pudge.justShutdown >= 3:
+        pushKillFeed("SHUTDOWN", pudge.team)
+      if pudge.justMulti >= 2:
+        let multi = multiKillTitle(pudge.justMulti)
+        if multi.len > 0:
+          pushKillFeed(
+            pudgeLabel(pudge.id) & " just got a " & multi,
+            pudge.team
+          )
+      var rank = 0
+      if pudge.justStreak >= 10:
+        rank = 200
+      elif pudge.justStreak == 9:
+        rank = 180
+      elif pudge.justFirstBlood:
+        rank = 170
+      elif pudge.justMulti >= 5:
+        rank = 160
+      elif pudge.justStreak >= 3:
+        rank = 100 + int(pudge.justStreak)
+      elif pudge.justMulti >= 4:
+        rank = 90
+      elif pudge.justShutdown >= 3:
+        rank = 50 + int(pudge.justShutdown)
+      elif pudge.justMulti >= 2:
+        rank = 20 + int(pudge.justMulti)
+      if rank > bestRank:
+        bestRank = rank
+        if pudge.justStreak >= 3:
+          bestTitle = streakTitle(pudge.justStreak)
+        elif pudge.justFirstBlood:
+          bestTitle = "FIRST BLOOD"
+        elif pudge.justMulti >= 2:
+          bestTitle = multiKillTitle(pudge.justMulti)
+        elif pudge.justShutdown >= 3:
+          bestTitle = "SHUTDOWN"
+        bestSub = pudgeLabel(pudge.id)
+        if pudge.justStreak >= 3 and pudge.justMulti >= 2:
+          bestSub = bestSub & " — " & multiKillTitle(pudge.justMulti)
+        bestTeam = pudge.team
+    if bestRank > 0:
+      pushKillStinger(bestTitle, bestSub, bestTeam)
+    if floatingTexts.len > 80:
+      floatingTexts = floatingTexts[^80 .. ^1]
+
+    if audible and run.world.clashTick == run.world.tick and
+        (hearAt(
+          run.world.clashPoint,
+          run.world.chunkerId,
+          run.world.chunkVictimId
+        ) or heroIs(run.world.chunkOwnerId)):
+      playGameSound(SndHookClash, 0.9)
+
+  proc advanceRenderedSimulation() =
+    captureUnitPositions()
+    advanceGame()
+    emitTickParticles()
+    emitCombatFeedback()
+    if int(run.world.tick) mod (TickRate * 10) == 0 or
+        int32(run.world.tick) == transport.timelineEnd:
+      if replayCheckpoints.len == 0 or
+          replayCheckpoints[^1].tick < int(run.world.tick):
+        replayCheckpoints.add captureCheckpoint()
+
+  proc restoreTo(targetTick: int32) =
+    var checkpointIndex = 0
+    for i, checkpoint in replayCheckpoints:
+      if checkpoint.tick > targetTick:
+        break
+      checkpointIndex = i
+    let checkpoint = replayCheckpoints[checkpointIndex]
+    run.world.restore(checkpoint.world)
+    if run.recorder != nil and run.replayPlayer != nil:
+      run.replayPlayer.data = run.recorder.data
+    run.replayPlayer.syncCursor(uint32(run.world.tick))
+    run.hashCheck = checkpoint.hashCheck
+    run.historyPlayback = true
+    previousPositions.clear()
+    previousFacings.clear()
+    previousHookPositions.clear()
+    particles.clearParticles()
+    resetHumanTransients()
+    clearKillFeed()
+    floatingTexts.setLen(0)
+    blinkResidues.setLen(0)
+    previousHp.clear()
+    previousStates.clear()
+    previousThrown.clear()
+    renderAlpha = 1
+    animationAlpha = 0
+    while int32(run.world.tick) < targetTick:
+      advanceGame()
+
+  proc resetMatchPresentation() =
+    ## Clears every client-side trace of the previous match.
+    replayCheckpoints = @[captureCheckpoint()]
+    previousPositions.clear()
+    previousFacings.clear()
+    previousHookPositions.clear()
+    previousRunePositions.clear()
+    previousHp.clear()
+    previousStates.clear()
+    previousThrown.clear()
+    floatingTexts.setLen(0)
+    blinkResidues.setLen(0)
+    fogExplored.setLen(0)
+    fogVisionTick = int32.low
+    particles.clearParticles()
+    spectatePudgeId = 0
+    resetHumanTransients()
+    clearKillFeed()
+    resetMatchRecap()
+    renderAlpha = 1
+    animationAlpha = 0
+    followSelection = false
+    cameraTarget = vec3(0, 0, 0)
+    cameraYaw = RtsCameraYaw
+    cameraPitch = RtsCameraPitch
+    orbiting = false
+    panning = false
+    rmbGesture = false
+    if humanControlActive():
+      let hero = heroGroundPoint()
+      cameraTarget.x = hero.x
+      cameraTarget.z = hero.z
+
+  proc applyHostedSeats() =
+    ## Freezes the roster for a hosted match: the host's own seat plus
+    ## every remote claim drives a human seat; the rest stay bots.
+    ## Lobby seat numbers map through the (possibly compacted) roster.
+    when not defined(emscripten):
+      run.humanSlots.setLen(0)
+      if localSeat >= 0:
+        run.humanSlots.add localSeat
+      for seat in hostRemoteSeats():
+        let index = run.world.worldIndexOfSeat(seat)
+        if index >= 0 and index notin run.humanSlots:
+          run.humanSlots.add index
+
+  proc rematchNow() =
+    ## Fresh match on the same arena. A host takes everyone along by
+    ## rebroadcasting the new setup; a follower waits for exactly that.
+    if netRole == NetClient:
+      return
+    flushBugTapeIfArmed()
+    restartMatch()
+    if netRole == NetHost:
+      applyHostedSeats()
+    transport = initPlayer(
+      live = true,
+      durationTicks = run.maximumTicks,
+      playing = true,
+      speed = options.speed
+    )
+    startReplayRecording(uint32(transport.durationTicks))
+    when not defined(emscripten):
+      if netRole == NetHost:
+        hostAnnounceStart(run)
+    resetMatchPresentation()
+
+  proc startHostedMatch() =
+    ## Enter in the host lobby: lock seats, start the tape, tell every
+    ## connection, and let the world tick. Disabled seats rebuild the
+    ## world with a compacted roster first.
+    when not defined(emscripten):
+      block seatGuard:
+        var westOn, eastOn = 0
+        for seat in 0 ..< PudgeCount:
+          if seatDisabled[seat]:
+            continue
+          if seat < TeamSize: inc westOn else: inc eastOn
+        if westOn == 0 or eastOn == 0:
+          setHumanError("EACH TEAM NEEDS AT LEAST ONE SEAT")
+          return
+      setRosterExperiment(seatDisabled)
+      if activeRoster().len > 0:
+        rebuildWithRoster()
+      localSeat =
+        if localClaim >= 0: run.world.worldIndexOfSeat(localClaim)
+        else: -1
+      applyHostedSeats()
+      startReplayRecording(uint32(transport.durationTicks))
+      hostAnnounceStart(run)
+      netLobbyOpen = false
+      transport.playing = true
+      followSelection = false
+      if humanControlActive():
+        let hero = heroGroundPoint()
+        cameraTarget.x = hero.x
+        cameraTarget.z = hero.z
+
+  proc netRematchNow(setup: Setup) =
+    ## The host rematched (or we reconnected): rebuild the follower
+    ## world from its setup (same arena) and stream on. Drop predicted
+    ## intents — they already live on the host tape we'll catch up to.
+    predictor.disable()
+    netClientRestart(setup)
+    transport = initPlayer(
+      live = true,
+      durationTicks = run.maximumTicks,
+      playing = true,
+      speed = options.speed
+    )
+    resetMatchPresentation()
+
+  if not run.replayMode and netRole == NetOff:
+    startReplayRecording(uint32(transport.durationTicks))
+  when not defined(emscripten):
+    if netRole == NetHost and options.autoStart:
+      # Skip the lobby: the match runs at once and joiners grab bot
+      # seats mid-game (also the scriptable smoke-test path).
+      startHostedMatch()
+  replayCheckpoints = @[captureCheckpoint()]
+
+  when defined(takeScreenshot):
+    var screenshotFrame = 0
+    applyScreenshotCamera(cameraDistance)
+    if existsEnv("CAM_X"): cameraTarget.x = getEnv("CAM_X").parseFloat.float32
+    if existsEnv("CAM_Z"): cameraTarget.z = getEnv("CAM_Z").parseFloat.float32
+    if existsEnv("SIM_SECONDS"):
+      let wanted = int32(getEnv("SIM_SECONDS").parseFloat * TickRate.float64)
+      while run.world.tick < wanted and
+          run.world.tick < run.maximumTicks and not run.world.gameOver:
+        advanceGame()
+
+  const Step = 1.0'f32 / float32(TickRate)
+  # Bottom-left debug readout state: exponentially-smoothed render FPS,
+  # measured from the wall-clock gap between frame starts.
+  var fpsSmoothed = 0.0'f32
+  var fpsPrevStart = 0.0
+  # Network debug panel (dev): F6 toggles the overlay, F7 cycles the
+  # network-condition simulator (off/local/good/poor/extreme). F9/F10
+  # stay MENU/TEAM. Auto-open when --netsim already turned the sim on.
+  var netDebugPanel = netSimConfig().enabled
+  window.onFrame = proc() =
+    profileBlock "frame":
+      let dt = frameDelta(lastFrameTime, Step)
+      if window.buttonPressed[KeyLeftBracket]:
+        toggleTransportBar()
+      sk.uiScale = hudUiScale(window)
+      sk.mousePos = window.mousePos.vec2 / sk.uiScale
+      worldViewRect = worldPixelPanel(window)
+      let playAspect = worldViewRect.aspect
+      tickGameAudio()
+      if window.buttonPressed[bindKey(BindMute)]:
+        toggleGameAudioMute()
+      if window.buttonPressed[KeyF3]:
+        toggleDebugMenu()
+      if window.buttonPressed[KeyF8]:
+        toggleBugRecording()
+      if netRole == NetClient:
+        if window.buttonPressed[KeyF6]:
+          netDebugPanel = not netDebugPanel
+        if window.buttonPressed[KeyF7]:
+          netSimAdvanceCycle()
+          netDebugPanel = true
+      cameraDistance = clampCameraDistance(cameraDistance)
+      when not defined(emscripten):
+        if netRole == NetHost:
+          pumpHosting(run)
+          if netLobbyOpen:
+            const SeatKeys = [Key1, Key2, Key3, Key4, Key5, Key6]
+            let shiftHeld =
+              window.buttonDown[KeyLeftShift] or
+              window.buttonDown[KeyRightShift]
+            for i, key in SeatKeys:
+              if window.buttonPressed[key]:
+                if shiftHeld:
+                  # Toggle the seat for roster experiments; claimed
+                  # or host-held seats cannot be switched off.
+                  if not seatDisabled[i] and
+                      (i == localClaim or hostSeatName(i).len > 0):
+                    discard
+                  else:
+                    seatDisabled[i] = not seatDisabled[i]
+                elif not seatDisabled[i]:
+                  hostClaimLocal(i)
+            if window.buttonPressed[Key0]:
+              hostClaimLocal(-1)
+            if window.buttonPressed[KeyEnter]:
+              startHostedMatch()
+      if netRole == NetClient:
+        let netEvents = netClientPump(run)
+        if netEvents.restarted:
+          netRematchNow(netEvents.setup)
+        localSeat = netClientSeat()
+        if transport.playing and transport.targetTick < 0:
+          # Fallen behind the live stream (slow frame, boot backlog):
+          # seek forward, which fast-forwards at catch-up speed. Jitter
+          # keeps the gap around a tick or two; a quarter second means
+          # real drift. Live-TV rule: playback chases the live edge, so
+          # pause to inspect history.
+          let received = recordedTicksNow()
+          if received - run.world.tick > TickRate div 4:
+            transport.seekTo(received)
+      if consumeMenuRestart() or (
+          run.world.gameOver and not run.replayMode and
+          netRole != NetClient and
+          window.buttonPressed[bindKey(BindRematch)]):
+        rematchNow()
+      updateCamera(dt)
+      let recorded = recordedTicksNow()
+      transport.sync(run.world.tick, recorded, run.world.gameOver)
+      let restoreTick = transport.takeRestore()
+      if restoreTick >= 0:
+        restoreTo(restoreTick)
+        transport.sync(run.world.tick, recorded, run.world.gameOver)
+      if netLobbyOpen:
+        transport.playing = false
+      transport.startFrame(dt, TickRate)
+      if not transport.inHistory and not run.replayMode and
+          (humanControlActive() or run.humanSlots.len > 0 or
+            netRole != NetOff):
+        # Live human seats play at 1x; faster speeds are for
+        # spectating and catching back up to the live tick.
+        transport.setSpeed(0)
+      if not netLobbyOpen and not menuIsOpen():
+        # Replay and live spectators get the same LMB pass: click a
+        # butcher to lock fog to their eyes. A seated human still
+        # issues commands through the rest of handleHumanInput.
+        let
+          inputProjection =
+            perspective(45.0'f32, playAspect, 0.1'f32, 1000.0'f32)
+        handleHumanInput(
+          window,
+          inputProjection * cameraView(),
+          mouseOverUi(window, sk.mousePos),
+          # A follower always trails the stream by a tick or two, so
+          # "history" cannot mean "cannot command" there: intents land
+          # at the host's live tick regardless.
+          not transport.inHistory or netRole == NetClient,
+          cameraTarget,
+          followSelection,
+          rightClickCommand
+        )
+      let frameStart = epochTime()
+      if fpsPrevStart > 0:
+        let fdt = frameStart - fpsPrevStart
+        if fdt > 0:
+          fpsSmoothed = fpsSmoothed * 0.9'f32 + float32(1.0 / fdt) * 0.1'f32
+      fpsPrevStart = frameStart
+      run.historyPlayback = transport.inHistory or netRole == NetClient
+      profileBlock "simulate":
+        while transport.shouldTick(frameStart):
+          if atLiveTickCap(
+              run.world.tick, transport.durationTicks, transport.live):
+            break
+          if netRole == NetClient and
+              run.world.tick >= recordedTicksNow():
+            # A follower never simulates a tick the host has not
+            # finished; the accumulator keeps what the stream owes.
+            break
+          run.historyPlayback = transport.inHistory or
+            netRole == NetClient
+          advanceRenderedSimulation()
+          transport.sync(
+            run.world.tick, recordedTicksNow(), run.world.gameOver
+          )
+      when not defined(emscripten):
+        if netRole == NetHost:
+          hostBroadcastTicks(run)
+          hostForwardResults(run, localSeat)
+      when defined(emscripten):
+        # Rebuild the prediction world from the freshly-advanced confirmed
+        # world: replay this seat's unconfirmed local intents and run a
+        # few ticks ahead, so the local butcher and camera respond before
+        # the host echoes the command back. Followers only; the confirmed
+        # `run` world stays the hash-verified authority (never ticked
+        # here). Rollback happens inside `rebuild`.
+        if netRole == NetClient and netClientSeat() >= 0 and
+            not run.world.gameOver:
+          # Size the lead for the worst-case RTT (ping + jitter), so a
+          # jittery link keeps a stable lead instead of bouncing frame to
+          # frame — fewer timing-miss snaps.
+          let lead = leadFromRttMs(netPingMs() + netPingJitterMs())
+          if not predictor.enabled or predictor.seat != netClientSeat():
+            predictor.enable(netClientSeat(), lead)
+          else:
+            predictor.lead = lead
+          predictor.rebuild(run)
+        else:
+          predictor.disable()
+      if netRole == NetClient and run.hashCheck.mismatches > 0:
+        netReportDesync(run.hashCheck.firstTick)
+      let active = simulationActive(transport)
+      if active:
+        renderAlpha = clamp(transport.accumulator / Step, 0.0'f32, 1.0'f32)
+        animationAlpha = renderAlpha
+      else:
+        renderAlpha = 1
+        animationAlpha = 0
+      if active:
+        particles.advanceParticles(dt)
+
+      let
+        view = cameraView()
+        projection = perspective(45.0'f32, playAspect, 0.1'f32, 1000.0'f32)
+        viewProjection = projection * view
+        cameraForward = normalize(cameraTarget - cameraEye)
+        barRight = normalize(cross(cameraForward, vec3(0, 1, 0)))
+        barUp = normalize(cross(barRight, cameraForward))
+
+      proc drawButchers() =
+        for pudgeIndex in 0 ..< run.world.pudges.len:
+          # The local WASM seat renders from the prediction world; all
+          # other butchers and every non-predicting build render the
+          # confirmed world (an unchanged copy).
+          let pudge = predictedPudge(pudgeIndex)
+          if not fogShownPudge(pudge) or pudge.justBlinked:
+            continue
+          let
+            model = pudgeModels[pudge.team]
+            clip =
+              if run.world.gameOver and pudge.team == run.world.winner and
+                  pudge.state == Alive:
+                pudgeClips[pudge.team][victoryClip]
+              else:
+                pudgeClips[pudge.team][pudge.animClip]
+            pos = unitPoint(pudge.id, pudge.position)
+          var drawn = pos
+          drawn.y = surfaceHeightNear(pos.x, pos.z, pos.y)
+          drawCharacter(
+            scene,
+            model,
+            drawn,
+            unitFacing(pudge.id, pudge.facing),
+            clip,
+            holdTime(model, clip, pudge.animTicks, pudge.state == Dying),
+            seatTint(pudgeIndex(run.world, pudge.id))
+          )
+        if scene.sunDepthPass:
+          return
+        let now = epochTime()
+        for residue in blinkResidues:
+          let age = now - residue.born
+          if age < 0 or age >= BlinkResidueSeconds:
+            continue
+          if not fogCanSee(residue.worldOrigin):
+            continue
+          let
+            fade = 1.0'f32 - float32(age / BlinkResidueSeconds)
+            model = pudgeModels[residue.team]
+            clip = pudgeClips[residue.team][idleClip]
+          var tint = seatTint(residue.slot)
+          tint.a = fade * 0.58'f32
+          var drawn = residue.origin
+          drawn.y = surfaceHeightNear(drawn.x, drawn.z, drawn.y)
+          drawCharacter(
+            scene,
+            model,
+            drawn,
+            residue.facing,
+            clip,
+            0,
+            tint,
+            1.0'f32 + (1.0'f32 - fade) * 0.14'f32
+          )
+
+      scene.setToonHour(clockHour(float32(run.world.tick) + renderAlpha, TickRate))
+      setEnvironmentPalette(scene.toon)
+      sunDepthPasses(window.size):
+        drawTerrainSunDepth()
+        scene.sunDepthPass = true
+        drawButchers()
+        scene.sunDepthPass = false
+      glClearColor(0.05, 0.07, 0.10, 1.0)
+      glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
+      applyPlayViewport()
+      updateTerrainVision()
+      drawTerrain(viewProjection, showTiles)
+      beginCharacters(scene, window, view, projection, cameraEye)
+      applyPlayViewport()
+      drawButchers()
+      finishCharacters(scene)
+      drawWater(viewProjection, cameraEye)
+
+      shapeRenderer.clear()
+      shapeRenderer.addDebugMapOverlays()
+      for pudge in run.world.pudges:
+        if pudge.hookedBy == 0 or pudge.state == Dying:
+          continue
+        if not fogShownPudge(pudge):
+          continue
+        var glow = unitPoint(pudge.id, pudge.position)
+        glow.y = surfaceHeightNear(glow.x, glow.z, glow.y) + 0.22'f32
+        shapeRenderer.addCircle(glow, GrabGlowRadius, GrabGlow, 14)
+      let rotR = RotRadius.float32 / WorldScale.float32
+      for pudge in run.world.pudges:
+        if pudge.state == Dying or not fogShownPudge(pudge):
+          continue
+        var feet = unitPoint(pudge.id, pudge.position)
+        feet.y = surfaceHeightNear(feet.x, feet.z, feet.y) + 0.16'f32
+        if pudge.rotOn:
+          shapeRenderer.addCircle(feet, rotR * 0.96'f32, RotFill, 28)
+          shapeRenderer.addDebugRing(
+            vec3(feet.x, 0, feet.z), rotR, RotAura, 0.12'f32
+          )
+        if run.world.rotAffected(pudge):
+          shapeRenderer.addCircle(feet, 1.35'f32, RotSick, 12)
+      block:
+        let now = epochTime()
+        var kept: seq[BlinkResidue]
+        for residue in blinkResidues:
+          let age = now - residue.born
+          if age < 0 or age >= BlinkResidueSeconds:
+            continue
+          kept.add residue
+          if not fogCanSee(residue.worldOrigin):
+            continue
+          let
+            fade = 1.0'f32 - float32(age / BlinkResidueSeconds)
+            grow = float32(age / BlinkResidueSeconds)
+            radius = 2.4'f32 + grow * 2.6'f32
+          var ground = residue.origin
+          ground.y = surfaceHeightNear(ground.x, ground.z, ground.y) + 0.18'f32
+          shapeRenderer.addCircle(
+            ground,
+            radius,
+            rgbx(BlinkPuff.r, BlinkPuff.g, BlinkPuff.b, uint8(fade * 100)),
+            18
+          )
+          shapeRenderer.addCircle(
+            ground,
+            radius * 0.42'f32,
+            rgbx(
+              BlinkPuffCore.r, BlinkPuffCore.g, BlinkPuffCore.b,
+              uint8(fade * 140)
+            ),
+            14
+          )
+          var chest = residue.origin
+          chest.y = surfaceHeightNear(chest.x, chest.z, chest.y) + 1.55'f32
+          shapeRenderer.addCircle(
+            chest,
+            1.15'f32 + fade * 0.55'f32,
+            rgbx(BlinkPuff.r, BlinkPuff.g, BlinkPuff.b, uint8(fade * 70)),
+            12
+          )
+        blinkResidues = kept
+      for hook in run.world.hooks:
+        if hook.phase == HookIdle:
+          continue
+        let owner = pudgeIndex(run.world, hook.ownerId)
+        if owner < 0:
+          continue
+        var chain: seq[Vec3]
+        chain.add unitPoint(
+          run.world.pudges[owner].id,
+          run.world.pudges[owner].position
+        )
+        for bounce in hook.bounces:
+          chain.add renderPoint(bounce)
+        let head = hookPoint(hook.id, hook.position)
+        chain.add head
+        let
+          seconds = unitTime(int32(run.world.tick))
+          spinRate =
+            if hook.phase == HookFlying: ShurikenFlySpin
+            else: ShurikenReelSpin
+          spin = seconds * spinRate + hook.id.float32 * 0.73'f32
+          teamColor = if hook.team == WestTeam: WestHook else: EastHook
+          headRadius = hook.radius.float32 / WorldScale.float32
+        for fragment in clipChainToFog(chain):
+          if fragment.len == 0:
+            continue
+          let dx = fragment[^1].x - head.x
+          let dz = fragment[^1].z - head.z
+          shapeRenderer.drawMeatHook(
+            fragment,
+            hook.heading,
+            hook.phase == HookFlying,
+            hook.victimId != 0,
+            teamColor,
+            spin,
+            headRadius,
+            showHead = dx * dx + dz * dz < 0.08'f32
+          )
+      for rune in run.world.runes:
+        if not fogCanSee(rune.position):
+          continue
+        let
+          seconds = unitTime(int32(run.world.tick))
+          phase = rune.id.float32 * 0.83'f32
+        var center = runePoint(rune.id, rune.position)
+        let waterY = surfaceHeightNear(center.x, center.z, center.y)
+        center.y = waterY + RuneHover +
+          sin(seconds * RuneBobRate + phase) * RuneBobAmp
+        shapeRenderer.addRiverRune(
+          center, waterY, seconds * RuneSpinRate + phase, rune.kind
+        )
+      let viewTeam = fogTeam()
+      for prop in run.world.props:
+        if not prop.alive:
+          continue
+        if viewTeam >= 0 and not propVisibleTo(prop, Team(viewTeam)):
+          continue
+        if prop.kind == PropWall and not fogCanSee(prop.propCenter):
+          continue
+        var base = tileCenterRender(int(prop.tileX), int(prop.tileZ))
+        base.y = surfaceHeightNear(base.x, base.z, 0)
+        if prop.kind == PropWall:
+          var wood = base
+          wood.y += 0.85'f32
+          shapeRenderer.addAxisBox(
+            wood, 0.42'f32, 0.85'f32, 0.18'f32, PalisadeWood
+          )
+          var band = wood
+          band.y += 0.12'f32
+          shapeRenderer.addAxisBox(
+            band, 0.46'f32, 0.10'f32, 0.22'f32, PalisadeBand
+          )
+          var cap = base
+          cap.y += 1.72'f32
+          shapeRenderer.addAxisBox(
+            cap, 0.44'f32, 0.06'f32, 0.20'f32, PalisadeTop
+          )
+        else:
+          var mark = base
+          mark.y += 0.06'f32
+          shapeRenderer.addSquare(mark, 0.72'f32, MineMark)
+          shapeRenderer.addCircle(mark, 0.28'f32, MineRing, 10)
+      shapeRenderer.addShopOverlays()
+      shapeRenderer.drawHumanOverlays(window, viewProjection)
+      shapeRenderer.addDebugCollisionOverlays()
+      shapeRenderer.draw(viewProjection)
+
+      particles.drawParticles(
+        viewProjection, barRight, barUp, cameraForward
+      )
+      worldBarRenderer.clear()
+      for pudge in run.world.pudges:
+        if pudge.state == Dying or pudge.justBlinked or not fogShownPudge(pudge):
+          continue
+        var pos = unitPoint(pudge.id, pudge.position)
+        pos.y = surfaceHeightNear(pos.x, pos.z, pos.y) + ButcherBarLift
+        worldBarRenderer.addResourceBars(
+          pos,
+          ButcherBarWidth,
+          [
+            WorldResourceBar(
+              value: max(pudge.hp, 0).float32,
+              maximum: max(pudge.maxHp, 1).float32,
+              delayedValue: max(pudge.hp, 0).float32,
+              height: 0.12'f32,
+              color:
+                if pudge.inRiver: rgbx(64, 168, 196, 255)
+                elif pudge.team == WestTeam: WestHook
+                else: EastHook,
+              showDamageTrail: true
+            )
+          ]
+        )
+      let barViewTeam = fogTeam()
+      for prop in run.world.props:
+        if not prop.alive or prop.kind != PropWall:
+          continue
+        if not fogCanSee(prop.propCenter):
+          continue
+        if barViewTeam >= 0 and not propVisibleTo(prop, Team(barViewTeam)):
+          continue
+        var barPos = tileCenterRender(int(prop.tileX), int(prop.tileZ))
+        barPos.y = surfaceHeightNear(barPos.x, barPos.z, 0) + PalisadeBarLift
+        worldBarRenderer.addResourceBars(
+          barPos,
+          PalisadeBarWidth,
+          [
+            WorldResourceBar(
+              value: max(prop.hp, 0).float32,
+              maximum: max(prop.maxHp, 1).float32,
+              delayedValue: max(prop.hp, 0).float32,
+              height: 0.08'f32,
+              color: PalisadeWood,
+              showDamageTrail: true
+            )
+          ]
+        )
+      worldBarRenderer.draw(viewProjection, barRight, barUp)
+
+      glDisable(GL_DEPTH_TEST)
+      glDisable(GL_CULL_FACE)
+      glDisable(GL_BLEND)
+      glViewport(0, 0, window.size.x.GLsizei, window.size.y.GLsizei)
+      when not defined(emscripten):
+        glDisable(GL_MULTISAMPLE)
+      glActiveTexture(GL_TEXTURE0)
+      glBindTexture(GL_TEXTURE_2D, sk.atlasTextureId())
+      sk.beginUi(window, window.size)
+      # Silky has no z-index: later draw calls win. Strict back → front:
+      # world-space 2D, HUD chrome (inside drawUi), then modal overlays
+      # (also inside drawUi), then net lobby / banner on top.
+      block:
+        # Bot intent bubbles: the latest BASIC `print` line floats
+        # above the butcher so humans can read their teammates' plans.
+        const BubbleSeconds = 3.0
+        for i in 0 ..< run.botSpeech.len:
+          let speech = run.botSpeech[i]
+          if speech.text.len == 0 or i in run.humanSlots or
+              i >= run.world.pudges.len:
+            continue
+          let age =
+            float(run.world.tick - speech.tick) / float(TickRate)
+          if age < 0 or age > BubbleSeconds:
+            continue
+          let pudge = run.world.pudges[i]
+          if pudge.state == Dying or pudge.justBlinked or not fogShownPudge(pudge):
+            continue
+          let
+            anchor = renderPoint(pudge.position) + vec3(0, 4.6'f32, 0)
+            screen = screenPoint(anchor, viewProjection) / sk.uiScale
+            fade = uint8(clamp(
+              235.0 - max(age - BubbleSeconds + 0.6, 0.0) / 0.6 * 235.0,
+              0.0, 235.0
+            ))
+            text =
+              if speech.text.len > 30: speech.text[0 ..< 30]
+              else: speech.text
+          sk.drawLabel(
+            text,
+            screen - vec2(90, 9),
+            vec2(180, 18),
+            rgbx(224, 224, 210, fade),
+            "Hud",
+            CenterAlign
+          )
+      block:
+        # Rising combat numbers, anchored to the world through the HUD.
+        let now = epochTime()
+        var kept: seq[FloatingText]
+        for text in floatingTexts:
+          let age = now - text.born
+          if age > 0.9:
+            continue
+          kept.add text
+          let
+            lifted = text.world +
+              vec3(0, 3.2'f32 + float32(age) * 2.4'f32, 0)
+            screen = screenPoint(lifted, viewProjection) / sk.uiScale
+            fade = uint8(clamp(255.0 - age / 0.9 * 255.0, 0.0, 255.0))
+          sk.drawLabel(
+            text.text,
+            screen - vec2(44, 9),
+            vec2(88, 18),
+            rgbx(text.color.r, text.color.g, text.color.b, fade),
+            "Hud",
+            CenterAlign
+          )
+        floatingTexts = kept
+      block:
+        # Name tags over human-driven butchers so friends know who is
+        # who. Bots stay unlabeled; the seat tint already marks them.
+        # The spectator POV butcher always gets an EYES plate.
+        let spectateSlot = spectateIndex()
+        for slot in 0 ..< run.world.pudges.len:
+          let pudge = run.world.pudges[slot]
+          if pudge.state == Dying or pudge.justBlinked or not fogShownPudge(pudge):
+            continue
+          let seat = int(pudge.lobbySeat)
+          var label = ""
+          if netRole == NetClient:
+            label = netSeatName(seat)
+          when not defined(emscripten):
+            if netRole == NetHost:
+              label = hostSeatName(seat)
+          if slot == spectateSlot:
+            if label.len == 0:
+              label = PudgeSpecs[pudge.team].name
+            label = "EYES  " & label
+          if label.len == 0:
+            continue
+          var anchor = unitPoint(pudge.id, pudge.position)
+          anchor.y = surfaceHeightNear(anchor.x, anchor.z, anchor.y) +
+            5.4'f32
+          let
+            screen = screenPoint(anchor, viewProjection) / sk.uiScale
+            tint =
+              if slot == spectateSlot:
+                color(0.94, 0.85, 0.50, 1)
+              else:
+                SeatTints[min(slot, PudgeCount - 1)]
+          sk.drawLabel(
+            label,
+            screen - vec2(70, 9),
+            vec2(140, 18),
+            rgbx(
+              uint8(tint.r * 255), uint8(tint.g * 255),
+              uint8(tint.b * 255), 235
+            ),
+            "Hud",
+            CenterAlign
+          )
+      block:
+        let pick = groundUnderMouse(window, viewProjection)
+        debugHoverFound = pick.found
+        if pick.found:
+          let tile = tileOfGround(pick.point)
+          debugHoverX = int(tile.x)
+          debugHoverZ = int(tile.y)
+      if showTiles:
+        let labelColor = rgbx(236, 232, 210, 220)
+        for z in countup(PlayZMin, PlayZMax, DebugTileLabelStep):
+          for x in countup(PlayWestMin, PlayEastMax, DebugTileLabelStep):
+            let
+              world = liftPoint(tileCenterRender(x, z), 0.4'f32)
+              screen = screenPoint(world, viewProjection) / sk.uiScale
+            if screen.x < -40 or screen.y < -20 or
+                screen.x > window.size.x.float32 / sk.uiScale + 40:
+              continue
+            hudScratch.setLen(0)
+            hudScratch.addHudInt(x)
+            hudScratch.add ','
+            hudScratch.addHudInt(z)
+            sk.drawLabel(
+              hudScratch,
+              screen - vec2(22, 7),
+              vec2(44, 14),
+              labelColor,
+              "Small",
+              CenterAlign
+            )
+        if debugHoverFound:
+          let
+            world = liftPoint(
+              tileCenterRender(debugHoverX, debugHoverZ), 0.55'f32
+            )
+            screen = screenPoint(world, viewProjection) / sk.uiScale
+          hudScratch.setLen(0)
+          hudScratch.addHudInt(debugHoverX)
+          hudScratch.add ','
+          hudScratch.addHudInt(debugHoverZ)
+          sk.drawLabel(
+            hudScratch,
+            screen - vec2(36, 10),
+            vec2(72, 18),
+            rgbx(255, 230, 120, 255),
+            "Hud",
+            CenterAlign
+          )
+      drawUi(
+        sk,
+        window,
+        transport,
+        cameraTarget,
+        cameraDistance,
+        actionCam,
+        followSelection,
+        cameraEye
+      )
+      when not defined(emscripten):
+        if netLobbyOpen:
+          sk.drawNetLobby(
+            window, hostSeatRoster(), hostingUrl(), localClaim
+          )
+      if netRole == NetClient:
+        sk.drawNetBanner(window, netStatusLine())
+        let fpsNow = int(fpsSmoothed + 0.5'f32)
+        let screenH = window.size.y.float32 / sk.uiScale
+        if netDebugPanel:
+          # Full developer panel: configured vs measured latency, jitter,
+          # loss, per-direction packet counters, queue depth, the constant
+          # sim tick rate (decoupled from latency), and a rolling ping graph.
+          let nc = netSimConfig()
+          let so = netSimStats(DirOutbound)
+          let si = netSimStats(DirInbound)
+          const PanelW = 272.0'f32
+          const PanelH = 142.0'f32
+          let px = 8.0'f32
+          let py = screenH - PanelH - 6
+          sk.drawRect(vec2(px, py), vec2(PanelW, PanelH), rgbx(20, 22, 28, 205))
+          let txt = rgbx(236, 232, 210, 235)
+          var ly = py + 5
+          template row(s: string) =
+            sk.drawLabel(s, vec2(px + 8, ly), vec2(PanelW - 16, 14), txt,
+              "Hud", LeftAlign)
+            ly += 15
+          hudScratch.setLen(0)
+          hudScratch.add(if nc.enabled: "NETSIM " else: "NETSIM off ")
+          if nc.enabled:
+            hudScratch.add netSimLabel()
+            hudScratch.add "  cfg "
+          else:
+            hudScratch.add "cfg "
+          hudScratch.addHudInt(nc.latencyMs)
+          hudScratch.add "+/-"
+          hudScratch.addHudInt(nc.jitterMs)
+          hudScratch.add "ms loss "
+          hudScratch.addHudInt(int(nc.packetLossPercent + 0.5))
+          hudScratch.add "%"
+          row(hudScratch)
+          hudScratch.setLen(0)
+          hudScratch.add "ping "
+          if netPingKnown(): hudScratch.addHudInt(netPingMs())
+          else: hudScratch.add "--"
+          hudScratch.add "ms jit "
+          hudScratch.addHudInt(netPingJitterMs())
+          hudScratch.add "  sim "
+          hudScratch.addHudInt(int(TickRate))
+          hudScratch.add "Hz fps "
+          hudScratch.addHudInt(fpsNow)
+          row(hudScratch)
+          hudScratch.setLen(0)
+          when defined(emscripten):
+            if predictor.enabled:
+              hudScratch.add "pred lead "
+              hudScratch.addHudInt(predictor.lead)
+              hudScratch.add "/"
+              hudScratch.addHudInt(int(MaxLead))
+              hudScratch.add " pend "
+              hudScratch.addHudInt(predictor.pending.len)
+              hudScratch.add " snap "
+              hudScratch.addHudInt(predictor.snapCount)
+            else:
+              hudScratch.add "pred idle"
+          else:
+            hudScratch.add "pred off (use browser)"
+          row(hudScratch)
+          hudScratch.setLen(0)
+          hudScratch.add "out snt "
+          hudScratch.addHudInt(so.offered)
+          hudScratch.add " dly "
+          hudScratch.addHudInt(so.delayed)
+          hudScratch.add " drp "
+          hudScratch.addHudInt(so.dropped)
+          hudScratch.add " q "
+          hudScratch.addHudInt(so.queueDepth)
+          row(hudScratch)
+          hudScratch.setLen(0)
+          hudScratch.add "in  rcv "
+          hudScratch.addHudInt(si.offered)
+          hudScratch.add " dly "
+          hudScratch.addHudInt(si.delayed)
+          hudScratch.add " drp "
+          hudScratch.addHudInt(si.dropped)
+          hudScratch.add " q "
+          hudScratch.addHudInt(si.queueDepth)
+          row(hudScratch)
+          # Rolling ping graph.
+          let hist = netPingHistory()
+          let gx = px + 8
+          let gy = ly + 2
+          const Gh = 26.0'f32
+          let gw = PanelW - 16
+          sk.drawRect(vec2(gx, gy), vec2(gw, Gh), rgbx(40, 44, 52, 190))
+          if hist.len > 0:
+            var mx = 1
+            for v in hist: mx = max(mx, v)
+            let bw = gw / float32(PingHistoryCap)
+            for i in 0 ..< hist.len:
+              let h = Gh * clamp(float32(hist[i]) / float32(mx), 0.03'f32, 1.0'f32)
+              sk.drawRect(
+                vec2(gx + float32(i) * bw, gy + Gh - h),
+                vec2(max(bw - 1.0'f32, 1.0'f32), h),
+                rgbx(120, 200, 140, 220))
+          sk.drawLabel("F6 panel  F7 preset  F3 sliders", vec2(gx, gy + Gh + 1),
+            vec2(gw, 12), rgbx(150, 150, 150, 200), "Hud", LeftAlign)
+        else:
+          # Compact readout: host round-trip ping (ms) and render FPS.
+          hudScratch.setLen(0)
+          hudScratch.add "PING "
+          if netPingKnown(): hudScratch.addHudInt(netPingMs())
+          else: hudScratch.add "--"
+          hudScratch.add "ms  FPS "
+          hudScratch.addHudInt(fpsNow)
+          sk.drawLabel(hudScratch, vec2(10, screenH - 24), vec2(220, 18),
+            rgbx(236, 232, 210, 220), "Hud", LeftAlign)
+      sk.endUi()
+      when defined(takeScreenshot):
+        captureScreenshot(
+          window,
+          screenshotFrame,
+          24,
+          "examples/pudge_wars/pw_shot.png"
+        )
+      window.swapBuffers()
+    if noteProfileFrame():
+      when not defined(emscripten):
+        window.closeRequested = true
+
+  while not window.closeRequested:
+    pollEvents()
+
+  when not defined(emscripten):
+    if netRole == NetHost:
+      stopHosting("the host closed the game")
+  if netRole == NetClient:
+    netShutdown()
+  flushBugTapeIfArmed()
+  closeDuelLogging()
+  if not run.replayMode:
+    saveRecording()
+  closeGameAudio()
+  particles.closeParticles()
+  finishProfileTrace()
