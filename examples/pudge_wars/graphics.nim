@@ -59,13 +59,13 @@ const
   BankEdgeColor = rgbx(236, 236, 232, 210)
   ButcherBarLift = 6.8'f32
   ButcherBarWidth = 3.0'f32
-  NamePlateLift = 8.2'f32
-    ## World-space lift above the feet, sitting just over the HP bar.
-  NamePlateW = 176.0'f32
-  NamePlateH = 22.0'f32
-  NamePlateFill = rgbx(8, 10, 14, 210)
-  NamePlateText = rgbx(245, 229, 178, 255)
-  NamePlateEyes = rgbx(255, 214, 120, 255)
+  NamePlateLift = 7.55'f32
+    ## Just over the HP bar. No backing plate — small type only.
+  NamePlateW = 120.0'f32
+  NamePlateH = 16.0'f32
+  NamePlateShadow = rgbx(8, 10, 14, 180)
+  NamePlateText = rgbx(236, 228, 204, 210)
+  NamePlateEyes = rgbx(255, 214, 120, 230)
   GrabGlowRadius = 1.4'f32
   PalisadeWood = rgbx(138, 94, 54, 255)
   PalisadeBand = rgbx(78, 68, 58, 255)
@@ -2679,8 +2679,7 @@ proc runGraphics*() =
           )
         floatingTexts = kept
       block:
-        # Nameplates over every living butcher. Dark plate plus cream
-        # type so the seat name stays readable at RTS distance.
+        # Nameplates: small shadowed type over the HP bar, no plate.
         let spectateSlot = spectateIndex()
         for slot in 0 ..< run.world.pudges.len:
           let pudge = predictedPudge(slot)
@@ -2703,14 +2702,12 @@ proc runGraphics*() =
             textColor =
               if slot == spectateSlot: NamePlateEyes
               else: NamePlateText
-          sk.drawRect(origin, plate, NamePlateFill)
           sk.drawLabel(
-            label,
-            origin,
-            plate,
-            textColor,
-            "Hud",
+            label, origin + vec2(1, 1), plate, NamePlateShadow, "Small",
             CenterAlign
+          )
+          sk.drawLabel(
+            label, origin, plate, textColor, "Small", CenterAlign
           )
       block:
         let pick = groundUnderMouse(window, viewProjection)
