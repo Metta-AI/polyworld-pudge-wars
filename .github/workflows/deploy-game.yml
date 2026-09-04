@@ -9,15 +9,18 @@
 #      and does not patch an existing hosted Coworld.
 #
 # Required environment secrets (Settings -> Environments -> SOFTMAX_OBSERVATORY):
-#   SOFTMAX_API_TOKEN  - a TEAM `usr_` token. The `coworld`/`softmax` CLI reads
-#                        its bearer token from ~/.softmax/credentials.yaml, NOT
-#                        from this env var, so the workflow seeds it headlessly
-#                        via `softmax set-token`. Reuse the same token as
-#                        Metta-AI/coworld-crewrift.
-#   GH_PAT             - optional GitHub PAT with read access to the private
-#                        Metta-AI/polyworld-data repo (replay-viewer art). The
-#                        default GITHUB_TOKEN is tried first; set GH_PAT if that
-#                        checkout is denied.
+#   SOFTMAX_API_TOKEN         - a TEAM `usr_` token. The `coworld`/`softmax` CLI
+#                               reads its bearer token from ~/.softmax/credentials.yaml,
+#                               NOT from this env var, so the workflow seeds it
+#                               headlessly via `softmax set-token`. Reuse the same
+#                               token as Metta-AI/coworld-crewrift.
+#   POLYWORLD_DATA_SSH_KEY    - private half of a read-only deploy key on
+#                               Metta-AI/polyworld-data (replay-viewer art).
+#                               GITHUB_TOKEN cannot clone a sibling private repo;
+#                               a PAT is optional fallback via GH_PAT.
+#   GH_PAT                    - optional GitHub PAT with contents:read on
+#                               Metta-AI/polyworld-data, used only when the
+#                               deploy key is unset.
 #
 # The Coworld CLI is installed from the public package repo so deploys use the
 # current registry/version allocator without waiting for a PyPI release.
@@ -54,12 +57,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Require polyworld-data credentials
+        env:
+          POLYWORLD_DATA_SSH_KEY: ${{ secrets.POLYWORLD_DATA_SSH_KEY }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          if [ -z "$POLYWORLD_DATA_SSH_KEY" ] && [ -z "$GH_PAT" ]; then
+            echo "::error::Set SOFTMAX_OBSERVATORY secret POLYWORLD_DATA_SSH_KEY (read-only deploy key on Metta-AI/polyworld-data) or GH_PAT. GITHUB_TOKEN cannot clone that private repo."
+            exit 1
+          fi
+
       - name: Checkout polyworld-data
+        if: ${{ secrets.POLYWORLD_DATA_SSH_KEY != '' }}
         uses: actions/checkout@v4
         with:
           repository: Metta-AI/polyworld-data
           path: polyworld_data
-          token: ${{ secrets.GH_PAT || github.token }}
+          ref: main
+          ssh-key: ${{ secrets.POLYWORLD_DATA_SSH_KEY }}
+          persist-credentials: false
+
+      - name: Checkout polyworld-data with PAT
+        if: ${{ secrets.POLYWORLD_DATA_SSH_KEY == '' && secrets.GH_PAT != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: Metta-AI/polyworld-data
+          path: polyworld_data
+          ref: main
+          token: ${{ secrets.GH_PAT }}
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
