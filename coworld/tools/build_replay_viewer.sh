@@ -14,9 +14,30 @@ if [[ ! -d "${polyworld_root}/examples/pudge_wars" ]]; then
   echo "polyworld root not found at ${polyworld_root}; set POLYWORLD_ROOT" >&2
   exit 1
 fi
-if [[ ! -d "${polyworld_root}/polyworld_data" && ! -d "${polyworld_root}/../polyworld_data" ]]; then
+if [[ -d "${polyworld_root}/polyworld_data" ]]; then
+  data_dir="${polyworld_root}/polyworld_data"
+elif [[ -d "${polyworld_root}/../polyworld_data" ]]; then
+  data_dir="${polyworld_root}/../polyworld_data"
+else
   echo "polyworld_data not found next to ${polyworld_root}; clone Metta-AI/polyworld-data" >&2
   exit 1
+fi
+webdata="${polyworld_root}/examples/pudge_wars/webdata.txt"
+if [[ -f "${webdata}" ]]; then
+  missing=0
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    case "${line}" in
+      ''|\#*) continue ;;
+    esac
+    if [[ ! -e "${data_dir}/${line}" ]]; then
+      echo "missing replay-viewer asset: ${data_dir}/${line}" >&2
+      missing=1
+    fi
+  done < "${webdata}"
+  if [[ "${missing}" -ne 0 ]]; then
+    echo "commit the missing files to Metta-AI/polyworld-data (atlas pngs need a gitignore exception)" >&2
+    exit 1
+  fi
 fi
 if ! command -v emcc >/dev/null 2>&1; then
   echo "emcc is required to build the Pudge Wars replay viewer" >&2
