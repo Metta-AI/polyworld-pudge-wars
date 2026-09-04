@@ -12,8 +12,11 @@ WORKDIR /src/polyworld
 COPY --from=engine . /src/polyworld
 # Install every polyworld.nimble require. A hand-maintained subset omitted
 # fluffy, which coworld_host pulls in through polyworld/profiles.
+# nimble setup writes nimble.paths, but the committed config.nims does not
+# include it, so the compiler would otherwise miss ~/.nimble/pkgs2.
 RUN nimble install --depsOnly -y \
-    && nimble setup
+    && nimble setup \
+    && printf '\ninclude "nimble.paths"\n' >> config.nims
 RUN nim c --threads:on -d:ssl -d:release -o:/out/pwcoworld \
       examples/pudge_wars/coworld_host.nim
 
