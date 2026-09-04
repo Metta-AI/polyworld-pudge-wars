@@ -16,11 +16,7 @@
 #                               token as Metta-AI/coworld-crewrift.
 #   POLYWORLD_DATA_SSH_KEY    - private half of a read-only deploy key on
 #                               Metta-AI/polyworld-data (replay-viewer art).
-#                               GITHUB_TOKEN cannot clone a sibling private repo;
-#                               a PAT is optional fallback via GH_PAT.
-#   GH_PAT                    - optional GitHub PAT with contents:read on
-#                               Metta-AI/polyworld-data, used only when the
-#                               deploy key is unset.
+#                               GITHUB_TOKEN cannot clone a sibling private repo.
 #
 # The Coworld CLI is installed from the public package repo so deploys use the
 # current registry/version allocator without waiting for a PyPI release.
@@ -57,34 +53,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Require polyworld-data credentials
+      - name: Require polyworld-data deploy key
         env:
           POLYWORLD_DATA_SSH_KEY: ${{ secrets.POLYWORLD_DATA_SSH_KEY }}
-          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          if [ -z "$POLYWORLD_DATA_SSH_KEY" ] && [ -z "$GH_PAT" ]; then
-            echo "::error::Set SOFTMAX_OBSERVATORY secret POLYWORLD_DATA_SSH_KEY (read-only deploy key on Metta-AI/polyworld-data) or GH_PAT. GITHUB_TOKEN cannot clone that private repo."
+          if [ -z "$POLYWORLD_DATA_SSH_KEY" ]; then
+            echo "::error::SOFTMAX_OBSERVATORY secret POLYWORLD_DATA_SSH_KEY is empty. Add a read-only deploy key on Metta-AI/polyworld-data and store the private key in that environment secret. GITHUB_TOKEN cannot clone that private repo."
             exit 1
           fi
 
       - name: Checkout polyworld-data
-        if: ${{ secrets.POLYWORLD_DATA_SSH_KEY != '' }}
         uses: actions/checkout@v4
         with:
           repository: Metta-AI/polyworld-data
           path: polyworld_data
           ref: main
           ssh-key: ${{ secrets.POLYWORLD_DATA_SSH_KEY }}
-          persist-credentials: false
-
-      - name: Checkout polyworld-data with PAT
-        if: ${{ secrets.POLYWORLD_DATA_SSH_KEY == '' && secrets.GH_PAT != '' }}
-        uses: actions/checkout@v4
-        with:
-          repository: Metta-AI/polyworld-data
-          path: polyworld_data
-          ref: main
-          token: ${{ secrets.GH_PAT }}
           persist-credentials: false
 
       - uses: actions/setup-python@v5
