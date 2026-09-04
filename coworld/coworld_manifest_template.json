@@ -1,0 +1,201 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "tags": ["strategy", "real-time", "multiplayer", "team"],
+  "game": {
+    "name": "pudge-wars",
+    "description": "Two banks split by a river, six butchers, one hook. First team to the kill goal wins. Fog on the enemy bank. Platform-ladder 3v3 clone teams.",
+    "owner": "coworld@softmax.com",
+    "runnable": {
+      "type": "game",
+      "image": "{{PUDGEWARS_IMAGE}}",
+      "run": ["pwcoworld"],
+      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main"
+    },
+    "replay_viewer": {
+      "bundle": "static-replay-viewer",
+      "replay_compression": "gzip"
+    },
+    "config_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tokens", "players", "max_ticks", "tick_rate", "kill_goal"],
+      "properties": {
+        "tokens": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "players": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "max_ticks": { "type": "integer", "minimum": 1, "maximum": 20000 },
+        "tick_rate": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
+        "kill_goal": { "type": "integer", "minimum": 1, "maximum": 40 },
+        "seed": { "type": "integer" },
+        "fog": { "type": "boolean", "default": true },
+        "player_connect_timeout_seconds": { "type": "number", "minimum": 0, "default": 180 }
+      }
+    },
+    "results_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scores", "winner_team", "west_kills", "east_kills", "end_tick", "end_reason", "seed", "kill_goal", "per_seat"],
+      "properties": {
+        "scores": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": { "type": "number" }
+        },
+        "winner_team": { "type": "string", "enum": ["west", "east", "draw"] },
+        "west_kills": { "type": "integer", "minimum": 0 },
+        "east_kills": { "type": "integer", "minimum": 0 },
+        "end_tick": { "type": "integer", "minimum": 0 },
+        "end_reason": { "type": "string" },
+        "seed": { "type": "integer" },
+        "kill_goal": { "type": "integer" },
+        "per_seat": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["slot", "team", "kills", "deaths", "hooks_thrown", "hooks_landed"],
+            "properties": {
+              "slot": { "type": "integer" },
+              "team": { "type": "integer" },
+              "kills": { "type": "integer" },
+              "deaths": { "type": "integer" },
+              "hooks_thrown": { "type": "integer" },
+              "hooks_landed": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    "protocols": {
+      "player": {
+        "type": "text",
+        "value": "Connect to COWORLD_PLAYER_WS_URL. Receive JSON observations each tick; reply with {walk_to, hook_to, blink_to, attack_target, rot_toggle, place_wall, place_mine, halt, ping}. Coordinates are tiles on the 128 map. Empty action is sticky. visible.pudges/hooks/runes/props are fog-clipped (home bank + river always; enemy bank needs a living teammate within 20 tiles). Seats 0-2 West, 3-5 East (team_pair blocks). Final message type=final."
+      },
+      "global": {
+        "type": "text",
+        "value": "GET /client/global opens /global with a live 2D overlay. Observatory replays use the static WASM bundle (native 3D renderer) with index.html?replay=<url>. The public replay copy is gzip; the viewer sniffs 1f 8b."
+      }
+    },
+    "docs": {
+      "readme": {
+        "type": "text",
+        "value": "# Pudge Wars\n\nTwo banks, a river, six butchers, one hook. First team to the kill goal wins. Walk with walk_to, throw with hook_to, blink with blink_to. Fog hides the enemy bank unless a teammate is within 20 tiles. Bundled personalities: rusher, camper, sniper. Each dead-reckons fogged enemies on the far bank and blinks to dodge, stretch a flying hook, dump-chase into the river, or hop the far bank."
+      }
+    }
+  },
+  "player": [
+    {
+      "id": "pudge-camper",
+      "name": "Camper",
+      "type": "player",
+      "image": "{{PUDGEWARS_IMAGE}}",
+      "run": ["python", "-m", "coworld.examples.pudgewars.player.player"],
+      "env": { "PUDGE_PERSONALITY": "camper" },
+      "description": "Holds 16 tiles off the waterline. Blinks to dodge and stretch, and hooks the most likely far-bank ghost when fogged.",
+      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/player"
+    },
+    {
+      "id": "pudge-rusher",
+      "name": "Rusher",
+      "type": "player",
+      "image": "{{PUDGEWARS_IMAGE}}",
+      "run": ["python", "-m", "coworld.examples.pudgewars.player.player"],
+      "env": { "PUDGE_PERSONALITY": "rusher" },
+      "description": "Closes on visible enemies, blinks across the river to finish a catch, and dead-reckons fogged far-bank positions.",
+      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/player"
+    },
+    {
+      "id": "pudge-sniper",
+      "name": "Sniper",
+      "type": "player",
+      "image": "{{PUDGEWARS_IMAGE}}",
+      "run": ["python", "-m", "coworld.examples.pudgewars.player.player"],
+      "env": { "PUDGE_PERSONALITY": "sniper" },
+      "description": "Standoff thrower. Saves the hook for wounded or high-likelihood ghosts, blinks inland off inbound chains, never dives.",
+      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/player"
+    }
+  ],
+  "variants": [
+    {
+      "id": "league-3v3",
+      "name": "League 3v3",
+      "description": "Canonical ladder board. Six seats, first to 10, up to eight minutes at 32 Hz.",
+      "game_config": {
+        "max_ticks": 15360,
+        "tick_rate": 32,
+        "kill_goal": 10,
+        "fog": true,
+        "player_connect_timeout_seconds": 180,
+        "players": [
+          { "name": "West 1" },
+          { "name": "West 2" },
+          { "name": "West 3" },
+          { "name": "East 1" },
+          { "name": "East 2" },
+          { "name": "East 3" }
+        ]
+      }
+    },
+    {
+      "id": "duel-1v1",
+      "name": "Duel 1v1",
+      "description": "One butcher a side on the middle lane.",
+      "game_config": {
+        "max_ticks": 15360,
+        "tick_rate": 32,
+        "kill_goal": 10,
+        "fog": true,
+        "player_connect_timeout_seconds": 180,
+        "players": [
+          { "name": "West" },
+          { "name": "East" }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "game_config": {
+      "max_ticks": 160,
+      "tick_rate": 32,
+      "kill_goal": 3,
+      "seed": 7,
+      "fog": true,
+      "player_connect_timeout_seconds": 30,
+      "players": [
+        { "name": "Camper A" },
+        { "name": "Rusher A" },
+        { "name": "Sniper A" },
+        { "name": "Camper B" },
+        { "name": "Rusher B" },
+        { "name": "Sniper B" }
+      ]
+    },
+    "players": [
+      { "player_id": "pudge-camper" },
+      { "player_id": "pudge-rusher" },
+      { "player_id": "pudge-sniper" },
+      { "player_id": "pudge-camper" },
+      { "player_id": "pudge-rusher" },
+      { "player_id": "pudge-sniper" }
+    ]
+  }
+}

@@ -9,11 +9,10 @@ const
   DefaultWindowSize* = ivec2(1280, 800)
   DefaultFontPath* = DataRoot & "/fonts/Rubik-Regular.ttf"
   BoldFontPath* = DataRoot & "/fonts/Rubik-Bold.ttf"
-  EditorThemeDir* = DataRoot & "/themes/editor/"
+  MonoFontPath* = DataRoot & "/fonts/OverpassMono-Regular.ttf"
+  MainThemeDir* = DataRoot & "/themes/main/"
   UiDir* = DataRoot & "/ui/"
   IconDir* = DataRoot & "/icons/"
-  WindowPatchPath = EditorThemeDir & "window.9patch.png"
-  FramePatchPath = EditorThemeDir & "frame.9patch.png"
   HudIconSize = 64
 
 proc damping*(rate, dt: float32): float32 =
@@ -35,17 +34,8 @@ proc addDefaultFonts*(builder: AtlasBuilder) =
   builder.addFont(DefaultFontPath, "Default", 18.0)
   builder.addFont(DefaultFontPath, "Hud", 15.0)
   builder.addFont(DefaultFontPath, "Small", 12.0)
-
-proc addScaledPatch(builder: AtlasBuilder, path, name: string) =
-  ## Packs a 2x 9-patch so a 32px slice still has a stretchable center.
-  let
-    source = readImage(path)
-    scaled = source.resize(source.width * 2, source.height * 2)
-  if not builder.addImage(name, scaled):
-    raise newException(
-      ValueError,
-      "Failed to allocate space for " & path
-    )
+  if fileExists(MonoFontPath):
+    builder.addFont(MonoFontPath, "Mono", 18.0)
 
 proc addHudGlyphs(builder: AtlasBuilder) =
   ## Packs the shared transport and HUD glyphs every game can draw.
@@ -62,12 +52,10 @@ proc addHudGlyphs(builder: AtlasBuilder) =
       )
 
 proc newHudAtlas*(size = 1024): AtlasBuilder =
-  ## Starts an atlas with the shared editor theme and UI images.
+  ## Starts an atlas with the shared main theme and UI images.
   result = newAtlasBuilder(size, 4)
-  result.addDir(EditorThemeDir, EditorThemeDir)
+  result.addDir(MainThemeDir, MainThemeDir)
   result.addDir(UiDir, UiDir)
-  result.addScaledPatch(WindowPatchPath, "window.9patch")
-  result.addScaledPatch(FramePatchPath, "frame.9patch")
   result.addHudGlyphs()
 
 proc gameWindowSize*(width, height: int32): IVec2 =
@@ -93,11 +81,36 @@ proc applyWindowIcon(window: Window, path: string) =
     when defined(macosx):
       polyworldSetApplicationIcon(path.cstring)
 
+when defined(emscripten):
+  {.emit: """#include <emscripten.h>""".}
+
+proc viewerIsFullscreen*(window: Window): bool =
+  ## True when the OS or browser has taken this viewer full screen.
+  ## Windowed and in-page viewers stay false so edge-scroll does not
+  ## fire while the pointer is leaving toward chrome.
+  when defined(emscripten):
+    discard window
+    var flag: cint = 0
+    {.emit: """
+    `flag` = EM_ASM_INT({
+      var d = typeof document === 'undefined' ? null : document;
+      if (d && (d.fullscreenElement || d.webkitFullscreenElement ||
+          d.mozFullScreenElement || d.msFullscreenElement))
+        return 1;
+      if (typeof screen === 'undefined') return 0;
+      return (window.innerWidth >= screen.width - 16 &&
+              window.innerHeight >= screen.height - 16) ? 1 : 0;
+    });
+    """.}
+    flag != 0
+  else:
+    window.fullscreen
+
 proc initGameWindow*(
     title,
     atlasPath: string,
     size = DefaultWindowSize,
-    vsync = false,
+    vsync = true,
     iconPath = ""
 ): (Window, Silky) =
   ## Creates the spectator window, GL context, and Silky atlas client.
@@ -110,6 +123,40 @@ proc initGameWindow*(
   window.onRune = proc(rune: Rune) =
     sk.inputRunes.add(rune)
   (window, sk)
+
+var
+  presentDeadline = 0.0
+  presentPaceHz = 0
+
+proc present*(window: Window, paceHz = 0) =
+  ## Swaps the back buffer, then optionally waits so presents stay on one
+  ## cadence. Zero lets the window's vsync set the rate. ProMotion vsync
+  ## alone flips between 8.33 ms and 16.67 ms.
+  window.swapBuffers()
+  when defined(emscripten):
+    discard
+  else:
+    if paceHz <= 0:
+      presentDeadline = 0
+      presentPaceHz = 0
+      return
+    if paceHz != presentPaceHz:
+      presentDeadline = 0
+      presentPaceHz = paceHz
+    let
+      step = 1.0 / paceHz.float64
+      now = epochTime()
+    if presentDeadline <= 0 or now > presentDeadline + step * 2:
+      presentDeadline = now + step
+      return
+    let remain = presentDeadline - now
+    if remain > 0.001:
+      sleep(int(remain * 1000.0))
+    presentDeadline += step
+
+proc presentFrame*(window: Window, paceHz = 0) {.inline.} =
+  ## Alias for `present`.
+  window.present(paceHz)
 
 proc frameDelta*(
     lastFrameTime: var float64,

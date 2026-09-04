@@ -123,6 +123,21 @@ while index < objectCount()
   index = index + 1
 wend
 
+if drownId <> 0 then
+  lastEy = drownY
+  lastSeen = worldTick
+else
+  if weakId <> 0 then
+    lastEy = weakY
+    lastSeen = worldTick
+  else
+    if headId <> 0 then
+      lastEy = headY
+      lastSeen = worldTick
+    end if
+  end if
+end if
+
 cutX = -1
 cutY = -1
 nearX = -1
@@ -163,8 +178,10 @@ wend
 
 if selfTeam = 0 then
   lineX = riverWest - 6
+  pokeX = riverEast + 8
 else
   lineX = riverEast + 6
+  pokeX = riverWest - 8
 end if
 padX = homeX
 lineY = homeY
@@ -173,6 +190,17 @@ if lineY < 8 then
 end if
 if lineY > 119 then
   lineY = 119
+end if
+pokeY = lineY
+if lastEy <> 0 then
+  pokeY = lastEy
+  if worldTick - lastSeen > 8 then
+    if selfTeam = 0 then
+      pokeX = riverEast + 2
+    else
+      pokeX = riverWest - 2
+    end if
+  end if
 end if
 
 wantRot = 0
@@ -209,9 +237,9 @@ if blinkReady = 1 then
   else
     if nearX >= 0 then
       if nearY > selfY then
-        hopY = selfY - 24
+        hopY = selfY - 36
       else
-        hopY = selfY + 24
+        hopY = selfY + 36
       end if
       if hopY < 16 then
         hopY = 16
@@ -220,12 +248,12 @@ if blinkReady = 1 then
         hopY = 111
       end if
       if selfTeam = 0 then
-        hopX = selfX - 8
+        hopX = selfX - 16
         if hopX > riverWest then
           hopX = riverWest
         end if
       else
-        hopX = selfX + 8
+        hopX = selfX + 16
         if hopX < riverEast then
           hopX = riverEast
         end if
@@ -295,6 +323,9 @@ if dodgeFlash = 1 then
         if headId <> 0 then
           hookTo(headX, headY)
           mood = 1
+        else
+          hookTo(pokeX, pokeY)
+          mood = 3
         end if
       end if
     end if
@@ -320,6 +351,11 @@ if hookReady = 1 then
           if weakId <> 0 then
             hookTo(weakX, weakY)
             mood = 3
+          else
+            if worldTick > 8 then
+              hookTo(pokeX, pokeY)
+              mood = 3
+            end if
           end if
         end if
       end if

@@ -3,7 +3,7 @@
 import
   std/[math, os, tables, times],
   chroma, opengl, pixie, silky, vmath, windy,
-  audio, content, maps, sim, game, human, keybinds, netclient, netsim,
+  audio, content, director, fog, maps, sim, game, human, keybinds, netclient, netsim,
   netpredict, replays, ui,
   polyworld/[
     actioncam, characters, chrome, common, gameuis, particles, particleshaders,
@@ -44,6 +44,18 @@ const
     ## Ground stain inside the blight.
   RotSick = rgbx(72, 168, 56, 95)
     ## Foot glow on anyone standing in Rot.
+  RotCore = rgbx(52, 168, 48, 110)
+    ## Tight blight pooled under the caster.
+  RotWave = rgbx(120, 236, 72, 170)
+    ## Expanding pulse that travels out to the gameplay radius.
+  RotSpore = rgbx(96, 214, 62, 145)
+    ## Drifting motes along the blight rim.
+  FountainAura = rgbx(255, 214, 96, 150)
+    ## WC3 fountain-of-health gold ring at the heal radius.
+  FountainFill = rgbx(210, 200, 72, 28)
+    ## Soft gold stain inside the fountain disk.
+  FountainGlow = rgbx(255, 230, 120, 70)
+    ## Tight glow on the island rocks themselves.
   DefaultCameraDistance = 75.0'f32
     ## Starts at the closest shipped zoom (75–155). Clamped live by
     ## zoomMinDistance / zoomMaxDistance.
@@ -235,6 +247,89 @@ proc addDebugRing(
     )
   renderer.addPolyline(points, color, halfWidth)
 
+proc fadeRgbx(color: ColorRGBX, alpha: float32): ColorRGBX =
+  rgbx(
+    color.r, color.g, color.b,
+    uint8(clamp(alpha, 0.0'f32, 255.0'f32))
+  )
+
+proc addRotCloud(
+    renderer: var ShapeRenderer,
+    feet: Vec3,
+    radius: float32,
+    pulse: float32,
+    seconds: float32
+) =
+  ## Breathing blight, two overlapping damage-wave rings, and drifting
+  ## spores. `pulse` is 0 just after a rot tick and 1 just before the next.
+  let
+    wave = 1.0'f32 - (1.0'f32 - pulse) * (1.0'f32 - pulse)
+    flash = max(0.0'f32, 1.0'f32 - pulse * 3.5'f32)
+    breathe = 0.5'f32 + 0.5'f32 * sin(pulse * TAU.float32)
+    fillA = 44.0'f32 + breathe * 24.0'f32 + flash * 52.0'f32
+    coreA = 72.0'f32 + breathe * 30.0'f32 + flash * 60.0'f32
+    ring = vec3(feet.x, 0, feet.z)
+  renderer.addCircle(
+    feet,
+    radius * (0.94'f32 + breathe * 0.025'f32),
+    fadeRgbx(RotFill, fillA),
+    32
+  )
+  renderer.addCircle(
+    feet,
+    radius * 0.26'f32,
+    fadeRgbx(RotCore, coreA),
+    16
+  )
+  let
+    waveR = mix(0.9'f32, radius, wave)
+    waveA = (1.0'f32 - wave) * 160.0'f32 + 32.0'f32 + flash * 45.0'f32
+  renderer.addDebugRing(
+    ring, waveR, fadeRgbx(RotWave, waveA), 0.15'f32 + flash * 0.11'f32
+  )
+  let
+    pulse2 = pulse + 0.5'f32
+    t2 = pulse2 - floor(pulse2)
+    wave2 = 1.0'f32 - (1.0'f32 - t2) * (1.0'f32 - t2)
+    wave2R = mix(0.9'f32, radius, wave2)
+    wave2A = (1.0'f32 - wave2) * 95.0'f32 + 20.0'f32
+  renderer.addDebugRing(ring, wave2R, fadeRgbx(RotAura, wave2A), 0.10'f32)
+  renderer.addDebugRing(
+    ring,
+    radius,
+    fadeRgbx(RotAura, 155.0'f32 + flash * 75.0'f32),
+    0.14'f32 + flash * 0.09'f32
+  )
+  const RimCount = 8
+  for i in 0 ..< RimCount:
+    let
+      a = seconds * 0.72'f32 + float32(i) * (TAU.float32 / float32(RimCount))
+      bob = 0.11'f32 * sin(seconds * 2.9'f32 + float32(i) * 0.85'f32)
+    var spore = feet
+    spore.x += cos(a) * radius * 0.86'f32
+    spore.z += sin(a) * radius * 0.86'f32
+    spore.y += 0.10'f32 + bob
+    renderer.addCircle(
+      spore,
+      0.50'f32 + flash * 0.20'f32,
+      fadeRgbx(RotSpore, 115.0'f32 + breathe * 45.0'f32),
+      8
+    )
+  const InnerCount = 5
+  for i in 0 ..< InnerCount:
+    let a =
+      -seconds * 1.18'f32 + float32(i) * (TAU.float32 / float32(InnerCount))
+    var spore = feet
+    spore.x += cos(a) * radius * 0.40'f32
+    spore.z += sin(a) * radius * 0.40'f32
+    spore.y += 0.15'f32
+    renderer.addCircle(
+      spore,
+      0.38'f32 + breathe * 0.10'f32,
+      fadeRgbx(RotSpore, 95.0'f32 + flash * 55.0'f32),
+      8
+    )
+
 proc waterSheetAt(x, z: int): bool =
   layers.len > WaterLayer and
     layers[WaterLayer].tiles[z * GridTiles + x].exists
@@ -322,13 +417,18 @@ proc addDebugCollisionOverlays(renderer: var ShapeRenderer) =
       0.10'f32
     )
   let pad = FountainPadRadius.float32 + 0.5'f32
-  for s in 0 ..< TeamSize:
+  let padCount = min(run.world.spawnLayout.west.len, run.world.spawnLayout.east.len)
+  for s in 0 ..< padCount:
     let west = run.world.spawnLayout.west[s]
     let wc = tileCenterRender(west.x, west.z)
     renderer.addDebugRect(wc.x - pad, wc.z - pad, wc.x + pad, wc.z + pad, SpawnPadColor)
     let east = run.world.spawnLayout.east[s]
     let ec = tileCenterRender(east.x, east.z)
     renderer.addDebugRect(ec.x - pad, ec.z - pad, ec.x + pad, ec.z + pad, SpawnPadColor)
+  let
+    fountain = tileCenterRender(IslandCenterX, IslandCenterZ)
+    fountainR = IslandFountainRadius.float32 / WorldScale.float32
+  renderer.addDebugRing(fountain, fountainR, FountainAura, 0.14'f32)
 
 proc xzDir(v: Vec3): Vec3 =
   let len = hypot(v.x, v.z)
@@ -871,7 +971,7 @@ proc drawMeatHook(
 proc runGraphics*() =
   startProfileTrace()
   profileBlock "atlas":
-    let builder = newHudAtlas(2048)
+    let builder = newHudAtlas(4096)
     proc placeholderIcon(): Image =
       result = newImage(128, 128)
       result.fill(rgba(42, 48, 62, 255))
@@ -906,13 +1006,14 @@ proc runGraphics*() =
       addIcon(name, path)
     builder.addDefaultFonts()
     builder.write(AtlasPath)
+  var window: Window
+  var sk: Silky
   profileBlock "window":
-    var window: Window
-    var sk: Silky
     (window, sk) = initGameWindow(
       "Pudge Wars",
       AtlasPath,
       gameWindowSize(options.windowWidth, options.windowHeight),
+      options.vsync,
       iconPath = AppIconPath
     )
   profileBlock "audio":
@@ -922,6 +1023,17 @@ proc runGraphics*() =
       else: "pudge_keys.cfg"
     if loadKeyBinds(keysFile):
       echo "keys: loaded ", keysFile
+      let
+        cliQuickcast = options.quickcast
+        cliAutocast = options.autocast
+      if fileQuickcastSet:
+        options.quickcast = fileQuickcast
+      if fileAutocastSet:
+        options.autocast = fileAutocast
+      if cliQuickcast:
+        options.quickcast = true
+      if cliAutocast:
+        options.autocast = true
     elif options.keysPath.len > 0:
       echo "keys: no such file ", options.keysPath
 
@@ -937,7 +1049,8 @@ proc runGraphics*() =
           "examples/pudge_wars/emscripten",
           run.world.killGoal,
           run.world.runePeriod div TickRate,
-          botSeatPaths
+          botSeatPaths,
+          int(options.teamSize)
       ):
         quit("cannot start the lobby server on port " & $options.hostPort)
       echo "host: lobby open at ", hostingUrl()
@@ -995,11 +1108,25 @@ proc runGraphics*() =
     rmbGesture = false
     rmbDragged = false
     rmbOrigin = vec2(0)
+    panKeyGesture = false
+    panKeyDragged = false
+    panKeyOrigin = vec2(0)
+    panKeyPressedAt = 0.0
+    panTap = false
     lastDragMouse = vec2(0)
     rightClickCommand = false
     minimapPanning = false
     followSelection = false
-    actionCam = initActionCam()
+    actionCam = initActionCam(
+      minDistance = BakedZoomInDistance,
+      maxDistance = BakedZoomOutDistance,
+      tight = 0.42'f32,
+      followRate = 1.45'f32,
+      zoomRate = 1.25'f32,
+      holdSeconds = 2.0'f32,
+      mapSpan = HalfGrid * 2.0'f32,
+      closeScale = 0.9'f32
+    )
     replayCheckpoints: seq[SeekCheckpoint]
     previousPositions: Table[int32, Vec3]
     previousFacings: Table[int32, float32]
@@ -1013,15 +1140,22 @@ proc runGraphics*() =
     renderAlpha = 1.0'f32
     animationAlpha = 0.0'f32
     lastFrameTime = epochTime()
+  hostLobbyOpen = netLobbyOpen
   if run.replayMode:
     transport.repeating = true
-
-  actionCam.takeManual()
+  if humanControlActive():
+    actionCam.takeManual()
+    followSelection = true
+    let hero = heroGroundPoint()
+    cameraTarget.x = hero.x
+    cameraTarget.z = hero.z
 
   var
     fogVisionTick = int32.low
     fogVisionTeam = int32.low
     fogExplored: seq[bool]
+    fogValues: seq[uint8]
+    fogBlurred: seq[uint8]
 
   proc updateTerrainVision() =
     ## Uploads the local team's softened visible + explored terrain.
@@ -1032,27 +1166,28 @@ proc runGraphics*() =
       fogExplored.setLen(0)
     fogVisionTick = run.world.tick
     fogVisionTeam = team
-    var values = newSeq[uint8](GridTiles * GridTiles)
+    let n = GridTiles * GridTiles
+    if fogValues.len != n:
+      fogValues.setLen(n)
     if team < 0:
-      for value in values.mitems:
+      for value in fogValues.mitems:
         value = 255
-      uploadTerrainVisibility(values)
+      uploadTerrainVisibility(fogValues)
       return
-    if fogExplored.len != GridTiles * GridTiles:
-      fogExplored = newSeq[bool](GridTiles * GridTiles)
-    for z in 0 ..< GridTiles:
-      for x in 0 ..< GridTiles:
-        let index = z * GridTiles + x
-        if fogCanSee(worldAtTile(x, z)):
-          fogExplored[index] = true
-          values[index] = 255
-        elif fogExplored[index]:
-          values[index] = 72
-        else:
-          values[index] = 26
-    uploadTerrainVisibility(
-      blurVisibility(values, int32(GridTiles), int32(GridTiles))
+    if fogExplored.len != n:
+      fogExplored = newSeq[bool](n)
+    fillTeamVision(run.world, team, fogValues)
+    for i in 0 ..< n:
+      if fogValues[i] == 255:
+        fogExplored[i] = true
+      elif fogExplored[i]:
+        fogValues[i] = 72
+      else:
+        fogValues[i] = 26
+    blurVisibilityInto(
+      fogValues, fogBlurred, int32(GridTiles), int32(GridTiles)
     )
+    uploadTerrainVisibility(fogBlurred)
 
   proc recordedTicksNow(): int32 =
     ## How much finished tape exists: recorded locally by the host's
@@ -1093,24 +1228,36 @@ proc runGraphics*() =
 
   proc unitPoint(id: int32, position: WorldPoint): Vec3 =
     let current = renderPoint(position)
+    if not interpolateVisuals:
+      return current
     mix(previousPositions.getOrDefault(id, current), current, renderAlpha)
 
   proc unitFacing(id: int32, facing: Heading): float32 =
-    let
-      current = renderFacing(facing)
-      previous = previousFacings.getOrDefault(id, current)
+    let current = renderFacing(facing)
+    if not interpolateVisuals:
+      return current
+    let previous = previousFacings.getOrDefault(id, current)
     previous + shortestTurn(previous, current) * renderAlpha
 
   proc hookPoint(id: int32, position: WorldPoint): Vec3 =
     let current = renderPoint(position)
+    if not interpolateVisuals:
+      return current
     mix(previousHookPositions.getOrDefault(id, current), current, renderAlpha)
 
   proc runePoint(id: int32, position: WorldPoint): Vec3 =
     let current = renderPoint(position)
+    if not interpolateVisuals:
+      return current
     mix(previousRunePositions.getOrDefault(id, current), current, renderAlpha)
 
   proc unitTime(ticks: int32): float32 =
     (ticks.float32 + animationAlpha) / TickRate.float32
+
+  proc rotPulse(pudge: Pudge): float32 =
+    ## 0 just after a damage tick, 1 just before the next.
+    (pudge.rotTicks.float32 + animationAlpha) /
+      max(RotPeriodTicks.float32, 1.0'f32)
 
   proc holdTime(
       model: CharacterModel, clip: int, ticks: int32, hold: bool
@@ -1166,11 +1313,60 @@ proc runGraphics*() =
     followSelection = false
     actionCam.takeManual()
 
+  proc dropDirector() =
+    actionCam.takeManual()
+
+  proc grabPan(delta: Vec2, perDistance: float32) =
+    takeCamera()
+    let pan = rtsGroundPan(
+      cameraYaw, delta, cameraDistance * perDistance
+    )
+    cameraTarget.x -= pan.x
+    cameraTarget.z -= pan.y
+
+  proc applyFollowLock() =
+    ## Lock-cam look-at: interpolated butcher so the camera rides the
+    ## same 60 Hz blend as the mesh instead of hitching on 32 Hz sim
+    ## steps.
+    if followSelection and not orbiting and not panning and
+        not minimapPanning:
+      var
+        found = false
+        pt = vec3(0)
+      if humanControlActive() and heroIndex() >= 0:
+        let pudge = predictedPudge(heroIndex())
+        pt = unitPoint(pudge.id, pudge.position)
+        found = true
+      else:
+        let eyes = spectateIndex()
+        if eyes >= 0:
+          let pudge = run.world.pudges[eyes]
+          pt = unitPoint(pudge.id, pudge.position)
+          found = true
+        else:
+          let lock = followCameraPoint()
+          if lock.found:
+            pt = lock.point
+            found = true
+      if found:
+        cameraTarget.x = pt.x
+        cameraTarget.z = pt.z
+        actionCam.takeManual()
+    cameraTarget.x = clamp(cameraTarget.x, -HalfGrid, HalfGrid)
+    cameraTarget.z = clamp(cameraTarget.z, -HalfGrid, HalfGrid)
+    cameraEye = rtsCameraEye(
+      cameraTarget, cameraDistance, cameraYaw, cameraPitch
+    )
+
   proc updateCamera(dt: float32) =
-    ## RMB-drag pans the spectator camera across the board. A seated
-    ## butcher still walks/attacks on an RMB click; a drag is always a
-    ## pan. LMB+RMB orbits around the current look-at, then snaps back.
+    ## Camera grab is WC3/SC2-style and trackpad-first: hold the pan
+    ## key (C) and move the pointer, no mouse button. MMB drag, arrow
+    ## keys, fullscreen edge scroll, and the minimap still pan. RMB
+    ## commands; it never moves the camera. Alt+RMB orbits, then snaps
+    ## back.
     rightClickCommand = false
+    panTap = false
+    var scrollPanned = false
     updateMinimapCamera(
       window, sk.mousePos, cameraTarget, minimapPanning, followSelection
     )
@@ -1178,6 +1374,8 @@ proc runGraphics*() =
       takeCamera()
       orbiting = false
       panning = false
+      panKeyGesture = false
+      panKeyDragged = false
 
     let
       overUi = mouseOverUi(window, sk.mousePos)
@@ -1186,14 +1384,22 @@ proc runGraphics*() =
       onWorld = not overUi and (play.size.x <= 1 or play.contains(mousePx))
       rightDown = window.buttonDown[MouseRight]
       middleDown = window.buttonDown[MouseMiddle]
+      panKey = bindKey(BindPan)
+      panKeyDown = window.buttonDown[panKey]
+      scroll = window.scrollDelta
 
     if menuIsOpen():
       panning = false
       orbiting = false
       rmbGesture = false
       rmbDragged = false
+      panKeyGesture = false
+      panKeyDragged = false
       resetOrbit()
+      window.cursor = Cursor(kind: ArrowCursor)
     else:
+      if followSelection and actionCam.enabled:
+        actionCam.takeManual()
       if rightDown:
         if not rmbGesture and onWorld:
           rmbGesture = true
@@ -1206,6 +1412,24 @@ proc runGraphics*() =
           rightClickCommand = true
         rmbGesture = false
         rmbDragged = false
+
+      if panKeyDown:
+        if not panKeyGesture:
+          panKeyGesture = true
+          panKeyDragged = false
+          panKeyOrigin = mousePx
+          panKeyPressedAt = epochTime()
+          lastDragMouse = mousePx
+        elif not panKeyDragged and
+            (mousePx - panKeyOrigin).length > RtsCameraDragPixels:
+          panKeyDragged = true
+          lastDragMouse = mousePx
+          takeCamera()
+      elif panKeyGesture:
+        if not panKeyDragged and epochTime() - panKeyPressedAt < 0.28:
+          panTap = true
+        panKeyGesture = false
+        panKeyDragged = false
 
       let altDown =
         window.buttonDown[KeyLeftAlt] or window.buttonDown[KeyRightAlt]
@@ -1223,10 +1447,11 @@ proc runGraphics*() =
         resetOrbit()
 
       let wantPan =
-        # Only the wheel button pans (held from anywhere), plus the
-        # minimap and edge/arrow panning handled elsewhere. RMB is
-        # sacred: it commands, it never moves the camera.
-        not orbiting and not minimapPanning and middleDown
+        # Wheel-button drag, or hold-C pointer grab after a few pixels.
+        # Minimap and edge/arrow panning are handled below. RMB never
+        # moves the camera.
+        not orbiting and not minimapPanning and
+        (middleDown or (panKeyGesture and panKeyDragged))
       if wantPan:
         if not panning:
           lastDragMouse = mousePx
@@ -1235,63 +1460,88 @@ proc runGraphics*() =
       else:
         panning = false
 
+      if panning or panKeyGesture:
+        window.cursor = Cursor(
+          kind: (if panning: ClosedHandCursor else: OpenHandCursor)
+        )
+      else:
+        window.cursor = Cursor(kind: ArrowCursor)
+
       let delta = mousePx - lastDragMouse
       lastDragMouse = mousePx
       if orbiting:
         cameraYaw -= delta.x * 0.008'f32
         cameraPitch = rtsClampedPitch(cameraPitch + delta.y * 0.006'f32)
       elif panning:
-        takeCamera()
-        let
-          speed = cameraDistance * 0.0015'f32
-          pan = rtsGroundPan(cameraYaw, delta, speed)
-        cameraTarget.x -= pan.x
-        cameraTarget.z -= pan.y
+        grabPan(delta, RtsPointerPanPerDistance)
+
+      if panKeyDown and not orbiting and not minimapPanning and
+          (scroll.x != 0 or scroll.y != 0):
+        # Hold C and two-finger swipe: pan without sliding the cursor
+        # into a screen edge.
+        grabPan(vec2(scroll.x, -scroll.y), RtsScrollPanPerDistance)
+        panKeyDragged = true
+        scrollPanned = true
 
       if not orbiting and not panning and not minimapPanning:
         var keyPan = vec2(0)
-        # Arrows steer the butcher while one is alive under your hand;
-        # they pan the camera only when spectating.
-        if not (humanControlActive() and heroIndex() >= 0 and
-            run.world.pudges[heroIndex()].state != Dying):
-          if window.buttonDown[KeyLeft]: keyPan.x -= 1
-          if window.buttonDown[KeyRight]: keyPan.x += 1
-          if window.buttonDown[KeyUp]: keyPan.y -= 1
-          if window.buttonDown[KeyDown]: keyPan.y += 1
+        # Arrows always pan, including while a butcher is under your
+        # hand — WASD is the walk stick. WC3 / StarCraft split.
+        if window.buttonDown[KeyLeft]: keyPan.x -= 1
+        if window.buttonDown[KeyRight]: keyPan.x += 1
+        if window.buttonDown[KeyUp]: keyPan.y -= 1
+        if window.buttonDown[KeyDown]: keyPan.y += 1
         const EdgePixels = 12
         let mouse = window.mousePos
-        if not overUi and mouse != ivec2(0, 0) and play.contains(mousePx):
-          if mousePx.x <= play.origin.x + EdgePixels: keyPan.x -= 1
-          elif mousePx.x >= play.origin.x + play.size.x - EdgePixels:
+        # Fullscreen only. Window edges, including over the bottom HUD.
+        if viewerIsFullscreen(window) and
+            not followSelection and not actionCam.enabled and
+            not panKeyDown and mouse != ivec2(0, 0):
+          let
+            winW = window.size.x.float32
+            winH = window.size.y.float32
+          if mousePx.x <= EdgePixels: keyPan.x -= 1
+          elif mousePx.x >= winW - EdgePixels:
             keyPan.x += 1
-          if mousePx.y <= play.origin.y + EdgePixels: keyPan.y -= 1
-          elif mousePx.y >= play.origin.y + play.size.y - EdgePixels:
+          if mousePx.y <= EdgePixels: keyPan.y -= 1
+          elif mousePx.y >= winH - EdgePixels:
             keyPan.y += 1
         if keyPan != vec2(0, 0):
           takeCamera()
           let
-            speed = cameraDistance * 1.1'f32 * dt
+            speed = cameraDistance * RtsKeyPanPerDistance * dt
             right = rtsCameraRight(cameraYaw)
             look = rtsCameraLook(cameraYaw)
           cameraTarget.x += (right.x * keyPan.x + look.x * keyPan.y) * speed
           cameraTarget.z += (right.z * keyPan.x + look.z * keyPan.y) * speed
-      if followSelection and humanControlActive():
-        let
-          hero = heroGroundPoint()
-          ease = min(1.0'f32, dt * 8.0'f32)
-        cameraTarget.x = mix(cameraTarget.x, hero.x, ease)
-        cameraTarget.z = mix(cameraTarget.z, hero.z, ease)
 
-    cameraTarget.x = clamp(cameraTarget.x, -HalfGrid, HalfGrid)
-    cameraTarget.z = clamp(cameraTarget.z, -HalfGrid, HalfGrid)
-    if not overUi and window.scrollDelta.y != 0:
-      takeCamera()
+    if actionCam.enabled and not orbiting and not panning and
+        not minimapPanning and not menuIsOpen():
+      actionCam.minDistance = zoomMinDistance
+      actionCam.maxDistance = zoomMaxDistance
+      actionCam.beginFrame(run.world.tick)
+      feedDirectorCam(actionCam, run.world, fogTeam())
+      actionCam.chooseShot(dt, transport.speed)
+      actionCam.follow(cameraTarget, cameraDistance, dt, transport.speed)
+
+    if not scrollPanned and not overUi and scroll.y != 0:
+      dropDirector()
       cameraDistance = clampCameraDistance(
-        cameraDistance * pow(0.92'f32, window.scrollDelta.y)
+        cameraDistance * pow(0.92'f32, scroll.y)
       )
-    cameraEye = rtsCameraEye(
-      cameraTarget, cameraDistance, cameraYaw, cameraPitch
-    )
+    if not netLobbyOpen:
+      # Keyboard zoom so a trackpad is not required to change distance.
+      if window.buttonDown[KeyMinus]:
+        dropDirector()
+        cameraDistance = clampCameraDistance(
+          cameraDistance * pow(1.08'f32, dt * 8.0'f32)
+        )
+      if window.buttonDown[KeyEqual]:
+        dropDirector()
+        cameraDistance = clampCameraDistance(
+          cameraDistance * pow(0.92'f32, dt * 8.0'f32)
+        )
+    applyFollowLock()
 
   proc emitBlinkOriginPuff(chest: Vec3) =
     ## Leave-behind burst at the tile they hopped FROM. Stacks the
@@ -1349,6 +1599,35 @@ proc runGraphics*() =
         var splash = pos
         splash.y = surfaceHeightNear(pos.x, pos.z, pos.y) + 0.3'f32
         particles.emitParticleBurst(MagicBurst, splash)
+      if pudge.state == Alive and pudge.rotOn and fogShownPudge(pudge) and
+          (pudge.rotTicks == 0 or pudge.rotTicks == RotPeriodTicks div 2):
+        var cloud = pos
+        cloud.y -= 0.95'f32
+        particles.emitParticleBurst(DecayAura, cloud)
+        if pudge.rotTicks == 0:
+          particles.emitParticleBurst(DecayAura, cloud, 0.16'f32)
+    if run.world.tick mod IslandFountainHealPeriodTicks == 0:
+      let fountain = liftPoint(
+        tileCenterRender(IslandCenterX, IslandCenterZ), 1.15'f32
+      )
+      if fogCanSee(islandFountainPos()):
+        particles.emitParticleBurst(HealingAura, fountain)
+        const Offsets = [
+          vec3(2.1'f32, 0.2'f32, 0.4'f32),
+          vec3(-1.8'f32, 0.15'f32, 1.6'f32),
+          vec3(0.3'f32, 0.35'f32, -2.0'f32),
+          vec3(-0.6'f32, 0.1'f32, -0.3'f32)
+        ]
+        for offset in Offsets:
+          particles.emitParticleBurst(HealingAura, fountain + offset)
+      for pudge in run.world.pudges:
+        if not pudge.onIslandFountain or pudge.hp >= pudge.maxHp:
+          continue
+        if not fogShownPudge(pudge):
+          continue
+        var glow = unitPoint(pudge.id, pudge.position)
+        glow.y = surfaceHeightNear(glow.x, glow.z, glow.y) + 1.4'f32
+        particles.emitParticleBurst(HealingAura, glow)
     if run.world.clashTick == run.world.tick:
       var clash = renderPoint(run.world.clashPoint)
       clash.y = surfaceHeightNear(clash.x, clash.z, clash.y) + 1.4'f32
@@ -1379,26 +1658,56 @@ proc runGraphics*() =
       origin.y = surfaceHeightNear(origin.x, origin.z, origin.y) + 1.2'f32
       particles.emitParticleBurst(MagicBurst, origin)
 
-  const SeatTints: array[PudgeCount, chroma.Color] = [
+  const SeatTints: array[MaxPudgeCount, chroma.Color] = [
     color(0.62, 0.78, 1.00, 1.0),   # west 1: sky
     color(0.62, 1.00, 0.75, 1.0),   # west 2: mint
     color(0.85, 0.70, 1.00, 1.0),   # west 3: violet
+    color(0.45, 0.92, 0.95, 1.0),   # west 4: aqua
+    color(0.78, 1.00, 0.55, 1.0),   # west 5: lime
     color(1.00, 0.72, 0.62, 1.0),   # east 1: ember
     color(1.00, 0.92, 0.58, 1.0),   # east 2: gold
-    color(1.00, 0.65, 0.85, 1.0)    # east 3: rose
+    color(1.00, 0.65, 0.85, 1.0),   # east 3: rose
+    color(1.00, 0.55, 0.45, 1.0),   # east 4: coral
+    color(0.95, 0.80, 0.45, 1.0)    # east 5: amber
   ]
 
-  proc seatTint(slot: int): chroma.Color =
+  proc tintIndex(pudge: Pudge): int =
+    ## West lanes 0..4, east lanes 5..9, so 3v3 east stays ember/gold/rose.
+    let lane = clamp(int(pudge.slot), 0, MaxTeamSize - 1)
+    if pudge.team == EastTeam: MaxTeamSize + lane else: lane
+
+  proc seatTint(worldIndex: int): chroma.Color =
     ## Soft per-seat wash over the team model, WC3 player-color style.
-    if slot < 0 or slot >= PudgeCount:
+    if worldIndex < 0 or worldIndex >= run.world.pudges.len:
       return color(1, 1, 1, 1)
-    let base = SeatTints[slot]
+    let base = SeatTints[tintIndex(run.world.pudges[worldIndex])]
     color(
       0.62 + base.r * 0.38,
       0.62 + base.g * 0.38,
       0.62 + base.b * 0.38,
       1.0
     )
+
+  proc butcherTint(worldIndex: int, pudge: Pudge): chroma.Color =
+    ## Seat color, then a sick-green wash while Rot is on or the
+    ## butcher is standing in someone else's cloud.
+    result = seatTint(worldIndex)
+    if pudge.state == Dying:
+      return
+    var weight = 0.0'f32
+    if pudge.rotOn:
+      weight =
+        0.26'f32 + 0.22'f32 * max(0.0'f32, 1.0'f32 - rotPulse(pudge) * 3.0'f32)
+    elif run.world.rotAffected(pudge):
+      let beat = 0.5'f32 + 0.5'f32 * sin(
+        unitTime(int32(run.world.tick)) * TAU.float32 * 2.0'f32
+      )
+      weight = 0.14'f32 + 0.10'f32 * beat
+    if weight <= 0:
+      return
+    result.r = result.r * (1.0'f32 - weight) + 0.20'f32 * weight
+    result.g = result.g * (1.0'f32 - weight) + 0.84'f32 * weight
+    result.b = result.b * (1.0'f32 - weight) + 0.12'f32 * weight
 
   proc pudgeLabel(id: int32): string =
     ## Lobby names where the roster knows them; P<id> otherwise.
@@ -1489,6 +1798,10 @@ proc runGraphics*() =
       # see should not print its damage either.
       if fogShownPudge(pudge):
         if pudge.justRune:
+          pushKillFeed(
+            pudgeLabel(pudge.id) & " took " & RuneNames[pudge.buffKind],
+            pudge.team
+          )
           var lift = anchor
           lift.y += 3.2'f32
           floatingTexts.add FloatingText(
@@ -1511,6 +1824,16 @@ proc runGraphics*() =
             world: anchor,
             born: now
           )
+    if run.world.chunkerId != 0 and
+        run.world.chunkTick == run.world.tick:
+      let ci = pudgeIndex(run.world, run.world.chunkerId)
+      let team =
+        if ci >= 0: run.world.pudges[ci].team else: WestTeam
+      pushKillFeed(
+        pudgeLabel(run.world.chunkerId) & " denied " &
+          pudgeLabel(run.world.chunkOwnerId) & "'s hook",
+        team
+      )
     # Kill-streak shouts are global: fog never hides GODLIKE.
     var
       bestRank = 0
@@ -1655,10 +1978,20 @@ proc runGraphics*() =
     orbiting = false
     panning = false
     rmbGesture = false
+    panKeyGesture = false
+    panKeyDragged = false
+    panTap = false
     if humanControlActive():
+      actionCam.takeManual()
+      followSelection = true
       let hero = heroGroundPoint()
       cameraTarget.x = hero.x
       cameraTarget.z = hero.z
+    else:
+      followSelection = false
+      actionCam.enabled = true
+      actionCam.locked = false
+      actionCam.lockId = 0
 
   proc applyHostedSeats() =
     ## Freezes the roster for a hosted match: the host's own seat plus
@@ -1694,6 +2027,14 @@ proc runGraphics*() =
         hostAnnounceStart(run)
     resetMatchPresentation()
 
+  proc rebakeArena() =
+    ## Terrain follows `run.map` after a live N vs N resize.
+    seed = run.map.seed
+    initTerrain()
+    scatterGrass(500, run.map.seed)
+    scatterRocks(40, run.map.seed)
+    bakeTerrain(rebuildWalkability = false)
+
   proc startHostedMatch() =
     ## Enter in the host lobby: lock seats, start the tape, tell every
     ## connection, and let the world tick. Disabled seats rebuild the
@@ -1701,10 +2042,11 @@ proc runGraphics*() =
     when not defined(emscripten):
       block seatGuard:
         var westOn, eastOn = 0
-        for seat in 0 ..< PudgeCount:
+        let n = hostTeamSize
+        for seat in 0 ..< hostSeatCount():
           if seatDisabled[seat]:
             continue
-          if seat < TeamSize: inc westOn else: inc eastOn
+          if seat < n: inc westOn else: inc eastOn
         if westOn == 0 or eastOn == 0:
           setHumanError("EACH TEAM NEEDS AT LEAST ONE SEAT")
           return
@@ -1718,12 +2060,16 @@ proc runGraphics*() =
       startReplayRecording(uint32(transport.durationTicks))
       hostAnnounceStart(run)
       netLobbyOpen = false
+      hostLobbyOpen = false
       transport.playing = true
-      followSelection = false
       if humanControlActive():
+        followSelection = true
+        actionCam.takeManual()
         let hero = heroGroundPoint()
         cameraTarget.x = hero.x
         cameraTarget.z = hero.z
+      else:
+        followSelection = false
 
   proc netRematchNow(setup: Setup) =
     ## The host rematched (or we reconnected): rebuild the follower
@@ -1771,6 +2117,7 @@ proc runGraphics*() =
   window.onFrame = proc() =
     profileBlock "frame":
       let dt = frameDelta(lastFrameTime, Step)
+      hostLobbyOpen = netLobbyOpen
       if window.buttonPressed[KeyLeftBracket]:
         toggleTransportBar()
       sk.uiScale = hudUiScale(window)
@@ -1780,6 +2127,8 @@ proc runGraphics*() =
       tickGameAudio()
       if window.buttonPressed[bindKey(BindMute)]:
         toggleGameAudioMute()
+      if window.buttonPressed[KeyF2] and not chatTyping():
+        discard handleChromeKey(KeyF2)
       if window.buttonPressed[KeyF3]:
         toggleDebugMenu()
       if window.buttonPressed[KeyF8]:
@@ -1795,11 +2144,24 @@ proc runGraphics*() =
         if netRole == NetHost:
           pumpHosting(run)
           if netLobbyOpen:
-            const SeatKeys = [Key1, Key2, Key3, Key4, Key5, Key6]
+            const SeatKeys = [
+              Key1, Key2, Key3, Key4, Key5, Key6, Key7, Key8, Key9, Key0
+            ]
             let shiftHeld =
               window.buttonDown[KeyLeftShift] or
               window.buttonDown[KeyRightShift]
+            if not hostingStarted():
+              if window.buttonPressed[KeyMinus]:
+                if applyTeamSize(int(options.teamSize) - 1):
+                  setHostTeamSize(int(options.teamSize))
+                  rebakeArena()
+              if window.buttonPressed[KeyEqual]:
+                if applyTeamSize(int(options.teamSize) + 1):
+                  setHostTeamSize(int(options.teamSize))
+                  rebakeArena()
             for i, key in SeatKeys:
+              if i >= hostSeatCount():
+                continue
               if window.buttonPressed[key]:
                 if shiftHeld:
                   # Toggle the seat for roster experiments; claimed
@@ -1811,7 +2173,7 @@ proc runGraphics*() =
                     seatDisabled[i] = not seatDisabled[i]
                 elif not seatDisabled[i]:
                   hostClaimLocal(i)
-            if window.buttonPressed[Key0]:
+            if window.buttonPressed[Key0] and hostSeatCount() < 10:
               hostClaimLocal(-1)
             if window.buttonPressed[KeyEnter]:
               startHostedMatch()
@@ -1843,6 +2205,10 @@ proc runGraphics*() =
         transport.sync(run.world.tick, recorded, run.world.gameOver)
       if netLobbyOpen:
         transport.playing = false
+        chatInputEnabled = false
+        cancelChatTyping()
+      else:
+        chatInputEnabled = true
       transport.startFrame(dt, TickRate)
       if not transport.inHistory and not run.replayMode and
           (humanControlActive() or run.humanSlots.len > 0 or
@@ -1850,7 +2216,7 @@ proc runGraphics*() =
         # Live human seats play at 1x; faster speeds are for
         # spectating and catching back up to the live tick.
         transport.setSpeed(0)
-      if not netLobbyOpen and not menuIsOpen():
+      if not netLobbyOpen and not menuIsOpen() and not chatTyping():
         # Replay and live spectators get the same LMB pass: click a
         # butcher to lock fog to their eyes. A seated human still
         # issues commands through the rest of handleHumanInput.
@@ -1867,7 +2233,9 @@ proc runGraphics*() =
           not transport.inHistory or netRole == NetClient,
           cameraTarget,
           followSelection,
-          rightClickCommand
+          rightClickCommand and not window.buttonDown[bindKey(BindPan)],
+          window.buttonDown[bindKey(BindPan)],
+          panTap
         )
       let frameStart = epochTime()
       if fpsPrevStart > 0:
@@ -1897,25 +2265,26 @@ proc runGraphics*() =
           hostBroadcastTicks(run)
           hostForwardResults(run, localSeat)
       when defined(emscripten):
-        # Rebuild the prediction world from the freshly-advanced confirmed
-        # world: replay this seat's unconfirmed local intents and run a
-        # few ticks ahead, so the local butcher and camera respond before
-        # the host echoes the command back. Followers only; the confirmed
-        # `run` world stays the hash-verified authority (never ticked
-        # here). Rollback happens inside `rebuild`.
-        if netRole == NetClient and netClientSeat() >= 0 and
-            not run.world.gameOver:
-          # Size the lead for the worst-case RTT (ping + jitter), so a
-          # jittery link keeps a stable lead instead of bouncing frame to
-          # frame — fewer timing-miss snaps.
-          let lead = leadFromRttMs(netPingMs() + netPingJitterMs())
-          if not predictor.enabled or predictor.seat != netClientSeat():
-            predictor.enable(netClientSeat(), lead)
+        profileBlock "predict":
+          # Rebuild the prediction world from the freshly-advanced confirmed
+          # world: replay this seat's unconfirmed local intents and run a
+          # few ticks ahead, so the local butcher and camera respond before
+          # the host echoes the command back. Followers only; the confirmed
+          # `run` world stays the hash-verified authority (never ticked
+          # here). Rollback happens inside `rebuild`.
+          if netRole == NetClient and netClientSeat() >= 0 and
+              not run.world.gameOver:
+            # Size the lead for the worst-case RTT (ping + jitter), so a
+            # jittery link keeps a stable lead instead of bouncing frame to
+            # frame — fewer timing-miss snaps.
+            let lead = leadFromRttMs(netPingMs() + netPingJitterMs())
+            if not predictor.enabled or predictor.seat != netClientSeat():
+              predictor.enable(netClientSeat(), lead)
+            else:
+              predictor.lead = lead
+            predictor.rebuild(run)
           else:
-            predictor.lead = lead
-          predictor.rebuild(run)
-        else:
-          predictor.disable()
+            predictor.disable()
       if netRole == NetClient and run.hashCheck.mismatches > 0:
         netReportDesync(run.hashCheck.firstTick)
       let active = simulationActive(transport)
@@ -1925,6 +2294,7 @@ proc runGraphics*() =
       else:
         renderAlpha = 1
         animationAlpha = 0
+      applyFollowLock()
       if active:
         particles.advanceParticles(dt)
 
@@ -1962,7 +2332,7 @@ proc runGraphics*() =
             unitFacing(pudge.id, pudge.facing),
             clip,
             holdTime(model, clip, pudge.animTicks, pudge.state == Dying),
-            seatTint(pudgeIndex(run.world, pudge.id))
+            butcherTint(pudgeIndex(run.world, pudge.id), pudge)
           )
         if scene.sunDepthPass:
           return
@@ -1992,18 +2362,24 @@ proc runGraphics*() =
             1.0'f32 + (1.0'f32 - fade) * 0.14'f32
           )
 
-      scene.setToonHour(clockHour(float32(run.world.tick) + renderAlpha, TickRate))
-      setEnvironmentPalette(scene.toon)
-      sunDepthPasses(window.size):
-        drawTerrainSunDepth()
-        scene.sunDepthPass = true
-        drawButchers()
-        scene.sunDepthPass = false
-      glClearColor(0.05, 0.07, 0.10, 1.0)
-      glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
-      applyPlayViewport()
-      updateTerrainVision()
-      drawTerrain(viewProjection, showTiles)
+      profileBlock "draw":
+        scene.setToonHour(clockHour(float32(run.world.tick) + renderAlpha, TickRate))
+        setEnvironmentPalette(scene.toon)
+        profileBlock "shadows":
+          sunDepthPasses(window.size):
+            if sunDepthTerrainDirty:
+              drawTerrainSunDepth()
+              commitSunTerrain()
+            scene.sunDepthPass = true
+            drawButchers()
+            scene.sunDepthPass = false
+        glClearColor(0.05, 0.07, 0.10, 1.0)
+        glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
+        applyPlayViewport()
+        profileBlock "vision":
+          updateTerrainVision()
+        drawTerrain(viewProjection, showTiles)
+      profilePush("worldDraw")
       beginCharacters(scene, window, view, projection, cameraEye)
       applyPlayViewport()
       drawButchers()
@@ -2021,18 +2397,37 @@ proc runGraphics*() =
         glow.y = surfaceHeightNear(glow.x, glow.z, glow.y) + 0.22'f32
         shapeRenderer.addCircle(glow, GrabGlowRadius, GrabGlow, 14)
       let rotR = RotRadius.float32 / WorldScale.float32
-      for pudge in run.world.pudges:
+      let rotSeconds = unitTime(int32(run.world.tick))
+      for i in 0 ..< run.world.pudges.len:
+        let pudge = predictedPudge(i)
         if pudge.state == Dying or not fogShownPudge(pudge):
           continue
         var feet = unitPoint(pudge.id, pudge.position)
         feet.y = surfaceHeightNear(feet.x, feet.z, feet.y) + 0.16'f32
         if pudge.rotOn:
-          shapeRenderer.addCircle(feet, rotR * 0.96'f32, RotFill, 28)
-          shapeRenderer.addDebugRing(
-            vec3(feet.x, 0, feet.z), rotR, RotAura, 0.12'f32
+          shapeRenderer.addRotCloud(feet, rotR, rotPulse(pudge), rotSeconds)
+        if pudge.rotOn or run.world.rotAffected(pudge):
+          let sickPulse = 0.5'f32 + 0.5'f32 * sin(
+            rotSeconds * TAU.float32 * 2.0'f32 + pudge.id.float32 * 0.7'f32
           )
-        if run.world.rotAffected(pudge):
-          shapeRenderer.addCircle(feet, 1.35'f32, RotSick, 12)
+          shapeRenderer.addCircle(
+            feet,
+            1.28'f32 + sickPulse * 0.42'f32,
+            fadeRgbx(RotSick, 78.0'f32 + sickPulse * 70.0'f32),
+            14
+          )
+      block:
+        let
+          fountain = tileCenterRender(IslandCenterX, IslandCenterZ)
+          fountainR = IslandFountainRadius.float32 / WorldScale.float32
+          islandR = float32(IslandRadius) + 0.6'f32
+        var glow = fountain
+        glow.y = surfaceHeightNear(fountain.x, fountain.z, 0) + 0.18'f32
+        shapeRenderer.addCircle(glow, islandR, FountainGlow, 20)
+        shapeRenderer.addCircle(glow, fountainR * 0.98'f32, FountainFill, 32)
+        shapeRenderer.addDebugRing(
+          vec3(fountain.x, 0, fountain.z), fountainR, FountainAura, 0.10'f32
+        )
       block:
         let now = epochTime()
         var kept: seq[BlinkResidue]
@@ -2179,7 +2574,8 @@ proc runGraphics*() =
               delayedValue: max(pudge.hp, 0).float32,
               height: 0.12'f32,
               color:
-                if pudge.inRiver: rgbx(64, 168, 196, 255)
+                if pudge.onIslandFountain: rgbx(96, 220, 110, 255)
+                elif pudge.inRiver: rgbx(64, 168, 196, 255)
                 elif pudge.team == WestTeam: WestHook
                 else: EastHook,
               showDamageTrail: true
@@ -2211,7 +2607,9 @@ proc runGraphics*() =
           ]
         )
       worldBarRenderer.draw(viewProjection, barRight, barUp)
+      profilePop()
 
+      profilePush("ui")
       glDisable(GL_DEPTH_TEST)
       glDisable(GL_CULL_FACE)
       glDisable(GL_BLEND)
@@ -2312,7 +2710,7 @@ proc runGraphics*() =
               if slot == spectateSlot:
                 color(0.94, 0.85, 0.50, 1)
               else:
-                SeatTints[min(slot, PudgeCount - 1)]
+                SeatTints[tintIndex(pudge)]
           sk.drawLabel(
             label,
             screen - vec2(70, 9),
@@ -2499,6 +2897,7 @@ proc runGraphics*() =
           sk.drawLabel(hudScratch, vec2(10, screenH - 24), vec2(220, 18),
             rgbx(236, 232, 210, 220), "Hud", LeftAlign)
       sk.endUi()
+      profilePop()
       when defined(takeScreenshot):
         captureScreenshot(
           window,
@@ -2506,7 +2905,8 @@ proc runGraphics*() =
           24,
           "examples/pudge_wars/pw_shot.png"
         )
-      window.swapBuffers()
+      profileBlock "present":
+        window.present(framePaceHz)
     if noteProfileFrame():
       when not defined(emscripten):
         window.closeRequested = true

@@ -8,10 +8,11 @@
 ## speed; stops and behind-the-back reversals shed it. Walls and bodies
 ## zero the blocked component instead of storing it. Living butchers are
 ## solid circles; walking rejects overlap and
-## dumps/respawns push coincident bodies apart. Flying
-## hooks rebound off blocked land, the fountain, and the map edge without
-## resetting leftover range. An empty retract retraces the chain and can
-## still latch. Opposing shuriken disks cancel both hooks without damage.
+## dumps/respawns push coincident bodies apart. Flying hooks rebound
+## off blocked land, bounce trees, the fountain, and the map edge with
+## a curved heading, without resetting leftover range. An empty retract
+## retraces the chain and can still latch. Opposing shuriken disks
+## cancel both hooks without damage.
 ## This module must not import anything that returns a float.
 
 import
@@ -276,6 +277,10 @@ type
     scriptObjects: seq[WorldObject]
     scriptObjectCount: int
     scriptObjectsTick: int32
+    scriptHookIdx: seq[int]
+    scriptHookCount: int
+    scriptRuneIdx: seq[int]
+    scriptRuneCount: int
 
   IntentKind* = enum
     ## One queued human command; integers only so replays stay exact.
@@ -316,6 +321,16 @@ type
     text*: string
     tick*: int32
 
+  MatchChatLine* = object
+    ## One typed match-chat line. Display-only: never hashed, never on the tape.
+    tick*: int32
+    slot*: int32
+      ## Roster index, or -1 for a spectator.
+    name*: string
+    text*: string
+    team*: int32
+      ## `Team.ord`, or -1 when the line has no bank.
+
   Game* = ref object
     world*: World
     map*: MapData
@@ -342,6 +357,29 @@ type
       ## Bot hook aim scatter in tiles, applied before recording.
     botSpeech*: seq[BotSpeech]
       ## Per-seat intent bubbles captured from BASIC `print`.
+    chatLog*: seq[MatchChatLine]
+      ## Typed player chat. Display-only.
+
+const
+  MaxMatchChat* = 48
+    ## Ring size for the display-only match chat.
+
+proc appendChat*(game: Game, line: MatchChatLine) =
+  ## Pushes one chat row, collapsing a seat that repeats the same line.
+  if game == nil or line.text.len == 0:
+    return
+  if game.chatLog.len > 0:
+    let last = game.chatLog[^1]
+    if last.slot == line.slot and last.text == line.text:
+      return
+  game.chatLog.add line
+  if game.chatLog.len > MaxMatchChat:
+    game.chatLog.delete(0)
+
+proc clearChat*(game: Game) =
+  ## Drops the display-only match chat (seek, rematch, new tape).
+  if game != nil:
+    game.chatLog.setLen(0)
 
 var
   activeWalkLayer: int
@@ -686,8 +724,25 @@ proc wallBlocksTile*(world: World, tileX, tileZ: int): bool =
       return true
   false
 
-proc hookHitsSolid(tileX, tileZ: int): bool =
+proc bouncedOffIsland(hook: Hook): bool =
+  ## True after the head has already ricocheted on the fountain.
+  ## Face contact is recorded on the river tile just outside the rocks,
+  ## so this is a disk, not `islandTile`.
+  let reach = (IslandRadius + 1) * WorldScale
+  for bounce in hook.bounces:
+    if within(bounce, worldAtTile(IslandCenterX, IslandCenterZ), reach):
+      return true
+  false
+
+proc hookHitsSolid(hook: Hook, tileX, tileZ: int): bool =
   ## Map solids plus living palisades: hooks rebound here.
+  ## The fountain is one bounce: after the first ricochet it is air, so
+  ## a glance cannot orbit the rocks. Grapples never latch it — the
+  ## rocks are unstandable, so a yank would dump the caster in the drink.
+  if islandTile(tileX, tileZ):
+    if hook.isGrapple or hook.bouncedOffIsland:
+      return false
+    return true
   if hookReboundTile(tileX, tileZ):
     return true
   activeHookWorld != nil and activeHookWorld.wallBlocksTile(tileX, tileZ)
@@ -1249,7 +1304,7 @@ proc reelSpeed(hook: Hook): int32 =
   if hook.peakSpeed > 0: hook.peakSpeed
   else: hook.speed
 
-proc clone*(w: World): World =
+proc clone*(w: World): World {.measure.} =
   result = World()
   result[] = w[]
 
@@ -1260,8 +1315,8 @@ proc spawnTile*(pudge: Pudge): tuple[x, z: int] =
   ## Home pad tile this butcher respawns on.
   tileOf(pudge.spawnPosition)
 
-proc livePudgeSetup*(duel = false): seq[ReplayPudge] =
-  ## Stock roster: 3v3 across six seats, or the 1v1 duel — one butcher
+proc livePudgeSetup*(duel = false, teamSize = TeamSize): seq[ReplayPudge] =
+  ## Stock roster: N vs N across 2N seats, or the 1v1 duel — one butcher
   ## a side on team slot 1 (a shuffled, jittered lane, not always mid).
   if duel:
     result.setLen(DuelPudgeCount)
@@ -1273,23 +1328,42 @@ proc livePudgeSetup*(duel = false): seq[ReplayPudge] =
       lobbySeat: 4
     )
     return
-  result.setLen(PudgeCount)
-  for i in 0 ..< PudgeCount:
-    let team = if i < TeamSize: WestTeam else: EastTeam
+  let n = clampTeamSize(teamSize)
+  let count = matchPudgeCount(n)
+  result.setLen(count)
+  for i in 0 ..< count:
+    let team = if i < n: WestTeam else: EastTeam
     result[i] = ReplayPudge(
       id: FirstPudgeId + int32(i),
       team: uint8(team.ord),
-      slot: uint8(i mod TeamSize),
+      slot: uint8(i mod n),
       lobbySeat: uint8(i)
     )
 
-proc filteredRoster*(disabled: array[PudgeCount, bool]): seq[ReplayPudge] =
-  ## The stock 3v3 roster minus the lobby's disabled seats. Spawn
-  ## lanes and lobby identity travel with each entry, so a 2v1 keeps
-  ## its original pads and seat labels.
-  for entry in livePudgeSetup(false):
-    if not disabled[int(entry.lobbySeat)]:
-      result.add entry
+proc filteredRoster*(
+    disabled: openArray[bool],
+    teamSize = TeamSize
+): seq[ReplayPudge] =
+  ## The N vs N roster minus the lobby's disabled seats. Spawn lanes
+  ## and lobby identity travel with each entry, so a 2v1 keeps its
+  ## original pads and seat labels.
+  for entry in livePudgeSetup(false, teamSize):
+    let seat = int(entry.lobbySeat)
+    if seat < disabled.len and disabled[seat]:
+      continue
+    result.add entry
+
+proc rosterModeName*(world: World): string =
+  ## "1v1", "2v2", … or "duel" when both butchers sit on team slot 1.
+  var west, east = 0
+  for pudge in world.pudges:
+    if pudge.team == WestTeam: inc west
+    else: inc east
+  if west == 1 and east == 1 and world.pudges.len >= 1 and
+      world.pudges[0].slot == 1:
+    "duel"
+  else:
+    $west & "v" & $east
 
 proc worldIndexOfSeat*(world: World, lobbySeat: int): int =
   ## Maps one lobby seat number onto the (possibly compacted) roster.
@@ -1775,7 +1849,7 @@ proc onOwnShopPad(team: Team, tileX, tileZ: int): bool =
   max(abs(tileX - shopX), abs(tileZ - ShopZ)) <= int(ShopRadiusTiles)
 
 proc onOwnSpawnPad(world: World, team: Team, tileX, tileZ: int): bool =
-  for s in 0 ..< TeamSize:
+  for s in 0 ..< world.spawnLayout.west.len:
     let pad = world.spawnLayout.layoutPad(team, s)
     if abs(tileX - pad.x) <= int(FountainPadRadius) and
         abs(tileZ - pad.z) <= int(FountainPadRadius):
@@ -2256,11 +2330,12 @@ proc blinkRayStops(
     crossing: bool
 ): bool =
   ## True when the hop should halt here and keep the last legal landing.
-  ## Empty river water is air: the ray flies over so a far-bank click
-  ## can still land on the opposite bank. An occupied river body stops
-  ## the ray (back up). The fountain is air. Cliffs, off-map, dest-bank
-  ## palisades, and dest-bank bodies stop it. Origin-bank walls and
-  ## bodies do not stop a hop that clears the river.
+  ## Empty river water is air: the ray flies over it. Range, not this
+  ## test, is what stops a bank butcher short of the far side. An
+  ## occupied river body stops the ray (back up). The fountain is air.
+  ## Cliffs, off-map, dest-bank palisades, and dest-bank bodies stop
+  ## it. Origin-bank walls and bodies do not stop a hop that has the
+  ## range to clear the river.
   let tile = tileOf(pos)
   if tile.x < 0 or tile.x >= GridTiles or tile.z < 0 or tile.z >= GridTiles:
     return true
@@ -2323,9 +2398,9 @@ proc blinkLanding(
 ): tuple[ok: bool, pos: WorldPoint] =
   ## Walks the blink ray, capped at `BlinkRange`, and returns the
   ## farthest standable, unoccupied tile along it, including river
-  ## water and the opposite bank. Cliffs, palisades, and occupied
-  ## circles stop the ray: land on the last legal point in front of
-  ## them instead of rejecting the order.
+  ## water. A hop from the water can still land on a bank. Cliffs,
+  ## palisades, and occupied circles stop the ray: land on the last
+  ## legal point in front of them instead of rejecting the order.
   var
     goal = dest
     direction = WorldPoint(x: dest.x - pudge.position.x, z: dest.z - pudge.position.z)
@@ -2394,10 +2469,10 @@ proc extendOwnedHookRange(world: World, pudgeId, hop: int32) =
 proc applyBlinkFine*(world: World, pudgeId, fineX, fineY: int32): bool =
   ## Instant dodge teleport along the aimed heading, capped at
   ## `BlinkRange`. Lands on the farthest legal tile along that ray,
-  ## including river water and the opposite bank. Windup still
-  ## blocks (the head has not left the hand). A hooked victim cannot
-  ## hop. Once a chain is in the air, blink is allowed and the hop
-  ## distance is added to that hook's remaining range.
+  ## including river water. Windup still blocks (the head has not
+  ## left the hand). A hooked victim cannot hop. Once a chain is in
+  ## the air, blink is allowed and the hop distance is added to that
+  ## hook's remaining range.
   let index = world.pudgeIndex(pudgeId)
   if index < 0 or world.pudges[index].state == Dying:
     return false
@@ -2798,16 +2873,63 @@ proc applyTakeOver*(game: Game, slot: int, human: bool): bool =
       game.recordingError = error.msg
   true
 
-proc worldObjectCount*(world: World, pudgeId: int32): int =
-  ## Living butchers plus visible gadgets. Enemy mines are omitted so
-  ## scripts cannot scout Hooktraps.
+proc fogTeamOf*(world: World, pudgeId: int32): int =
+  ## Team ordinal a spectator inherits from this butcher, or -1 if the
+  ## id is missing (omniscient fallback).
+  let index = pudgeIndex(world, pudgeId)
+  if index < 0:
+    return -1
+  world.pudges[index].team.ord
+
+proc fogBaseVisible*(team: int, position: WorldPoint): bool =
+  ## Your base is your entire home bank: the whole friendly side up to
+  ## the river stays lit. The enemy bank gets no such courtesy.
+  let (tx, _) = tileOf(position)
+  if team == WestTeam.ord:
+    tx <= PlayWestMax
+  else:
+    tx >= PlayEastMin
+
+proc fogCanSeeTeam*(world: World, team: int, position: WorldPoint): bool =
+  ## Whether `team` currently lights `position`. `team < 0` is omniscient.
+  if team < 0:
+    return true
+  let (tx, _) = tileOf(position)
+  if riverTile(tx):
+    return true
+  if fogBaseVisible(team, position):
+    return true
+  let radius = int64(SightRadiusTiles) * WorldScale
+  for pudge in world.pudges:
+    if pudge.team.ord != team or pudge.state == Dying:
+      continue
+    if distanceSquared(pudge.position, position) <= radius * radius:
+      return true
+  false
+
+proc fogShownPudgeTeam*(world: World, team: int, pudge: Pudge): bool =
+  ## Own team always shows; enemies only inside the shared sight.
+  team < 0 or pudge.team.ord == team or
+    fogCanSeeTeam(world, team, pudge.position)
+
+proc scriptTeamOf(world: World, pudgeId: int32): tuple[team: Team, teamOrd: int] =
   let viewer = world.pudgeIndex(pudgeId)
-  let team =
-    if viewer >= 0: world.pudges[viewer].team
-    else: WestTeam
+  if viewer >= 0:
+    let team = world.pudges[viewer].team
+    (team, team.ord)
+  else:
+    (WestTeam, WestTeam.ord)
+
+proc worldObjectCount*(world: World, pudgeId: int32): int =
+  ## Fog-clipped observation for one butcher: own team always, enemies
+  ## and walls only inside shared sight (home bank, river, and living
+  ## teammates within `SightRadiusTiles`). Enemy mines stay hidden.
+  let (team, teamOrd) = world.scriptTeamOf(pudgeId)
   world.scriptObjects.setLen(world.pudges.len + world.props.len)
   world.scriptObjectCount = 0
   for pudge in world.pudges:
+    if not fogShownPudgeTeam(world, teamOrd, pudge):
+      continue
     world.scriptObjects[world.scriptObjectCount] = WorldObject(
       id: pudge.id,
       kind: PudgeObjectKind,
@@ -2824,6 +2946,9 @@ proc worldObjectCount*(world: World, pudgeId: int32): int =
     inc world.scriptObjectCount
   for prop in world.props:
     if not prop.alive or not propVisibleTo(prop, team):
+      continue
+    if prop.kind == PropWall and
+        not fogCanSeeTeam(world, teamOrd, prop.propCenter):
       continue
     world.scriptObjects[world.scriptObjectCount] = WorldObject(
       id: prop.id,
@@ -2849,6 +2974,55 @@ proc worldObjectAt*(
   if index < 0 or index >= worldObjectCount(world, pudgeId):
     return false
   value = world.scriptObjects[index]
+  true
+
+proc worldHookCount*(world: World, pudgeId: int32): int =
+  ## Flying or reeling hooks whose head is inside this butcher's fog.
+  let teamOrd = world.scriptTeamOf(pudgeId).teamOrd
+  world.scriptHookIdx.setLen(world.hooks.len)
+  world.scriptHookCount = 0
+  for i, hook in world.hooks:
+    if hook.phase == HookIdle:
+      continue
+    if not fogCanSeeTeam(world, teamOrd, hook.position):
+      continue
+    world.scriptHookIdx[world.scriptHookCount] = i
+    inc world.scriptHookCount
+  world.scriptHookCount
+
+proc worldHookAt*(
+    world: World,
+    pudgeId: int32,
+    index: int,
+    value: var Hook
+): bool =
+  if index < 0 or index >= worldHookCount(world, pudgeId):
+    return false
+  value = world.hooks[world.scriptHookIdx[index]]
+  true
+
+proc worldRuneCount*(world: World, pudgeId: int32): int =
+  ## Runes inside this butcher's fog. They spawn in the river, which
+  ## stays lit, so this usually matches the full list.
+  let teamOrd = world.scriptTeamOf(pudgeId).teamOrd
+  world.scriptRuneIdx.setLen(world.runes.len)
+  world.scriptRuneCount = 0
+  for i, rune in world.runes:
+    if not fogCanSeeTeam(world, teamOrd, rune.position):
+      continue
+    world.scriptRuneIdx[world.scriptRuneCount] = i
+    inc world.scriptRuneCount
+  world.scriptRuneCount
+
+proc worldRuneAt*(
+    world: World,
+    pudgeId: int32,
+    index: int,
+    value: var Rune
+): bool =
+  if index < 0 or index >= worldRuneCount(world, pudgeId):
+    return false
+  value = world.runes[world.scriptRuneIdx[index]]
   true
 
 proc stepMovement(world: World) =
@@ -2928,6 +3102,15 @@ proc stepRot(world: World) =
         continue
       world.dealPudgeDamage(i, RotDamage, ownerId)
 
+proc islandFountainPos*(): WorldPoint =
+  ## World center of the mid-river fountain rocks.
+  worldAtTile(IslandCenterX, IslandCenterZ)
+
+proc onIslandFountain*(pudge: Pudge): bool =
+  ## Neutral WC3 fountain aura: both teams, any layer, including hooked.
+  pudge.state == Alive and
+    within(pudge.position, islandFountainPos(), IslandFountainRadius)
+
 proc onOwnPad*(world: World, pudge: Pudge): bool =
   ## Returns whether this butcher stands on a friendly spawn pad.
   if pudge.state != Alive or pudge.inRiver:
@@ -2936,16 +3119,24 @@ proc onOwnPad*(world: World, pudge: Pudge): bool =
   world.onOwnSpawnPad(pudge.team, tile.x, tile.z)
 
 proc stepFountain(world: World) =
-  ## Trickle-heals butchers idling on their own spawn pad: a recovery
-  ## loop after a bad trade instead of feeding at one HP.
-  if world.tick mod FountainHealPeriodTicks != 0:
+  ## Spawn-pad trickle plus the mid-river fountain of health.
+  let
+    padPulse = world.tick mod FountainHealPeriodTicks == 0
+    islandPulse = world.tick mod IslandFountainHealPeriodTicks == 0
+  if not padPulse and not islandPulse:
     return
+  let fountain = islandFountainPos()
   for pudge in world.pudges.mitems:
-    if pudge.hookedBy != 0 or not world.onOwnPad(pudge):
+    if pudge.state != Alive or pudge.hp >= pudge.maxHp:
       continue
-    if pudge.hp >= pudge.maxHp:
+    var heal = 0'i32
+    if padPulse and pudge.hookedBy == 0 and world.onOwnPad(pudge):
+      heal += max(1'i32, pudge.maxHp * FountainHealPercent div 100)
+    if islandPulse and
+        within(pudge.position, fountain, IslandFountainRadius):
+      heal += islandFountainHeal(pudge.maxHp)
+    if heal <= 0:
       continue
-    let heal = max(1'i32, pudge.maxHp * FountainHealPercent div 100)
     pudge.hp = min(pudge.hp + heal, pudge.maxHp)
 
 proc grantRune(world: World, index: int, kind: RuneKind) =
@@ -3065,6 +3256,58 @@ proc recordBounce(hook: var Hook) =
   if hook.bounces.len < MaxHookBounces:
     hook.bounces.add hook.position
 
+proc reboundCenter(tileX, tileZ: int): WorldPoint =
+  ## Cylinder axis of one solid: the fountain is one rock, everything
+  ## else (tree, rim tile, palisade) uses that tile's center.
+  if islandTile(tileX, tileZ):
+    return worldAtTile(IslandCenterX, IslandCenterZ)
+  worldAtTile(
+    clamp(tileX, 0, GridTiles - 1),
+    clamp(tileZ, 0, GridTiles - 1)
+  )
+
+proc bounceUsesCurve(tileX, tileZ: int): bool =
+  ## Trees and the fountain are cylinders. Rim rock and palisades stay
+  ## flat faces so a wall shot is still incidence-in, incidence-out.
+  islandTile(tileX, tileZ) or fieldTreeTile(tileX, tileZ)
+
+proc reboundHeading(hook: var Hook, tileX, tileZ: int) =
+  ## Reflects the throw off a curved surface: angle in equals angle out
+  ## about the normal from the solid's center to the contact. Off-center
+  ## hits pick up a glancing component, so bank shots curve instead of
+  ## flipping one axis. A heading already leaving the solid is left
+  ## alone so an inside-tile nudge can walk out.
+  let center = reboundCenter(tileX, tileZ)
+  let
+    nx = int64(hook.position.x) - int64(center.x)
+    nz = int64(hook.position.z) - int64(center.z)
+    n2 = nx * nx + nz * nz
+  if n2 == 0:
+    hook.heading.x = -hook.heading.x
+    hook.heading.z = -hook.heading.z
+    return
+  let
+    hx = int64(hook.heading.x)
+    hz = int64(hook.heading.z)
+    dot = hx * nx + hz * nz
+  if dot >= 0:
+    return
+  let
+    rx = hx - 2 * roundDivision(dot * nx, n2)
+    rz = hz - 2 * roundDivision(dot * nz, n2)
+  if rx == 0 and rz == 0:
+    hook.heading.x = -hook.heading.x
+    hook.heading.z = -hook.heading.z
+    return
+  hook.heading.x =
+    if rx > int64(high(int32)): high(int32)
+    elif rx < int64(low(int32)): low(int32)
+    else: int32(rx)
+  hook.heading.z =
+    if rz > int64(high(int32)): high(int32)
+    elif rz < int64(low(int32)): low(int32)
+    else: int32(rz)
+
 proc consumeBudget(left: var int32, amount: int32) =
   if amount >= left:
     left = 0
@@ -3085,13 +3328,15 @@ proc stepHookAlong(hook: var Hook, delta: WorldPoint, dist, absD: int64) =
 
 proc flyHook(hook: var Hook, budget: int32): int32 =
   ## Moves a flying head, reflecting off solid faces and the map edge.
-  ## `budget` is leftover range for this tick. A bounce never resets it.
+  ## Bounces use a curved (cylindrical) heading so off-center hits
+  ## glance instead of axis-flipping. `budget` is leftover range for
+  ## this tick. A bounce never resets it.
   var left = budget
   var steps = 0
   while left > 0 and steps < MaxHookFlySteps:
     inc steps
     let tile = tileOf(hook.position)
-    if hookHitsSolid(tile.x, tile.z):
+    if hookHitsSolid(hook, tile.x, tile.z):
       if reboundOnRim(tile.x, tile.z):
         # Already inside the rim (or off the board). Reflecting the
         # travel axis walks a grazing heading further into the void.
@@ -3108,17 +3353,46 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
         clampHookToMap(hook.position)
         consumeBudget(left, stepDist)
         continue
-      let
-        ax = abs(hook.heading.x)
-        az = abs(hook.heading.z)
-      if ax >= az and hook.heading.x != 0:
-        hook.heading.x = -hook.heading.x
-      elif hook.heading.z != 0:
-        hook.heading.z = -hook.heading.z
-      elif hook.heading.x != 0:
-        hook.heading.x = -hook.heading.x
+      if islandTile(tile.x, tile.z):
+        # One ricochet, then eject radially. A tangent heading would
+        # otherwise slide around the pixelated rock disk and pin the
+        # chain to the fountain until range runs out.
+        hook.reboundHeading(tile.x, tile.z)
+        if hook.heading.x == 0 and hook.heading.z == 0:
+          break
+        hook.recordBounce()
+        let
+          center = worldAtTile(IslandCenterX, IslandCenterZ)
+          outDir = hook.position - center
+          stepDist = min(left, max(1'i32, WorldScale div 4))
+        var step = scaledPlanar(outDir, stepDist)
+        if step.x == 0 and step.z == 0:
+          step = scaledPlanar(
+            WorldPoint(x: hook.heading.x, z: hook.heading.z),
+            stepDist
+          )
+        if step.x == 0 and step.z == 0:
+          break
+        hook.position = hook.position + step
+        clampHookToMap(hook.position)
+        consumeBudget(left, stepDist)
+        continue
+      if bounceUsesCurve(tile.x, tile.z):
+        hook.reboundHeading(tile.x, tile.z)
+        if hook.heading.x == 0 and hook.heading.z == 0:
+          break
       else:
-        break
+        let
+          ax = abs(hook.heading.x)
+          az = abs(hook.heading.z)
+        if ax >= az and hook.heading.x != 0:
+          hook.heading.x = -hook.heading.x
+        elif hook.heading.z != 0:
+          hook.heading.z = -hook.heading.z
+        elif hook.heading.x != 0:
+          hook.heading.x = -hook.heading.x
+        else:
+          break
       hook.recordBounce()
       if activeHookWorld != nil:
         activeHookWorld.chipWallAt(tile.x, tile.z, hook.damage, hook.team)
@@ -3174,9 +3448,9 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
     let
       absDx = abs(int64(delta.x))
       absDz = abs(int64(delta.z))
-      solidX = signX != 0 and hookHitsSolid(tile.x + signX, tile.z)
-      solidZ = signZ != 0 and hookHitsSolid(tile.x, tile.z + signZ)
-      destSolid = hookHitsSolid(destTile.x, destTile.z)
+      solidX = signX != 0 and hookHitsSolid(hook, tile.x + signX, tile.z)
+      solidZ = signZ != 0 and hookHitsSolid(hook, tile.x, tile.z + signZ)
+      destSolid = hookHitsSolid(hook, destTile.x, destTile.z)
     var
       hitX = signX != 0
       hitZ = signZ != 0
@@ -3235,10 +3509,23 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
     if consumed >= int64(left):
       left = 0
       break
-    if reflectX:
-      hook.heading.x = -hook.heading.x
-    if reflectZ:
-      hook.heading.z = -hook.heading.z
+    var bounceX = destTile.x
+    var bounceZ = destTile.z
+    if destSolid:
+      discard
+    elif reflectX:
+      bounceX = tile.x + signX
+      bounceZ = tile.z
+    elif reflectZ:
+      bounceX = tile.x
+      bounceZ = tile.z + signZ
+    if bounceUsesCurve(bounceX, bounceZ):
+      hook.reboundHeading(bounceX, bounceZ)
+    else:
+      if reflectX:
+        hook.heading.x = -hook.heading.x
+      if reflectZ:
+        hook.heading.z = -hook.heading.z
     hook.recordBounce()
     if activeHookWorld != nil:
       if destSolid:
@@ -3548,13 +3835,14 @@ proc sweepRunes(world: World, hook: Hook) =
 
 proc flyGrapple(hook: var Hook, budget: int32): int32 =
   ## Moves a flying grapple head. Unlike the hook it does not bounce:
-  ## the first solid face latches it.
+  ## the first solid face latches it. The fountain is air: a latch there
+  ## would yank the caster onto unstandable rocks.
   var left = budget
   var steps = 0
   while left > 0 and steps < MaxHookFlySteps:
     inc steps
     let tile = tileOf(hook.position)
-    if hookHitsSolid(tile.x, tile.z):
+    if hookHitsSolid(hook, tile.x, tile.z):
       clampHookToMap(hook.position)
       hook.grappleLatched = true
       return left
@@ -3568,7 +3856,7 @@ proc flyGrapple(hook: var Hook, budget: int32): int32 =
     clampHookToMap(hook.position)
     consumeBudget(left, stepDist)
     let landed = tileOf(hook.position)
-    if hookHitsSolid(landed.x, landed.z):
+    if hookHitsSolid(hook, landed.x, landed.z):
       hook.grappleLatched = true
       return left
   left
@@ -3730,7 +4018,7 @@ proc addHashy(hash: var uint32, value: Heading) =
   hash.addHashy(value.x)
   hash.addHashy(value.z)
 
-proc stateHash*(game: Game): uint64 =
+proc stateHash*(game: Game): uint64 {.measure.} =
   let world = game.world
   var hash = HashySeed
   hash.addHashy(game.map.hash)
@@ -3917,40 +4205,45 @@ proc tickWorld*(game: Game, onHeroTurn: proc() {.closure.}) {.measure.} =
     var action: ReplayAction
     while game.replayPlayer.takeActionAt(uint32(world.tick), action):
       applyReplayAction(world, action)
-  dec world.heroTurnTicks
-  if world.heroTurnTicks <= 0:
-    world.heroTurnTicks += DecisionTicks
+  profileBlock "heroTurn":
+    dec world.heroTurnTicks
+    if world.heroTurnTicks <= 0:
+      world.heroTurnTicks += DecisionTicks
+      if game.historyPlayback:
+        if world.pudges.len > 0:
+          world.heroTurnStart =
+            (world.heroTurnStart + 1) mod world.pudges.len
+      else:
+        onHeroTurn()
+  profileBlock "movement":
+    world.stepMovement()
+    world.resolveOverlaps()
+  profileBlock "hooks":
+    world.stepWindups()
+    world.stepHooks()
+    world.resolveOverlaps()
+  profileBlock "world":
+    world.stepRiver()
+    world.stepRot()
+    world.stepRunes()
+    world.stepFountain()
+    world.resolveOverlaps()
+    world.stepMelee()
+    world.resolveOverlaps()
+    world.stepProps()
+    world.stepDeaths()
+    world.resolveOverlaps()
+    world.checkWinner()
+  profileBlock "hash":
+    let hash = game.stateHash()
     if game.historyPlayback:
-      if world.pudges.len > 0:
-        world.heroTurnStart =
-          (world.heroTurnStart + 1) mod world.pudges.len
-    else:
-      onHeroTurn()
-  world.stepMovement()
-  world.resolveOverlaps()
-  world.stepWindups()
-  world.stepHooks()
-  world.resolveOverlaps()
-  world.stepRiver()
-  world.stepRot()
-  world.stepRunes()
-  world.stepFountain()
-  world.resolveOverlaps()
-  world.stepMelee()
-  world.resolveOverlaps()
-  world.stepProps()
-  world.stepDeaths()
-  world.resolveOverlaps()
-  world.checkWinner()
-  let hash = game.stateHash()
-  if game.historyPlayback:
-    game.checkReplayHash(hash)
-  elif game.recorder != nil and game.recordingError.len == 0 and
-      game.recorder.data.hashes.len < world.tick:
-    try:
-      game.recorder.recordHash(hash)
-    except ReplayError as error:
-      game.recordingError = error.msg
+      game.checkReplayHash(hash)
+    elif game.recorder != nil and game.recordingError.len == 0 and
+        game.recorder.data.hashes.len < world.tick:
+      try:
+        game.recorder.recordHash(hash)
+      except ReplayError as error:
+        game.recordingError = error.msg
 
 proc newWorld*(
     map: MapData,
@@ -3969,13 +4262,16 @@ proc newWorld*(
     runePeriod: max(runePeriod, 0'i32),
     runeClock: max(runePeriod, 0'i32),
     rng: initRng(map.seed),
-    spawnLayout: spawnLayoutFromSeed(map.seed)
+    spawnLayout: spawnLayoutFromSeed(
+      map.seed,
+      if map.teamSize > 0: map.teamSize else: TeamSize
+    )
   )
   result.spawnPudges(setup)
   doAssert result.pudges.len == setup.len, "every pudge must spawn"
   doAssert result.pudges.len >= DuelPudgeCount and
-    result.pudges.len <= PudgeCount,
-    "a match seats 2 to " & $PudgeCount & " butchers"
+    result.pudges.len <= MaxPudgeCount,
+    "a match seats 2 to " & $MaxPudgeCount & " butchers"
 
 
 proc newGame*(
@@ -3992,7 +4288,10 @@ proc newGame*(
     setup =
       if replayMode: replayData.header.setup.pudges
       elif roster.len > 0: roster
-      else: livePudgeSetup(duel)
+      else: livePudgeSetup(
+        duel,
+        if map.teamSize > 0: map.teamSize else: TeamSize
+      )
     goal =
       if replayMode: replayData.header.setup.killGoal
       else: killGoal

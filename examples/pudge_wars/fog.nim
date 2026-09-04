@@ -1,46 +1,55 @@
-## Presentation-only fog of war. Bots and the hashed sim ignore this.
-##
-## Team-shared sight: the whole home bank and the river stay lit. The
-## enemy bank needs a living teammate within `SightRadiusTiles`. Hooks
-## do not scout.
+## Team-shared fog of war. Presentation and bot observations share
+## these rules: the whole home bank and the river stay lit. The enemy
+## bank needs a living teammate within `SightRadiusTiles`. Hooks do
+## not scout. The hashed sim physics stay omniscient.
 
-import content, maps, sim
+import
+  polyworld/[pathing, profiles],
+  content, maps, sim
 
-proc fogTeamOf*(world: World, pudgeId: int32): int =
-  ## Team ordinal a spectator inherits from this butcher, or -1 if the
-  ## id is missing (omniscient fallback).
-  let index = pudgeIndex(world, pudgeId)
-  if index < 0:
-    return -1
-  world.pudges[index].team.ord
+export fogTeamOf, fogBaseVisible, fogCanSeeTeam, fogShownPudgeTeam
 
-proc fogBaseVisible*(team: int, position: WorldPoint): bool =
-  ## Your base is your entire home bank: the whole friendly side up to
-  ## the river stays lit. The enemy bank gets no such courtesy.
-  let (tx, _) = tileOf(position)
-  if team == WestTeam.ord:
-    tx <= PlayWestMax
-  else:
-    tx >= PlayEastMin
-
-proc fogCanSeeTeam*(world: World, team: int, position: WorldPoint): bool =
-  ## Whether `team` currently lights `position`. `team < 0` is omniscient.
+proc fillTeamVision*(
+    world: World, team: int, values: var seq[uint8]
+) {.measure.} =
+  ## Paints a 128×128 mask: 255 visible, 0 dark. `team < 0` is omniscient.
+  ## Home bank and river are sequential column fills; living teammates
+  ## stamp a Euclidean circle of `SightRadiusTiles`.
+  let n = GridTiles * GridTiles
+  if values.len != n:
+    values.setLen(n)
   if team < 0:
-    return true
-  let (tx, _) = tileOf(position)
-  if riverTile(tx):
-    return true
-  if fogBaseVisible(team, position):
-    return true
-  let radius = int64(SightRadiusTiles) * WorldScale
+    for i in 0 ..< n:
+      values[i] = 255
+    return
+  for i in 0 ..< n:
+    values[i] = 0
+  let west = team == WestTeam.ord
+  for z in 0 ..< GridTiles:
+    let row = z * GridTiles
+    if west:
+      for x in 0 .. PlayWestMax:
+        values[row + x] = 255
+    else:
+      for x in PlayEastMin ..< GridTiles:
+        values[row + x] = 255
+    for x in RiverWestX .. RiverEastX:
+      values[row + x] = 255
+  let r = SightRadiusTiles
+  let r2 = r * r
   for pudge in world.pudges:
     if pudge.team.ord != team or pudge.state == Dying:
       continue
-    if distanceSquared(pudge.position, position) <= radius * radius:
-      return true
-  false
-
-proc fogShownPudgeTeam*(world: World, team: int, pudge: Pudge): bool =
-  ## Own team always shows; enemies only inside the shared sight.
-  team < 0 or pudge.team.ord == team or
-    fogCanSeeTeam(world, team, pudge.position)
+    let (px, pz) = tileOf(pudge.position)
+    for dz in -r .. r:
+      let tz = pz + dz
+      if tz < 0 or tz >= GridTiles:
+        continue
+      let row = tz * GridTiles
+      for dx in -r .. r:
+        if dx * dx + dz * dz > r2:
+          continue
+        let tx = px + dx
+        if tx < 0 or tx >= GridTiles:
+          continue
+        values[row + tx] = 255

@@ -1,0 +1,172 @@
+# Build and deploy the source-owned Pudge Wars Coworld package.
+#
+# Lifecycle:
+#   1. `coworld next-version pudge-wars` allocates the next registry version.
+#   2. `coworld build` builds the linux/amd64 game image from coworld/compose.yaml,
+#      compiles the Emscripten replay viewer, pins source URLs to this checkout,
+#      stamps the version, and writes the hydrated manifest.
+#   3. Upload that exact hydrated manifest. Upload queues hosted certification
+#      and does not patch an existing hosted Coworld.
+#
+# Required environment secrets (Settings -> Environments -> SOFTMAX_OBSERVATORY):
+#   SOFTMAX_API_TOKEN  - a TEAM `usr_` token. The `coworld`/`softmax` CLI reads
+#                        its bearer token from ~/.softmax/credentials.yaml, NOT
+#                        from this env var, so the workflow seeds it headlessly
+#                        via `softmax set-token`. Reuse the same token as
+#                        Metta-AI/coworld-crewrift.
+#   GH_PAT             - optional GitHub PAT with read access to the private
+#                        Metta-AI/polyworld-data repo (replay-viewer art). The
+#                        default GITHUB_TOKEN is tried first; set GH_PAT if that
+#                        checkout is denied.
+#
+# The Coworld CLI is installed from the public package repo so deploys use the
+# current registry/version allocator without waiting for a PyPI release.
+name: "Deploy Pudge Wars Game"
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Explicit pudge-wars version to publish. Leave blank to auto-resolve."
+        required: false
+        default: ""
+      skip_upload:
+        description: "Skip coworld upload-coworld (build only)."
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-game
+  cancel-in-progress: false
+
+env:
+  COWORLD_CLI: "coworld[auth] @ git+https://github.com/Metta-AI/coworld.git@main"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: SOFTMAX_OBSERVATORY
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout polyworld-data
+        uses: actions/checkout@v4
+        with:
+          repository: Metta-AI/polyworld-data
+          path: polyworld_data
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install coworld CLI
+        run: uvx --from "$COWORLD_CLI" coworld --help >/dev/null
+
+      - uses: treeform/setup-nim-action@v6
+
+      - name: Install Nim dependencies
+        run: |
+          set -euo pipefail
+          nimby sync nimby.lock -g
+          pkgs="$HOME/.nimby/pkgs"
+          {
+            echo '--path:"src"'
+            if [[ -d "$pkgs" ]]; then
+              find "$pkgs" -mindepth 1 -maxdepth 1 -type d -print | sort | while read -r dir; do
+                name=$(basename "$dir")
+                [[ "$name" == "packages" ]] && continue
+                if [[ -d "$dir/src" ]]; then
+                  echo "--path:\"$dir/src\""
+                else
+                  echo "--path:\"$dir\""
+                fi
+              done
+            fi
+          } > nim.cfg
+
+      - uses: emscripten-core/setup-emsdk@v16
+        with:
+          version: 6.0.3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Preflight Docker (required for build)
+        run: |
+          docker version
+          docker info
+          if ! docker compose version >/dev/null 2>&1; then
+            echo "docker compose plugin missing; installing docker-compose-plugin..."
+            sudo apt-get update
+            sudo apt-get install -y docker-compose-plugin
+          fi
+          docker compose version
+          docker ps >/dev/null
+
+      - name: Seed Softmax credentials
+        env:
+          SOFTMAX_API_TOKEN: ${{ secrets.SOFTMAX_API_TOKEN }}
+        run: |
+          if [ -z "$SOFTMAX_API_TOKEN" ]; then
+            echo "::error::SOFTMAX_API_TOKEN secret is empty. Set a team usr_ token on the SOFTMAX_OBSERVATORY environment."
+            exit 1
+          fi
+          uvx --from "$COWORLD_CLI" softmax set-token "$SOFTMAX_API_TOKEN" --server https://softmax.com/api
+          uv run --with "$COWORLD_CLI" python3 -c "from softmax.auth import clear_active_player_session; clear_active_player_session(server='https://softmax.com/api')"
+
+      - name: Resolve next version
+        id: ver
+        run: |
+          set -euo pipefail
+          INPUT_VERSION="${{ inputs.version || '' }}"
+          if [ -n "$INPUT_VERSION" ]; then
+            NEXT="$INPUT_VERSION"
+          else
+            NEXT=$(uvx --from "$COWORLD_CLI" coworld next-version pudge-wars)
+          fi
+          echo "version=${NEXT}" >> "$GITHUB_OUTPUT"
+          echo "Deploying pudge-wars:${NEXT}"
+
+      - name: Build hydrated Coworld manifest
+        run: |
+          uvx --from "$COWORLD_CLI" coworld build \
+            --project coworld \
+            --version "${{ steps.ver.outputs.version }}" \
+            --output dist/coworld_manifest.json
+
+      - name: Upload hydrated Coworld manifest
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.skip_upload != 'true' }}
+        run: |
+          uvx --from "$COWORLD_CLI" coworld upload-coworld \
+            coworld/dist/coworld_manifest.json \
+            --wait-hosted-smoke \
+            --hosted-smoke-timeout-seconds 1800
+
+      - name: Verify canonical upload
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.skip_upload != 'true' }}
+        run: |
+          set -euo pipefail
+          uvx --from "$COWORLD_CLI" coworld list --json --limit 500 > /tmp/coworlds-after.json
+          python3 - "${{ steps.ver.outputs.version }}" <<'EOF'
+          import json
+          import sys
+
+          expected = sys.argv[1]
+          rows = json.load(open("/tmp/coworlds-after.json"))
+          match = next(
+              (row for row in rows if row.get("name") == "pudge-wars" and row.get("version") == expected),
+              None,
+          )
+          if match is None:
+              raise SystemExit(f"::error::Uploaded pudge-wars:{expected} not found")
+          if not match.get("canonical"):
+              raise SystemExit(f"::error::pudge-wars:{expected} is not canonical after hosted smoke")
+          print(f"pudge-wars:{expected} is canonical ({match['id']})")
+          EOF

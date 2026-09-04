@@ -1,0 +1,9 @@
+services:
+  pudgewars:
+    image: coworld-pudgewars:latest
+    platform: linux/amd64
+    build:
+      context: .
+      additional_contexts:
+        engine: ..
+      dockerfile: Dockerfile

@@ -4,6 +4,8 @@
 ## ray still uses the same integer lerp so visibility matches the live
 ## formula.
 
+import profiles
+
 const
   MaxVisionRadius* = 16
     ## Largest sight radius the kernel stores. Forts use 14.
@@ -329,9 +331,15 @@ proc revealVision*(
       ):
         visible[index] = 255
 
-proc blurVisibility*(visible: openArray[uint8], width, height: int32): seq[uint8] =
-  ## Softens only presentation edges with one deterministic box-blur pass.
-  result = newSeq[uint8](visible.len)
+proc blurVisibilityInto*(
+    visible: openArray[uint8],
+    dest: var seq[uint8],
+    width, height: int32
+) {.measure.} =
+  ## Softens presentation edges with one box-blur pass into `dest`.
+  let n = visible.len
+  if dest.len != n:
+    dest.setLen(n)
   for z in 0 ..< height:
     for x in 0 ..< width:
       var
@@ -347,4 +355,8 @@ proc blurVisibility*(visible: openArray[uint8], width, height: int32): seq[uint8
             continue
           total += int32(visible[sampleZ * width + sampleX])
           inc count
-      result[z * width + x] = uint8(total div max(count, 1))
+      dest[z * width + x] = uint8(total div max(count, 1))
+
+proc blurVisibility*(visible: openArray[uint8], width, height: int32): seq[uint8] =
+  ## Allocating wrapper around `blurVisibilityInto`.
+  blurVisibilityInto(visible, result, width, height)

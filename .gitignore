@@ -3,14 +3,17 @@
 !*/
 !*.*
 !LICENSE
+!Dockerfile
 
 # Ignore hidden files, but not the license or github files.
 .*
 !.github/
 !.github/**
 !.gitignore
+!.dockerignore
 
 # Normal ignores.
+nim.cfg
 *.exe
 nimcache
 *.pdb
@@ -18,9 +21,14 @@ nimcache
 *.out
 .env
 .env.local
+__pycache__/
+*.pyc
+dist/
+build/
 
 # Assets live in ./polyworld_data in this snapshot (or a sibling clone).
 /data
+/polyworld_data/
 
 # Nimby writes a workspace nim.cfg (no extension) and may clone packages
 # into this folder. Never commit those checkouts.

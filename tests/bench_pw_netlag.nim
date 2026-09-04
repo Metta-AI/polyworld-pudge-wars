@@ -16,7 +16,7 @@
 
 import
   std/[algorithm, math, os, strformat, strutils],
-  polyworld/cli,
+  polyworld/[cli, profiles],
   ../examples/pudge_wars/bots,
   ../examples/pudge_wars/content,
   ../examples/pudge_wars/maps,
@@ -196,25 +196,30 @@ const Presets = [
 ]
 
 when isMainModule:
-  let lead =
-    if paramCount() >= 1: parseInt(paramStr(1)) else: MaxLead
-  if paramCount() >= 2:
-    setSmoothDecay(parseFloat(paramStr(2)))
-    echo &"smoothDecay = {paramStr(2)}"
-  echo &"prediction lead = {lead} (MaxLead={MaxLead})"
-  echo &"""{"preset":12} {"snaps":>6} {"excess":>7} {"jumpMax":>8} {"mism":>5}"""
-  for (name, lat, jit) in Presets:
-    # Average over a few seeds so jitter noise does not dominate.
-    var snaps = 0
-    var excess = 0.0
-    var jmax = 0.0
-    var mism = 0
-    const Seeds = 4
-    for s in 0 ..< Seeds:
-      let m = runScenario(lat, jit, s, lead)
-      snaps += m.snaps
-      excess += m.snapExcess
-      jmax = max(jmax, jumpMax(m.jumps))
-      mism += m.mismatches
-    echo &"{name:12} {snaps div Seeds:>6} {excess / float(Seeds):>7.2f} " &
-      &"{jmax:>8.3f} {mism:>5}"
+  proc main() =
+    startProfileTrace()
+    defer:
+      finishProfileTrace()
+    let lead =
+      if paramCount() >= 1: parseInt(paramStr(1)) else: MaxLead
+    if paramCount() >= 2:
+      setSmoothDecay(parseFloat(paramStr(2)))
+      echo &"smoothDecay = {paramStr(2)}"
+    echo &"prediction lead = {lead} (MaxLead={MaxLead})"
+    echo &"""{"preset":12} {"snaps":>6} {"excess":>7} {"jumpMax":>8} {"mism":>5}"""
+    for (name, lat, jit) in Presets:
+      # Average over a few seeds so jitter noise does not dominate.
+      var snaps = 0
+      var excess = 0.0
+      var jmax = 0.0
+      var mism = 0
+      const Seeds = 4
+      for s in 0 ..< Seeds:
+        let m = runScenario(lat, jit, s, lead)
+        snaps += m.snaps
+        excess += m.snapExcess
+        jmax = max(jmax, jumpMax(m.jumps))
+        mism += m.mismatches
+      echo &"{name:12} {snaps div Seeds:>6} {excess / float(Seeds):>7.2f} " &
+        &"{jmax:>8.3f} {mism:>5}"
+  main()

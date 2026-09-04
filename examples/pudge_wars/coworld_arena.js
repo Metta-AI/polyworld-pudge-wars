@@ -64,6 +64,12 @@ function drawArena(canvas, message, options) {
     ctx.arc(toX(hook.x), toY(hook.y), 4, 0, Math.PI * 2)
     ctx.fill()
   }
+  for (const rune of (message.visible && message.visible.runes) || message.runes || []) {
+    ctx.fillStyle = '#fde047'
+    ctx.beginPath()
+    ctx.arc(toX(rune.x), toY(rune.y), 5, 0, Math.PI * 2)
+    ctx.fill()
+  }
   const names = message.player_names || []
   for (const pudge of pudgesFrom(message)) {
     const color = pudge.team === 0 ? '#38bdf8' : '#fb7185'

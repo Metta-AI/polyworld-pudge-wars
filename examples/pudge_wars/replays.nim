@@ -143,7 +143,7 @@ type
       ## Who drove this slot when the match started
       ## (`ControllerBot` or `ControllerHuman`).
     lobbySeat*: uint8
-      ## Stable lobby seat (0-5); rosters with disabled seats compact
+      ## Stable lobby seat (0 .. 2N-1); rosters with disabled seats compact
       ## around it.
     spawnX*: int32
     spawnZ*: int32
@@ -497,8 +497,8 @@ proc validate*(data: ReplayData) =
     fail("replay setup has an invalid bot aim noise")
   if setup.runePeriod < 0:
     fail("replay setup has an invalid rune period")
-  if setup.pudges.len < DuelPudgeCount or setup.pudges.len > PudgeCount:
-    fail("replay setup must list a full 3v3 or 1v1 duel roster")
+  if setup.pudges.len < DuelPudgeCount or setup.pudges.len > MaxPudgeCount:
+    fail("replay setup must list a 1v1 to 5v5 roster")
   if data.actions.len > MaxReplayActions:
     fail("replay action limit exceeded")
   if data.hashes.len > MaxReplayHashes:
@@ -506,7 +506,7 @@ proc validate*(data: ReplayData) =
   if data.hashes.len != int(setup.maximumTicks):
     fail("replay must contain exactly one hash per simulation tick")
   for i, pudge in setup.pudges:
-    if pudge.team > 1 or pudge.slot >= uint8(TeamSize):
+    if pudge.team > 1 or pudge.slot >= uint8(MaxTeamSize):
       fail("replay setup has invalid pudge metadata")
     if pudge.controller > ControllerHuman:
       fail("replay setup has an unknown slot controller")

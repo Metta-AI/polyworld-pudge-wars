@@ -222,6 +222,25 @@ block:
   for i in 0 ..< PudgeCount:
     doAssert game.botSpeech[i].text == "grr fresh meat",
       "every scripted seat speaks its printed line"
+  doAssert game.chatLog.len == 0,
+    "bot print is a bubble, not match chat"
+
+echo "Testing match chat collapses a repeated line from one seat"
+block:
+  let game = freshGame()
+  game.appendChat(MatchChatLine(
+    tick: 1, slot: 0, name: "P1", text: "hi", team: 0
+  ))
+  game.appendChat(MatchChatLine(
+    tick: 2, slot: 0, name: "P1", text: "hi", team: 0
+  ))
+  game.appendChat(MatchChatLine(
+    tick: 3, slot: 1, name: "P2", text: "hi", team: 1
+  ))
+  doAssert game.chatLog.len == 2,
+    "the same seat repeating a line must not flood chat"
+  game.clearChat()
+  doAssert game.chatLog.len == 0
 
 echo "Testing a mid-match take-over records and replays hash-exact"
 block:

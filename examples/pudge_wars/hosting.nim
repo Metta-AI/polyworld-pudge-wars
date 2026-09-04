@@ -83,11 +83,13 @@ var
   infoKillGoal = 0'i32
   infoRuneSeconds = 0'i32
   sessions: Table[WebSocket, Session]
-  seats: array[PudgeCount, SeatClaim]
+  seats: array[MaxPudgeCount, SeatClaim]
   localClaim* = -1
     ## The host player's own seat pick, outside the session table.
-  seatDisabled*: array[PudgeCount, bool]
+  seatDisabled*: array[MaxPudgeCount, bool]
     ## Host lobby seat toggles: an off seat spawns nothing.
+  hostTeamSize* = TeamSize
+    ## Live N for the lobby wells (1..5). Locked once the match starts.
   matchStarted = false
   lobbyDirty = false
   hostBotNames: seq[string]
@@ -111,6 +113,28 @@ proc hostingActive*(): bool =
 
 proc hostingStarted*(): bool =
   matchStarted
+
+proc hostSeatCount*(): int =
+  ## Lobby wells on the current N vs N: 2, 4, 6, 8, or 10.
+  matchPudgeCount(hostTeamSize)
+
+proc setHostTeamSize*(n: int) =
+  ## Resize the lobby. Extra claims drop; new wells start as bots.
+  if matchStarted:
+    return
+  let next = clampTeamSize(n)
+  if next == hostTeamSize:
+    return
+  hostTeamSize = next
+  let now = hostSeatCount()
+  if localClaim >= now:
+    localClaim = -1
+  for i in now ..< MaxPudgeCount:
+    seats[i] = SeatClaim()
+    seatDisabled[i] = false
+  for i in 0 ..< now:
+    seatDisabled[i] = false
+  lobbyDirty = true
 
 proc hostingUrl*(): string =
   ## The address friends visit; the primary LAN IP when discoverable.
@@ -296,7 +320,8 @@ proc startHosting*(
     port: int32,
     name, wasmDir: string,
     killGoal, runeSeconds: int32,
-    botPaths: seq[string] = @[]
+    botPaths: seq[string] = @[],
+    teamSize = TeamSize
 ): bool =
   ## Binds the lobby server. Returns false when it cannot start.
   if hostActive:
@@ -307,6 +332,7 @@ proc startHosting*(
   bundleDir = wasmDir
   infoKillGoal = killGoal
   infoRuneSeconds = runeSeconds
+  hostTeamSize = clampTeamSize(teamSize)
   hostBotNames.setLen(0)
   for path in botPaths:
     hostBotNames.add botDisplayName(path)
@@ -315,8 +341,9 @@ proc startHosting*(
   matchStarted = false
   localClaim = -1
   lobbyDirty = false
-  for i in 0 ..< PudgeCount:
+  for i in 0 ..< MaxPudgeCount:
     seats[i] = SeatClaim()
+    seatDisabled[i] = false
   var router: Router
   router.get("/", lobbyPageHandler)
   router.get("/status", statusHandler)
@@ -335,7 +362,7 @@ proc startHosting*(
     echo "host: cannot start server: ", error.msg
     return false
   when defined(macosx):
-    # A sleeping display wedges the frame loop in swapBuffers and the
+    # A sleeping display wedges the frame loop in present and the
     # lobby stops answering, so hold the machine awake while hosting.
     try:
       awakeProcess = startProcess(
@@ -357,9 +384,10 @@ proc takeInbound(): seq[InboundEvent] =
     inbound = @[]
 
 proc seatRoster(): seq[NetSeat] =
-  ## The lobby view of all six seats, host claim included.
-  result.setLen(PudgeCount)
-  for i in 0 ..< PudgeCount:
+  ## The lobby view of all live wells, host claim included.
+  let n = hostSeatCount()
+  result.setLen(n)
+  for i in 0 ..< n:
     if i == localClaim:
       result[i] = NetSeat(
         name: hostName & " (host)", human: true, connected: true
@@ -407,6 +435,7 @@ proc seatsNode(roster: seq[NetSeat]): JsonNode =
       "name": seat.name,
       "human": seat.human,
       "connected": seat.connected,
+      "off": seat.off,
       "bot":
         if not seat.human and i < hostBotNames.len: hostBotNames[i]
         else: ""
@@ -422,6 +451,7 @@ proc lobbyPayload(): JsonNode =
     "host": hostName,
     "goal": infoKillGoal,
     "runes": infoRuneSeconds,
+    "teamSize": hostTeamSize,
     "web": fileExists(bundleDir / "pw.html"),
     "game": "Pudge Wars"
   }
@@ -496,7 +526,7 @@ proc sendStartAndBacklog(ws: WebSocket, session: var Session, game: Game) =
 proc releaseSeat(game: Game, slot: int, keepToken: bool) =
   ## Frees or suspends one remote claim. Mid-match the butcher falls
   ## back to script autopilot and the takeover lands on the tape.
-  if slot < 0 or slot >= PudgeCount or not seats[slot].taken:
+  if slot < 0 or slot >= hostSeatCount() or not seats[slot].taken:
     return
   seats[slot].connected = false
   if matchStarted:
@@ -512,7 +542,7 @@ proc rebindSeat(game: Game, ws: WebSocket, session: var Session,
   result = -1
   if token.len == 0:
     return
-  for i in 0 ..< PudgeCount:
+  for i in 0 ..< hostSeatCount():
     if seats[i].taken and seats[i].token == token:
       if seats[i].connected and seats[i].ws != ws and
           seats[i].ws in sessions:
@@ -553,13 +583,13 @@ proc seatOpen(game: Game, index: int, sessionSlot: int): bool =
 proc firstOpenSeat(game: Game, sessionSlot: int): int32 =
   ## First empty butcher, then a disconnected pre-start claim. Anyone
   ## in the channel can JOIN without picking a numbered slot.
-  for i in 0 ..< PudgeCount:
+  for i in 0 ..< hostSeatCount():
     if seats[i].taken:
       continue
     if seatOpen(game, i, sessionSlot):
       return int32(i)
   if not matchStarted:
-    for i in 0 ..< PudgeCount:
+    for i in 0 ..< hostSeatCount():
       if seats[i].taken and not seats[i].connected and
           seatOpen(game, i, sessionSlot):
         return int32(i)
@@ -580,7 +610,7 @@ proc tryClaim(
       session.slot = -1
       sysChat(name & " is watching.")
     return SlotGrantMsg(slot: SpectatorSlot)
-  if slot < 0 or slot >= PudgeCount:
+  if slot < 0 or slot >= hostSeatCount():
     return SlotGrantMsg(slot: SpectatorSlot, reason: "no such seat")
   let index = int(slot)
   if not seatOpen(game, index, session.slot):
@@ -630,7 +660,7 @@ proc handlePageMessage(
     let token = node{"token"}.getStr()
     if token.len > 0:
       var orphaned = false
-      for i in 0 ..< PudgeCount:
+      for i in 0 ..< hostSeatCount():
         if seats[i].taken and seats[i].token == token:
           orphaned = not seats[i].connected
           break
@@ -810,7 +840,7 @@ proc hostForwardResults*(game: Game, localSeat: int) =
     let slot = int(res.slot)
     if slot == localSeat:
       kept.add res
-    elif slot >= 0 and slot < PudgeCount and seats[slot].taken and
+    elif slot >= 0 and slot < hostSeatCount() and seats[slot].taken and
         seats[slot].connected:
       seats[slot].ws.send(packIntentResult(res), BinaryMessage)
   game.intentResults = kept
@@ -839,7 +869,7 @@ proc hostRemoteSeats*(): seq[int] =
   ## Every seat a connected remote player claims. An abandoned claim
   ## (kept only for its reconnect token) starts the match as a bot;
   ## its owner takes over on return.
-  for i in 0 ..< PudgeCount:
+  for i in 0 ..< hostSeatCount():
     if seats[i].taken and seats[i].connected:
       result.add i
 
@@ -847,7 +877,7 @@ proc hostSeatName*(slot: int): string =
   ## Display name for one seat, or empty for a bot.
   if slot == localClaim:
     return hostName
-  if slot >= 0 and slot < PudgeCount and seats[slot].taken:
+  if slot >= 0 and slot < hostSeatCount() and seats[slot].taken:
     return seats[slot].name
 
 proc hostClaimLocal*(slot: int) =
@@ -857,7 +887,7 @@ proc hostClaimLocal*(slot: int) =
   if slot == localClaim:
     localClaim = -1
     sysChat(hostName & " is watching.")
-  elif slot >= -1 and slot < PudgeCount and
+  elif slot >= -1 and slot < hostSeatCount() and
       (slot < 0 or not seats[slot].taken):
     localClaim = slot
     if slot >= 0:

@@ -2,15 +2,21 @@
 ##
 ## Modeled on Warcraft 3 Pudge Wars v2.03d: two banks split by a river,
 ## every player is a butcher, Meat Hook is the kill skill, Blink is a
-## 48-tile dodge teleport that can hop the river, land in the water, or
-## blink out onto a bank, and kills buy hook upgrades.
+## short dodge hop that cannot clear the river from bank to bank, and
+## kills buy hook upgrades.
 
 import std/os, polyworld/[common, hashes]
 
 const
   TickRate* = 32'i32
   PudgeCount* = 6
+    ## Default 3v3 roster length. Hashed. N vs N uses `MaxPudgeCount`.
   TeamSize* = 3
+    ## Default butchers a bank. Live matches may run 1..MaxTeamSize.
+  MaxTeamSize* = 5
+    ## Largest N for N vs N. The 3-lane spawn roll stays frozen.
+  MaxPudgeCount* = 10
+    ## 2 * MaxTeamSize. Lobby wells and seat arrays use this cap.
   DuelPudgeCount* = 2
     ## Roster size of the 1v1 duel mode: one butcher a side on the
     ## middle spawn lane. Everything else plays by the stock rules.
@@ -41,10 +47,20 @@ const
     ## Percent of max HP restored per heal pulse while idling on the own
     ## team's spawn pad.
   FountainHealPeriodTicks* = TickRate div 2
-    ## Ticks between fountain heal pulses.
+    ## Ticks between spawn-pad heal pulses.
   FountainPadRadius* = 2'i32
     ## Chebyshev tile radius around a team's spawn tiles that counts as
     ## the healing pad (matches the stamped road pad).
+  IslandFountainHealPermille* = 15'i32
+    ## WC3 Fountain of Health: 1.5% of max HP per second (15‰).
+    ## Neutral aura around the mid-river island; both teams, any layer.
+  IslandFountainHealPeriodTicks* = TickRate
+    ## One pulse per second, matching the WC3 fountain.
+  IslandFountainRadiusTiles* = 16'i32
+    ## Euclidean tiles from the island center. Covers the water around
+    ## the rocks and a few tiles of each bank at mid (the river lip is
+    ## 12 tiles out). Spawn pads and the side lanes stay outside.
+  IslandFountainRadius* = IslandFountainRadiusTiles * WorldScale
   WalkSnapTiles* = 24'i32
     ## Command forgiveness: a rejected walk target snaps to the nearest
     ## walkable tile on the butcher's bank within this Chebyshev radius.
@@ -53,12 +69,12 @@ const
     ## period in their setup; 0 disables runes entirely.
   RuneBuffTicks* = TickRate * 15
   AllyHookHeal* = 120'i32
-  SightRadiusTiles* = 20'i32
-    ## Fog-of-war vision radius per living butcher (team-shared).
-    ## Presentation only: bots and the sim are unaffected, so this
-    ## stays out of the content hash.
     ## Hooking a teammate patches them up: support play with the same
     ## aim skill as the kill shot (~14% of base HP per landed save).
+  SightRadiusTiles* = 20'i32
+    ## Fog-of-war vision radius per living butcher (team-shared).
+    ## Presentation and bot observations share this: scripts only see
+    ## what a human on that team would. Physics stay omniscient.
   GoldPerKill* = 3'i32
     ## Shop currency: earned only through play, spent only in base.
   GoldPerDeny* = 1'i32
@@ -194,7 +210,9 @@ const
     ## order behind the butcher (~0.19 s from sprint to rest, ~0.9 tiles
     ## of skid). Turns of 90° or less carve at full speed instead of
     ## braking (`steerVelocity`), so only stops and reversals pay this.
-  BaseHookDamage* = 80'i32
+  BaseHookDamage* = 200'i32
+    ## A landed hook is a real chunk: ~24% of 840 HP, five hits to
+    ## kill from full. Upgrades and runes still climb from here.
   HookDamagePerLevel* = 15'i32
   BaseHookRange* = 56 * WorldScale
     ## Trimmed from 64: throws are commitments again; the Distance
@@ -223,12 +241,13 @@ const
     ## Shorter than a max hook: a mobility tool, not a poke.
   GrappleRadius* = WorldScale
     ## Slim head: it grabs walls, not butchers.
-  BlinkRangeTiles* = 48'i32
-    ## 48-tile dodge hop (2× the prior 24). Lands on the farthest
-    ## walkable tile along the aim ray: river water is flown over, so
-    ## a hop can clear to the opposite bank, but water is never a
-    ## landing. Cliffs, palisades, and occupied circles truncate the
-    ## hop to the last legal point in front of them.
+  BlinkRangeTiles* = 20'i32
+    ## Sidestep, not a map hop. Lip-to-lip across the river is 24
+    ## tiles (`PlayEastMin - PlayWestMax`); this stays under that so a
+    ## bank butcher cannot land on the far side. River water is a
+    ## legal landing, and a hop from the water can still reach a bank.
+    ## Cliffs, palisades, and occupied circles truncate to the last
+    ## legal point in front of them.
   BlinkRange* = BlinkRangeTiles * WorldScale
   BlinkCooldownTicks* = TickRate * 8
     ## 8 s: clearly longer than Meat Hook's 2 s, a real commitment.
@@ -250,7 +269,9 @@ const
     ## tile (up from a sixth) so a deliberate mid-air deny is landable
     ## by humans without making reactive bot denies unmissable.
   ChunkAnnounceTicks* = TickRate * 4
-  DrownDamage* = 10'i32
+  DrownDamage* = 30'i32
+    ## River tick: 30 HP every half second. A dumped butcher without
+    ## a save or hop out lasts about 14 s from full (840 HP).
   DrownPeriodTicks* = TickRate div 2
   StruggleSpeed* = MovePerTick
     ## River locomotion uses the land walk. Kept as an alias so the
@@ -390,7 +411,7 @@ proc shopItemBlurb*(item: ShopItem): string =
   of ShopBoots: "+" & $ItemBootsSpeedPercent & "% move speed per rank."
   of ShopLongshot: "Hook hits deal +" & $ItemLongshotPercent &
     "% damage per tile of flight, per rank."
-  of ShopWall: "Place a HP wall on your bank (C, then click). Cooldown."
+  of ShopWall: "Place a HP wall on your bank (tap C, then click). Cooldown."
   of ShopMine: "Place a hidden mine (V, then click). Enemy hooks detonate it."
 
 proc iconPath*(name: string, kind = "icons"): string =
@@ -430,6 +451,10 @@ proc hookRadius*(level: int32): int32 =
 proc pudgeMaxHp*(kills: int32): int32 =
   ## Returns current hit points after kill-earned levels.
   BaseHitPoints + HitPointsPerLevel * max(kills, 0'i32)
+
+proc islandFountainHeal*(maxHp: int32): int32 =
+  ## HP restored by one mid-river fountain pulse (1.5% of max).
+  max(1'i32, maxHp * IslandFountainHealPermille div 1000)
 
 proc streakBonusGold*(streak: int32): int32 =
   ## Extra gold at this streak length. Paid to the killer as their own
@@ -554,6 +579,16 @@ proc maxMinesForRank*(rank: int32): int32 =
   ## Simultaneous mines: one at ranks 1-2, two from rank 3.
   if rank >= 3: MaxMinesPerPlayer else: 1'i32
 
+proc clampTeamSize*(n: int): int {.inline.} =
+  ## N vs N is 1..5 a side.
+  if n < 1: 1
+  elif n > MaxTeamSize: MaxTeamSize
+  else: n
+
+proc matchPudgeCount*(teamSize: int): int {.inline.} =
+  ## Both banks: 2, 4, 6, 8, or 10 butchers.
+  clampTeamSize(teamSize) * 2
+
 proc contentHash*(): uint64 =
   ## Fingerprints the published balance table.
   var hash = HashySeed
@@ -598,12 +633,17 @@ proc contentHash*(): uint64 =
   hash.addHashy(FountainHealPercent)
   hash.addHashy(FountainHealPeriodTicks)
   hash.addHashy(FountainPadRadius)
+  hash.addHashy(IslandFountainHealPermille)
+  hash.addHashy(IslandFountainHealPeriodTicks)
+  hash.addHashy(IslandFountainRadiusTiles)
+  hash.addHashy(IslandFountainRadius)
   hash.addHashy(WalkSnapTiles)
   hash.addHashy(HookAccel)
   hash.addHashy(HookSpeedMaxMul)
   hash.addHashy(RunePeriodTicks)
   hash.addHashy(RuneBuffTicks)
   hash.addHashy(AllyHookHeal)
+  hash.addHashy(SightRadiusTiles)
   hash.addHashy(GoldPerKill)
   hash.addHashy(GoldPerDeny)
   hash.addHashy(GoldFirstBlood)

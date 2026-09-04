@@ -490,8 +490,11 @@ block:
       break
     if game.world.hooks[0].heading.z != throwZ:
       bounced = true
-      doAssert game.world.hooks[0].heading.z == -throwZ,
-        "the north map edge should negate Z"
+      doAssert game.world.hooks[0].heading.z > 0,
+        "the north map edge should reverse Z"
+      doAssert abs(game.world.hooks[0].heading.z) >=
+          abs(game.world.hooks[0].heading.x),
+        "a head-on rim hit should stay a Z bounce"
       doAssert game.world.hooks[0].phase == HookFlying,
         "a rebound with range left should keep flying"
       doAssert game.world.hooks[0].bounces.len >= 1
@@ -525,8 +528,11 @@ block:
       break
     if game.world.hooks[0].heading.x != throwX:
       bounced = true
-      doAssert game.world.hooks[0].heading.x == -throwX,
-        "the fountain should negate X"
+      doAssert game.world.hooks[0].heading.x < 0,
+        "the fountain should reverse X"
+      doAssert abs(game.world.hooks[0].heading.x) >=
+          abs(game.world.hooks[0].heading.z),
+        "a head-on fountain hit should stay an X bounce"
       doAssert game.world.hooks[0].phase == HookFlying or
           game.world.hooks[0].phase == HookReeling
       doAssert game.world.hooks[0].bounces.len >= 1
@@ -535,6 +541,68 @@ block:
   doAssert game.world.pudges[3].hp == BaseHitPoints,
     "a rebound must not punch through the fountain to the far bank"
   doAssert game.world.hookHits == 0
+
+echo "Testing a glancing fountain hit does not orbit the rocks"
+block:
+  ## Fog-poke through mid, aimed a few tiles off the island center.
+  ## A tangent cylinder bounce used to slide around the discrete rock
+  ## disk, pin the chain to the fountain, and spend the leftover range
+  ## there. One ricochet, then leave.
+  let game = freshGame()
+  parkPudges(game)
+  game.world.pudges[0].placePudge(PlayWestMax, IslandCenterZ)
+  doAssert applyHookTo(
+    game.world,
+    game.world.pudges[0].id,
+    int32(PlayEastMin + 8),
+    int32(IslandCenterZ + 8)
+  )
+  game.play(int(HookWindupTicks))
+  doAssert game.world.hooks.len == 1
+  var
+    maxBounces = 0
+    nearTicks = 0
+    islandTicks = 0
+  let fountain = islandFountainPos()
+  for _ in 0 ..< 200:
+    if game.world.hooks.len == 0:
+      break
+    let hook = game.world.hooks[0]
+    maxBounces = max(maxBounces, hook.bounces.len)
+    let tile = tileOf(hook.position)
+    if islandTile(tile.x, tile.z):
+      inc islandTicks
+    if distSq(hook.position, fountain) <=
+        int64(5 * WorldScale) * int64(5 * WorldScale):
+      inc nearTicks
+    game.play(1)
+  doAssert maxBounces <= 2, "a glance must not rattle around the fountain"
+  doAssert islandTicks <= 4, "the head must not sit in the rocks"
+  doAssert nearTicks <= 40, "the chain must not orbit the fountain"
+
+echo "Testing a grapple does not latch the fountain"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  game.world.pudges[0].placePudge(PlayWestMax, IslandCenterZ)
+  let start = game.world.pudges[0].position
+  doAssert applyGrappleTo(
+    game.world,
+    game.world.pudges[0].id,
+    int32(IslandCenterX),
+    int32(IslandCenterZ)
+  )
+  game.play(int(HookWindupTicks) + 80)
+  doAssert game.world.pudges[0].hookedBy == 0
+  if game.world.hooks.len > 0:
+    doAssert not game.world.hooks[0].grappleLatched,
+      "the fountain is not a grapple latch"
+    let tile = tileOf(game.world.hooks[0].position)
+    doAssert not islandTile(tile.x, tile.z),
+      "a grapple head must not sit in the fountain"
+  doAssert distSq(game.world.pudges[0].position, start) <
+      int64(4 * WorldScale) * int64(4 * WorldScale),
+    "a fountain grapple must not yank the caster onto the rocks"
 
 echo "Testing a rebounded hook can still latch a unit"
 block:
@@ -1163,6 +1231,61 @@ block:
   doAssert game.world.pudges[0].hp == healed,
     "leaving the pad should stop the heal"
 
+echo "Testing the mid-river fountain heals anyone close to it"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  let
+    pulse = islandFountainHeal(game.world.pudges[0].maxHp)
+    ticks = int(IslandFountainHealPeriodTicks)
+  doAssert IslandFountainRadius >
+    int32(RiverHalfWidth + 1) * WorldScale,
+    "both banks' mid lips must sit inside the fountain disk"
+  game.world.pudges[0].placePudge(PlayWestMax, IslandCenterZ)
+  game.world.pudges[0].hp = 100
+  doAssert game.world.pudges[0].onIslandFountain
+  game.play(ticks)
+  doAssert game.world.pudges[0].hp == 100 + pulse,
+    "the west river lip at mid should take the WC3 fountain aura"
+  game.world.pudges[3].placePudge(PlayEastMin, IslandCenterZ)
+  game.world.pudges[3].hp = 100
+  doAssert game.world.pudges[3].onIslandFountain
+  game.play(ticks)
+  doAssert game.world.pudges[3].hp == 100 + pulse,
+    "the fountain is neutral: east heals too"
+  game.world.pudges[1].placePudge(PlayWestMax, 40)
+  game.world.pudges[1].hp = 100
+  doAssert not game.world.pudges[1].onIslandFountain,
+    "the side lane's river lip is outside the disk"
+  game.play(ticks)
+  doAssert game.world.pudges[1].hp == 100,
+    "a bank lip far from mid must not heal"
+  game.world.pudges[0].placePudge(40, 64)
+  let inland = game.world.pudges[0].hp
+  game.play(ticks)
+  doAssert game.world.pudges[0].hp == inland,
+    "walking inland off the fountain should stop the aura"
+
+echo "Testing the river fountain still heals a swimmer next to the rocks"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  let
+    pulse = islandFountainHeal(game.world.pudges[0].maxHp)
+    ticks = int(IslandFountainHealPeriodTicks)
+  game.world.pudges[0].placePudge(RiverCenterX + 4, IslandCenterZ)
+  game.world.pudges[0].hp = 400
+  doAssert game.world.pudges[0].inRiver
+  doAssert game.world.pudges[0].onIslandFountain
+  doAssert not islandTile(RiverCenterX + 4, IslandCenterZ)
+  game.world.pudges[3].placePudge(RiverCenterX, 30)
+  game.world.pudges[3].hp = 400
+  doAssert game.world.pudges[3].inRiver
+  doAssert not game.world.pudges[3].onIslandFountain
+  game.play(ticks)
+  doAssert game.world.pudges[0].hp == game.world.pudges[3].hp + pulse,
+    "drown still ticks; the fountain aura is extra HP on top"
+
 echo "Testing pings are recorded, team-scoped, and capped"
 block:
   let game = freshGame()
@@ -1337,6 +1460,100 @@ block:
     "traveled must be D + leftover, not D + R"
   doAssert finalTraveled >= RangeBudget - WorldScale,
     "the leftover 10 tiles after an 80-tile wall hit should be spent"
+
+proc westBounceTree(): tuple[x, z: int] =
+  ## A west-bank bounce tree with a clear inland approach so the throw
+  ## does not spawn inside another trunk.
+  result = (-1, -1)
+  for z in PlayZMin .. PlayZMax:
+    for x in PlayWestMin + 10 .. PlayWestMax - 2:
+      if not fieldTreeTile(x, z):
+        continue
+      var clear = true
+      for dx in 1 .. 8:
+        if fieldTreeTile(x - dx, z) or
+            not isWalkable(WestLayer, x - dx, z):
+          clear = false
+          break
+      if clear and isWalkable(WestLayer, x - 8, z + 3):
+        return (x, z)
+
+echo "Testing a field tree rebounds a hook"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  let (tx, tz) = westBounceTree()
+  doAssert tx >= 0, "seed 2026 must plant a west bounce tree"
+  game.world.pudges[0].placePudge(tx - 8, tz)
+  game.world.pudges[1].placePudge(22, 40)
+  game.world.pudges[2].placePudge(22, 88)
+  game.world.pudges[3].placePudge(105, 40)
+  game.world.pudges[4].placePudge(105, 64)
+  game.world.pudges[5].placePudge(105, 88)
+  let id = game.world.pudges[0].id
+  doAssert applyHookTo(game.world, id, int32(tx), int32(tz))
+  game.play(int(HookWindupTicks))
+  doAssert game.world.hooks.len == 1
+  let throwX = game.world.hooks[0].heading.x
+  doAssert throwX > 0
+  var bounced = false
+  for _ in 0 ..< 120:
+    game.play(1)
+    if game.world.hooks.len == 0:
+      break
+    if game.world.hooks[0].bounces.len >= 1:
+      bounced = true
+      doAssert game.world.hooks[0].heading.x <= 0 or
+          game.world.hooks[0].heading.z != 0,
+        "a tree bounce must deflect the throw"
+      break
+  doAssert bounced, "a hook into a field tree must rebound"
+
+echo "Testing a glancing tree hit curves the heading"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  let (tx, tz) = westBounceTree()
+  doAssert tx >= 0
+  # Stand south-west of the trunk and throw at its center so contact
+  # is off the west-face midpoint; the cylindrical bounce should keep
+  # both heading axes live and not be a pure axis flip.
+  game.world.pudges[0].placePudge(tx - 8, tz + 3)
+  game.world.pudges[1].placePudge(22, 40)
+  game.world.pudges[2].placePudge(22, 88)
+  game.world.pudges[3].placePudge(105, 40)
+  game.world.pudges[4].placePudge(105, 64)
+  game.world.pudges[5].placePudge(105, 88)
+  let id = game.world.pudges[0].id
+  doAssert applyHookTo(game.world, id, int32(tx), int32(tz))
+  game.play(int(HookWindupTicks))
+  doAssert game.world.hooks.len == 1
+  let
+    throwX = game.world.hooks[0].heading.x
+    throwZ = game.world.hooks[0].heading.z
+  doAssert throwX > 0
+  doAssert throwZ < 0
+  var bounced = false
+  for _ in 0 ..< 120:
+    game.play(1)
+    if game.world.hooks.len == 0:
+      break
+    if game.world.hooks[0].bounces.len >= 1:
+      bounced = true
+      let
+        hx = game.world.hooks[0].heading.x
+        hz = game.world.hooks[0].heading.z
+      doAssert hx != throwX or hz != throwZ, "the glance must change heading"
+      doAssert hx != 0 and hz != 0,
+        "a glancing tree bounce must keep a curved two-axis heading"
+      let pureAxis =
+        (hx == -throwX and hz == throwZ) or
+        (hx == throwX and hz == -throwZ) or
+        (hx == -throwX and hz == -throwZ)
+      doAssert not pureAxis,
+        "a tree bounce must curve off the trunk, not axis-flip"
+      break
+  doAssert bounced, "the glancing throw must hit the tree"
 
 echo "Testing the shuriken disk latches when a blade overlaps a body"
 block:
@@ -2261,7 +2478,7 @@ block:
   let game = freshGame()
   parkPudges(game)
   # Banks are 39 tiles deep in X; hop south along a clear 96-tile lane
-  # so a 48-tile clamp can fire without hitting the river, cliff, or
+  # so a max-range clamp can fire without hitting the river, cliff, or
   # the parked west stack at x=22.
   game.world.pudges[0].placePudge(30, 20)
   let
@@ -2290,7 +2507,7 @@ echo "Testing blink from the west bank lands in the river"
 block:
   let game = freshGame()
   parkPudges(game)
-  game.world.pudges[0].placePudge(22, 48)
+  game.world.pudges[0].placePudge(int(PlayWestMax) - 1, 48)
   let
     origin = game.world.pudges[0].position
     id = game.world.pudges[0].id
@@ -2303,7 +2520,7 @@ block:
   doAssert game.world.pudges[0].layer == int32(RiverLayer)
   doAssert game.world.pudges[0].inRiver
 
-echo "Testing blink hops the river onto the far bank"
+echo "Testing blink from a bank cannot clear the river"
 block:
   let game = freshGame()
   parkPudges(game)
@@ -2316,18 +2533,17 @@ block:
     id = game.world.pudges[0].id
     destX = int32(PlayEastMin + 4)
   doAssert eastBank(int(destX))
+  doAssert BlinkRangeTiles < int32(PlayEastMin - PlayWestMax),
+    "blink must be shorter than lip-to-lip across the river"
   doAssert applyBlinkTo(game.world, id, destX, 48),
-    "a far-bank blink must accept"
+    "a far-bank click must still fire; range truncates it"
   let dest = game.world.pudges[0].position
   let tile = tileOf(dest)
   doAssert dest.x > origin.x
-  doAssert eastBank(tile.x), "must land on east-bank land"
-  doAssert not riverTile(tile.x)
-  doAssert game.world.pudges[0].layer == int32(EastLayer)
-  doAssert not game.world.pudges[0].inRiver
-  doAssert walkableTile(
-    game.world.pudges[0].layer, int32(tile.x), int32(tile.z)
-  )
+  doAssert not eastBank(tile.x), "must not land on the far bank"
+  doAssert riverTile(tile.x), "a max hop from the lip should splash"
+  doAssert game.world.pudges[0].inRiver
+  doAssert game.world.pudges[0].layer == int32(RiverLayer)
 
 echo "Testing blink from the river onto east-bank land"
 block:
@@ -2536,7 +2752,7 @@ block:
   doAssert game.world.hooks[0].traveled == traveled0
   let remainAlong = game.world.hooks[0].range - game.world.hooks[0].traveled
   doAssert remainAlong - remain0 == int32(hopAlong),
-    "remaining outbound must grow by the actual hop, not the 48-tile cap"
+    "remaining outbound must grow by the actual hop, not the range cap"
   let hashed = game.stateHash()
   dec game.world.hooks[0].range
   doAssert game.stateHash() != hashed, "hook range must hash"

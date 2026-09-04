@@ -126,6 +126,12 @@ while index < objectCount()
   index = index + 1
 wend
 
+if bestId <> 0 then
+  lastEx = bestX
+  lastEy = bestY
+  lastSeen = worldTick
+end if
+if bestId <> 0 then
 if trackId <> bestId then
   trackId = bestId
   velTick = 0
@@ -140,6 +146,7 @@ if worldTick - velTick >= 8 then
   pex = bestX
   pey = bestY
   velTick = worldTick
+end if
 end if
 span = 24
 dx = bestX - selfX
@@ -173,8 +180,10 @@ end if
 
 if selfTeam = 0 then
   lineX = riverWest + 8
+  pokeX = riverEast + 8
 else
   lineX = riverEast - 8
+  pokeX = riverWest - 8
 end if
 padX = homeX
 lineY = homeY
@@ -183,6 +192,30 @@ if lineY < 8 then
 end if
 if lineY > 119 then
   lineY = 119
+end if
+pokeY = lineY
+if lastEy <> 0 then
+  age = worldTick - lastSeen
+  pokeY = lastEy + evy * age / 8
+  if pokeY < 16 then
+    pokeY = 16
+  end if
+  if pokeY > 111 then
+    pokeY = 111
+  end if
+  if bestId = 0 then
+    if selfTeam = 0 then
+      pokeX = riverEast + 2 + evx * age / 16
+      if pokeX < riverEast + 1 then
+        pokeX = riverEast + 2
+      end if
+    else
+      pokeX = riverWest - 2 + evx * age / 16
+      if pokeX > riverWest - 1 then
+        pokeX = riverWest - 2
+      end if
+    end if
+  end if
 end if
 
 cutX = -1
@@ -267,9 +300,9 @@ if blinkReady = 1 then
   else
     if nearX >= 0 then
       if nearY > selfY then
-        hopY = selfY - 24
+        hopY = selfY - 36
       else
-        hopY = selfY + 24
+        hopY = selfY + 36
       end if
       if hopY < 16 then
         hopY = 16
@@ -278,12 +311,12 @@ if blinkReady = 1 then
         hopY = 111
       end if
       if selfTeam = 0 then
-        hopX = selfX - 8
+        hopX = selfX - 16
         if hopX > riverWest then
           hopX = riverWest
         end if
       else
-        hopX = selfX + 8
+        hopX = selfX + 16
         if hopX < riverEast then
           hopX = riverEast
         end if
@@ -360,6 +393,9 @@ if dodgeFlash = 1 then
     if bestId <> 0 then
       hookTo(aimX, aimY)
       mood = 4
+    else
+      hookTo(pokeX, pokeY)
+      mood = 4
     end if
   end if
 else
@@ -390,6 +426,11 @@ else
             if bestId <> 0 then
               if dx <= 52 then
                 hookTo(aimX, aimY)
+                mood = 4
+              end if
+            else
+              if worldTick > 8 then
+                hookTo(pokeX, pokeY)
                 mood = 4
               end if
             end if

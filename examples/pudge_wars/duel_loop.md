@@ -154,7 +154,9 @@ Host functions: `objectCount()`, `objectId/Kind/Team/X/Y/Hp/Alive/`
 `Victim(h)`; `runeCount()`, `runeX/Y/Kind(r)`; actions `walkTo(x, y)`,
 `hookTo(x, y)`, `attackTarget(id)`, `buyUpgrade(kind)` (0 damage,
 1 distance, 2 speed, 3 radius; 1 kill point each, level cap 10),
-`halt()`, `ping(x, y)`.
+`halt()`, `ping(x, y)`. Object, hook, and rune queries are fog-clipped
+the same way the renderer is: own team always, enemies only on the
+home bank, in the river, or within 20 tiles of a living teammate.
 
 Arena facts the policy can rely on:
 

@@ -27,8 +27,8 @@
 ## predicted - never a physics divergence.
 
 import
-  std/times,
-  content, netproto, replays, sim
+  polyworld/profiles,
+  content, replays, sim
 
 type
   PendingIntent* = object
@@ -168,7 +168,7 @@ proc dropConfirmed*(pred: Predictor, confirmed: Game) =
       kept.add entry
   pred.pending = kept
 
-proc rebuild*(pred: Predictor, confirmed: Game) =
+proc rebuild*(pred: Predictor, confirmed: Game) {.measure.} =
   ## Recomputes the prediction world from the confirmed world: clone,
   ## replay unconfirmed local intents, tick `lead` ahead with no host
   ## input. Sets `snapped` when the local butcher jumps from its prior

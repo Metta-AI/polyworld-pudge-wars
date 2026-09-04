@@ -1,7 +1,8 @@
 ## Coworld game host: native Pudge Wars sim, JSON player sockets, .pwr tape.
 ##
-## The 32 Hz clock lives here. League policies speak walk_to / hook_to JSON;
-## those become human intents on the same record-then-apply path as ./pw.
+## The 32 Hz clock lives here. League policies speak walk_to / hook_to /
+## blink_to JSON; those become human intents on the same record-then-apply
+## path as ./pw. Player observations are fog-clipped like BASIC bots.
 
 import
   std/[
@@ -103,8 +104,13 @@ proc tileCoord(p: WorldPoint): tuple[x, y: float] =
 proc fogCanSee(world: World, team: Team, position: WorldPoint): bool =
   fogCanSeeTeam(world, team.ord, position)
 
-proc pudgeJson(pudge: Pudge, slot: int): JsonNode =
-  let pos = tileCoord(pudge.position)
+proc pudgeJson(world: World, pudge: Pudge, slot: int): JsonNode =
+  let
+    pos = tileCoord(pudge.position)
+    home = pudge.spawnTile
+    blinkReady =
+      pudge.blinkCooldown <= 0 and pudge.windupTicks <= 0 and
+      pudge.hookedBy == 0 and not world.rotAffected(pudge)
   result = %*{
     "id": pudge.id,
     "slot": slot,
@@ -117,8 +123,16 @@ proc pudgeJson(pudge: Pudge, slot: int): JsonNode =
     "hooked": pudge.hookedBy != 0,
     "shield": pudge.shieldTicks > 0,
     "hook_ready": pudge.hookCooldown <= 0 and pudge.windupTicks <= 0,
+    "blink_ready": blinkReady,
+    "rot": pudge.rotOn,
+    "layer": pudge.layer,
+    "gold": pudge.gold,
+    "points": pudge.points,
+    "in_shop": pudge.inOwnShop,
     "kills": pudge.kills,
-    "in_river": pudge.inRiver
+    "in_river": pudge.inRiver,
+    "home_x": home.x,
+    "home_y": home.z
   }
 
 proc hookJson(world: World, hook: Hook): JsonNode =
@@ -128,9 +142,32 @@ proc hookJson(world: World, hook: Hook): JsonNode =
     ownerSlot = if owner >= 0: owner else: 0
   %*{
     "owner": ownerSlot,
+    "owner_id": hook.ownerId,
     "team": hook.team.ord,
-    "x": round(tileCoord(hook.position).x, 3),
+    "x": round(pos.x, 3),
+    "y": round(pos.y, 3),
+    "victim": hook.victimId,
+    "flying": hook.phase == HookFlying
+  }
+
+proc runeJson(rune: Rune): JsonNode =
+  let pos = tileCoord(rune.position)
+  %*{
+    "id": rune.id,
+    "kind": rune.kind.ord,
+    "x": round(pos.x, 3),
     "y": round(pos.y, 3)
+  }
+
+proc propJson(prop: Prop): JsonNode =
+  let pos = tileCoord(prop.propCenter)
+  %*{
+    "id": prop.id,
+    "kind": if prop.kind == PropWall: "wall" else: "mine",
+    "team": prop.team.ord,
+    "x": round(pos.x, 3),
+    "y": round(pos.y, 3),
+    "hp": max(prop.hp, 0)
   }
 
 proc scoreNode(world: World): JsonNode =
@@ -145,20 +182,38 @@ proc winnerName(world: World): string =
   if world.winner == WestTeam: "west" else: "east"
 
 proc observation(slot: int, final = false): JsonNode =
+  ## Fog-clipped like BASIC `objectCount` / the renderer. `fogOn` off
+  ## is the omniscient spectator (`team < 0`).
   let
     world = game.world
     viewer = world.pudges[slot]
+    teamOrd = if fogOn: viewer.team.ord else: -1
   var visiblePudges = newJArray()
   var visibleHooks = newJArray()
+  var visibleRunes = newJArray()
+  var visibleProps = newJArray()
   for i, pudge in world.pudges:
-    if not fogOn or pudge.team == viewer.team or
-        fogCanSee(world, viewer.team, pudge.position):
-      visiblePudges.add pudgeJson(pudge, i)
+    if fogShownPudgeTeam(world, teamOrd, pudge):
+      visiblePudges.add pudgeJson(world, pudge, i)
   for hook in world.hooks:
     if hook.phase == HookIdle:
       continue
-    if not fogOn or fogCanSee(world, viewer.team, hook.position):
-      visibleHooks.add hookJson(world, hook)
+    if teamOrd >= 0 and not fogCanSee(world, viewer.team, hook.position):
+      continue
+    visibleHooks.add hookJson(world, hook)
+  for rune in world.runes:
+    if teamOrd >= 0 and not fogCanSee(world, viewer.team, rune.position):
+      continue
+    visibleRunes.add runeJson(rune)
+  for prop in world.props:
+    if not prop.alive:
+      continue
+    if teamOrd >= 0 and not propVisibleTo(prop, viewer.team):
+      continue
+    if prop.kind == PropWall and teamOrd >= 0 and
+        not fogCanSee(world, viewer.team, prop.propCenter):
+      continue
+    visibleProps.add propJson(prop)
   var pingNode = newJNull()
   var ping: Ping
   if world.latestTeamPing(viewer.team, ping):
@@ -174,8 +229,13 @@ proc observation(slot: int, final = false): JsonNode =
     "river_west": RiverWestX,
     "river_east": RiverEastX,
     "fog": fogOn,
-    "self": pudgeJson(viewer, slot),
-    "visible": {"pudges": visiblePudges, "hooks": visibleHooks},
+    "self": pudgeJson(world, viewer, slot),
+    "visible": {
+      "pudges": visiblePudges,
+      "hooks": visibleHooks,
+      "runes": visibleRunes,
+      "props": visibleProps
+    },
     "ally_ping": pingNode,
     "score": scoreNode(world),
     "done": final or world.gameOver or done,
@@ -187,7 +247,7 @@ proc globalSnapshot(): JsonNode =
   var pudges = newJArray()
   var hooks = newJArray()
   for i, pudge in world.pudges:
-    pudges.add pudgeJson(pudge, i)
+    pudges.add pudgeJson(world, pudge, i)
   for hook in world.hooks:
     if hook.phase != HookIdle:
       hooks.add hookJson(world, hook)
@@ -250,6 +310,17 @@ proc applyAction(slot: int, node: JsonNode) =
   if node.hasKey("halt") and node["halt"].getBool:
     queueIntent(game, HumanIntent(slot: int32(slot), kind: IntentStop))
     return
+  if node.hasKey("blink_to") and node["blink_to"].kind == JArray and
+      node["blink_to"].len >= 2:
+    queueIntent(
+      game,
+      HumanIntent(
+        slot: int32(slot),
+        kind: IntentBlinkFine,
+        a: toFine(node["blink_to"][0].getFloat),
+        b: toFine(node["blink_to"][1].getFloat)
+      )
+    )
   if node.hasKey("walk_to") and node["walk_to"].kind == JArray and
       node["walk_to"].len >= 2:
     queueIntent(
@@ -270,6 +341,39 @@ proc applyAction(slot: int, node: JsonNode) =
         kind: IntentHookFine,
         a: toFine(node["hook_to"][0].getFloat),
         b: toFine(node["hook_to"][1].getFloat)
+      )
+    )
+  if node.hasKey("attack_target"):
+    queueIntent(
+      game,
+      HumanIntent(
+        slot: int32(slot),
+        kind: IntentAttack,
+        a: int32(node["attack_target"].getInt)
+      )
+    )
+  if node.hasKey("rot_toggle") and node["rot_toggle"].getBool:
+    queueIntent(game, HumanIntent(slot: int32(slot), kind: IntentRot))
+  if node.hasKey("place_wall") and node["place_wall"].kind == JArray and
+      node["place_wall"].len >= 2:
+    queueIntent(
+      game,
+      HumanIntent(
+        slot: int32(slot),
+        kind: IntentPlaceWall,
+        a: toTile(node["place_wall"][0].getFloat),
+        b: toTile(node["place_wall"][1].getFloat)
+      )
+    )
+  if node.hasKey("place_mine") and node["place_mine"].kind == JArray and
+      node["place_mine"].len >= 2:
+    queueIntent(
+      game,
+      HumanIntent(
+        slot: int32(slot),
+        kind: IntentPlaceMine,
+        a: toTile(node["place_mine"][0].getFloat),
+        b: toTile(node["place_mine"][1].getFloat)
       )
     )
   if node.hasKey("ping") and node["ping"].kind == JArray and
@@ -789,15 +893,19 @@ proc parseConfig(node: JsonNode) =
     seed = int32((epochTime() * 1000).int64 and 0x7fff_ffff)
 
 proc bootGame() =
-  if tokens.len != PudgeCount and tokens.len != DuelPudgeCount:
+  if tokens.len < DuelPudgeCount or tokens.len > MaxPudgeCount or
+      tokens.len mod 2 != 0:
     raise newException(
       CatchableError,
-      "Pudge Wars Coworld seats 2 (duel) or 6 (3v3) butchers"
+      "Pudge Wars Coworld seats 2, 4, 6, 8, or 10 butchers"
     )
-  let gameMap = generateMap(seed)
+  let
+    duel = tokens.len == DuelPudgeCount
+    n = if duel: TeamSize else: tokens.len div 2
+  let gameMap = generateMap(seed, n)
   game = newGame(
     gameMap, maxTicks, false, ReplayData(), killGoal, RunePeriodTicks,
-    tokens.len == DuelPudgeCount
+    duel
   )
   game.humanSlots.setLen(0)
   for i in 0 ..< game.world.pudges.len:

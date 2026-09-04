@@ -10,7 +10,8 @@ type ParticleEffectKind* = enum
   Fireball,
   FireBurst,
   ArrowWake,
-  HealingAura
+  HealingAura,
+  DecayAura
 
 var
   uParticleViewProjection*: Uniform[Mat4]
@@ -160,23 +161,89 @@ proc evaluateParticle(
     let
       progress = age / lifetime
       angle = particleRandom(state) * 6.28318530718'f + age * 4.2'f
-      radius = 0.28'f + particleRandom(state) * 0.62'f
+      radius = 1.15'f + particleRandom(state) * 2.35'f
     position = uParticleOrigin + vec3(
       cos(angle) * radius,
-      particleRandom(state) * 0.35'f + age * 1.25'f,
+      particleRandom(state) * 0.55'f + age * 1.85'f,
       sin(angle) * radius
     )
     velocity = vec3(
       -sin(angle) * radius * 4.2'f,
-      1.25'f,
+      1.85'f,
       cos(angle) * radius * 4.2'f
     )
     life = progress
-    size = mix(0.075'f, 0.025'f, progress) *
+    size = mix(0.11'f, 0.03'f, progress) *
       (0.75'f + particleRandom(state) * 0.55'f)
     color = mix(
-      vec4(0.42'f, 1.0'f, 0.48'f, 0.95'f),
-      vec4(1.0'f, 0.88'f, 0.24'f, 0.0'f),
+      vec4(0.95'f, 1.0'f, 0.42'f, 0.95'f),
+      vec4(0.42'f, 1.0'f, 0.48'f, 0.0'f),
+      progress
+    )
+    alive = 1.0'f
+    return
+
+  if uParticleEffectKind == DecayAura.ord.int32:
+    let
+      birth = particleId * 0.011'f
+      age = elapsed - birth
+      lifetime = 1.15'f + particleRandom(state) * 0.7'f
+    if age < 0.0'f or age >= lifetime:
+      return
+    let progress = age / lifetime
+    if particleId < 18.0'f:
+      let
+        spawnAngle = particleRandom(state) * 6.28318530718'f
+        spawnRoll = particleRandom(state)
+        swirl = age * (1.05'f + particleRandom(state) * 0.55'f)
+        radius = spawnRoll * spawnRoll * 2.6'f + age * 0.42'f
+        angle = spawnAngle + swirl
+        rise = 0.35'f + particleRandom(state) * 0.55'f +
+          age * (1.35'f + particleRandom(state) * 1.45'f)
+      position = uParticleOrigin + vec3(
+        cos(angle) * radius,
+        rise,
+        sin(angle) * radius
+      )
+      velocity = vec3(
+        -sin(angle) * radius * 1.05'f,
+        1.4'f,
+        cos(angle) * radius * 1.05'f
+      )
+      life = progress
+      size = mix(0.34'f, 0.07'f, progress) *
+        (0.78'f + particleRandom(state) * 0.7'f)
+      color = mix(
+        vec4(0.55'f, 1.0'f, 0.22'f, 0.92'f),
+        vec4(0.12'f, 0.28'f, 0.05'f, 0.0'f),
+        progress
+      )
+      alive = 1.0'f
+      return
+    let
+      spawnAngle = particleRandom(state) * 6.28318530718'f
+      spawnRoll = particleRandom(state)
+      swirl = age * (0.75'f + particleRandom(state) * 0.5'f)
+      radius = sqrt(spawnRoll) * 7.55'f + age * 0.38'f
+      angle = spawnAngle + swirl
+      rise = particleRandom(state) * 0.45'f +
+        age * (0.55'f + particleRandom(state) * 1.15'f)
+    position = uParticleOrigin + vec3(
+      cos(angle) * radius,
+      rise,
+      sin(angle) * radius
+    )
+    velocity = vec3(
+      -sin(angle) * radius * 0.75'f,
+      0.85'f,
+      cos(angle) * radius * 0.75'f
+    )
+    life = progress
+    size = mix(0.26'f, 0.055'f, progress) *
+      (0.78'f + particleRandom(state) * 0.7'f)
+    color = mix(
+      vec4(0.32'f, 0.88'f, 0.16'f, 0.82'f),
+      vec4(0.07'f, 0.18'f, 0.03'f, 0.0'f),
       progress
     )
     alive = 1.0'f

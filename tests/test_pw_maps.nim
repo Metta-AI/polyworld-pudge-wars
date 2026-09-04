@@ -197,6 +197,79 @@ block spawnLayout:
       seenShift = true
   doAssert seenShift, "pads must move across seeds"
 
+echo "Testing N vs N spawn: 3v3 frozen, 5v5 extra pads"
+block nvnSpawn:
+  let classic = spawnLayoutFromSeed(2026)
+  doAssert classic == spawnLayoutFromSeed(2026, 3)
+  doAssert classic.west.len == TeamSize
+  let three = generateMap(2026, 3)
+  doAssert generateMap(2026).hash == three.hash,
+    "explicit N=3 must stamp the same roads as the default map"
+  doAssert three.teamSize == TeamSize
+  let five = generateMap(2026, 5)
+  doAssert five.hash != three.hash, "5v5 pads must change the map hash"
+  doAssert five.teamSize == 5
+  let layout5 = spawnLayoutFromSeed(2026, 5)
+  doAssert layout5.west.len == 5
+  doAssert layout5.east.len == 5
+  for i in 0 ..< 5:
+    doAssert layout5.east[i].x == mirrorSpawnX(layout5.west[i].x)
+    doAssert layout5.east[i].z == layout5.west[i].z
+    doAssert westBank(layout5.west[i].x)
+    doAssert eastBank(layout5.east[i].x)
+  for i in 0 ..< 5:
+    for j in i + 1 ..< 5:
+      let
+        dx = abs(layout5.west[i].x - layout5.west[j].x)
+        dz = abs(layout5.west[i].z - layout5.west[j].z)
+      doAssert max(dx, dz) >= SpawnMinSep
+  let one = spawnLayoutFromSeed(2026, 1)
+  doAssert one.west.len == 1
+  let matched = generateMapMatching(2026, five.hash)
+  doAssert matched.hash == five.hash
+  doAssert matched.teamSize == 5
+  let unknown = generateMapMatching(2026, 1'u64)
+  doAssert unknown.teamSize == TeamSize
+  doAssert unknown.hash == three.hash
+
+echo "Testing seeded bounce trees on the playable grass"
+block fieldTrees:
+  discard generateMap(2026)
+  var
+    westTrees = 0
+    eastTrees = 0
+  for z in PlayZMin .. PlayZMax:
+    for x in PlayWestMin .. PlayWestMax:
+      if fieldTreeTile(x, z):
+        inc westTrees
+        doAssert hookReboundTile(x, z),
+          "a field tree must rebound hooks"
+        doAssert not isWalkable(WestLayer, x, z),
+          "a field tree must block walking"
+        doAssert not onSpawnLane(z)
+        doAssert not onBankAisle(x)
+        doAssert not nearShopPad(x, z)
+        doAssert abs(x - PlayWestMax) >= BankTreeRiverMargin
+        let ex = mirrorSpawnX(x)
+        doAssert fieldTreeTile(ex, z),
+          "east must mirror each west bounce tree"
+    for x in PlayEastMin .. PlayEastMax:
+      if fieldTreeTile(x, z):
+        inc eastTrees
+  doAssert westTrees == eastTrees
+  doAssert westTrees >= BankTreesPerSide - 2,
+    "each bank needs a full set of bounce trees"
+  doAssert westTrees <= BankTreesPerSide
+  let again = generateMap(2026)
+  discard again
+  var westAgain = 0
+  for z in PlayZMin .. PlayZMax:
+    for x in PlayWestMin .. PlayWestMax:
+      if fieldTreeTile(x, z):
+        inc westAgain
+  doAssert westAgain == westTrees, "the same seed must plant the same trees"
+  doAssert generateMap(7).hash != generateMap(2026).hash
+
 echo "test_pw_maps: all checks passed"
 let sample = generateMap(2026)
 echo "  seed 2026 mapHash = ", toHex(sample.hash)

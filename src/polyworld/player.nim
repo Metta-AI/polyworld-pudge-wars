@@ -233,12 +233,7 @@ proc drawTransport*(
     scrubH = if compact: 6.0'f32 else: ScrubH
     recordedH = if compact: 2.0'f32 else: RecordedH
     recordedGap = if compact: 2.0'f32 else: RecordedGap
-  sk.drawRect(panel.origin, panel.size, rgbx(11, 14, 20, 250))
-  sk.drawRect(
-    panel.origin,
-    vec2(panel.size.x, 2),
-    if compact: rgbx(168, 148, 96, 255) else: rgbx(83, 91, 108, 255)
-  )
+  sk.drawRibbon(panel)
   proc placeIcon(x: var float32): GameUiPanel =
     result = GameUiPanel(
       origin: panel.origin + vec2(x, iconY),

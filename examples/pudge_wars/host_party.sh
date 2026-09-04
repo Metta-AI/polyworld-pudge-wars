@@ -19,8 +19,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 
+# Prefer the Nimby toolchain scripts/setup.sh installs.
+export PATH="${HOME}/.nimby/nim/bin:${HOME}/.local/bin:${PATH}"
 if ! command -v nim > /dev/null; then
   echo "error: nim not found on the PATH" >&2
+  echo "  run: scripts/setup.sh" >&2
+  echo "  then: export PATH=\"\$HOME/.nimby/nim/bin:\$HOME/.local/bin:\$PATH\"" >&2
   exit 1
 fi
 

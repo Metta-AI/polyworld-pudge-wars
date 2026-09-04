@@ -14,10 +14,11 @@ items/longflight_brand.png
 items/bank_palisade.png
 items/hooktrap.png
 icons
-themes/editor
+themes/main
 ui
 fonts/Rubik-Regular.ttf
 fonts/Rubik-Bold.ttf
+fonts/OverpassMono-Regular.ttf
 terrain/handpainted_trees
 terrain/cartoon_textures
 terrain/low_poly_grass.glb

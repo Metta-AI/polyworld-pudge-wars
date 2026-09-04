@@ -114,10 +114,14 @@ Genre-standard controls (rebindable via `--keys FILE`, one
 | S | Stop |
 | 1–4 | Buy upgrades (damage / distance / speed / radius) |
 | G | Ping the map for your team — bots read pings too |
-| F1 | Center camera on your butcher |
-| L | Toggle camera follow |
+| L / AUTO chip | Lock camera on your butcher (on by default; pan to look around) |
+| F1 | Snap to your butcher and re-lock auto camera |
+| Y / DIR chip | Director camera: auto-follow hooks, fights, and kills |
+| Hold C + move pointer / two-finger | Pan camera (trackpad grab; tap C still places a wall) |
+| Arrow keys | Pan camera (unlocks auto) |
+| - / = | Zoom out / in |
+| MMB drag, edge scroll (fullscreen only), minimap click | Pan camera (unlocks auto) |
 | T | Hover any butcher and press T to take its seat over (or release yours) |
-| MMB drag, arrows, edge scroll, minimap click | Camera |
 | M | Mute |
 
 Grab the runes drifting down the river — haste, double damage, regen,

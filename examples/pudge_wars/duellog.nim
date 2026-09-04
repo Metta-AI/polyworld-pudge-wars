@@ -279,9 +279,7 @@ proc newDuelLogger*(
       names.add result.playerName(game, i)
     result.label = names.join(" vs ")
   var start = result.baseEvent("match_start", game.world.tick)
-  start["mode"] = %(
-    if game.world.pudges.len == DuelPudgeCount: "duel" else: "3v3"
-  )
+  start["mode"] = %rosterModeName(game.world)
   start["label"] = %result.label
   start["startedAt"] = %result.startedAt
   start["seed"] = %game.map.seed
@@ -907,9 +905,7 @@ proc buildSummary(logger: DuelLogger, game: Game): JsonNode =
     "dir": logger.dir,
     "startedAt": logger.startedAt,
     "endedAt": now().format("yyyy-MM-dd'T'HH:mm:ss"),
-    "mode": (
-      if world.pudges.len == DuelPudgeCount: "duel" else: "3v3"
-    ),
+    "mode": rosterModeName(world),
     "seed": game.map.seed,
     "killGoal": world.killGoal,
     "ticks": world.tick,

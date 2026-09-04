@@ -42,8 +42,8 @@ var
   clientSeat = -1
     ## Seat this client drives, or -1 while spectating.
   clientToken = ""
-  seatNames: array[PudgeCount, string]
-  seatHumans: array[PudgeCount, bool]
+  seatNames: array[MaxPudgeCount, string]
+  seatHumans: array[MaxPudgeCount, bool]
   pendingMessages: seq[string]
     ## Decoded-order buffer; a mid-batch `Start` leaves the remainder
     ## here for the rebuilt world.
@@ -476,7 +476,7 @@ proc netClientError*(): string =
 
 proc netSeatName*(slot: int): string =
   ## The lobby name behind one seat, or empty for a bot.
-  if slot >= 0 and slot < PudgeCount:
+  if slot >= 0 and slot < MaxPudgeCount:
     result = seatNames[slot]
 
 proc netDrop(reason: string) =
@@ -625,7 +625,7 @@ proc takeReceived() =
       pendingMessages.add data
 
 proc applyLobby(lobby: LobbyMsg) =
-  for i in 0 ..< PudgeCount:
+  for i in 0 ..< MaxPudgeCount:
     if i < lobby.seats.len:
       seatNames[i] = lobby.seats[i].name
       seatHumans[i] = lobby.seats[i].human
@@ -638,7 +638,7 @@ proc syncHumanSlots(game: Game) =
   ## and bot speech bubbles. Display only: the follower sim takes every
   ## action from the tape.
   game.humanSlots.setLen(0)
-  for i in 0 ..< PudgeCount:
+  for i in 0 ..< MaxPudgeCount:
     if seatHumans[i]:
       game.humanSlots.add i
 
@@ -806,7 +806,7 @@ proc netBootstrap*(
           for human in seatHumans:
             if human:
               inc claimed
-          echo "join: lobby open, ", claimed, "/", PudgeCount,
+          echo "join: lobby open, ", claimed, "/", message.lobby.seats.len,
             " seats claimed - waiting for the host to start"
       of NmStart:
         result = (true, "", message.start.setup)

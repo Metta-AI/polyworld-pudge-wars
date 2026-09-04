@@ -24,13 +24,15 @@ type
 
 proc usage() =
   echo "Pudge Wars"
-  echo "  --bot:PATH              Fill one of the 6 butcher slots."
-  echo "  --bot:PATH:N            Fill N of the 6 slots with that file."
+  echo "  --bot:PATH              Fill butcher slots with that script."
+  echo "  --bot:PATH:N            Fill N slots with that file."
   echo "  --bot PATH[:N]          The equivalent two-argument form."
-  echo "  --human[:SLOT]          A human drives one slot (0-5; default"
-  echo "                          the first free slot). Repeatable. Bots"
-  echo "                          fill 6 seats (human seats keep script"
-  echo "                          autopilot for release) or 6 - humans."
+  echo "  --human[:SLOT]          A human drives one slot (0-based;"
+  echo "                          default the first free slot)."
+  echo "                          Repeatable. Bots fill the rest."
+  echo "  --team-size N           N vs N, N=1..5 (default 3). Spawns"
+  echo "                          2N butchers. --duel is still the"
+  echo "                          ladder 1v1 (slot 1 of the 3-lane pads)."
   echo "  --duel                  1v1 mode: one butcher a side on the"
   echo "                          middle lane. Bots default to"
   echo "                          players/challenger.bas; first to " &
@@ -38,7 +40,7 @@ proc usage() =
   echo "  --duellog DIR           Write per-match analysis logs (events"
   echo "                          .jsonl, summary.json, history.jsonl)"
   echo "                          under DIR. Defaults to duels/ in duel"
-  echo "                          mode; also works for 3v3 and replays."
+  echo "                          mode; also works for NvN and replays."
   echo "  --replay PATH           Play an action replay instead of bots."
   echo "  --record PATH           Record match actions to a replay."
   echo "  --seconds NUMBER        Duration in seconds (default 1200)."
@@ -55,21 +57,23 @@ proc usage() =
     " (default " & $(RunePeriodTicks div TickRate) & "; 0 disables)."
   echo "  --difficulty NAME       Bot preset: easy, fair, or pro."
   echo "  --quickcast             Hook casts on key press at the cursor."
+  echo "  --autocast              Meat Hook autocast: RMB an enemy throws."
   echo "  --keys PATH             Key bindings file (action = KeyName)."
   echo "  --mute                  Start with the sound off (default; M toggles)."
   echo "  --sound                 Start with the sound on."
   echo "  --play=false            Start the graphical transport paused."
   echo "  --speed NUMBER          Graphical start speed: 1, 2, 4, or 16."
   echo "  --windowSize WxH        Graphical window, such as 1024x576."
+  echo "  --vsync:off             Unlock the frame rate (default on)."
   echo "  --host                  Serve a lobby so friends can join over"
-  echo "                          the network (needs bots on all 6 seats;"
+  echo "                          the network (needs bots on all 2N seats;"
   echo "                          fills them with base.bas when unset)."
   echo "  --port NUMBER           Lobby port for --host (default 8000)."
   echo "  --autostart             Skip the lobby: the hosted match runs"
   echo "                          at once and joiners drop in mid-game."
   echo "  --join URL              Join a hosted match, for example"
   echo "                          ws://192.168.1.10:8000/ws"
-  echo "  --slot NUMBER           Seat to request when joining (1-6;"
+  echo "  --slot NUMBER           Seat to request when joining (1-10;"
   echo "                          default spectate)."
   echo "  --name TEXT             Your player name for networked play."
   echo "  --token TEXT            Seat token from the lobby page (the"
@@ -131,10 +135,10 @@ proc addHumanSlot(options: var GameOptions, text: string) =
   var slot = -1'i32
   if text.len > 0:
     slot = parseInt32(text, "--human")
-    if slot < 0 or slot >= PudgeCount:
-      fail("--human slot must be between 0 and " & $(PudgeCount - 1))
+    if slot < 0 or slot >= MaxPudgeCount:
+      fail("--human slot must be between 0 and " & $(MaxPudgeCount - 1))
   else:
-    for candidate in 0'i32 ..< int32(PudgeCount):
+    for candidate in 0'i32 ..< int32(MaxPudgeCount):
       if candidate notin options.humanSlots:
         slot = candidate
         break
@@ -158,6 +162,18 @@ proc applyDifficulty(options: var GameOptions, name: string) =
     options.botAimNoise = 0
   else:
     fail("--difficulty must be easy, fair, or pro")
+
+proc findStockBot(): string =
+  ## Default autopilot policy for empty seats.
+  for candidate in [
+    "examples/pudge_wars/players/base.bas",
+    "players/base.bas"
+  ]:
+    if fileExists(candidate):
+      return candidate
+  fail(
+    "need players/base.bas (run from the repo root) or an explicit --bot PATH"
+  )
 
 proc findChallengerScript(): string =
   ## The evolving duel policy, looked up from the repo root or the
@@ -208,12 +224,20 @@ proc parseGameOptions(): GameOptions =
       result.addHumanSlot(argument[8 .. ^1])
     elif argument == "--duel":
       result.duel = true
+    elif argument == "--team-size":
+      result.teamSize = parsePositiveInt32(
+        arguments.argumentValue(index, "--team-size"), "--team-size"
+      )
+    elif argument.startsWith("--team-size="):
+      result.teamSize = parsePositiveInt32(argument[12 .. ^1], "--team-size")
     elif argument == "--duellog":
       result.matchLogDir = arguments.argumentValue(index, "--duellog")
     elif argument.startsWith("--duellog="):
       result.matchLogDir = argument[10 .. ^1]
     elif argument == "--quickcast":
       result.quickcast = true
+    elif argument == "--autocast":
+      result.autocast = true
     elif argument == "--mute":
       result.mute = true
     elif argument == "--sound":
@@ -349,6 +373,12 @@ proc parseGameOptions(): GameOptions =
       netSimSetLogging(true)
   # Unset goal and duration take the mode's defaults: duels are
   # shorter so the play-analyze-improve loop turns around quickly.
+  if result.teamSize == 0:
+    result.teamSize = int32(TeamSize)
+  elif result.teamSize < 1 or result.teamSize > MaxTeamSize:
+    fail("--team-size must be between 1 and " & $MaxTeamSize)
+  if result.duel and result.teamSize != int32(TeamSize):
+    fail("--duel cannot combine with --team-size")
   if result.killGoal <= 0:
     result.killGoal = if result.duel: DuelKillGoal else: KillGoal
   if result.maximumTicks <= 0:
@@ -366,8 +396,8 @@ proc parseGameOptions(): GameOptions =
   if result.runeSeconds >= 0 and
       int64(result.runeSeconds) * int64(TickRate) > int64(int32.high):
     fail("--runes is too large")
-  if result.joinSlot >= PudgeCount:
-    fail("--slot must be between 1 and " & $PudgeCount)
+  if result.joinSlot >= MaxPudgeCount:
+    fail("--slot must be between 1 and " & $MaxPudgeCount)
   if result.joinUrl.len > 0:
     # A joining client follows the host's tape; nothing local applies.
     if result.hostPort != 0:
@@ -380,22 +410,22 @@ proc parseGameOptions(): GameOptions =
     return
   if result.autoStart and result.hostPort == 0:
     fail("--autostart requires --host")
+  let seats =
+    if result.duel: DuelPudgeCount
+    else: matchPudgeCount(int(result.teamSize))
+  for slot in result.humanSlots:
+    if slot >= seats:
+      fail("--human slot " & $slot & " is outside this roster of " & $seats)
   if result.hostPort != 0:
     if result.replayPath.len > 0:
       fail("--host cannot be combined with --replay")
     if result.botGroups.len == 0:
       # Every hosted seat needs script autopilot so a leaver's butcher
       # keeps fighting; fill the roster with the stock bot.
-      let stockBot = "examples/pudge_wars/players/base.bas"
-      if not fileExists(stockBot):
-        fail(
-          "--host needs bots on all " & $PudgeCount & " seats; run " &
-          "from the repo root or pass --bot PATH:" & $PudgeCount
-        )
-      result.botGroups.addBotSpec(stockBot & ":" & $PudgeCount)
-    if result.botGroups.botCount != PudgeCount:
+      result.botGroups.addBotSpec(findStockBot() & ":" & $seats)
+    if result.botGroups.botCount != seats:
       fail(
-        "--host needs bot scripts for all " & $PudgeCount &
+        "--host needs bot scripts for all " & $seats &
         " seats (autopilot for leavers); configured " &
         $result.botGroups.botCount
       )
@@ -403,7 +433,6 @@ proc parseGameOptions(): GameOptions =
       fail("--host claims at most one --human seat for the host player")
   result.validateGameOptions(0, "")
   if result.replayPath.len == 0:
-    let seats = if result.duel: DuelPudgeCount else: PudgeCount
     if result.duel and result.botGroups.len == 0 and
         result.humanSlots.len < seats:
       # A bare duel pits the seats without humans against the
@@ -411,6 +440,11 @@ proc parseGameOptions(): GameOptions =
       result.botGroups.addBotSpec(
         findChallengerScript() & ":" & $(seats - result.humanSlots.len)
       )
+    elif result.botGroups.len == 0:
+      # Local --human and spectate: stock autopilot on every seat.
+      # --host already filled above. Human seats still take input;
+      # the VM is fallback if they release (T).
+      result.botGroups.addBotSpec(findStockBot() & ":" & $seats)
     let
       bots = result.botGroups.botCount
       humans = result.humanSlots.len
@@ -421,7 +455,7 @@ proc parseGameOptions(): GameOptions =
         " non-human seats; configured " & $bots
       )
 
-let options* = parseGameOptions()
+var options* = parseGameOptions()
 
 proc optionRunePeriod*(): int32 =
   ## The live-game rune spawn period in ticks from `--runes`.
@@ -478,8 +512,8 @@ proc validateNetSetup(setup: Setup) =
       $TickRate & " Hz")
   if setup.gridTiles != ReplayGridTiles:
     fail("host map size does not match this build")
-  if setup.pudges.len < DuelPudgeCount or setup.pudges.len > PudgeCount:
-    fail("host match does not have " & $PudgeCount & " butchers")
+  if setup.pudges.len < DuelPudgeCount or setup.pudges.len > MaxPudgeCount:
+    fail("host match does not have 2 to " & $MaxPudgeCount & " butchers")
   if setup.maximumTicks == 0 or setup.killGoal <= 0:
     fail("host sent an invalid match setup")
 
@@ -540,7 +574,7 @@ proc newFollowerGame*(setup: Setup): Game =
   validateNetSetup(setup)
   var gameMap: MapData
   profileBlock "map":
-    gameMap = generateMap(setup.mapSeed)
+    gameMap = generateMapMatching(setup.mapSeed, setup.mapHash)
   if gameMap.hash != setup.mapHash:
     fail("map generation differs from the host; update this build")
   result = Game(
@@ -590,7 +624,14 @@ block:
       mapSeed = replayData.header.setup.mapSeed
     var gameMap: MapData
     profileBlock "map":
-      gameMap = generateMap(mapSeed)
+      if replayMode:
+        gameMap = generateMapMatching(
+          mapSeed, replayData.header.setup.mapHash
+        )
+      elif options.duel:
+        gameMap = generateMap(mapSeed, TeamSize)
+      else:
+        gameMap = generateMap(mapSeed, int(options.teamSize))
     let maximumTicks =
       if replayMode: int32(replayData.header.setup.maximumTicks)
       else: options.maximumTicks
@@ -617,7 +658,7 @@ block:
     when not defined(emscripten):
       startDuelLogging()
 
-proc advanceGame*() =
+proc advanceGame*() {.measure.} =
   tickWorld(run, proc() = runBotDecisions(run))
   when not defined(emscripten):
     logDuelTick(matchLog, run)
@@ -663,26 +704,30 @@ var
   rosterOverride: seq[ReplayPudge]
   botGroupsOverride: seq[BotGroup]
 
-proc setRosterExperiment*(disabled: array[PudgeCount, bool]) =
+proc setRosterExperiment*(disabled: openArray[bool]) =
   ## Applies the host lobby's seat toggles: builds the compacted
   ## roster and the per-seat bot list (disabling seat 3 removes seat
   ## 3's persona specifically). All seats enabled clears the override.
   rosterOverride.setLen(0)
   botGroupsOverride.setLen(0)
   var any = false
-  for off in disabled:
+  let n = int(options.teamSize)
+  let seats = matchPudgeCount(n)
+  for i, off in disabled:
+    if i >= seats:
+      break
     if off:
       any = true
       break
   if not any or options.duel:
     return
-  rosterOverride = filteredRoster(disabled)
+  rosterOverride = filteredRoster(disabled, n)
   var flat: seq[string]
   for group in options.botGroups:
     for _ in 0 ..< group.count:
       flat.add group.path
-  for seat in 0 ..< PudgeCount:
-    if disabled[seat] or seat >= flat.len:
+  for seat in 0 ..< seats:
+    if (seat < disabled.len and disabled[seat]) or seat >= flat.len:
       continue
     botGroupsOverride.addBotSpec(flat[seat] & ":1")
 
@@ -703,6 +748,44 @@ proc rebuildWithRoster*() =
   run.botEvery = max(options.botEvery, 1'i32)
   run.botAimNoise = max(options.botAimNoise, 0'i32)
   loadBots(run, activeBotGroups())
+
+proc fillBotsTo*(count: int) =
+  ## Grows or trims `options.botGroups` so `loadBots` can fill `count`
+  ## seats. Extra seats repeat the stock autopilot.
+  var flat: seq[string]
+  for group in options.botGroups:
+    for _ in 0 ..< group.count:
+      flat.add group.path
+  if flat.len > count:
+    flat.setLen(count)
+  while flat.len < count:
+    flat.add findStockBot()
+  options.botGroups.setLen(0)
+  for path in flat:
+    options.botGroups.addBotSpec(path & ":1")
+
+proc applyTeamSize*(n: int): bool =
+  ## Live lobby / local N stepper. Regenerates the map (extra pads
+  ## stamp extra roads) and rebuilds the world. No-op once a hosted
+  ## match has started, in duel, replay, or as a follower.
+  if options.duel or run.replayMode or netRole == NetClient:
+    return false
+  let next = clampTeamSize(n)
+  if next == int(options.teamSize):
+    return false
+  options.teamSize = int32(next)
+  rosterOverride.setLen(0)
+  botGroupsOverride.setLen(0)
+  fillBotsTo(matchPudgeCount(next))
+  let gameMap = generateMap(run.map.seed, next)
+  run = newGame(
+    gameMap, options.maximumTicks, false, ReplayData(), options.killGoal,
+    optionRunePeriod(), false
+  )
+  run.botEvery = max(options.botEvery, 1'i32)
+  run.botAimNoise = max(options.botAimNoise, 0'i32)
+  loadBots(run, options.botGroups)
+  true
 
 proc restartMatch*() =
   ## Rematch on the same arena: a fresh world with the launch options

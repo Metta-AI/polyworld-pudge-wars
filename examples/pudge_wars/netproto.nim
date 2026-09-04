@@ -19,7 +19,9 @@ import
   sim
 
 const
-  NetProtocolVersion* = 5'u16
+  NetProtocolVersion* = 6'u16
+    ## v6: lobby may carry 2..10 seats (N vs N, N=1..5). Older followers
+    ##     sized for six wells must rebuild with the host.
     ## v5: NmIntent carries `wantedTick`, the client's predicted tick for
     ## the command. Transport only - it never enters the tape or the
     ## state hash; the host applies on its live tick and the client uses

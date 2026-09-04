@@ -1,11 +1,13 @@
 ## Pudge Wars scripting: the BASIC surface one butcher has on the match.
 ##
-## Human seats live beside the scripts: a slot listed in
-## `game.humanSlots` skips its VM (which may not exist) and drains the
-## queued human intents through the same record-then-apply path at its
-## hero turn. Fairness knobs live here too: `game.botEvery` throttles
-## script decisions to a human-like cadence and `game.botAimNoise`
-## scatters hook aim deterministically before the action is recorded.
+## Observations are fog-clipped the same way the renderer is, so a script
+## cannot track an enemy through the far bank. Human seats live beside
+## the scripts: a slot listed in `game.humanSlots` skips its VM (which
+## may not exist) and drains the queued human intents through the same
+## record-then-apply path at its hero turn. Fairness knobs live here too:
+## `game.botEvery` throttles script decisions to a human-like cadence and
+## `game.botAimNoise` scatters hook aim deterministically before the
+## action is recorded.
 
 import
   polyworld/[basic, cli, pathing, profiles, rngs, tapes],
@@ -264,75 +266,85 @@ proc initPudgeHost(pudgeId: int32): Host =
       arguments: openArray[int32]
   ): int32 =
     discard arguments
-    int32(activeGame.world.hooks.len)
+    int32(worldHookCount(activeGame.world, pudgeId))
   let hookTeamProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
-    let index = int(arguments[0])
-    if index < 0 or index >= activeGame.world.hooks.len:
-      return 0
-    int32(activeGame.world.hooks[index].team.ord)
+    var hook: Hook
+    if worldHookAt(activeGame.world, pudgeId, int(arguments[0]), hook):
+      int32(hook.team.ord)
+    else:
+      0
   let hookXProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
-    let index = int(arguments[0])
-    if index < 0 or index >= activeGame.world.hooks.len:
-      return 0
-    mapCoordinate(activeGame.world.hooks[index].position.x)
+    var hook: Hook
+    if worldHookAt(activeGame.world, pudgeId, int(arguments[0]), hook):
+      mapCoordinate(hook.position.x)
+    else:
+      0
   let hookYProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
-    let index = int(arguments[0])
-    if index < 0 or index >= activeGame.world.hooks.len:
-      return 0
-    mapCoordinate(activeGame.world.hooks[index].position.z)
+    var hook: Hook
+    if worldHookAt(activeGame.world, pudgeId, int(arguments[0]), hook):
+      mapCoordinate(hook.position.z)
+    else:
+      0
   let hookFlyingProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
-    let index = int(arguments[0])
-    if index < 0 or index >= activeGame.world.hooks.len:
-      return 0
-    if activeGame.world.hooks[index].phase == HookFlying: 1'i32 else: 0'i32
+    var hook: Hook
+    if worldHookAt(activeGame.world, pudgeId, int(arguments[0]), hook) and
+        hook.phase == HookFlying:
+      1'i32
+    else:
+      0
   let hookVictimProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
-    let index = int(arguments[0])
-    if index < 0 or index >= activeGame.world.hooks.len:
-      return 0
-    activeGame.world.hooks[index].victimId
+    var hook: Hook
+    if worldHookAt(activeGame.world, pudgeId, int(arguments[0]), hook):
+      hook.victimId
+    else:
+      0
   let hookOwnerProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
-    let index = int(arguments[0])
-    if index < 0 or index >= activeGame.world.hooks.len:
-      return 0
-    activeGame.world.hooks[index].ownerId
+    var hook: Hook
+    if worldHookAt(activeGame.world, pudgeId, int(arguments[0]), hook):
+      hook.ownerId
+    else:
+      0
   let runeCountProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
     discard arguments
-    int32(activeGame.world.runes.len)
+    int32(worldRuneCount(activeGame.world, pudgeId))
   let runeXProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
-    let index = int(arguments[0])
-    if index < 0 or index >= activeGame.world.runes.len:
-      return -1
-    mapCoordinate(activeGame.world.runes[index].position.x)
+    var rune: Rune
+    if worldRuneAt(activeGame.world, pudgeId, int(arguments[0]), rune):
+      mapCoordinate(rune.position.x)
+    else:
+      -1
   let runeYProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
-    let index = int(arguments[0])
-    if index < 0 or index >= activeGame.world.runes.len:
-      return -1
-    mapCoordinate(activeGame.world.runes[index].position.z)
+    var rune: Rune
+    if worldRuneAt(activeGame.world, pudgeId, int(arguments[0]), rune):
+      mapCoordinate(rune.position.z)
+    else:
+      -1
   let runeKindProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
-    let index = int(arguments[0])
-    if index < 0 or index >= activeGame.world.runes.len:
-      return -1
-    int32(activeGame.world.runes[index].kind.ord)
+    var rune: Rune
+    if worldRuneAt(activeGame.world, pudgeId, int(arguments[0]), rune):
+      int32(rune.kind.ord)
+    else:
+      -1
   let buyUpgradeProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
@@ -529,7 +541,7 @@ proc loadBots*(game: Game, groups: openArray[BotGroup]) =
     )
     inc next
 
-proc runPudgeScript(game: Game, index: int) =
+proc runPudgeScript(game: Game, index: int) {.measure.} =
   if index < 0 or index >= game.heroVms.len:
     return
   let

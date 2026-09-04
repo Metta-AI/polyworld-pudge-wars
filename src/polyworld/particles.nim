@@ -152,6 +152,8 @@ proc effectParticleCount(kind: ParticleEffectKind): int =
     24
   of HealingAura:
     48
+  of DecayAura:
+    64
 
 proc effectLifetime(
     kind: ParticleEffectKind,
@@ -173,6 +175,8 @@ proc effectLifetime(
     travelTime + 0.35'f32
   of HealingAura:
     1.75'f32
+  of DecayAura:
+    2.45'f32
 
 proc addParticleEffect(
     system: var ParticleSystem,

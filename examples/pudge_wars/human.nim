@@ -250,6 +250,20 @@ proc inspectGroundPoint*(): Vec3 =
     return vec3(0)
   renderPoint(run.world.pudges[index].position)
 
+proc followCameraPoint*(): tuple[found: bool, point: Vec3] =
+  ## Lock-cam look-at: your butcher while seated, else the spectator
+  ## POV or the inspected butcher.
+  if humanControlActive() and heroIndex() >= 0:
+    return (true, heroGroundPoint())
+  let eyes = spectateIndex()
+  if eyes >= 0:
+    return (true, renderPoint(run.world.pudges[eyes].position))
+  if inspectId != 0:
+    let index = inspectIndex()
+    if index >= 0:
+      return (true, inspectGroundPoint())
+  (false, vec3(0))
+
 proc viewPanel(window: Window): GameUiPanel =
   if worldViewRect.size.x > 1 and worldViewRect.size.y > 1:
     worldViewRect
@@ -545,6 +559,19 @@ proc handleCheatCodes(window: Window) =
         else: 0'i32
       queueHero(IntentCheat, int32(hit.kind.ord), amount)
 
+proc toggleHookAutocast*() =
+  ## Arms or disarms Meat Hook autocast. Client-only; the sim still
+  ## only sees the hook intent that fires.
+  options.autocast = not options.autocast
+
+proc issueHookAtPudge(target: Pudge) =
+  ## Fine-aim a hook at a butcher's current world position.
+  queueHero(
+    IntentHookFine,
+    fineOfWorld(target.position.x),
+    fineOfWorld(target.position.z)
+  )
+
 proc issueAttack(targetId: int32) =
   ## Queues a melee order and flashes the target ring.
   queueHero(IntentAttack, targetId)
@@ -829,7 +856,12 @@ proc drainIntentResults() =
       setHumanError(rejectReason(res))
   run.intentResults.setLen(0)
 
-proc anyCommandPressed(window: Window, rightClickCommand: bool): bool =
+proc anyCommandPressed(
+    window: Window, rightClickCommand, panTap: bool
+): bool =
+  let wallPressed =
+    if panSharesWall(): panTap
+    else: window.buttonPressed[bindKey(BindWall)]
   rightClickCommand or
     window.buttonPressed[bindKey(BindHook)] or
     window.buttonPressed[bindKey(BindGrapple)] or
@@ -840,7 +872,7 @@ proc anyCommandPressed(window: Window, rightClickCommand: bool): bool =
     window.buttonPressed[bindKey(BindUpgrade2)] or
     window.buttonPressed[bindKey(BindUpgrade3)] or
     window.buttonPressed[bindKey(BindUpgrade4)] or
-    window.buttonPressed[bindKey(BindWall)] or
+    wallPressed or
     window.buttonPressed[bindKey(BindMine)] or
     window.buttonPressed[bindKey(BindPing)]
 
@@ -884,10 +916,13 @@ proc handleSeatSwap(
   # Spectator: the slot picker. T grabs the hovered butcher (or the
   # launch seat); the number keys grab a seat directly.
   var slot = -1
-  const SeatKeys = [Key1, Key2, Key3, Key4, Key5, Key6]
+  const SeatKeys = [
+    Key1, Key2, Key3, Key4, Key5, Key6, Key7, Key8, Key9, Key0
+  ]
   for i, key in SeatKeys:
     if window.buttonPressed[key]:
-      slot = i
+      if i < run.world.pudges.len:
+        slot = i
   if swapPressed:
     let picked = pickPudge(window, viewProjection)
     if picked != 0:
@@ -946,14 +981,19 @@ proc handleHumanInput*(
     live: bool,
     cameraTarget: var Vec3,
     followSelection: var bool,
-    rightClickCommand = false
+    rightClickCommand = false,
+    panHeld = false,
+    panTap = false
 ) =
   ## Turns this frame's input into queued intents. Gating: history
   ## seeks spectate the past, and a dead hero can only watch the clock.
   ## `rightClickCommand` is a camera-cleared RMB click (no drag, no orbit).
+  ## `panHeld` is the camera-grab key; `panTap` is a grab-key release
+  ## that never moved the camera (so it can still arm wall).
   drainIntentResults()
   handleSeatSwap(window, viewProjection, live)
-  handleInspectClick(window, viewProjection, overUi)
+  if not panHeld:
+    handleInspectClick(window, viewProjection, overUi)
   syncInspectFog()
   if not humanControlActive():
     return
@@ -965,8 +1005,12 @@ proc handleHumanInput*(
     let hero = heroGroundPoint()
     cameraTarget.x = hero.x
     cameraTarget.z = hero.z
-  if window.buttonPressed[bindKey(BindFollow)]:
-    followSelection = not followSelection
+    followSelection = true
+
+  if panHeld:
+    if window.buttonPressed[KeyEscape]:
+      cancelAim()
+    return
 
   let hero = run.world.pudges[index]
   if (aimingHook or aimingGrapple or aimingBlink or aimingWall or
@@ -987,14 +1031,14 @@ proc handleHumanInput*(
     aimingAttack = false
 
   if not live:
-    if anyCommandPressed(window, rightClickCommand):
+    if anyCommandPressed(window, rightClickCommand, panTap):
       setHumanError("SPECTATING THE PAST - RETURN TO LIVE TO PLAY")
     cancelAim()
     rmbBlockedCommand = false
     return
   handleCheatCodes(window)
   if hero.state == Dying:
-    if anyCommandPressed(window, rightClickCommand):
+    if anyCommandPressed(window, rightClickCommand, panTap):
       setHumanError("DEAD - RESPAWNING")
     cancelAim()
     rmbBlockedCommand = false
@@ -1038,7 +1082,10 @@ proc handleHumanInput*(
   if window.buttonPressed[bindKey(BindRot)]:
     beginRotCommand()
 
-  if window.buttonPressed[bindKey(BindWall)]:
+  let wallPressed =
+    if panSharesWall(): panTap
+    else: window.buttonPressed[bindKey(BindWall)]
+  if wallPressed:
     if options.quickcast:
       discard castPlaceAhead(hero, ShopWall)
       aimingWall = false
@@ -1110,6 +1157,8 @@ proc handleHumanInput*(
       let target = pudgeIndex(run.world, targetId)
       if target >= 0 and run.world.pudges[target].shieldTicks > 0:
         setHumanError("TARGET IS PROTECTED")
+      elif target >= 0 and options.autocast and hookBlockReason(hero).len == 0:
+        issueHookAtPudge(run.world.pudges[target])
       else:
         issueAttack(targetId)
     else:
@@ -1148,16 +1197,17 @@ proc handleHumanInput*(
       let (tileX, tileY) = tileOfGround(pick.point)
       queueHero(IntentPing, tileX, tileY)
 
-  # Direct keyboard steering, live alongside the mouse: WASD or the
-  # arrows push a rolling walk order ~8 tiles ahead; releasing every
+  # Direct keyboard steering, live alongside the mouse: WASD pushes a
+  # rolling walk order ~8 tiles ahead each tick so the dest stays in
+  # front of the butcher; arrows pan the camera. Releasing every walk
   # key stops on the spot. Orders ride the same intent queue as RMB,
   # so whichever input spoke last wins.
   block keyboardSteer:
     var dirX, dirZ = 0
-    if window.buttonDown[KeyW] or window.buttonDown[KeyUp]: dirZ -= 1
-    if window.buttonDown[KeyS] or window.buttonDown[KeyDown]: dirZ += 1
-    if window.buttonDown[KeyA] or window.buttonDown[KeyLeft]: dirX -= 1
-    if window.buttonDown[KeyD] or window.buttonDown[KeyRight]: dirX += 1
+    if window.buttonDown[KeyW]: dirZ -= 1
+    if window.buttonDown[KeyS]: dirZ += 1
+    if window.buttonDown[KeyA]: dirX -= 1
+    if window.buttonDown[KeyD]: dirX += 1
     let
       now = epochTime()
       changed = (dirX, dirZ) != keyMoveLastDir
@@ -1166,7 +1216,7 @@ proc handleHumanInput*(
         keyMoveLastDir = (0, 0)
         queueHero(IntentStop)
       break keyboardSteer
-    if not changed and now - keyMoveLastTime < 0.12:
+    if not changed and now - keyMoveLastTime < 1.0 / float64(TickRate):
       break keyboardSteer
     keyMoveLastDir = (dirX, dirZ)
     keyMoveLastTime = now

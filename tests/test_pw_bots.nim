@@ -141,6 +141,7 @@ block:
   var game = newGame(map, 100, false, ReplayData())
   loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
   parkBots(game)
+  game.world.pudges[1].placePudge(98, 40)
   game.world.pudges[3].placePudge(105, 40)
   game.world.pudges[3].hookedBy = game.world.pudges[0].id
   tickWorld(game, proc() = runBotDecisions(game))
@@ -183,5 +184,32 @@ block:
     "a low-HP bot must walk out of enemy Rot"
   doAssert game.world.pudges[0].moveX < home.x + 8,
     "the flee walk must head inland toward the west pad"
+
+echo "Testing the default bot hooks a fogged last-seen lane"
+block:
+  var game = newGame(map, 100, false, ReplayData())
+  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  parkBots(game)
+  game.world.pudges[3].placePudge(RiverCenterX, 40)
+  game.world.pudges[3].shieldTicks = 0
+  tickWorld(game, proc() = runBotDecisions(game))
+  doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
+  game.world.hooks.setLen(0)
+  game.world.tick = 24
+  game.world.pudges[0].hookCooldown = 0
+  game.world.pudges[0].windupTicks = 0
+  game.world.pudges[0].justBlinked = false
+  game.world.pudges[3].placePudge(105, 40)
+  tickWorld(game, proc() = runBotDecisions(game))
+  doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
+  doAssert game.world.pudges[0].windupTicks > 0,
+    "base bot must throw at the far-bank ghost after losing vision"
+  let
+    aimX = game.world.pudges[0].windupAimX div FineAimScale
+    aimY = game.world.pudges[0].windupAimY div FineAimScale
+  doAssert aimX >= PlayEastMin,
+    "a west bot's fog hook must land on the east bank"
+  doAssert abs(aimY - 40) <= 12,
+    "the fog hook should follow the last-seen river lane"
 
 echo "test_pw_bots: all checks passed"

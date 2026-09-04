@@ -3,7 +3,11 @@
 ' See examples/pudge_wars/duel_loop.md for the improvement protocol
 ' and players/base.bas for the full host API reference.
 '
-' version: 6
+' version: 7
+'
+' v7: fog of war is real for scripts now. Hold the lip, remember the
+' last seen lane, and poke 8 tiles into the far bank when nobody is
+' visible instead of tracking through the dark.
 '
 ' v6: Rot — blight a winning melee (8-tile disk), walk inland out of
 ' anyone else's cloud, never rot at low HP or in the river.
@@ -33,6 +37,7 @@ brawlMargin = 40     ' melee only if selfHp + margin >= enemy hp
 runeDist = 36        ' contest the river drift from the standoff lane
 cutDist = 30         ' cut victim-carrying enemy hooks inside this
 blinkHop = 24        ' perpendicular dodge hop, tiles
+fogPoke = 8          ' tiles into the far bank when nobody is visible
 ' ---------------------------------------------------------------------
 
 ' ---- scan objects ---------------------------------------------------
@@ -114,6 +119,11 @@ while index < objectCount()
 wend
 
 enemyAlive = 0
+ex = 0
+ey = 0
+ehp = 0
+eid = 0
+eshield = 0
 if bestIdx >= 0 then
   enemyAlive = 1
   ex = objectX(bestIdx)
@@ -121,23 +131,32 @@ if bestIdx >= 0 then
   ehp = objectHp(bestIdx)
   eid = objectId(bestIdx)
   eshield = objectShielded(bestIdx)
+  lastEx = ex
+  lastEy = ey
 end if
 
 ' ---- velocity of the tracked enemy (8-tick samples) -----------------
-if eid <> velId then
-  velId = eid
-  velTick = 0
+if enemyAlive = 0 then
+  velId = 0
   evx = 0
   evy = 0
-end if
-if worldTick - velTick >= 8 then
-  if velTick > 0 then
-    evx = ex - pex
-    evy = ey - pey
+  velTick = 0
+else
+  if eid <> velId then
+    velId = eid
+    velTick = 0
+    evx = 0
+    evy = 0
   end if
-  pex = ex
-  pey = ey
-  velTick = worldTick
+  if worldTick - velTick >= 8 then
+    if velTick > 0 then
+      evx = ex - pex
+      evy = ey - pey
+    end if
+    pex = ex
+    pey = ey
+    velTick = worldTick
+  end if
 end if
 
 dx = ex - selfX
@@ -362,11 +381,24 @@ end if
 ' ---- home ground ----------------------------------------------------
 if selfTeam = 0 then
   edgeX = riverWest
+  pokeX = riverEast + fogPoke
 else
   edgeX = riverEast
+  pokeX = riverWest - fogPoke
 end if
 padX = homeX
 padY = homeY
+if lastEy <> 0 then
+  pokeY = lastEy
+else
+  pokeY = selfY
+end if
+if pokeY < 16 then
+  pokeY = 16
+end if
+if pokeY > 111 then
+  pokeY = 111
+end if
 
 ' ---- health posture -------------------------------------------------
 lowHp = 0
@@ -374,12 +406,14 @@ if selfHp * 100 < selfMaxHp * retreatPct then
   lowHp = 1
 end if
 brawlOk = 0
-if selfHp + brawlMargin >= ehp then
-  brawlOk = 1
-end if
-if enemyAlive = 1 and ehp <= 120 then
-  ' Two swings from death: finish it, margins be damned.
-  brawlOk = 1
+if enemyAlive = 1 then
+  if selfHp + brawlMargin >= ehp then
+    brawlOk = 1
+  end if
+  if ehp <= 120 then
+    ' Two swings from death: finish it, margins be damned.
+    brawlOk = 1
+  end if
 end if
 
 ' ---- rot: blight a winning melee, leave anyone else's cloud ----------
@@ -552,28 +586,37 @@ end if
 
 ' Dodge hop then throw in the same tick.
 if dodgeBlink = 1 then
-  if hookReady = 1 and enemyAlive = 1 and eshield = 0 then
-    span = dx
-    if dy > span then
-      span = dy
-    end if
-    aimX = ex + evx * span / leadDiv
-    aimY = ey + evy * span / leadDiv
-    if aimX < 8 then
-      aimX = 8
-    end if
-    if aimX > 119 then
-      aimX = 119
-    end if
-    if aimY < 8 then
-      aimY = 8
-    end if
-    if aimY > 119 then
-      aimY = 119
-    end if
-    thrown = hookTo(aimX, aimY)
-    if thrown = 1 then
-      mood = 18
+  if hookReady = 1 then
+    if enemyAlive = 1 and eshield = 0 then
+      span = dx
+      if dy > span then
+        span = dy
+      end if
+      aimX = ex + evx * span / leadDiv
+      aimY = ey + evy * span / leadDiv
+      if aimX < 8 then
+        aimX = 8
+      end if
+      if aimX > 119 then
+        aimX = 119
+      end if
+      if aimY < 8 then
+        aimY = 8
+      end if
+      if aimY > 119 then
+        aimY = 119
+      end if
+      thrown = hookTo(aimX, aimY)
+      if thrown = 1 then
+        mood = 18
+      end if
+    else
+      if enemyAlive = 0 then
+        thrown = hookTo(pokeX, pokeY)
+        if thrown = 1 then
+          mood = 20
+        end if
+      end if
     end if
   end if
 end if
@@ -665,6 +708,12 @@ else
         r = r + 1
       wend
     end if
+    if thrown = 0 and hookReady = 1 and mood = 0 then
+      if enemyAlive = 0 and worldTick > 8 then
+        thrown = hookTo(pokeX, pokeY)
+        mood = 20
+      end if
+    end if
     ' Movement stacks under the throw.
     if escaping = 1 then
       zig = ((worldTick / 12) mod 2) * 2 - 1
@@ -749,7 +798,7 @@ else
             lineX = edgeX + standoff
           end if
           if laneAllies <= 1 then
-            lineY = ey + juke * jukeAmp / 2 + islandSide * 14
+            lineY = pokeY + juke * jukeAmp / 2 + islandSide * 14
           else
             lineY = 40 + laneRank * 24 + juke + islandSide * 10
           end if
@@ -843,6 +892,9 @@ if mood <> saidMood then
   end if
   if mood = 19 then
     print "backing off rot"
+  end if
+  if mood = 20 then
+    print "poking the fog"
   end if
   if mood = 14 then
     print "flashing out"

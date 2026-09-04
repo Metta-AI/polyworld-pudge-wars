@@ -13,6 +13,12 @@ const
     ## Just short of straight top-down so orbit still has a facing.
   RtsCameraDragPixels* = 6.0'f32
     ## Mouse travel that turns a click into a camera drag.
+  RtsPointerPanPerDistance* = 0.0015'f32
+    ## Grab-the-map pan per pixel, scaled by camera distance.
+  RtsScrollPanPerDistance* = 0.04'f32
+    ## Two-finger / wheel pan per scroll unit, scaled by camera distance.
+  RtsKeyPanPerDistance* = 1.1'f32
+    ## Arrow-key pan per second, scaled by camera distance.
   RtsFieldOfView* = 45.0'f32
 
 type MinimapViewRect* = object

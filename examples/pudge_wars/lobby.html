@@ -182,7 +182,8 @@
     border-color: var(--gold);
     background: rgba(212, 180, 90, 0.08);
   }
-  .seat.mine .tag { color: var(--gold); }
+  .seat.off { cursor: default; opacity: 0.45; }
+  .seat.off .who { font-weight: 400; }
   .bottom {
     display: flex;
     gap: 10px;
@@ -290,15 +291,11 @@
       <div class="teams" style="flex:1;overflow-y:auto">
         <div class="team west">
           <h3>WEST BANK</h3>
-          <div id="seat0" class="seat"></div>
-          <div id="seat1" class="seat"></div>
-          <div id="seat2" class="seat"></div>
+          <div id="westSeats"></div>
         </div>
         <div class="team east">
           <h3>EAST BANK</h3>
-          <div id="seat3" class="seat"></div>
-          <div id="seat4" class="seat"></div>
-          <div id="seat5" class="seat"></div>
+          <div id="eastSeats"></div>
         </div>
       </div>
       <div id="status" class="status" style="padding:10px 12px 12px"></div>
@@ -533,6 +530,7 @@ function renderSub (msg) {
   subEl.textContent = parts.join('  ·  ')
   if (!msg) return
   var info = []
+  if (msg.teamSize > 0) info.push(msg.teamSize + 'v' + msg.teamSize)
   if (msg.goal > 0) info.push('FIRST TO ' + msg.goal + ' KILLS')
   if (msg.runes > 0) info.push('RUNES EVERY ' + msg.runes + 'S')
   if (started) info.push('MATCH IN PROGRESS')
@@ -575,18 +573,46 @@ function renderStatus (extra) {
   }
 }
 
+function ensureSeats (count) {
+  GAME.seatCount = count
+  var west = document.getElementById('westSeats')
+  var east = document.getElementById('eastSeats')
+  var n = Math.max(Math.floor(count / 2), 1)
+  function fill (root, start, end) {
+    root.innerHTML = ''
+    for (var i = start; i < end; i++) {
+      var el = document.createElement('div')
+      el.id = 'seat' + i
+      el.className = 'seat'
+      el.dataset.slot = String(i)
+      root.appendChild(el)
+    }
+  }
+  fill(west, 0, n)
+  fill(east, n, count)
+}
+
 function renderSeats () {
+  var count = lastSeats.length || GAME.seatCount
+  if (document.getElementById('westSeats').children.length !== Math.max(Math.floor(count / 2), 1) ||
+      GAME.seatCount !== count) {
+    ensureSeats(count)
+  }
   for (var i = 0; i < GAME.seatCount; i++) {
     var el = document.getElementById('seat' + i)
     if (!el) continue
-    var seat = lastSeats[i] || { name: '', human: false, connected: false }
+    var seat = lastSeats[i] || { name: '', human: false, connected: false, off: false }
     var mine = i === mySlot
     el.className = 'seat' +
+      (seat.off ? ' off' : '') +
       (seat.human ? ' taken' : ' bot') +
       (seat.human && !seat.connected ? ' away' : '') +
       (mine ? ' mine' : '')
     var who, tag
-    if (mine) {
+    if (seat.off) {
+      who = 'Seat off'
+      tag = 'NO BUTCHER'
+    } else if (mine) {
       who = myName()
       tag = 'YOU — CLICK TO LEAVE'
     } else if (seat.human && seat.connected) {
@@ -625,18 +651,17 @@ function renderPeople () {
   }
 }
 
-for (var i = 0; i < GAME.seatCount; i++) {
-  (function (slot) {
-    document.getElementById('seat' + slot).addEventListener('click', function () {
-      if (!inChannel) return
-      if (slot === mySlot) send({ t: 'leave' })
-      else {
-        send({ t: 'name', name: myName() })
-        send({ t: 'pick', slot: slot })
-      }
-    })
-  })(i)
-}
+document.querySelector('.teams').addEventListener('click', function (event) {
+  var el = event.target.closest ? event.target.closest('.seat') : null
+  if (!el || !inChannel || el.classList.contains('off')) return
+  var slot = parseInt(el.dataset.slot, 10)
+  if (isNaN(slot)) return
+  if (slot === mySlot) send({ t: 'leave' })
+  else {
+    send({ t: 'name', name: myName() })
+    send({ t: 'pick', slot: slot })
+  }
+})
 
 document.getElementById('joinBtn').addEventListener('click', function () {
   if (!inChannel) return

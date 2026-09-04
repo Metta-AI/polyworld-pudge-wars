@@ -1,8 +1,8 @@
 ## Shared command-line parsing for Polyworld games.
 ##
 ## Every game understands `--bot`, `--replay`, `--record`, `--seed`,
-## `--play`, `--speed`, `--windowSize`, `--seconds`, `--minutes`, and
-## `--ticks`. Duration flags all write `maximumTicks`.
+## `--play`, `--speed`, `--windowSize`, `--vsync`, `--seconds`, `--minutes`,
+## and `--ticks`. Duration flags all write `maximumTicks`.
 ## Each game runs its own argument loop, farms those flags through
 ## `takeCommonFlag`, and handles the rest itself.
 
@@ -36,14 +36,21 @@ type
       ## Graphical window width. Zero keeps the shared default.
     windowHeight*: int32
       ## Graphical window height. Zero keeps the shared default.
+    vsync*: bool = true
+      ## Graphical window waits for the display when true.
     humanSlots*: seq[int32]
       ## Roster slots driven by a human player instead of a script.
     quickcast*: bool
       ## Abilities cast on key press at the cursor, skipping targeting.
+    autocast*: bool
+      ## Meat Hook autocast: right-click an enemy throws if the chain
+      ## is ready; otherwise melee. Toggle from Controls or the Hook well.
     killGoal*: int32
       ## Score-goal override for games with one. Zero keeps the default.
     duel*: bool
       ## One-a-side duel roster for games that support it.
+    teamSize*: int32
+      ## Butchers a bank for N vs N (1..5). Zero means the game default.
     matchLogDir*: string
       ## Directory for structured per-match analysis logs. Empty off.
     botEvery*: int32
@@ -229,6 +236,16 @@ proc parsePlayFlag(text: string): bool =
   else:
     fail("--play must be true or false")
 
+proc parseVsyncFlag(text: string): bool =
+  ## Parses `--vsync` as on or off.
+  case text.strip().toLowerAscii()
+  of "true", "1", "yes", "on":
+    result = true
+  of "false", "0", "no", "off":
+    result = false
+  else:
+    fail("--vsync must be on or off")
+
 proc takeCommonFlag*(
     options: var GameOptions,
     arguments: seq[string],
@@ -252,6 +269,12 @@ proc takeCommonFlag*(
   if argument.startsWith("--windowSize="):
     (options.windowWidth, options.windowHeight) =
       parseWindowSize(argument[13 .. ^1], "--windowSize")
+    return true
+  if argument.startsWith("--vsync:"):
+    options.vsync = parseVsyncFlag(argument[8 .. ^1])
+    return true
+  if argument.startsWith("--vsync="):
+    options.vsync = parseVsyncFlag(argument[8 .. ^1])
     return true
   if options.takeDurationFlag(arguments, index, argument):
     return true
@@ -292,6 +315,11 @@ proc takeCommonFlag*(
         arguments.argumentValue(index, "--windowSize"),
         "--windowSize"
       )
+    result = true
+  of "--vsync":
+    options.vsync = parseVsyncFlag(
+      arguments.argumentValue(index, "--vsync")
+    )
     result = true
   else:
     result = false

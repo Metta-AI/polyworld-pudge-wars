@@ -1,20 +1,23 @@
-## Sun shadow maps for the polyworld games. One directional sun renders
+## Sun shadow maps for the polyworld games. One directional light renders
 ## every caster (terrain, props, trees, characters) into depth maps with
 ## hardware PCF comparison filtering, and the lit shaders in quadterrain and
-## toon darken whatever the sun cannot see. A day clock drives the whole
-## atmosphere: the sun arcs east to west from 6:00 to 20:00 (the moon rides
-## the same track at night), and one shared strength curve fades cast
-## shadows and directional shading together, so noon is crisp, twilight is
-## soft, and night is nearly flat moonlight.
+## toon darken whatever the light cannot see. A day clock drives the whole
+## atmosphere: the sun arcs east to west from 6:00 to 20:00, the moon rides
+## the same track at night and shades like a darker sun, and a signed
+## horizon band fades the directional light toward the shadow side so the
+## sun-to-moon swap does not pop.
 ##
 ## A continuously rotating light re-rasterizes every caster edge each frame,
 ## which boils shadow edges (and the toon band turns that sampling noise
 ## into binary color flips). So the sun the SHADOW MAPS see is quantized to
-## SunStepHours increments — stable for many frames — and every frame
-## renders two maps, one at each neighbouring step; receivers sample both
-## and cross-fade by the smooth clock, so shadows dissolve from one sun
-## position to the next instead of shimmering. Lighting, palette, and
-## strengths all use the smooth hour directly.
+## SunStepHours increments — stable for many frames — and receivers sample
+## both neighbouring steps and cross-fade, so shadows dissolve instead of
+## shimmering. Lighting, palette, and strengths use the smooth hour.
+##
+## Static casters (terrain, props, trees) are snapshotted per sun step and
+## blitted back; only moving casters redraw every frame. A map the shader
+## will not sample this frame is skipped. Call `commitSunTerrain` after the
+## static draws and before characters.
 ##
 ## This module owns the depth framebuffers, the light matrices, the sun
 ## path, and the depth-only shader programs. The mesh modules build their
@@ -45,6 +48,9 @@ var
   sunShadingStrength* = 1.0'f32  ## 1: full directional shading, 0: flat.
   sunShadowBias* = 0.0012'f32    ## Depth offset that hides self-shadow acne.
   sunShadowSoftness* = 1.5'f32   ## PCF spread in shadow-map texels.
+  moonShadowStrength* = 0.4'f32  ## Night moon casts like the sun, darker.
+  lightLevel* = 1.0'f32          ## 1 full sun or moonlight, 0 shadow side.
+  solarElevation* = 53.0'f32     ## Signed: sun positive, moon negative.
   sunDirection* = normalize(vec3(0.45, 0.8, 0.4))  ## Toward the sun (smooth).
   sunLightMvp0*: Mat4            ## Light view-projection at the earlier step.
   sunLightMvp1*: Mat4            ## The same at the next step.
@@ -53,6 +59,14 @@ var
   sunLightRadius = 100.0'f32
   sunLightDistance = 170.0'f32
   sunFramebuffers: array[2, GLuint]
+  sunTerrainCacheTextures: array[2, GLuint]
+  sunTerrainCacheFramebuffers: array[2, GLuint]
+  sunTerrainCacheIndex: array[2, int32]
+  sunTerrainCacheValid: array[2, bool]
+  sunStepIndex: array[2, int32]
+  activeSunPass = 0
+  sunDepthTerrainDirty* = true
+    ## True inside `sunDepthPasses` when static casters must be drawn.
   activeDepthMvp: Mat4
   depthProgram, cutoutDepthProgram: GLuint
   depthMvpLocation: GLint
@@ -155,54 +169,95 @@ proc lightMatrixFor(azimuth, elevation: float32): Mat4 =
       sunLightDistance - sunLightRadius, sunLightDistance + sunLightRadius)
   projection * view
 
+const HorizonMapFloor = 8.0'f32
+  ## Keeps the depth-map caster off the ground while the horizon fade
+  ## has already killed the directional light.
+
+proc mapElevation(elevation: float32): float32 =
+  ## Floors elevation so the shadow map stays valid near the horizon.
+  max(elevation, HorizonMapFloor)
+
+proc horizonLight*(signedElev: float32): float32 =
+  ## Moonlight below -20°, no directional light from -10° to +10°,
+  ## full sun above +20°. The scene stays visible; only the light fades.
+  if signedElev <= -20:
+    result = 1.0
+  elif signedElev < -10:
+    result = 1.0 - smoothstep(-20.0'f32, -10.0'f32, signedElev)
+  elif signedElev <= 10:
+    result = 0.0
+  elif signedElev < 20:
+    result = smoothstep(10.0'f32, 20.0'f32, signedElev)
+  else:
+    result = 1.0
+
 proc updateSunMatrix*() =
   ## Recomputes the smooth sun direction and points both shadow steps at it
   ## (blend 0) — the manual path when no day clock drives the rig.
-  sunDirection = sunDirectionFor(sunAzimuth, sunElevation)
-  sunLightMvp0 = lightMatrixFor(sunAzimuth, sunElevation)
+  solarElevation = sunElevation
+  lightLevel = horizonLight(solarElevation)
+  sunDirection = sunDirectionFor(sunAzimuth, mapElevation(sunElevation))
+  sunLightMvp0 = lightMatrixFor(sunAzimuth, mapElevation(sunElevation))
   sunLightMvp1 = sunLightMvp0
   sunShadowBlend = 0
+  sunStepIndex[0] = 0
+  sunStepIndex[1] = 1
 
 proc sunRigAt(hour: float32): tuple[azimuth, elevation, sunUp: float32] =
   ## The sun's place at an hour: it arcs east to west from 6:00 to 20:00,
-  ## and the moon rides the same track through the night, low and dim.
+  ## and the moon rides the same track through the night. Elevation is
+  ## allowed to fall through the 10-20° fade so the handoff is dark.
   ## sunUp is 0 at night, 1 at noon.
   let h = ((hour mod 24) + 24) mod 24
   if h >= 6 and h <= 20:
     let t = (h - 6) / 14
     result.sunUp = sin(t * PI.float32)
     result.azimuth = 90 + t * 180
-    result.elevation = max(result.sunUp * 70, 12)
+    result.elevation = result.sunUp * 70
   else:
     let sinceSunset = if h > 20: h - 20 else: h + 4
     let t = sinceSunset / 10
     result.sunUp = 0
     result.azimuth = 90 + t * 180
-    result.elevation = max(sin(t * PI.float32) * 45, 12)
+    result.elevation = sin(t * PI.float32) * 45
 
 proc applySunHour*(hour: float32) =
   ## Drives the whole sun rig from a day clock. Lighting and strengths use
   ## the smooth hour; the shadow maps use the two neighbouring SunStepHours
   ## steps with a cross-fade, so shadow edges dissolve toward the next sun
-  ## position instead of re-rasterizing (and shimmering) every frame. One
-  ## strength curve fades cast shadows and directional shading together —
-  ## separate curves pop at sunset.
-  let smooth = sunRigAt(hour)
+  ## position instead of re-rasterizing (and shimmering) every frame. Night
+  ## keeps real moon shading; the horizon band fades only the light.
+  let
+    smooth = sunRigAt(hour)
+    h = ((hour mod 24) + 24) mod 24
+    isDay = h >= 6 and h <= 20
   sunAzimuth = smooth.azimuth
   sunElevation = smooth.elevation
-  sunDirection = sunDirectionFor(smooth.azimuth, smooth.elevation)
-  let strength =
-    0.15'f32 + 0.7'f32 * smoothstep(0.0'f32, 0.3'f32, smooth.sunUp)
-  sunShadowStrength = strength
-  sunShadingStrength = strength
+  solarElevation =
+    if isDay:
+      smooth.elevation
+    else:
+      -smooth.elevation
+  lightLevel = horizonLight(solarElevation)
+  sunDirection = sunDirectionFor(smooth.azimuth, mapElevation(smooth.elevation))
+  if isDay:
+    let strength =
+      0.15'f32 + 0.7'f32 * smoothstep(0.0'f32, 0.3'f32, smooth.sunUp)
+    sunShadowStrength = strength
+    sunShadingStrength = strength
+  else:
+    sunShadowStrength = moonShadowStrength
+    sunShadingStrength = 0.8'f32
   let
-    h = ((hour mod 24) + 24) mod 24
     step0 = floor(h / SunStepHours) * SunStepHours
     rig0 = sunRigAt(step0)
     rig1 = sunRigAt(step0 + SunStepHours)
   sunShadowBlend = clamp((h - step0) / SunStepHours, 0.0'f32, 1.0'f32)
-  sunLightMvp0 = lightMatrixFor(rig0.azimuth, rig0.elevation)
-  sunLightMvp1 = lightMatrixFor(rig1.azimuth, rig1.elevation)
+  sunLightMvp0 = lightMatrixFor(rig0.azimuth, mapElevation(rig0.elevation))
+  sunLightMvp1 = lightMatrixFor(rig1.azimuth, mapElevation(rig1.elevation))
+  let stepIndex = int32(floor(h / SunStepHours))
+  sunStepIndex[0] = stepIndex
+  sunStepIndex[1] = stepIndex + 1
 
 ## Setup
 
@@ -267,6 +322,28 @@ proc initSunShadows*(
     # Start the map at far depth so everything counts as lit until the
     # first real depth pass runs.
     glClear(GL_DEPTH_BUFFER_BIT)
+
+    glGenTextures(1, sunTerrainCacheTextures[step].addr)
+    glBindTexture(GL_TEXTURE_2D, sunTerrainCacheTextures[step])
+    glTexImage2D(
+      GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24.GLint,
+      SunShadowMapSize, SunShadowMapSize, 0,
+      GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nil
+    )
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST.GLint)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE.GLint)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE.GLint)
+    glBindTexture(GL_TEXTURE_2D, 0)
+    glGenFramebuffers(1, sunTerrainCacheFramebuffers[step].addr)
+    glBindFramebuffer(GL_FRAMEBUFFER, sunTerrainCacheFramebuffers[step])
+    glFramebufferTexture2D(
+      GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+      sunTerrainCacheTextures[step], 0)
+    glDrawBuffers(1, cast[ptr GLenum](drawTargets.addr))
+    glReadBuffer(GL_NONE)
+    doAssert glCheckFramebufferStatus(GL_FRAMEBUFFER) ==
+      GL_FRAMEBUFFER_COMPLETE
   glBindFramebuffer(GL_FRAMEBUFFER, 0)
   updateSunMatrix()
 
@@ -284,16 +361,68 @@ proc sunCutoutProgramId*(): GLuint =
 
 ## Per-frame passes
 
-proc beginSunDepthPass*(step: int) =
-  ## Binds one step's shadow framebuffer and clears it. Prefer the
-  ## sunDepthPasses template, which brackets both steps.
+proc invalidateSunTerrainCache*() =
+  ## Drops cached static depth after a terrain bake or prop rebuild.
+  sunTerrainCacheValid[0] = false
+  sunTerrainCacheValid[1] = false
+
+proc bindLiveSunDepth(step: int) =
+  ## Binds one live shadow map for drawing without clearing it.
   glBindFramebuffer(GL_FRAMEBUFFER, sunFramebuffers[step])
   glViewport(0, 0, SunShadowMapSize, SunShadowMapSize)
-  glClear(GL_DEPTH_BUFFER_BIT)
   glEnable(GL_DEPTH_TEST)
+  glDepthMask(GL_TRUE)
   glDisable(GL_CULL_FACE)
   glDisable(GL_BLEND)
   activeDepthMvp = if step == 0: sunLightMvp0 else: sunLightMvp1
+
+proc blitSunDepth(src, dst: GLuint, step: int) =
+  ## Copies one depth map onto another. Compare-mode is off during the blit
+  ## so drivers that refuse to copy shadow samplers still succeed.
+  glBindTexture(GL_TEXTURE_2D, sunShadowTextures[step])
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE.GLint)
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, src)
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst)
+  glBlitFramebuffer(
+    0.GLint, 0.GLint, SunShadowMapSize.GLint, SunShadowMapSize.GLint,
+    0.GLint, 0.GLint, SunShadowMapSize.GLint, SunShadowMapSize.GLint,
+    GL_DEPTH_BUFFER_BIT, GL_NEAREST.GLenum
+  )
+  glBindTexture(GL_TEXTURE_2D, sunShadowTextures[step])
+  glTexParameteri(
+    GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE.GLint
+  )
+  glBindTexture(GL_TEXTURE_2D, 0)
+
+proc restoreSunTerrainCache(step: int): bool =
+  ## Restores static casters for this sun step. False means draw them.
+  if not sunTerrainCacheValid[step]:
+    return false
+  if sunTerrainCacheIndex[step] != sunStepIndex[step]:
+    return false
+  blitSunDepth(sunTerrainCacheFramebuffers[step], sunFramebuffers[step], step)
+  bindLiveSunDepth(step)
+  true
+
+proc commitSunTerrain*() =
+  ## Snapshots static casters. Call after terrain/props/trees, before movers.
+  if not sunDepthTerrainDirty:
+    return
+  blitSunDepth(
+    sunFramebuffers[activeSunPass],
+    sunTerrainCacheFramebuffers[activeSunPass],
+    activeSunPass
+  )
+  sunTerrainCacheIndex[activeSunPass] = sunStepIndex[activeSunPass]
+  sunTerrainCacheValid[activeSunPass] = true
+  sunDepthTerrainDirty = false
+  bindLiveSunDepth(activeSunPass)
+
+proc beginSunDepthPass*(step: int) =
+  ## Binds one step's shadow framebuffer and clears it. Prefer the
+  ## sunDepthPasses template, which brackets both steps.
+  bindLiveSunDepth(step)
+  glClear(GL_DEPTH_BUFFER_BIT)
 
 proc sunDepthPassMvp*(): Mat4 =
   ## The light view-projection of the depth pass currently rendering.
@@ -323,11 +452,20 @@ proc endSunDepthPass*(windowSize: IVec2) =
   glViewport(0, 0, windowSize.x.GLsizei, windowSize.y.GLsizei)
 
 template sunDepthPasses*(windowSize: IVec2, body: untyped) =
-  ## Runs the caster draws in `body` once per shadow step, so both maps of
-  ## the cross-fade see the same frame. `sunPassIndex` is 0 for the first
-  ## pass and 1 for the second, for loops that must mutate state only once.
-  if sunShadowsActive():
+  ## Runs caster draws in `body` once per shadow map the shader will sample.
+  ## `sunPassIndex` is 0 or 1. `sunDepthTerrainDirty` is true when static
+  ## casters must be drawn this pass; call `commitSunTerrain` after them.
+  if sunShadowsActive() and lightLevel > 0.001'f32:
     for sunPassIndex {.inject.} in 0 .. 1:
-      beginSunDepthPass(sunPassIndex)
+      if sunPassIndex == 0 and sunShadowBlend >= 0.999'f32:
+        continue
+      if sunPassIndex == 1 and sunShadowBlend <= 0.001'f32:
+        continue
+      activeSunPass = sunPassIndex
+      if restoreSunTerrainCache(sunPassIndex):
+        sunDepthTerrainDirty = false
+      else:
+        beginSunDepthPass(sunPassIndex)
+        sunDepthTerrainDirty = true
       body
     endSunDepthPass(windowSize)

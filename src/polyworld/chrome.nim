@@ -1,8 +1,9 @@
 ## Shared Silky HUD chrome for Polyworld games.
 
 import
+  std/[math, times],
   chroma, pixie, silky, vmath, windy,
-  gameuis, rtscameras
+  gameuis, profiles, rtscameras
 
 const
   PanelAccent* = rgbx(83, 91, 108, 255)
@@ -11,13 +12,16 @@ const
   ErrorFill* = rgbx(79, 18, 24, 248)
   ErrorLine* = rgbx(245, 80, 85, 255)
   CameraFrame* = rgbx(238, 235, 205, 255)
-  WindowPatch* = 32
-  FramePatch* = 30
-  WindowMargin* = WindowPatch.float32
+  WindowPatch* = 7
+    ## Corner slice of themes/main window.9patch, in atlas pixels.
+  FramePatch* = 5
+    ## Corner slice of frame.9patch and frame.pureblack.9patch.
+  SlotPatch* = 5
+  WindowMargin* = 16.0'f32
   BarTrackName = "bartrack.9patch"
   BarFillName = "barfill.9patch"
-  BarTrackPatch = 12
-  BarFillPatch = 11
+  BarTrackPatch = 7
+  BarFillPatch = 5
   BarInset = 3.0'f32
   UiScaleSteps* = [
     0.25'f32, 0.5'f32, 1.0'f32, 1.25'f32, 2.0'f32, 2.5'f32, 4.0'f32
@@ -25,8 +29,27 @@ const
   UiCrispSteps* = [0.25'f32, 0.5'f32, 1.0'f32, 2.0'f32, 4.0'f32]
   HudDaySeconds* = 300'i32
     ## Wall-clock seconds in one in-game day. A 20 minute match is four days.
+  FpsWindowTitle* = "Frame rate"
+  FpsWindowOrigin* = vec2(16, 40)
+  FpsWindowSize* = vec2(340, 240)
+  FpsLimitMax* = 240
+  FpsAvgTau = 1.0'f32
+  FpsAvgPeriod = 0.5
 
-var hudScratch*: string
+var
+  hudScratch*: string
+  fpsDebuggerOpen* = false
+  interpolateVisuals* = true
+  framePaceHz* = 0
+    ## Software present cap. Zero lets vsync set the cadence.
+  fpsLastTime = 0.0
+  fpsLabelTime = 0.0
+  fpsHasAvg = false
+  fpsAvgValue = 0.0'f32
+  fpsVarValue = 0.0'f32
+  fpsNowText* = "  0.00"
+  fpsAvgText* = "frame   0.00 ms"
+  fpsStdText* = "  0.00 ms std"
 
 proc addDigits(s: var string, value: int) =
   ## Appends an unsigned decimal value.
@@ -181,15 +204,48 @@ proc drawPanel*(
     panel: GameUiPanel,
     accent = PanelAccent
 ) =
-  ## Draws one HUD panel as window chrome with an inner frame.
+  ## Draws one HUD panel with the main theme window 9-patch.
   discard accent
   sk.draw9Patch("window.9patch", WindowPatch, panel.origin, panel.size)
+
+proc drawFrame*(
+    sk: Silky,
+    panel: GameUiPanel
+) =
+  ## Draws one inner frame 9-patch over a panel.
+  sk.draw9Patch("frame.9patch", FramePatch, panel.origin, panel.size)
+
+proc drawRibbon*(
+    sk: Silky,
+    panel: GameUiPanel
+) =
+  ## Draws the shared transport ribbon 9-patch.
   sk.draw9Patch(
-    "frame.9patch",
+    "frame.pureblack.9patch",
     FramePatch,
-    panel.origin + vec2(2),
-    panel.size - vec2(4)
+    panel.origin,
+    panel.size
   )
+
+proc drawSlot*(
+    sk: Silky,
+    panel: GameUiPanel,
+    selected = false
+) =
+  ## Draws one item or portrait slot 9-patch.
+  let name =
+    if selected:
+      "slot.selected.9patch"
+    else:
+      "slot.9patch"
+  sk.draw9Patch(name, SlotPatch, panel.origin, panel.size)
+
+proc drawFaintFrame*(
+    sk: Silky,
+    panel: GameUiPanel
+) =
+  ## Draws one faded inner frame 9-patch over a panel.
+  sk.draw9Patch("frame.faint.9patch", FramePatch, panel.origin, panel.size)
 
 proc beginPanel*(
     sk: Silky,
@@ -198,6 +254,7 @@ proc beginPanel*(
 ): GameUiPanel =
   ## Draws window and frame chrome, then returns the inner content rect.
   sk.drawPanel(panel, accent)
+  sk.drawFrame(panel.inset(2))
   panel.inset(WindowMargin)
 
 proc drawLabel*(
@@ -289,6 +346,21 @@ proc drawSprite*(
     vec2(uv.width.float32, uv.height.float32),
     color
   )
+
+proc drawWellImage*(
+    sk: Silky,
+    well: GameUiPanel,
+    name: string,
+    color = rgbx(255, 255, 255, 255),
+    pad = 4.0'f32,
+    selected = false
+) =
+  ## Draws one atlas image inside a theme slot.
+  sk.drawSlot(well, selected)
+  if name.len == 0:
+    return
+  let inner = well.inset(min(pad, min(well.size.x, well.size.y) * 0.08'f32))
+  sk.drawSprite(name, inner.origin, inner.size, color)
 
 proc beginImagePanel*(
     sk: Silky,
@@ -446,3 +518,92 @@ proc drawError*(
       "Small",
       CenterAlign
     )
+
+proc addFixedFps(s: var string, value: float32) =
+  ## Appends a 6-character 2-decimal value like " 12.34".
+  var cents = int(value * 100.0'f32 + 0.5'f32)
+  if cents < 0:
+    cents = 0
+  if cents > 99999:
+    cents = 99999
+  let
+    whole = cents div 100
+    frac = cents mod 100
+  if whole < 100:
+    s.add ' '
+  if whole < 10:
+    s.add ' '
+  s.addHudInt(whole)
+  s.add '.'
+  s.addPad2(frac)
+
+proc writeFpsNow(now: float32) =
+  ## Formats the current fps into its fixed-width label.
+  fpsNowText.setLen(0)
+  addFixedFps(fpsNowText, now)
+
+proc writeFpsStats() =
+  ## Formats the moving frame-time avg and std in milliseconds.
+  fpsAvgText.setLen(0)
+  fpsAvgText.add "frame "
+  addFixedFps(fpsAvgText, fpsAvgValue)
+  fpsAvgText.add " ms"
+  fpsStdText.setLen(0)
+  addFixedFps(fpsStdText, sqrt(max(fpsVarValue, 0.0'f32)))
+  fpsStdText.add " ms std"
+
+proc noteFps*() =
+  ## Records this frame's fps and refreshes the debug labels.
+  let now = epochTime()
+  if fpsLastTime > 0:
+    let dt = now - fpsLastTime
+    if dt > 0.0001 and dt < 1.0:
+      let
+        fps = 1.0'f32 / dt.float32
+        ms = dt.float32 * 1000.0'f32
+      if not fpsHasAvg:
+        fpsAvgValue = ms
+        fpsVarValue = 0.0'f32
+        fpsHasAvg = true
+      else:
+        let
+          k = 1.0'f32 - exp(-dt.float32 / FpsAvgTau)
+          delta = ms - fpsAvgValue
+        fpsAvgValue += k * delta
+        fpsVarValue =
+          (1.0'f32 - k) * (fpsVarValue + k * delta * delta)
+      writeFpsNow(fps)
+      if fpsLabelTime == 0.0 or now - fpsLabelTime >= FpsAvgPeriod:
+        writeFpsStats()
+        fpsLabelTime = now
+  fpsLastTime = now
+
+proc mouseOverFpsDebugger*(mouse: Vec2): bool =
+  ## Returns whether the pointer is over the F2 frame-rate window.
+  if not fpsDebuggerOpen or FpsWindowTitle notin subWindowStates:
+    return false
+  let state = subWindowStates[FpsWindowTitle]
+  if state == nil or not state.visible:
+    return false
+  mouse.x >= state.pos.x and
+    mouse.x <= state.pos.x + state.size.x and
+    mouse.y >= state.pos.y and
+    mouse.y <= state.pos.y + state.size.y
+
+proc handleChromeKey*(button: Button): bool =
+  ## Handles shared debug keys. F2 opens the frame-rate window and starts
+  ## a Fluffy trace; F2 again writes tmp/fluffy.json and opens Fluffy.
+  case button
+  of KeyF2:
+    when defined(emscripten):
+      fpsDebuggerOpen = not fpsDebuggerOpen
+    else:
+      if runtimeTraceActive():
+        toggleRuntimeTrace()
+        fpsDebuggerOpen = false
+      else:
+        toggleRuntimeTrace()
+        fpsDebuggerOpen = true
+    true
+  else:
+    false

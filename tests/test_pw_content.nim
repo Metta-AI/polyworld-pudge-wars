@@ -30,6 +30,12 @@ block:
   doAssert PudgeCount == 6
   doAssert TeamSize == 3
   doAssert PudgeCount == TeamSize * 2
+  doAssert MaxTeamSize == 5
+  doAssert MaxPudgeCount == MaxTeamSize * 2
+  doAssert matchPudgeCount(1) == 2
+  doAssert matchPudgeCount(5) == 10
+  doAssert clampTeamSize(0) == 1
+  doAssert clampTeamSize(9) == 5
   doAssert KillGoal > 0
   doAssert TickRate > 0
   doAssert RespawnTicks > 0
@@ -80,8 +86,8 @@ block:
   doAssert BlinkCooldownTicks == TickRate * 8
   doAssert BlinkCooldownTicks > HookCooldownTicks
   doAssert BlinkRange == BlinkRangeTiles * WorldScale
-  doAssert BlinkRangeTiles == 48'i32
-    # 2× the prior 24-tile dodge; sim clamp uses this cap.
+  doAssert BlinkRangeTiles == 20'i32
+    # Under the 24-tile lip-to-lip river crossing; sim clamp uses this cap.
   doAssert RotRadius == 8 * WorldScale
   doAssert RotRadius > MinSeparation,
     "rot must reach a butcher standing at melee standoff"
@@ -99,10 +105,21 @@ block:
   doAssert HookDumpDistance > 0
   doAssert HookClashRadius > 0
   doAssert ChunkAnnounceTicks > 0
-  doAssert DrownDamage > 0
+  doAssert DrownDamage == 30
   doAssert DrownPeriodTicks > 0
   doAssert StruggleSpeed == MovePerTick,
     "water walk must match land walk"
+  doAssert FountainHealPercent > 0
+  doAssert FountainHealPeriodTicks == TickRate div 2
+  doAssert IslandFountainHealPermille == 15
+  doAssert islandFountainHeal(1000) == 15,
+    "the mid-river fountain restores 1.5% of max HP per pulse"
+  doAssert islandFountainHeal(BaseHitPoints) ==
+    max(1'i32, BaseHitPoints * 15 div 1000)
+  doAssert IslandFountainHealPeriodTicks == TickRate
+  doAssert IslandFountainRadius == 16 * WorldScale
+  doAssert IslandFountainRadius > 12 * WorldScale,
+    "the mid-river fountain must reach both banks' waterline"
   doAssert PudgeCollisionRadius >= WorldScale * 12 div 5,
     "collision radius must be at least 2.4 tiles so meshes do not stack"
   doAssert PudgeCollisionRadius <= WorldScale * 3,
@@ -206,7 +223,7 @@ block:
   doAssert longshotDamage(100, 1, 20 * WorldScale) == 120
   doAssert longshotDamage(100, 2, 10 * WorldScale) > longshotDamage(100, 1, 10 * WorldScale)
   doAssert RuneBigHookDamagePercent == 50
-  doAssert bigHookDamage(BaseHookDamage) == 120
+  doAssert bigHookDamage(BaseHookDamage) == 300
   doAssert bigHookDamage(BaseHookDamage) ==
     BaseHookDamage + BaseHookDamage * RuneBigHookDamagePercent div 100
   doAssert bigHookDamage(0) == 0

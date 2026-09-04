@@ -6,8 +6,9 @@
 ## blinked into the water walk there. Pathing `isWalkable` stays false on
 ## the bed so banks never graph-link through it; gameplay standing uses
 ## `tileStandable`. Walking cannot cross the waterline. Blink and hooks
-## may enter and leave. This module writes `pathing.layers` once and
-## returns a fingerprinted `MapData`.
+## may enter and leave. Playable banks carry seeded bounce trees, mirrored
+## east and kept off spawn lanes and the shop. This module writes
+## `pathing.layers` once and returns a fingerprinted `MapData`.
 
 import
   polyworld/[hashes, noises, pathing, profiles, rngs],
@@ -71,19 +72,39 @@ const
   ForestDetailStream = 0x8CB92BA72F3D8DD7'u64
   ForestRollStream = 0x2545F4914F6CDD1D'u64
   BankNoiseStream = 0xA0761D6478BD642F'u64
+  BankTreeStream = 0x6F1A9C40B3E27D85'u64
+    ## Dedicated RNG salt for playable-bank bounce trees.
+  BankTreesPerSide* = 8
+    ## Fixed count a bank. East is the X-mirror, so the field is fair.
+  BankTreeCols = 2
+  BankTreeRiverMargin* = 6
+    ## Keep the waterline open for dumps, lip fights, and hop-outs.
+  BankTreeRimMargin = 2
+  BankTreeShopClear = 5
+    ## Chebyshev keepout around the shop pad.
+  BankTreeLaneClear = 3
+    ## Chebyshev keepout around the three spawn-lane Z rows.
+  BankTreeAisleX* = 30
+    ## North-south fire lane through the west bank. East mirrors it.
+  BankTreeAisleClear = 1
+  BankTreeMinSep = 8
+  BankTreePlaceTries = 24
 
 type
   MapData* = object
     seed*: int32
     hash*: uint64
+    teamSize*: int
+      ## Pads stamped onto this map. 3v3 keeps the classic three-lane
+      ## roll; 4v4/5v5 stamp extra roads and so hash differently.
 
   SpawnPad* = tuple[x, z: int]
   SpawnLayout* = object
-    ## Three home pads a bank. East is the X-mirror of west so neither
-    ## side is a tile closer to the river; slot order is shared so
-    ## opposite butchers face each other.
-    west*: array[TeamSize, SpawnPad]
-    east*: array[TeamSize, SpawnPad]
+    ## Home pads a bank. East is the X-mirror of west so neither side
+    ## is a tile closer to the river; slot order is shared so opposite
+    ## butchers face each other. Length is the match N (1..5).
+    west*: seq[SpawnPad]
+    east*: seq[SpawnPad]
 
 proc riverBlend(x: int): int32 =
   ## How deep inside the river band a *corner* is, 0 on the banks to 1 at
@@ -117,7 +138,7 @@ proc landTile*(x: int): bool =
   westBank(x) or eastBank(x)
 
 proc keyboardSteerDest*(tileX, tileZ, dirX, dirZ: int): tuple[x, z: int] =
-  ## WASD/arrow walk target: about 8 tiles along the pressed axes,
+  ## WASD walk target: about 8 tiles along the pressed axes,
   ## clamped to the playable AABB. An inland press while hugging a rim
   ## aims past the wall tile so D at the west cliff is not an instant
   ## arrive on the overlapping strip.
@@ -168,22 +189,34 @@ proc mirrorSpawnX*(westX: int): int =
   2 * RiverCenterX - westX
 
 proc layoutPad*(layout: SpawnLayout, team: Team, slot: int): SpawnPad =
-  ## Home tile for one roster slot. Slot is 0..2.
-  let i = clamp(slot, 0, TeamSize - 1)
+  ## Home tile for one roster slot.
+  let n = layout.west.len
+  if n <= 0:
+    return (WestSpawns[0][0], WestSpawns[0][1])
+  let i = clamp(slot, 0, n - 1)
   if team == WestTeam: layout.west[i] else: layout.east[i]
 
-proc spawnLayoutFromSeed*(seed: int32): SpawnLayout =
-  ## Lane-shuffles the three Z bases, jitters inland, and mirrors east.
-  ## Same seed always yields the same pads (independent of the rune RNG).
-  var rng = initRng(seed, SpawnLayoutStream)
-  var lanes = SpawnLaneZ
-  for i in countdown(TeamSize - 1, 1):
-    let j = int(rng.below(int32(i + 1)))
-    swap lanes[i], lanes[j]
-  var west: array[TeamSize, SpawnPad]
+proc spreadLaneZ(n: int): seq[int] =
+  ## Even Z bases along the playable strip. N=3 does not use this.
+  if n <= 1:
+    return @[IslandCenterZ]
+  let
+    lo = PlayZMin + 8
+    hi = PlayZMax - 7
+  result.setLen(n)
+  for i in 0 ..< n:
+    result[i] = lo + (hi - lo) * i div (n - 1)
+
+proc rollWestPads(
+    rng: var Rng,
+    lanes: openArray[int],
+    n: int
+): seq[SpawnPad] =
+  ## Jitter inland until teammate pads clear `SpawnMinSep`, then stop.
+  result.setLen(n)
   var ok = false
   for _ in 0 ..< SpawnRollTries:
-    for s in 0 ..< TeamSize:
+    for s in 0 ..< n:
       let
         x = int(rng.between(int32(SpawnWestXMin), int32(SpawnWestXMax)))
         z = clamp(
@@ -191,23 +224,74 @@ proc spawnLayoutFromSeed*(seed: int32): SpawnLayout =
           PlayZMin + 4,
           PlayZMax - 4
         )
-      west[s] = (x, z)
+      result[s] = (x, z)
     ok = true
-    for a in 0 ..< TeamSize:
-      for b in a + 1 ..< TeamSize:
+    for a in 0 ..< n:
+      for b in a + 1 ..< n:
         let
-          dx = abs(west[a].x - west[b].x)
-          dz = abs(west[a].z - west[b].z)
+          dx = abs(result[a].x - result[b].x)
+          dz = abs(result[a].z - result[b].z)
         if max(dx, dz) < SpawnMinSep:
           ok = false
     if ok:
       break
   if not ok:
-    for s in 0 ..< TeamSize:
-      west[s] = (WestSpawns[s][0], lanes[s])
-  result.west = west
-  for s in 0 ..< TeamSize:
-    result.east[s] = (mirrorSpawnX(west[s].x), west[s].z)
+    for s in 0 ..< n:
+      let x =
+        if s < WestSpawns.len: WestSpawns[s][0]
+        else: WestSpawns[0][0]
+      result[s] = (x, lanes[s])
+
+proc mirrorEast(west: seq[SpawnPad]): seq[SpawnPad] =
+  result.setLen(west.len)
+  for s, pad in west:
+    result[s] = (mirrorSpawnX(pad.x), pad.z)
+
+proc spawnLayoutClassic(seed: int32): SpawnLayout =
+  ## Bit-identical 3-lane roll: shuffle SpawnLaneZ, jitter, mirror east.
+  var rng = initRng(seed, SpawnLayoutStream)
+  var lanes = SpawnLaneZ
+  for i in countdown(TeamSize - 1, 1):
+    let j = int(rng.below(int32(i + 1)))
+    swap lanes[i], lanes[j]
+  let west = rollWestPads(rng, lanes, TeamSize)
+  SpawnLayout(west: west, east: west.mirrorEast)
+
+proc spawnLayoutSpread(seed: int32, n: int): SpawnLayout =
+  ## N pads along the bank. Own RNG consumption; not the 3v3 stream.
+  var rng = initRng(seed, SpawnLayoutStream)
+  var lanes = spreadLaneZ(n)
+  for i in countdown(n - 1, 1):
+    let j = int(rng.below(int32(i + 1)))
+    swap lanes[i], lanes[j]
+  let west = rollWestPads(rng, lanes, n)
+  SpawnLayout(west: west, east: west.mirrorEast)
+
+proc spawnLayoutFromSeed*(seed: int32, teamSize = TeamSize): SpawnLayout =
+  ## Home pads for one match N. Same seed and N always yield the same
+  ## pads (independent of the rune RNG). N=3 is the original shuffle.
+  let n = clampTeamSize(teamSize)
+  if n == TeamSize:
+    spawnLayoutClassic(seed)
+  else:
+    spawnLayoutSpread(seed, n)
+
+proc nearShopPad*(x, z: int): bool =
+  ## True inside the shop keepout on either bank.
+  max(abs(x - WestShopX), abs(z - ShopZ)) < BankTreeShopClear or
+    max(abs(x - EastShopX), abs(z - ShopZ)) < BankTreeShopClear
+
+proc onSpawnLane*(z: int): bool =
+  ## True on the open east-west aisles through the three spawn rows.
+  for lane in SpawnLaneZ:
+    if abs(z - lane) <= BankTreeLaneClear:
+      return true
+  false
+
+proc onBankAisle*(x: int): bool =
+  ## True on the open north-south fire lane on either bank.
+  abs(x - BankTreeAisleX) <= BankTreeAisleClear or
+    abs(x - mirrorSpawnX(BankTreeAisleX)) <= BankTreeAisleClear
 
 proc islandTile*(x, z: int): bool =
   ## Returns whether this tile is the rocky fountain in the river.
@@ -222,6 +306,15 @@ proc rimDist*(x, z: int): int =
     max(PlayWestMin - x, x - PlayEastMax),
     max(PlayZMin - z, z - PlayZMax)
   )
+
+proc fieldTreeTile*(x, z: int): bool =
+  ## True when this playable-bank tile is a bounce tree.
+  if not landTile(x) or z < PlayZMin or z > PlayZMax:
+    return false
+  if layers.len <= EastLayer:
+    return false
+  let layer = if westBank(x): WestLayer else: EastLayer
+  layers[layer].tiles[z * GridTiles + x].kind == TreeTile
 
 proc hookReboundTile*(x, z: int): bool =
   ## True when a flying Meat Hook reflects here.
@@ -277,7 +370,7 @@ proc emptyLayer(): QuadLayer =
     tiles: newSeq[Tile](GridTiles * GridTiles)
   )
 
-proc generateMap*(seed: int32): MapData {.measure.} =
+proc generateMap*(seed: int32, teamSize = TeamSize): MapData {.measure.} =
   ## Builds the two banks, the river bed, water sheet, and edge woods.
   proc ground(cx, cz: int): int32 =
     let value =
@@ -386,7 +479,8 @@ proc generateMap*(seed: int32): MapData {.measure.} =
         else:
           stamp(eastLayer, x, z, tile)
 
-  let layout = spawnLayoutFromSeed(seed)
+  let n = clampTeamSize(teamSize)
+  let layout = spawnLayoutFromSeed(seed, n)
   for (sx, sz) in layout.west:
     for dz in -2 .. 2:
       for dx in -2 .. 2:
@@ -401,6 +495,63 @@ proc generateMap*(seed: int32): MapData {.measure.} =
         let z = sz + dz
         if eastBank(x) and z >= 0 and z < GridTiles:
           bankTile(eastLayer, x, z).kind = RoadTile
+
+  var treeRng = initRng(seed, BankTreeStream)
+  let
+    xLo = PlayWestMin + BankTreeRimMargin
+    xHi = PlayWestMax - BankTreeRiverMargin
+    zLo = PlayZMin + BankTreeRimMargin
+    zHi = PlayZMax - BankTreeRimMargin
+    xSpan = max(xHi - xLo + 1, 1)
+    zSpan = max(zHi - zLo + 1, 1)
+  var planted: seq[SpawnPad]
+  proc treeClear(x, z: int): bool =
+    if bankTile(westLayer, x, z).kind == RoadTile:
+      return false
+    if bankTile(westLayer, x, z).impassable:
+      return false
+    if nearShopPad(x, z) or onSpawnLane(z) or onBankAisle(x):
+      return false
+    for (px, pz) in planted:
+      if max(abs(px - x), abs(pz - z)) < BankTreeMinSep:
+        return false
+    true
+  proc stampTree(x, z: int) =
+    bankTile(westLayer, x, z).kind = TreeTile
+    bankTile(westLayer, x, z).impassable = true
+    let ex = mirrorSpawnX(x)
+    if eastBank(ex):
+      bankTile(eastLayer, ex, z).kind = TreeTile
+      bankTile(eastLayer, ex, z).impassable = true
+    planted.add (x, z)
+  var row = 0
+  while row < (BankTreesPerSide div BankTreeCols):
+    var col = 0
+    while col < BankTreeCols:
+      let
+        cellX0 = xLo + xSpan * col div BankTreeCols
+        cellX1 = xLo + xSpan * (col + 1) div BankTreeCols - 1
+        cellZ0 = zLo + zSpan * row * BankTreeCols div BankTreesPerSide
+        cellZ1 = zLo + zSpan * (row + 1) * BankTreeCols div BankTreesPerSide - 1
+        cellW = max(cellX1 - cellX0 + 1, 1)
+        cellH = max(cellZ1 - cellZ0 + 1, 1)
+      var placed = false
+      for _ in 0 ..< BankTreePlaceTries:
+        let
+          tx = cellX0 + int(treeRng.below(int32(cellW)))
+          tz = cellZ0 + int(treeRng.below(int32(cellH)))
+        if westBank(tx) and tz >= zLo and tz <= zHi and treeClear(tx, tz):
+          stampTree(tx, tz)
+          placed = true
+          break
+      if not placed:
+        let
+          mx = (cellX0 + cellX1) div 2
+          mz = (cellZ0 + cellZ1) div 2
+        if westBank(mx) and mz >= zLo and mz <= zHi and treeClear(mx, mz):
+          stampTree(mx, mz)
+      inc col
+    inc row
 
   var water = QuadLayer(
     originX: 0, originZ: 0,
@@ -432,4 +583,17 @@ proc generateMap*(seed: int32): MapData {.measure.} =
   layers = @[westLayer, eastLayer, riverLayer, water]
   computeWalkable()
   result.seed = seed
+  result.teamSize = n
   result.hash = mapFingerprint()
+
+proc generateMapMatching*(seed: int32, expectedHash: uint64): MapData =
+  ## Picks the N whose stamped pads reproduce `expectedHash`. Tries 3v3
+  ## first so stock tapes stay on the fast path, then 1, 2, 4, 5.
+  ## Unknown hashes keep the 3v3 map (callers still hash-check).
+  result = generateMap(seed, TeamSize)
+  if result.hash == expectedHash:
+    return
+  for n in [1, 2, 4, MaxTeamSize]:
+    let candidate = generateMap(seed, n)
+    if candidate.hash == expectedHash:
+      return candidate

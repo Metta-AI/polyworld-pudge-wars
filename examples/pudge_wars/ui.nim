@@ -1,11 +1,11 @@
 ## Pudge Wars Silky HUD: floating corner widgets over a full-screen world.
 
 import
-  std/[json, os, strformat, strutils, times],
+  std/[json, os, strformat, strutils, times, unicode],
   chroma, pixie, silky, vmath, windy,
   polyworld/[
     actioncam, bottomhud, chrome, commandcard, gameuis, hudchips, pathing,
-    player, rtscameras
+    player, profiles, rtscameras
   ],
   content, maps, netproto, netclient, netsim, netpredict, sim, game, human,
   keybinds, replays
@@ -21,11 +21,21 @@ const
   KillFeedSeconds = 6.0
   KillFeedMax = 6
   StingerSeconds = 3.8
-  EventLogMax = 24
-  MinimapGrass = rgbx(38, 58, 40, 255)
-  MinimapRiver = rgbx(52, 96, 128, 255)
-  MinimapIsland = rgbx(120, 118, 108, 255)
+  ChatPanelSize = vec2(380, 200)
+  ChatLineH = 16.0'f32
+  ChatInputH = 22.0'f32
+  ChatTitleH = 22.0'f32
+  ChatTabW = 72.0'f32
+  EventLogMax = 48
+  MaxChatDraft = 120
+  MinimapWest = rgbx(78, 58, 48, 255)
+  MinimapEast = rgbx(46, 64, 78, 255)
+  MinimapRiver = rgbx(46, 92, 124, 255)
+  MinimapIsland = rgbx(168, 176, 96, 255)
+  MinimapForest = rgbx(22, 24, 22, 255)
+  MinimapShop = rgbx(232, 196, 86, 255)
   MinimapPing = rgbx(255, 214, 90, 255)
+  MinimapCamera = rgbx(238, 221, 168, 255)
   RuneColors*: array[RuneKind, ColorRGBX] = [
     rgbx(255, 72, 214, 255),   # Haste: DotA / WC3 pink
     rgbx(64, 168, 255, 255),   # Double Damage: electric blue
@@ -36,20 +46,31 @@ const
     "HASTE", "2X DMG", "REGEN",
     "BIG +" & $RuneBigHookDamagePercent & "%"
   ]
-  CommandPortraitGrow = 2.0'f32
+  HudName = rgbx(245, 229, 178, 255)
+  HudMuted = rgbx(160, 171, 188, 255)
   ChipMenu = 0
   ChipTeam = 1
   ChipLog = 2
   ChipReplay = 3
   ChipDebug = 4
+  ChipDirector = 5
+  ChipFollow = 6
   MenuResume = 0
   MenuRestart = 1
-  MenuAllies = 2
-  MenuLog = 3
-  MenuItemCount = 4
+  MenuControls = 2
+  MenuAllies = 3
+  MenuLog = 4
+  MenuReplay = 5
+  MenuDebug = 6
+  MenuItemCount = 7
   MenuButtonH = 38.0'f32
   MenuButtonGap = 10.0'f32
-  MenuPanelSize = vec2(400, 330)
+  MenuPanelSize = vec2(400, 490)
+  ControlsPanelSize = vec2(440, 360)
+  ControlsBack = 0
+  ControlsQuickcast = 1
+  ControlsAutocast = 2
+  ControlsItemCount = 3
   CmdMove = 0
   CmdStop = 1
   CmdHold = 2
@@ -57,7 +78,6 @@ const
   CmdHook = 4
   CmdBlink = 5
   CmdRot = 6
-  LogPanelSize = vec2(480, 220)
   KillFeedW = 300.0'f32
   ShopPanelSize = vec2(340, 304)
   PermanentShopCols = 4
@@ -81,7 +101,7 @@ const
   DebugBlocked* = rgbx(118, 72, 48, 255)
   DebugWalk* = rgbx(72, 196, 96, 255)
   DebugNoWalk* = rgbx(220, 64, 64, 255)
-  SpectatorBannerSize = vec2(470, 28)
+  SpectatorBannerSize = vec2(520, 28)
   SpectatorAllW = 90.0'f32
 
 type
@@ -103,13 +123,27 @@ type
     color: ColorRGBX
     born: float64
 
+  EventLogEntry = object
+    text: string
+    color: ColorRGBX
+    tick: int32
+
+  ChatTab = enum
+    ChatTabChat
+    ChatTabEvents
+
 var
   killFeed: seq[KillFeedEntry]
-  eventLog: seq[KillFeedEntry]
   killStinger: KillStinger
   alliesOpen = false
   menuOpen = false
-  logOpen = false
+  controlsOpen = false
+  chatVisible = true
+  chatTab = ChatTabChat
+  chatComposing = false
+  chatDraft = ""
+  chatInputEnabled* = true
+  eventLog: seq[EventLogEntry]
   menuCursor = 0
   menuRestartRequested = false
   debugMenuOpen* = false
@@ -126,8 +160,11 @@ var
   debugHoverFound* = false
   debugHoverX* = 0
   debugHoverZ* = 0
-  showTransportBar = false
-  showTransportBarReady = false
+  showTransportBar = true
+    ## Play/pause/speed strip. On for simulations and replays; `[` toggles.
+  hostLobbyOpen* = false
+    ## True while the host's pre-match lobby overlay is up. The strip
+    ## stays hidden then so the lobby plate is not sitting on a scrubber.
   bugTapeArmed* = false
     ## F3 / F8: Stop will flush a named copy of the live match tape.
   bugTapeFromTick* = 0'i32
@@ -136,6 +173,15 @@ var
 proc menuIsOpen*(): bool =
   ## True while the F9 pause plate is up.
   menuOpen
+
+proc chatTyping*(): bool =
+  ## True while the match-chat field has keyboard focus.
+  chatComposing
+
+proc cancelChatTyping*() =
+  ## Drops an unfinished draft (lobby, pause, seek, rematch).
+  chatComposing = false
+  chatDraft.setLen(0)
 
 proc toggleDebugMenu*() =
   ## F3 / DBG chip: overlay toggles, fog, tape, and ping readouts.
@@ -253,28 +299,34 @@ proc menuCanRestart(): bool =
   not run.replayMode and netRole != NetClient
 
 proc transportBarOpen*(): bool =
-  ## Replay strip visibility. Live matches start hidden; `--replay` starts open.
-  if not showTransportBarReady:
-    showTransportBar = run.replayMode
-    showTransportBarReady = true
-  showTransportBar
+  ## Play/pause/speed strip. On by default while a simulation is
+  ## running; hidden on the host lobby overlay.
+  showTransportBar and not hostLobbyOpen
 
 proc toggleTransportBar*() =
-  showTransportBar = not transportBarOpen()
+  if hostLobbyOpen:
+    return
+  showTransportBar = not showTransportBar
 
 proc pushKillFeed*(text: string, team: Team) =
-  ## Appends one line to the top-center kill feed and the Log overlay.
-  let entry = KillFeedEntry(
-    text: text,
-    color: if team == WestTeam: WestColor else: EastColor,
-    born: epochTime()
-  )
+  ## Appends one line to the top-right kill toast and the Events log.
+  let
+    color = if team == WestTeam: WestColor else: EastColor
+    entry = KillFeedEntry(
+      text: text,
+      color: color,
+      born: epochTime()
+    )
   if killFeed.len >= KillFeedMax:
     killFeed.delete(0)
   killFeed.add entry
   if eventLog.len >= EventLogMax:
     eventLog.delete(0)
-  eventLog.add entry
+  eventLog.add EventLogEntry(
+    text: text,
+    color: color,
+    tick: if run != nil: run.world.tick else: 0
+  )
 
 proc pushKillStinger*(title, subtitle: string, team: Team) =
   ## Big centered Dota-style streak / shutdown / first-blood banner.
@@ -293,6 +345,9 @@ proc clearKillFeed*() =
   eventLog.setLen(0)
   killStinger.title.setLen(0)
   killStinger.subtitle.setLen(0)
+  if run != nil:
+    run.clearChat()
+  cancelChatTyping()
 
 var recapPublished = false
 var lastStatePhase = ""
@@ -494,10 +549,26 @@ proc spectatorAllPanel(banner: GameUiPanel): GameUiPanel =
     size: vec2(SpectatorAllW, banner.size.y - 8)
   )
 
+proc chatPanelOf(layout: GameUiLayout): GameUiPanel =
+  ## Bottom-left chat / events plate, above the hero cluster / shop / strip.
+  let transportH = transportStripHeight(transportBarOpen())
+  var floorY = layout.size.y - transportH - HudMargin
+  if commandCardVisible():
+    let hud = placeBottomHud(layout.size, transportH, 2, int(InventorySlots))
+    floorY = min(floorY, hud.bar.origin.y)
+  if heroWantsShop():
+    floorY = min(floorY, shopPanelOf(layout).origin.y)
+  GameUiPanel(
+    origin: vec2(HudMargin, max(floorY - ChatPanelSize.y - 8, 8)),
+    size: ChatPanelSize
+  )
+
 proc mouseOverUi*(window: Window, mouse: Vec2): bool =
   ## True over floating HUD widgets that should eat camera and world
   ## clicks. Everywhere else the full-screen world stays clickable.
   if mouseOverDebugMenu(mouse):
+    return true
+  if mouseOverFpsDebugger(mouse):
     return true
   if menuOpen:
     return true
@@ -512,18 +583,20 @@ proc mouseOverUi*(window: Window, mouse: Vec2): bool =
       chrome.bottom.buttons.contains(mouse) or
       scorePlatePanel(layout).contains(mouse):
     return true
-  if commandCardVisible() and chrome.bottom.bar.contains(mouse):
+  if commandCardVisible() and (
+      chrome.bottom.profile.contains(mouse) or
+      chrome.bottom.actions.contains(mouse)):
     return true
   if transportBarOpen() and chrome.transport.contains(mouse):
     return true
   if alliesOpen and
       (chrome.west.contains(mouse) or chrome.east.contains(mouse)):
     return true
-  logOpen and layout.panel(GameUiRegion.TopCenter, LogPanelSize).contains(mouse)
+  chatVisible and chatPanelOf(layout).contains(mouse)
 
 proc minimapArea(window: Window): GameUiPanel =
-  ## Inner map rectangle of the bottom-left minimap plate.
-  placeChrome(currentLayout(window)).bottom.minimap.minimapInner()
+  ## Circular map well inside the bottom-right compass plate.
+  placeChrome(currentLayout(window)).bottom.minimap.minimapMap()
 
 proc updateMinimapCamera*(
     window: Window,
@@ -532,13 +605,12 @@ proc updateMinimapCamera*(
     minimapPanning: var bool,
     followSelection: var bool
 ) =
-  ## Pans the camera while the primary button drags on the minimap.
+  ## Pans the camera while the primary button drags on the compass well.
   if menuOpen:
-    if not window.buttonDown[MouseLeft]:
-      minimapPanning = false
+    minimapPanning = false
     return
   let area = minimapArea(window)
-  if window.buttonPressed[MouseLeft] and area.contains(mouse):
+  if window.buttonPressed[MouseLeft] and insideMinimapCircle(area, mouse):
     minimapPanning = true
     followSelection = false
   if not window.buttonDown[MouseLeft]:
@@ -563,29 +635,63 @@ proc hudPoint(position: WorldPoint): Vec3 =
     position.z.float32 / WorldScale.float32
   )
 
+proc drawMinimapPip(
+    sk: Silky,
+    area: GameUiPanel,
+    point: Vec2,
+    pipSize: float32,
+    color: ColorRGBX,
+    ring = false
+) =
+  ## Square pip clipped to the circular well.
+  if not insideMinimapCircle(area, point):
+    return
+  if ring:
+    sk.drawRect(point - vec2(pipSize * 0.5'f32 + 2), vec2(pipSize + 4), rgbx(255, 248, 220, 255))
+  sk.drawRect(point - vec2(pipSize * 0.5'f32), vec2(pipSize), color)
+
 proc drawMinimap(
     sk: Silky,
     window: Window,
-    panel: GameUiPanel,
+    hud: BottomHudLayout,
     cameraTarget: Vec3,
     cameraDistance: float32
 ) =
-  ## Ground, river, fountain, butcher pips, team pings, and the camera
-  ## footprint. LMB drag on the map pans (updateMinimapCamera).
-  let area = panel.minimapInner()
-  sk.drawRect(area.origin, area.size, MinimapGrass)
+  ## Circular compass: banks, river, fountain, pips, then the bronze ring.
   let
-    riverLeft = float32(RiverCenterX - RiverHalfWidth) / float32(GridTiles)
-    riverRight = float32(RiverCenterX + RiverHalfWidth + 1) /
-      float32(GridTiles)
+    panel = hud.minimap
+    area = panel.minimapMap()
+    grid = float32(GridTiles)
+    playX0 = float32(PlayWestMin) / grid
+    playX1 = float32(PlayEastMax + 1) / grid
+    playZ0 = float32(PlayZMin) / grid
+    playZ1 = float32(PlayZMax + 1) / grid
+    riverX0 = float32(RiverWestX) / grid
+    riverX1 = float32(RiverEastX + 1) / grid
+    play = GameUiPanel(
+      origin: area.origin + vec2(playX0 * area.size.x, playZ0 * area.size.y),
+      size: vec2(
+        (playX1 - playX0) * area.size.x,
+        (playZ1 - playZ0) * area.size.y
+      )
+    )
+    westW = (riverX0 - playX0) / (playX1 - playX0) * play.size.x
+    riverW = (riverX1 - riverX0) / (playX1 - playX0) * play.size.x
+  sk.drawRect(area.origin, area.size, MinimapForest)
+  sk.drawRect(play.origin, vec2(westW, play.size.y), MinimapWest)
   sk.drawRect(
-    area.origin + vec2(riverLeft * area.size.x, 0),
-    vec2((riverRight - riverLeft) * area.size.x, area.size.y),
+    play.origin + vec2(westW, 0),
+    vec2(riverW, play.size.y),
     MinimapRiver
   )
+  sk.drawRect(
+    play.origin + vec2(westW + riverW, 0),
+    vec2(max(play.size.x - westW - riverW, 1), play.size.y),
+    MinimapEast
+  )
   let islandSize = vec2(
-    float32(IslandRadius * 2 + 1) / float32(GridTiles) * area.size.x,
-    float32(IslandRadius * 2 + 1) / float32(GridTiles) * area.size.y
+    float32(IslandRadius * 2 + 1) / grid * area.size.x,
+    float32(IslandRadius * 2 + 1) / grid * area.size.y
   )
   sk.drawRect(
     minimapPosition(
@@ -593,6 +699,16 @@ proc drawMinimap(
     ) - islandSize * 0.5'f32,
     islandSize,
     MinimapIsland
+  )
+  sk.drawMinimapPip(
+    area,
+    minimapPosition(hudPoint(worldAtTile(WestShopX, ShopZ)), area),
+    5, MinimapShop
+  )
+  sk.drawMinimapPip(
+    area,
+    minimapPosition(hudPoint(worldAtTile(EastShopX, ShopZ)), area),
+    5, MinimapShop
   )
 
   let heroSlot = if humanControlActive(): heroIndex() else: -1
@@ -606,16 +722,22 @@ proc drawMinimap(
         continue
       if run.world.tick - ping.tick > TickRate * 3:
         continue
-      let point = minimapPosition(
-        hudPoint(worldAtTile(int(ping.x), int(ping.y))), area
+      sk.drawMinimapPip(
+        area,
+        minimapPosition(
+          hudPoint(worldAtTile(int(ping.x), int(ping.y))), area
+        ),
+        9, MinimapPing
       )
-      sk.drawRect(point - vec2(5), vec2(10), MinimapPing)
 
   for rune in run.world.runes:
     if not fogCanSee(rune.position):
       continue
-    let point = minimapPosition(hudPoint(rune.position), area)
-    sk.drawRect(point - vec2(2.5'f32), vec2(5), RuneColors[rune.kind])
+    sk.drawMinimapPip(
+      area,
+      minimapPosition(hudPoint(rune.position), area),
+      5, RuneColors[rune.kind]
+    )
 
   let viewTeam = fogTeam()
   for prop in run.world.props:
@@ -627,22 +749,21 @@ proc drawMinimap(
       continue
     let point = minimapPosition(hudPoint(prop.propCenter), area)
     if prop.kind == PropWall:
-      sk.drawRect(point - vec2(3), vec2(6), rgbx(138, 94, 54, 255))
+      sk.drawMinimapPip(area, point, 6, rgbx(138, 94, 54, 255))
     else:
-      sk.drawRect(point - vec2(2), vec2(4), rgbx(88, 96, 72, 200))
+      sk.drawMinimapPip(area, point, 4, rgbx(88, 96, 72, 200))
 
   for i, pudge in run.world.pudges:
     if pudge.state == Dying:
       continue
     if not fogShownPudge(pudge):
       continue
-    let point = minimapPosition(hudPoint(pudge.position), area)
-    if i == heroSlot or i == spectateSlot:
-      sk.drawRect(point - vec2(5), vec2(10), rgbx(255, 255, 255, 255))
-    sk.drawRect(
-      point - vec2(3.5'f32),
-      vec2(7),
-      if pudge.team == WestTeam: WestColor else: EastColor
+    sk.drawMinimapPip(
+      area,
+      minimapPosition(hudPoint(pudge.position), area),
+      7,
+      if pudge.team == WestTeam: WestColor else: EastColor,
+      ring = i == heroSlot or i == spectateSlot
     )
 
   let aspect = currentLayout(window).worldPanel.aspect
@@ -650,7 +771,16 @@ proc drawMinimap(
     minimapViewport(
       cameraTarget, cameraDistance, aspect,
       area.origin, area.size, HalfGrid
-    )
+    ),
+    MinimapCamera
+  )
+  sk.drawLabel(
+    "RIVER ARENA",
+    hud.minimapTitle.origin,
+    hud.minimapTitle.size,
+    HudName,
+    "Small",
+    CenterAlign
   )
 
 proc drawKillFeed(sk: Silky, layout: GameUiLayout) =
@@ -885,6 +1015,8 @@ proc drawRoster(
     hudScratch.addHudInt(int(pudge.deaths))
     if pudge.hookedBy != 0:
       hudScratch.add "  hooked"
+    elif pudge.onIslandFountain:
+      hudScratch.add "  fountain"
     elif pudge.inRiver:
       hudScratch.add "  river"
     elif pudge.state == Dying:
@@ -921,7 +1053,9 @@ proc drawRoster(
       vec2(inner.size.x, 8),
       max(pudge.hp, 0).float32,
       max(pudge.maxHp, 1).float32,
-      if pudge.inRiver: rgbx(64, 168, 196, 255) else: HpColor
+      if pudge.onIslandFountain: rgbx(96, 220, 110, 255)
+      elif pudge.inRiver: rgbx(64, 168, 196, 255)
+      else: HpColor
     )
     y += 50
 
@@ -933,15 +1067,6 @@ proc addHudSeconds(s: var string, ticks: int32) =
   s.add '.'
   s.addHudInt(tenths mod 10)
   s.add " s"
-
-proc coverSquare(well: GameUiPanel, grow: float32): GameUiPanel =
-  ## Square crop for portrait sprites inside a rectangular well.
-  let side = min(well.size.x, well.size.y)
-  let excess = (well.size - vec2(side)) * 0.5'f32
-  GameUiPanel(
-    origin: well.origin + excess - vec2(grow),
-    size: vec2(side + grow * 2)
-  )
 
 proc cooldownSeconds(remaining: int32): int32 =
   ## Rounds remaining ticks up to whole seconds for the HUD.
@@ -960,15 +1085,61 @@ proc cooldownOverlay(remaining, duration: int32, extra = ""): string =
     return $cooldownSeconds(remaining)
   ""
 
+proc drawHudTooltip(
+    sk: Silky,
+    window: Window,
+    anchor: GameUiPanel,
+    lines: openArray[string]
+) =
+  ## Floating plate above a well. First line is the gold title.
+  if lines.len == 0:
+    return
+  let
+    tipW = 400.0'f32
+    tipH = 14.0'f32 + lines.len.float32 * 18.0'f32
+    tipOrigin = vec2(
+      clamp(
+        anchor.origin.x, 4.0'f32,
+        currentLayout(window).size.x - tipW - 4.0'f32
+      ),
+      anchor.origin.y - tipH - 6.0'f32
+    )
+  sk.drawRect(tipOrigin, vec2(tipW, tipH), rgbx(10, 12, 16, 230))
+  for i, line in lines:
+    sk.drawLabel(
+      line,
+      tipOrigin + vec2(10, 8.0'f32 + float32(i) * 18.0'f32),
+      vec2(tipW - 20, 16),
+      if i == 0: ReadyGold else: LabelColor,
+      if i == 0: "Hud" else: "Small"
+    )
+
+proc itemHotkey(item: ShopItem): string =
+  case item
+  of ShopWall: bindLabel(BindWall)
+  of ShopMine: bindLabel(BindMine)
+  else: ""
+
+proc itemCooldown(hero: Pudge, item: ShopItem): (int32, int32) =
+  case item
+  of ShopWall: (hero.wallCooldown, wallCooldownTicks(hero.itemRank[item]))
+  of ShopMine: (hero.mineCooldown, MineCooldownTicks)
+  else: (0'i32, 0'i32)
+
+proc carriedShopItems(hero: Pudge): seq[ShopItem] =
+  ## Actives first so wall/mine keep a well when the bag is full.
+  for item in [ShopWall, ShopMine, ShopBoots, ShopLongshot]:
+    if hero.itemRank[item] > 0:
+      result.add item
+
 proc drawBottomUnit(
     sk: Silky,
     window: Window,
     hud: BottomHudLayout,
     inHistory: bool
 ) =
-  ## Fills the hero cluster: portrait, title line, command and upgrade
-  ## rows, and full-width vitals bars. Status text floats above the
-  ## plate so nothing else reserves screen space.
+  ## Fills the Call to Adventure plates: portrait and vitals on the
+  ## profile card, abilities/items/upgrades in the action wells.
   let index = inspectIndex()
   if index < 0:
     return
@@ -976,32 +1147,126 @@ proc drawBottomUnit(
     owned = isOwnedInspect()
     heroIdx = heroIndex()
     hero = run.world.pudges[index]
-    teamColor = if hero.team == WestTeam: WestColor else: EastColor
     portrait = hud.portrait
-  sk.drawRect(portrait.origin + vec2(2), portrait.size - vec2(4), teamColor)
-  let portraitCover = coverSquare(
-    GameUiPanel(
-      origin: portrait.origin + vec2(2),
-      size: portrait.size - vec2(4)
-    ),
-    CommandPortraitGrow
+    ownedLive = owned and not inHistory
+    hookRemaining =
+      if hero.windupTicks > 0: hero.windupTicks else: hero.hookCooldown
+    hookDuration =
+      if hero.windupTicks > 0: HookWindupTicks else: HookCooldownTicks
+    hookReady = hero.state == Alive and not inHistory and
+      hero.windupTicks <= 0 and hero.hookCooldown <= 0 and not hookFlying(hero)
+    hookFill =
+      if hookRemaining <= 0 or hookDuration <= 0: 1.0'f32
+      else: 1.0'f32 - hookRemaining.float32 / hookDuration.float32
+    hpColor =
+      if hero.onIslandFountain: rgbx(96, 220, 110, 255)
+      elif hero.inRiver: rgbx(64, 168, 196, 255)
+      else: HpColor
+  sk.drawWellImage(portrait, PortraitKeys[hero.team])
+  let portraitInner = portrait.inset(
+    min(4.0'f32, min(portrait.size.x, portrait.size.y) * 0.08'f32)
   )
-  sk.drawSprite(PortraitKeys[hero.team], portraitCover.origin, portraitCover.size)
   if hero.state == Dying:
-    sk.drawRect(portrait.origin + vec2(2), portrait.size - vec2(4), rgbx(12, 14, 20, 170))
+    sk.drawRect(portraitInner.origin, portraitInner.size, rgbx(12, 14, 20, 170))
+  elif hero.shieldTicks > 0:
+    sk.drawRect(portraitInner.origin, portraitInner.size, rgbx(120, 200, 255, 70))
+
+  let
+    hookOverlay = cooldownOverlay(
+      hookRemaining,
+      hookDuration,
+      if hero.windupTicks > 0: "CAST"
+      elif hookFlying(hero): "AIR"
+      else: ""
+    )
+    blinkReady = hero.state == Alive and not inHistory and
+      hero.windupTicks <= 0 and hero.blinkCooldown <= 0 and
+      hero.hookedBy == 0 and not run.world.rotAffected(hero)
+  var actionSpecs: array[ActionSlotCount, CommandSlotSpec]
+  for i in 0 ..< ActionSlotCount:
+    actionSpecs[i] = CommandSlotSpec(id: -1)
+  actionSpecs[0] = CommandSlotSpec(
+    id: CmdAttack, icon: AttackIcon,
+    hotkey: if owned: "RMB" else: "",
+    enabled: ownedLive or not owned,
+    remaining: if owned: hero.swingTicks else: 0,
+    duration: hero.attackPeriod,
+    overlay: if owned: cooldownOverlay(hero.swingTicks, hero.attackPeriod) else: ""
+  )
+  actionSpecs[1] = CommandSlotSpec(
+    id: CmdHook, icon: "hook",
+    hotkey: if owned: bindLabel(BindHook) else: "",
+    enabled: (ownedLive and hookReady) or not owned,
+    remaining: if owned: hookRemaining else: 0,
+    duration: hookDuration,
+    overlay: if owned: hookOverlay else: "",
+    autocast: owned and options.autocast
+  )
+  actionSpecs[2] = CommandSlotSpec(
+    id: CmdRot, icon: "rot",
+    hotkey: if owned: bindLabel(BindRot) else: "",
+    enabled: ownedLive or not owned,
+    overlay: if owned and hero.rotOn: "ON" else: ""
+  )
+  actionSpecs[3] = CommandSlotSpec(
+    id: CmdBlink, icon: "blink",
+    hotkey: if owned: bindLabel(BindBlink) else: "",
+    enabled: (ownedLive and blinkReady) or not owned,
+    remaining: if owned: hero.blinkCooldown else: 0,
+    duration: BlinkCooldownTicks,
+    overlay:
+      if owned: cooldownOverlay(hero.blinkCooldown, BlinkCooldownTicks)
+      else: ""
+  )
+  let carried = hero.carriedShopItems
+  var itemWells: array[2, ShopItem]
+  var itemWellCount = 0
+  for item in carried:
+    if itemWellCount >= 2:
+      break
+    let (remaining, duration) = hero.itemCooldown(item)
+    actionSpecs[4 + itemWellCount] = CommandSlotSpec(
+      id: item.ord,
+      icon: ShopItemIcons[item],
+      hotkey: if owned: itemHotkey(item) else: "",
+      enabled: ownedLive or not owned,
+      remaining: if owned: remaining else: 0,
+      duration: duration,
+      overlay: if owned: cooldownOverlay(remaining, duration) else: "",
+      badge: $hero.itemRank[item]
+    )
+    itemWells[itemWellCount] = item
+    inc itemWellCount
+  for kind in UpgradeKind:
+    let
+      level = hero.upgrades[kind]
+      affordable = ownedLive and hero.points > 0 and level < MaxUpgradeLevel
+    actionSpecs[6 + ord(kind)] = CommandSlotSpec(
+      id: 100 + kind.ord,
+      icon: UpgradeIcons[kind],
+      hotkey: if owned: bindLabel(BindAction(ord(BindUpgrade1) + ord(kind))) else: "",
+      enabled: (owned and (affordable or level > 0)) or not owned,
+      overlay: if level >= MaxUpgradeLevel: "MAX" else: "",
+      badge: if level >= MaxUpgradeLevel or level == 0: "" else: $level
+    )
+
+  for i in 0 ..< ActionSlotCount:
+    let well = hud.actions.actionWell(i)
+    if actionSpecs[i].icon.len > 0:
+      sk.drawSlotIcon(well, actionSpecs[i])
+    else:
+      sk.fillWell(well)
+
+  if hero.state == Dying:
     hudScratch.setLen(0)
     hudScratch.addHudSeconds(hero.deathTicks)
     sk.drawLabel(
       hudScratch, portrait.origin, portrait.size, ReadyGold, "Small", CenterAlign
     )
-  elif hero.shieldTicks > 0:
-    sk.drawRect(
-      portrait.origin + vec2(2), portrait.size - vec2(4), rgbx(120, 200, 255, 70)
-    )
-  if hero.state != Dying and hero.buffTicks > 0:
+  elif hero.state != Dying and hero.buffTicks > 0:
     let
-      plateSize = vec2(portrait.size.x - 4, 14)
-      plateOrigin = portrait.origin + vec2(2, portrait.size.y - 16)
+      plateSize = vec2(portrait.size.x - 8, 14)
+      plateOrigin = portrait.origin + vec2(4, portrait.size.y - 18)
     sk.drawRect(plateOrigin, plateSize, rgbx(10, 12, 16, 190))
     hudScratch.setLen(0)
     hudScratch.add RuneHudNames[hero.buffKind]
@@ -1012,13 +1277,18 @@ proc drawBottomUnit(
       RuneColors[hero.buffKind], "Small", CenterAlign
     )
 
-  # Title line: name and level on the left, kills and points on the right.
+  sk.drawBar(
+    hud.hpBar.origin,
+    hud.hpBar.size,
+    max(hero.hp, 0).float32,
+    max(hero.maxHp, 1).float32,
+    hpColor
+  )
+  sk.drawSprite("health", hud.hpBar.origin + vec2(2, 2), vec2(16), hpColor)
   hudScratch.setLen(0)
   hudScratch.add PudgeSpecs[hero.team].name
   hudScratch.add "  P"
   hudScratch.addHudInt(int(hero.id))
-  hudScratch.add "  LV "
-  hudScratch.addHudInt(int(hero.kills) + 1)
   if not owned:
     if spectatePudgeId == hero.id:
       hudScratch.add "  EYES"
@@ -1028,241 +1298,188 @@ proc drawBottomUnit(
       hudScratch.add "  ENEMY"
   sk.drawLabel(
     hudScratch,
-    hud.title.origin + vec2(2, 0),
-    vec2(hud.title.size.x * 0.55'f32, hud.title.size.y),
-    rgbx(255, 255, 255, 255),
+    hud.hpBar.origin + vec2(20, 0),
+    vec2(hud.hpBar.size.x - 78, hud.hpBar.size.y),
+    HudName,
     "Small"
   )
   hudScratch.setLen(0)
-  hudScratch.add "KO "
-  hudScratch.addHudInt(int(hero.kills))
-  hudScratch.add "  G "
-  hudScratch.addHudInt(int(hero.gold))
-  hudScratch.add "  PTS "
-  hudScratch.addHudInt(int(hero.points))
+  hudScratch.add "Lv "
+  hudScratch.addHudInt(int(hero.kills) + 1)
   sk.drawLabel(
     hudScratch,
-    hud.title.origin + vec2(hud.title.size.x * 0.55'f32, 0),
-    vec2(hud.title.size.x * 0.45'f32 - 2, hud.title.size.y),
+    hud.hpBar.origin + vec2(hud.hpBar.size.x - 54, 0),
+    vec2(52, hud.hpBar.size.y),
+    HudMuted,
+    "Small",
+    RightAlign
+  )
+
+  var hookCaption = ""
+  if inHistory:
+    hookCaption.add "SPECTATING THE PAST"
+  elif owned and aimingHookNow():
+    hookCaption.add "HOOK - CLICK GROUND"
+  elif owned and aimingBlinkNow():
+    hookCaption.add "BLINK - LAST LEGAL TILE"
+  elif hero.windupTicks > 0:
+    hookCaption.add "CASTING"
+  elif hookFlying(hero):
+    hookCaption.add "IN FLIGHT"
+  elif hookReady:
+    hookCaption.add "READY"
+    if owned and options.quickcast:
+      hookCaption.add " · QC"
+    if owned and options.autocast:
+      hookCaption.add " · AC"
+  elif hookRemaining > 0:
+    hookCaption.addHudInt(int(cooldownSeconds(hookRemaining)))
+    hookCaption.add " s"
+  else:
+    hookCaption.add "HOOK"
+  sk.drawBar(
+    hud.resourceBar.origin,
+    hud.resourceBar.size,
+    hookFill,
+    1.0'f32,
+    HookBarColor
+  )
+  sk.drawSprite(
+    "mana",
+    hud.resourceBar.origin + vec2(2, 4),
+    vec2(16),
+    rgbx(186, 214, 255, 255)
+  )
+  sk.drawLabel(
+    hookCaption,
+    hud.resourceBar.origin + vec2(20, 0),
+    vec2(hud.resourceBar.size.x - 24, hud.resourceBar.size.y),
+    rgbx(255, 255, 255, 255),
+    "Small",
+    CenterAlign
+  )
+
+  writeRatio(hudScratch, max(hero.hp, 0).int, int(hero.maxHp))
+  sk.drawValueBar(
+    hud.xpBar.origin,
+    hud.xpBar.size,
+    max(hero.hp, 0).float32,
+    max(hero.maxHp, 1).float32,
+    hpColor,
+    hudScratch
+  )
+  sk.drawSprite("health", hud.xpBar.origin + vec2(2, 1), vec2(18), hpColor)
+  hudScratch.setLen(0)
+  hudScratch.add "KO "
+  hudScratch.addHudInt(int(hero.kills))
+  sk.drawLabel(
+    hudScratch,
+    hud.xpBar.origin + vec2(hud.xpBar.size.x - 88, 0),
+    vec2(84, hud.xpBar.size.y),
     ReadyGold,
     "Small",
     RightAlign
   )
 
-  writeRatio(hudScratch, max(hero.hp, 0).int, int(hero.maxHp))
-  sk.drawValueBar(
-    hud.hpBar.origin,
-    hud.hpBar.size,
-    max(hero.hp, 0).float32,
-    max(hero.maxHp, 1).float32,
-    if hero.inRiver: rgbx(64, 168, 196, 255) else: HpColor,
-    hudScratch
+  sk.drawSprite("gold", hud.goldBox.origin + vec2(0, -2), vec2(22))
+  writeAmount(hudScratch, int(hero.gold))
+  sk.drawLabel(
+    hudScratch,
+    hud.goldBox.origin + vec2(22, 0),
+    vec2(hud.goldBox.size.x - 22, hud.goldBox.size.y),
+    ReadyGold,
+    "Small"
   )
-  let
-    hookRemaining =
-      if hero.windupTicks > 0: hero.windupTicks else: hero.hookCooldown
-    hookDuration =
-      if hero.windupTicks > 0: HookWindupTicks else: HookCooldownTicks
-    hookReady = hero.state == Alive and not inHistory and
-      hero.windupTicks <= 0 and hero.hookCooldown <= 0 and not hookFlying(hero)
-    hookFill =
-      if hookRemaining <= 0 or hookDuration <= 0: 1.0'f32
-      else: 1.0'f32 - hookRemaining.float32 / hookDuration.float32
-  # The hook bar caption doubles as the status line.
-  hudScratch.setLen(0)
-  if inHistory:
-    hudScratch.add "SPECTATING THE PAST"
-  elif owned and aimingHookNow():
-    hudScratch.add "HOOK - CLICK GROUND"
-  elif owned and aimingBlinkNow():
-    hudScratch.add "BLINK - LAST LEGAL TILE"
-  elif hero.windupTicks > 0:
-    hudScratch.add "CASTING"
-  elif hookFlying(hero):
-    hudScratch.add "IN FLIGHT"
-  elif hookReady:
-    hudScratch.add "READY"
-    if owned and options.quickcast:
-      hudScratch.add " - QUICKCAST"
-  elif hookRemaining > 0:
-    hudScratch.addHudInt(int(cooldownSeconds(hookRemaining)))
-    hudScratch.add " s"
-  else:
-    hudScratch.add "HOOK"
-  sk.drawValueBar(
-    hud.resourceBar.origin,
-    hud.resourceBar.size,
-    hookFill,
-    1.0'f32,
-    HookBarColor,
-    hudScratch
+  sk.drawSprite("essence", hud.gemBox.origin + vec2(-2, -2), vec2(22))
+  writeInt(hudScratch, int(hero.points))
+  sk.drawLabel(
+    hudScratch,
+    hud.gemBox.origin + vec2(20, 0),
+    vec2(hud.gemBox.size.x - 20, hud.gemBox.size.y),
+    rgbx(220, 168, 255, 255),
+    "Small"
   )
 
-  let
-    hookOverlay = cooldownOverlay(
-      hookRemaining,
-      hookDuration,
-      if hero.windupTicks > 0: "CAST"
-      elif hookFlying(hero): "AIR"
-      else: ""
-    )
-    ownedLive = owned and not inHistory
-  # Only your own butcher shows buttons, and only ones that carry
-  # information or a real click: attack + hook (cooldown overlays) and
-  # the four upgrades. Move/stop/hold were RMB/S cosplay; an inspected
-  # enemy showed a row of dead grey squares.
+  for i in 0 ..< ActionSlotCount:
+    if actionSpecs[i].icon.len == 0:
+      continue
+    sk.drawSlotLabels(hud.actions.actionWell(i), actionSpecs[i])
+
   if owned:
-    var commands: seq[CommandSlotSpec]
-    commands.add CommandSlotSpec(
-      id: CmdAttack, icon: AttackIcon, hotkey: "RMB",
-      enabled: ownedLive,
-      remaining: hero.swingTicks, duration: hero.attackPeriod,
-      overlay: cooldownOverlay(hero.swingTicks, hero.attackPeriod)
-    )
-    commands.add CommandSlotSpec(
-      id: CmdHook, icon: "hook",
-      hotkey: bindLabel(BindHook),
-      enabled: ownedLive and hookReady,
-      remaining: hookRemaining, duration: hookDuration,
-      overlay: hookOverlay
-    )
-    commands.add CommandSlotSpec(
-      id: CmdRot, icon: "rot",
-      hotkey: bindLabel(BindRot),
-      enabled: ownedLive,
-      overlay: if hero.rotOn: "ON" else: ""
-    )
-    let
-      blinkReady = hero.state == Alive and not inHistory and
-        hero.windupTicks <= 0 and hero.blinkCooldown <= 0 and
-        hero.hookedBy == 0 and not run.world.rotAffected(hero)
-      blinkOverlay = cooldownOverlay(
-        hero.blinkCooldown, BlinkCooldownTicks
-      )
-    commands.add CommandSlotSpec(
-      id: CmdBlink, icon: "blink",
-      hotkey: bindLabel(BindBlink),
-      enabled: ownedLive and blinkReady,
-      remaining: hero.blinkCooldown, duration: BlinkCooldownTicks,
-      overlay: blinkOverlay
-    )
-    let clickedCmd = sk.drawCommandGrid(window, hud.commands, commands, 4, 1)
-    case clickedCmd
-    of CmdAttack: beginAttackCommand()
-    of CmdHook: beginHookCommand()
-    of CmdRot: beginRotCommand()
-    of CmdBlink: beginBlinkCommand()
-    else: discard
-
-    var itemSlots: seq[CommandSlotSpec]
-    for item in ShopBoots..ShopMine:
-      if hero.itemRank[item] <= 0:
+    for i in 0 ..< ActionSlotCount:
+      let spec = actionSpecs[i]
+      if spec.id < 0 or not spec.enabled:
         continue
-      var remaining, duration: int32
-      var hotkey = ""
-      if item == ShopWall:
-        remaining = hero.wallCooldown
-        duration = wallCooldownTicks(hero.itemRank[item])
-        hotkey = bindLabel(BindWall)
-      elif item == ShopMine:
-        remaining = hero.mineCooldown
-        duration = MineCooldownTicks
-        hotkey = bindLabel(BindMine)
-      itemSlots.add CommandSlotSpec(
-        id: item.ord,
-        icon: ShopItemIcons[item],
-        hotkey: hotkey,
-        enabled: true,
-        remaining: remaining,
-        duration: duration,
-        overlay: cooldownOverlay(remaining, duration),
-        badge: $hero.itemRank[item]
+      if not window.clicked(sk, hud.actions.actionWell(i)):
+        continue
+      case spec.id
+      of CmdAttack: beginAttackCommand()
+      of CmdHook: beginHookCommand()
+      of CmdRot: beginRotCommand()
+      of CmdBlink: beginBlinkCommand()
+      of 100 .. 103:
+        issueBuyCommand(UpgradeKind(spec.id - 100))
+      else:
+        if spec.id == ShopWall.ord:
+          beginPlaceCommand(ShopWall)
+        elif spec.id == ShopMine.ord:
+          beginPlaceCommand(ShopMine)
+
+    if window.buttonPressed[MouseRight]:
+      let hookWell = hud.actions.actionWell(1)
+      if hookWell.contains(sk.mousePos):
+        toggleHookAutocast()
+
+    block hookTooltip:
+      let well = hud.actions.actionWell(1)
+      if not well.contains(sk.mousePos):
+        break hookTooltip
+      sk.drawHudTooltip(
+        window,
+        well,
+        [
+          "Meat Hook",
+          if options.quickcast: "Quickcast: throws at the cursor."
+          else: "Press " & bindLabel(BindHook) & ", then click to throw.",
+          if options.autocast:
+            "Autocast ON: right-click an enemy to hook."
+          else:
+            "Right-click this well to arm autocast."
+        ]
       )
-    let clickedItem = sk.drawCommandGrid(
-      window, hud.items, itemSlots, InventoryCols, InventoryRows
-    )
-    if clickedItem == ShopWall.ord:
-      beginPlaceCommand(ShopWall)
-    elif clickedItem == ShopMine.ord:
-      beginPlaceCommand(ShopMine)
 
     block itemTooltip:
-      var hovered: ShopItem
+      var hovered = ShopFlask
       var found = false
-      var slot = 0
-      for item in ShopBoots..ShopMine:
-        if hero.itemRank[item] <= 0:
-          continue
-        let
-          col = slot mod InventoryCols
-          row = slot div InventoryCols
-        if hud.items.gridSlot(
-            col, row, InventoryCols, InventoryRows
-        ).contains(sk.mousePos):
-          hovered = item
+      var well = hud.items
+      for i in 0 ..< itemWellCount:
+        let slot = hud.actions.actionWell(4 + i)
+        if slot.contains(sk.mousePos):
+          hovered = itemWells[i]
+          well = slot
           found = true
           break
-        inc slot
       if not found:
         break itemTooltip
-      let
-        rank = hero.itemRank[hovered]
-        lines = [
+      let rank = hero.itemRank[hovered]
+      sk.drawHudTooltip(
+        window,
+        well,
+        [
           ShopItemNames[hovered] & "  [rank " & $rank & "/" &
             $ItemMaxRank & "]",
           shopItemBlurb(hovered)
         ]
-        tipW = 400.0'f32
-        tipH = 14.0'f32 + 2 * 18.0'f32
-        tipOrigin = vec2(
-          clamp(
-            hud.items.origin.x, 4.0'f32,
-            currentLayout(window).size.x - tipW - 4.0'f32
-          ),
-          hud.items.origin.y - tipH - 6.0'f32
-        )
-      sk.drawRect(tipOrigin, vec2(tipW, tipH), rgbx(10, 12, 16, 230))
-      for i, line in lines:
-        sk.drawLabel(
-          line,
-          tipOrigin + vec2(10, 8.0'f32 + float32(i) * 18.0'f32),
-          vec2(tipW - 20, 16),
-          if i == 0: ReadyGold else: LabelColor,
-          if i == 0: "Hud" else: "Small"
-        )
-
-    var upgrades: seq[CommandSlotSpec]
-    for kind in UpgradeKind:
-      let
-        level = hero.upgrades[kind]
-        affordable = ownedLive and hero.points > 0 and level < MaxUpgradeLevel
-      upgrades.add CommandSlotSpec(
-        id: kind.ord,
-        icon: UpgradeIcons[kind],
-        hotkey: bindLabel(BindAction(ord(BindUpgrade1) + ord(kind))),
-        enabled: affordable or level > 0,
-        overlay: if level >= MaxUpgradeLevel: "MAX" else: "",
-        badge: if level >= MaxUpgradeLevel or level == 0: "" else: $level
       )
-    let clickedUp = sk.drawCommandGrid(
-      window, hud.inventory, upgrades, InventoryCols, InventoryRows
-    )
-    if clickedUp >= 0 and clickedUp <= UpgradeKind.high.ord:
-      issueBuyCommand(UpgradeKind(clickedUp))
 
-    # Hover tooltip: what each stat rank actually buys, with live
-    # current -> next numbers from the balance tables.
     block upgradeTooltip:
       var hoveredKind = -1
-      for row in 0 ..< InventoryRows:
-        for col in 0 ..< InventoryCols:
-          let index = row * InventoryCols + col
-          if index > UpgradeKind.high.ord:
-            continue
-          if hud.inventory.gridSlot(
-              col, row, InventoryCols, InventoryRows
-          ).contains(sk.mousePos):
-            hoveredKind = index
+      var well = hud.inventory
+      for kind in UpgradeKind:
+        let slot = hud.actions.actionWell(6 + ord(kind))
+        if slot.contains(sk.mousePos):
+          hoveredKind = kind.ord
+          well = slot
       if hoveredKind < 0:
         break upgradeTooltip
       let
@@ -1295,34 +1512,18 @@ proc drawBottomUnit(
         numbers = "radius " & tiles(hookRadius(level)) &
           (if maxed: "" else: " > " & tiles(hookRadius(level + 1))) &
           " tiles"
-      let
-        lines = [
+      sk.drawHudTooltip(
+        window,
+        well,
+        [
           UpgradeNames[kind] & "  [rank " & $level & "/" &
             $MaxUpgradeLevel & "]",
           effect,
           if maxed: "MAXED"
           else: numbers & "   cost: 1 point (kills earn points)"
         ]
-        tipW = 340.0'f32
-        tipH = 14.0'f32 + 3 * 18.0'f32
-        tipOrigin = vec2(
-          clamp(
-            hud.inventory.origin.x, 4.0'f32,
-            currentLayout(window).size.x - tipW - 4.0'f32
-          ),
-          hud.inventory.origin.y - tipH - 6.0'f32
-        )
-      sk.drawRect(tipOrigin, vec2(tipW, tipH), rgbx(10, 12, 16, 230))
-      for i, line in lines:
-        sk.drawLabel(
-          line,
-          tipOrigin + vec2(10, 8.0'f32 + float32(i) * 18.0'f32),
-          vec2(tipW - 20, 16),
-          if i == 0: ReadyGold else: LabelColor,
-          if i == 0: "Hud" else: "Small"
-        )
+      )
 
-  if owned:
     let (errText, errAlpha) = humanErrorLine()
     if errText.len > 0:
       sk.drawLabel(
@@ -1357,7 +1558,8 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
     live = humanControlActive() and not run.replayMode and
       hero.state == Alive
     panel = shopPanelOf(layout)
-  sk.drawRect(panel.origin, panel.size, rgbx(10, 12, 16, 230))
+  sk.drawPanel(panel)
+  sk.drawFrame(panel.inset(2))
   sk.drawLabel(
     "BASE SHOP",
     panel.origin + vec2(10, 8),
@@ -1513,11 +1715,15 @@ proc drawNetLobby*(
   ## point their browsers, and the start controls.
   let
     layout = currentLayout(window)
-    panel = layout.panel(GameUiRegion.Center, vec2(600, 430))
+    panel = layout.panel(
+      GameUiRegion.Center,
+      vec2(600, max(280.0'f32, 140.0'f32 + float32(seats.len) * 30.0'f32))
+    )
   sk.drawRect(vec2(0, 0), layout.size, rgbx(6, 8, 12, 170))
   let inner = sk.beginPanel(panel, ReadyGold)
   sk.drawLabel(
-    "MATCH LOBBY",
+    "MATCH LOBBY  " & $(max(seats.len div 2, 1)) & "v" &
+      $(max(seats.len div 2, 1)),
     inner.origin,
     vec2(inner.size.x, 30),
     ReadyGold,
@@ -1525,7 +1731,7 @@ proc drawNetLobby*(
     CenterAlign
   )
   sk.drawLabel(
-    "SHIFT+1-6 TOGGLES A SEAT   -   FRIENDS JOIN AT",
+    "-/+ TEAM SIZE   SHIFT+1-0 TOGGLES A SEAT   FRIENDS JOIN AT",
     inner.origin + vec2(0, 42),
     vec2(inner.size.x, 16),
     LabelColor,
@@ -1540,10 +1746,11 @@ proc drawNetLobby*(
     "Hud",
     CenterAlign
   )
+  let n = max(seats.len div 2, 1)
   var y = 100.0'f32
-  for i in 0 ..< PudgeCount:
+  for i in 0 ..< seats.len:
     let
-      team = if i < TeamSize: WestTeam else: EastTeam
+      team = if i < n: WestTeam else: EastTeam
       teamColor = if team == WestTeam: WestColor else: EastColor
       mine = i == localClaim
       seat =
@@ -1551,7 +1758,10 @@ proc drawNetLobby*(
         else: NetSeat()
     hudScratch.setLen(0)
     hudScratch.add "["
-    hudScratch.addHudInt(i + 1)
+    if i >= 9:
+      hudScratch.add "0"
+    else:
+      hudScratch.addHudInt(i + 1)
     hudScratch.add "]  "
     hudScratch.add(if team == WestTeam: "WEST  " else: "EAST  ")
     if seat.off:
@@ -1584,7 +1794,7 @@ proc drawNetLobby*(
     )
     y += 30
   sk.drawLabel(
-    "1-6 TAKE A SEAT      0 SPECTATE      ENTER START",
+    "1-0 TAKE A SEAT      0 SPECTATE WHEN N<5      ENTER START",
     inner.origin + vec2(0, inner.size.y - 46),
     vec2(inner.size.x, 18),
     LabelColor,
@@ -1602,29 +1812,46 @@ proc drawNetLobby*(
 
 proc applyMenuChoice(id: int, transport: var Player) =
   ## Runs one pause-menu row: close the plate, then resume, rematch, or
-  ## hand off to Allies / Log.
+  ## hand off to Controls / Allies / Chat / Replay / Debug.
   case id
   of MenuResume:
     menuOpen = false
+    controlsOpen = false
     transport.playing = true
   of MenuRestart:
     if not menuCanRestart():
       return
     menuOpen = false
+    controlsOpen = false
     alliesOpen = false
-    logOpen = false
+    cancelChatTyping()
     menuRestartRequested = true
     transport.playing = true
+  of MenuControls:
+    controlsOpen = true
+    menuCursor = 0
   of MenuAllies:
     menuOpen = false
+    controlsOpen = false
     alliesOpen = true
-    logOpen = false
     transport.playing = true
   of MenuLog:
     menuOpen = false
-    logOpen = true
+    controlsOpen = false
+    chatVisible = true
+    chatTab = ChatTabChat
     alliesOpen = false
     transport.playing = true
+  of MenuReplay:
+    menuOpen = false
+    controlsOpen = false
+    transport.playing = true
+    toggleTransportBar()
+  of MenuDebug:
+    menuOpen = false
+    controlsOpen = false
+    transport.playing = true
+    toggleDebugMenu()
   else:
     discard
 
@@ -1636,8 +1863,10 @@ proc drawMenuOverlay(
 ) =
   ## Pause plate: one gold-border button per row, mouse and keyboard.
   const
-    Labels = ["Resume", "Restart Game", "Allies", "Log"]
-    NumberKeys = [Key1, Key2, Key3, Key4]
+    Labels = [
+      "Resume", "Restart Game", "Controls", "Allies", "Chat", "Replay", "Debug"
+    ]
+    NumberKeys = [Key1, Key2, Key3, Key4, Key5, Key6, Key7]
   sk.drawRect(vec2(0, 0), layout.size, rgbx(6, 8, 12, 170))
   let inner = sk.beginPanel(
     layout.panel(GameUiRegion.Center, MenuPanelSize),
@@ -1718,56 +1947,368 @@ proc drawMenuOverlay(
   elif menuOpen:
     transport.playing = false
 
-proc drawLogOverlay(sk: Silky, layout: GameUiLayout) =
-  ## Larger kill / event log under the top bar.
-  let
-    panel = layout.panel(GameUiRegion.TopCenter, LogPanelSize)
-    inner = sk.beginPanel(panel, ReadyGold)
+proc controlToggleLabel(on: bool): string =
+  if on: "ON" else: "OFF"
+
+proc drawControlsOverlay(
+    sk: Silky,
+    window: Window,
+    layout: GameUiLayout,
+    transport: var Player
+) =
+  ## Pause-menu Controls page: quickcast and Meat Hook autocast.
+  const NumberKeys = [Key1, Key2, Key3]
+  sk.drawRect(vec2(0, 0), layout.size, rgbx(6, 8, 12, 170))
+  let inner = sk.beginPanel(
+    layout.panel(GameUiRegion.Center, ControlsPanelSize),
+    ReadyGold
+  )
   sk.drawLabel(
-    "LOG",
+    "CONTROLS",
     inner.origin,
-    vec2(inner.size.x, 22),
+    vec2(inner.size.x, 28),
     ReadyGold,
+    "H1",
+    CenterAlign
+  )
+  sk.drawLabel(
+    "PAUSED",
+    inner.origin + vec2(0, 32),
+    vec2(inner.size.x, 20),
+    LabelColor,
     "Hud",
     CenterAlign
   )
+  let
+    labels = [
+      "Back",
+      "Quickcast",
+      "Autocast Hook"
+    ]
+    hints = [
+      "",
+      "Abilities fire at the cursor on key press.",
+      "Right-click an enemy to hook. Right-click the Hook well to toggle."
+    ]
+    values = [
+      "",
+      controlToggleLabel(options.quickcast),
+      controlToggleLabel(options.autocast)
+    ]
+  var chosen = -1
+  for i in 0 ..< ControlsItemCount:
+    let
+      slot = GameUiPanel(
+        origin: inner.origin + vec2(
+          0,
+          64.0'f32 + float32(i) * (MenuButtonH + MenuButtonGap)
+        ),
+        size: vec2(inner.size.x, MenuButtonH)
+      )
+      hovered = slot.contains(sk.mousePos)
+    if hovered:
+      menuCursor = i
+    let selected = menuCursor == i
+    sk.drawEtched(
+      slot.origin,
+      slot.size,
+      if selected: HudChipActive else: HudChipFill
+    )
+    sk.drawLabel(
+      labels[i],
+      slot.origin + vec2(14, 0),
+      vec2(slot.size.x - 110, slot.size.y),
+      if selected: ReadyGold else: LabelColor,
+      "Hud"
+    )
+    if values[i].len > 0:
+      sk.drawLabel(
+        values[i],
+        slot.origin + vec2(slot.size.x - 86, 0),
+        vec2(44, slot.size.y),
+        if values[i] == "ON": HudHotkey else: HudMuted,
+        "Hud",
+        CenterAlign
+      )
+    hudScratch.setLen(0)
+    hudScratch.add '('
+    hudScratch.add $(i + 1)
+    hudScratch.add ')'
+    sk.drawLabel(
+      hudScratch,
+      slot.origin + vec2(slot.size.x - 42, 0),
+      vec2(34, slot.size.y),
+      HudHotkey,
+      "Small",
+      CenterAlign
+    )
+    if window.clicked(sk, slot) or window.buttonPressed[NumberKeys[i]]:
+      chosen = i
+  sk.drawLabel(
+    hints[clamp(menuCursor, 0, hints.high)],
+    inner.origin + vec2(8, inner.size.y - 36),
+    vec2(inner.size.x - 16, 28),
+    rgbx(150, 156, 170, 255),
+    "Small",
+    CenterAlign
+  )
+  if window.buttonPressed[KeyUp]:
+    menuCursor = (menuCursor + ControlsItemCount - 1) mod ControlsItemCount
+  elif window.buttonPressed[KeyDown]:
+    menuCursor = (menuCursor + 1) mod ControlsItemCount
+  if window.buttonPressed[KeyEscape]:
+    chosen = ControlsBack
+  elif chosen < 0 and window.buttonPressed[KeyEnter]:
+    chosen = menuCursor
+  case chosen
+  of ControlsBack:
+    controlsOpen = false
+    menuCursor = MenuControls
+  of ControlsQuickcast:
+    options.quickcast = not options.quickcast
+  of ControlsAutocast:
+    toggleHookAutocast()
+  else:
+    discard
+  transport.playing = false
+
+proc chatLineColor(line: MatchChatLine): ColorRGBX =
+  if line.team == int32(WestTeam.ord): WestColor
+  elif line.team == int32(EastTeam.ord): EastColor
+  else: ReadyGold
+
+proc chatSelfName(): string =
+  if humanControlActive() and heroIndex() >= 0:
+    return "P" & $run.world.pudges[heroIndex()].id
+  let name = netPlayerName()
+  if name.len > 0: name else: "You"
+
+proc chatSelfTeam(): int32 =
+  if humanControlActive() and heroIndex() >= 0:
+    int32(run.world.pudges[heroIndex()].team.ord)
+  else:
+    -1
+
+proc sendChatDraft() =
+  let text = strip(chatDraft)
+  chatDraft.setLen(0)
+  if text.len == 0 or run == nil:
+    return
+  let slot =
+    if humanControlActive() and heroIndex() >= 0: int32(heroIndex())
+    else: -1
+  run.appendChat(MatchChatLine(
+    tick: run.world.tick,
+    slot: slot,
+    name: chatSelfName(),
+    text: text,
+    team: chatSelfTeam()
+  ))
+
+proc chatInputPanel(panel: GameUiPanel): GameUiPanel =
+  GameUiPanel(
+    origin: panel.origin + vec2(6, panel.size.y - ChatInputH - 6),
+    size: vec2(panel.size.x - 12, ChatInputH)
+  )
+
+proc logTabPanel(panel: GameUiPanel, index: int): GameUiPanel =
+  GameUiPanel(
+    origin: panel.origin + vec2(6 + float32(index) * (ChatTabW + 4), 4),
+    size: vec2(ChatTabW, ChatTitleH)
+  )
+
+proc handleLogTabs(sk: Silky, window: Window, panel: GameUiPanel) =
+  ## CHAT / EVENTS tabs. Clicking Events drops an unfinished draft.
+  if not chatVisible:
+    return
+  if window.clicked(sk, logTabPanel(panel, 0)):
+    chatTab = ChatTabChat
+  elif window.clicked(sk, logTabPanel(panel, 1)):
+    chatTab = ChatTabEvents
+    cancelChatTyping()
+
+proc handleChatInput(
+    sk: Silky, window: Window, panel: GameUiPanel
+) =
+  ## Enter opens or sends; Escape cancels; runes type into the draft.
+  if menuOpen or controlsOpen or not chatInputEnabled:
+    cancelChatTyping()
+    return
+  let
+    onChat = chatTab == ChatTabChat
+    input = chatInputPanel(panel)
+  if window.buttonPressed[MouseLeft]:
+    if chatVisible and onChat and input.contains(sk.mousePos):
+      chatComposing = true
+      chatVisible = true
+    elif chatComposing and (not chatVisible or not panel.contains(sk.mousePos)):
+      chatComposing = false
+  if window.buttonPressed[KeyEscape] and chatComposing:
+    cancelChatTyping()
+    return
+  if window.buttonPressed[KeyEnter]:
+    if chatComposing:
+      sendChatDraft()
+      chatComposing = false
+    else:
+      chatVisible = true
+      chatTab = ChatTabChat
+      chatComposing = true
+    return
+  if not chatComposing:
+    return
+  if window.buttonPressed[KeyBackspace] or window.buttonPressed[KeyDelete]:
+    let runes = chatDraft.toRunes
+    if runes.len > 0:
+      chatDraft = $runes[0 ..< runes.high]
+  for rune in sk.inputRunes:
+    if int(rune) < 32:
+      continue
+    if chatDraft.toRunes.len >= MaxChatDraft:
+      break
+    chatDraft.add $rune
+
+proc drawLogTabs(sk: Silky, panel: GameUiPanel) =
+  const Labels = ["CHAT", "EVENTS"]
+  for i, label in Labels:
+    let
+      slot = logTabPanel(panel, i)
+      active =
+        (i == 0 and chatTab == ChatTabChat) or
+        (i == 1 and chatTab == ChatTabEvents)
+    sk.drawEtched(
+      slot.origin,
+      slot.size,
+      if active: HudChipActive else: HudChipFill
+    )
+    sk.drawLabel(
+      label,
+      slot.origin,
+      slot.size,
+      if active: ReadyGold else: HudMuted,
+      "Small",
+      CenterAlign
+    )
+  sk.drawLabel(
+    "F11",
+    panel.origin + vec2(panel.size.x - 40, 4),
+    vec2(32, ChatTitleH),
+    rgbx(150, 156, 170, 255),
+    "Small",
+    RightAlign
+  )
+
+proc drawEventLogBody(sk: Silky, panel: GameUiPanel, bodyTop, bodyBot: float32) =
+  var y = bodyBot - ChatLineH
   if eventLog.len == 0:
     sk.drawLabel(
       "no events yet",
-      inner.origin + vec2(0, 40),
-      vec2(inner.size.x, 18),
+      vec2(panel.origin.x + 8, y),
+      vec2(panel.size.x - 16, ChatLineH),
       rgbx(150, 156, 170, 255),
-      "Small",
-      CenterAlign
+      "Small"
     )
     return
-  var y = 32.0'f32
-  for i in countdown(eventLog.len - 1, 0):
-    sk.drawLabel(
-      eventLog[i].text,
-      inner.origin + vec2(8, y),
-      vec2(inner.size.x - 16, 18),
-      eventLog[i].color,
-      "Small",
-      CenterAlign
-    )
-    y += 22
-    if y > inner.size.y - 24:
+  for i in countdown(eventLog.high, 0):
+    if y < bodyTop:
       break
+    let entry = eventLog[i]
+    let seconds = int(entry.tick div TickRate)
+    var row = ""
+    writeClock(row, seconds div 60, seconds mod 60)
+    row.add "  "
+    row.add entry.text
+    sk.drawLabel(
+      row,
+      vec2(panel.origin.x + 8, y),
+      vec2(panel.size.x - 16, ChatLineH),
+      entry.color,
+      "Small"
+    )
+    y -= ChatLineH
+
+proc drawChatLogBody(sk: Silky, panel: GameUiPanel, bodyTop, bodyBot: float32) =
+  var y = bodyBot - ChatLineH
+  if run == nil or run.chatLog.len == 0:
+    sk.drawLabel(
+      "type to talk",
+      vec2(panel.origin.x + 8, y),
+      vec2(panel.size.x - 16, ChatLineH),
+      rgbx(150, 156, 170, 255),
+      "Small"
+    )
+    return
+  for i in countdown(run.chatLog.high, 0):
+    if y < bodyTop:
+      break
+    let line = run.chatLog[i]
+    var row = line.name
+    if row.len > 0:
+      row.add ": "
+    row.add line.text
+    sk.drawLabel(
+      row,
+      vec2(panel.origin.x + 8, y),
+      vec2(panel.size.x - 16, ChatLineH),
+      chatLineColor(line),
+      "Small"
+    )
+    y -= ChatLineH
+
+proc drawChatPanel(sk: Silky, window: Window, layout: GameUiLayout) =
+  ## Bottom-left plate with Chat and Events tabs.
+  if menuOpen:
+    cancelChatTyping()
+    return
+  let panel = chatPanelOf(layout)
+  handleLogTabs(sk, window, panel)
+  handleChatInput(sk, window, panel)
+  if not chatVisible:
+    return
+  sk.drawPanel(panel)
+  sk.drawFrame(panel.inset(2))
+  sk.drawLogTabs(panel)
+  let bodyTop = panel.origin.y + ChatTitleH + 8
+  if chatTab == ChatTabEvents:
+    drawEventLogBody(
+      sk, panel, bodyTop, panel.origin.y + panel.size.y - 8
+    )
+    return
+  let input = chatInputPanel(panel)
+  drawChatLogBody(sk, panel, bodyTop, input.origin.y - 4)
+  sk.drawRect(input.origin, input.size, rgbx(10, 12, 16, 255))
+  let prompt =
+    if chatComposing:
+      if chatDraft.len > 0: chatDraft & "|"
+      else: "|"
+    else:
+      "ENTER TO CHAT"
+  sk.drawLabel(
+    prompt,
+    input.origin + vec2(6, 0),
+    vec2(input.size.x - 12, input.size.y),
+    if chatComposing: HudName else: rgbx(150, 156, 170, 255),
+    "Small"
+  )
 
 proc applyChipClick(id: int, transport: var Player) =
   ## Toggles the overlay that matches one minimap chip.
   case id
   of ChipMenu:
     menuOpen = not menuOpen
-    logOpen = false
     if menuOpen:
       menuCursor = 0
+      controlsOpen = false
+      cancelChatTyping()
+    else:
+      controlsOpen = false
     transport.playing = not menuOpen
   of ChipTeam:
     alliesOpen = not alliesOpen
   of ChipLog:
-    logOpen = not logOpen
+    chatVisible = not chatVisible
+    if not chatVisible:
+      cancelChatTyping()
     if menuOpen:
       menuOpen = false
       transport.playing = true
@@ -1801,8 +2342,10 @@ proc drawDebugOverlaysHud(sk: Silky, layout: GameUiLayout) =
     )
   if not showLayers:
     return
-  # Bottom-left corner: clear of the score plate, kill feed, and minimap.
+  # Bottom-left corner: sit above the match chat and away from the minimap.
   var y = layout.size.y - 220
+  if chatVisible:
+    y = min(y, chatPanelOf(layout).origin.y - 128)
   let x = 16.0'f32
   sk.drawLabel(
     "LAYERS", vec2(x, y), vec2(160, 14), ReadyGold, "Small"
@@ -1925,6 +2468,7 @@ proc drawDebugMenu(
       DebugWindowSize
     ):
       text debugPingLine()
+      text "F2 frame rate / Fluffy trace"
       drawNetSimDebugControls(sk, window)
       checkBox "Fog of war", fogOfWar
       checkBox "Record bug tape", recordOn
@@ -1977,6 +2521,45 @@ proc drawDebugMenu(
     sk.endDsl()
   cameraDistance = clampCameraDistance(cameraDistance)
 
+proc drawFpsDebugger(sk: Silky, window: Window) =
+  ## F2 frame-rate window: live fps, optional cap, interpolation, Fluffy.
+  noteFps()
+  if not fpsDebuggerOpen:
+    return
+  sk.beginDsl()
+  try:
+    subWindow(
+      FpsWindowTitle,
+      fpsDebuggerOpen,
+      FpsWindowOrigin,
+      FpsWindowSize
+    ):
+      text "FPS"
+      text "fpsNow":
+        font "Mono"
+        characters fpsNowText
+      text "fpsAvg":
+        font "Mono"
+        characters fpsAvgText
+      text "fpsStd":
+        font "Mono"
+        characters fpsStdText
+      text "FPS limit (0 = vsync)"
+      scrubber(
+        "fpsLimit",
+        framePaceHz,
+        0,
+        FpsLimitMax,
+        $framePaceHz
+      )
+      checkBox "Interpolation", interpolateVisuals
+      if runtimeTraceActive():
+        text "Fluffy recording… F2 writes tmp/fluffy.json"
+      else:
+        text "F2 starts a Fluffy frame trace"
+  finally:
+    sk.endDsl()
+
 proc centerCameraOnInspect(
     window: Window,
     sk: Silky,
@@ -1996,23 +2579,31 @@ proc centerCameraOnInspect(
     return
   lockSpectatorEyes(run.world.pudges[index].id)
   actionCam.takeManual()
-  followSelection = false
-  let pos = inspectGroundPoint()
-  cameraTarget.x = clamp(pos.x, -HalfGrid, HalfGrid)
-  cameraTarget.z = clamp(pos.z, -HalfGrid, HalfGrid)
+  if not humanControlActive():
+    followSelection = true
+  if not followSelection:
+    let pos = inspectGroundPoint()
+    cameraTarget.x = clamp(pos.x, -HalfGrid, HalfGrid)
+    cameraTarget.z = clamp(pos.z, -HalfGrid, HalfGrid)
 
 proc drawSpectatorBanner(sk: Silky, window: Window, layout: GameUiLayout) =
   ## Top-center POV plate: whose eyes, plus Show all to go omniscient.
-  if not spectatorChromeVisible() or logOpen or menuOpen:
+  ## One string only — combat lines live in the Events tab, not here.
+  if not spectatorChromeVisible() or menuOpen:
+    return
+  if run.replayMode and (run.replayVersionSkew or run.hashCheck.error.len > 0):
     return
   let banner = spectatorBannerPanel(layout)
   sk.drawEtched(banner.origin, banner.size, HudChipFill)
-  hudScratch.setLen(0)
   let eyes = spectateIndex()
   if eyes < 0:
-    hudScratch.add "OMNISCIENT  ·  CLICK A BUTCHER"
     sk.drawLabel(
-      hudScratch, banner.origin, banner.size, ReadyGold, "Small", CenterAlign
+      "OMNISCIENT  ·  CLICK A BUTCHER",
+      banner.origin,
+      banner.size,
+      ReadyGold,
+      "Small",
+      CenterAlign
     )
     return
   let allBtn = spectatorAllPanel(banner)
@@ -2023,15 +2614,14 @@ proc drawSpectatorBanner(sk: Silky, window: Window, layout: GameUiLayout) =
   if window.clicked(sk, allBtn):
     clearSpectatorEyes()
   let pudge = run.world.pudges[eyes]
-  hudScratch.setLen(0)
-  hudScratch.add "EYES  "
-  hudScratch.add PudgeSpecs[pudge.team].name
-  hudScratch.add "  P"
-  hudScratch.addHudInt(int(pudge.id))
+  var line = "EYES  "
+  line.add PudgeSpecs[pudge.team].name
+  line.add "  P"
+  line.add $pudge.id
   if not fogOfWar:
-    hudScratch.add "  ·  FOG OFF"
+    line.add "  ·  FOG OFF"
   sk.drawLabel(
-    hudScratch,
+    line,
     banner.origin + vec2(SpectatorAllW + 8, 0),
     vec2(banner.size.x - SpectatorAllW - 12, banner.size.y),
     ReadyGold,
@@ -2072,32 +2662,43 @@ proc drawUi*(
     )
   )
   sk.drawSpectatorBanner(window, layout)
-  # Mini chips above the minimap keep menu access off the play field.
+  let clusterVisible = commandCardVisible()
+  sk.drawBottomChrome(chrome.bottom, clusterVisible)
+  sk.drawMinimap(window, chrome.bottom, cameraTarget, cameraDistance)
+  # Menu, auto-lock, and director on the compass nameplate.
+  # Allies, Chat, Replay, and Debug stay on the pause menu; F10 / F11
+  # still toggle Allies / the chat-and-events plate.
   let clicked = sk.drawChipRow(
     window,
     chrome.bottom.buttons,
     [
-      HudChip(
-        id: ChipDebug, label: "DBG", key: ButtonUnknown,
-        active: debugMenuOpen
-      ),
       HudChip(id: ChipMenu, label: "MENU", key: KeyF9, active: menuOpen),
-      HudChip(id: ChipTeam, label: "TEAM", key: KeyF10, active: alliesOpen),
-      HudChip(id: ChipLog, label: "LOG", key: KeyF11, active: logOpen),
       HudChip(
-        id: ChipReplay, label: "REC", key: ButtonUnknown,
-        active: transportBarOpen()
+        id: ChipFollow, label: "AUTO", key: bindKey(BindFollow),
+        active: followSelection
+      ),
+      HudChip(
+        id: ChipDirector, label: "DIR", key: bindKey(BindDirector),
+        active: actionCam.enabled
       )
     ]
   )
-  if clicked >= 0:
+  if clicked == ChipFollow:
+    followSelection = not followSelection
+    if followSelection:
+      actionCam.takeManual()
+      let lock = followCameraPoint()
+      if lock.found:
+        cameraTarget.x = lock.point.x
+        cameraTarget.z = lock.point.z
+  elif clicked == ChipDirector:
+    actionCam.toggle(followSelection)
+  elif clicked >= 0:
     applyChipClick(clicked, transport)
-    if clicked == ChipReplay:
-      layout = currentLayout(window)
-      chrome = placeChrome(layout)
-  let clusterVisible = commandCardVisible()
-  sk.drawBottomChrome(chrome.bottom, clusterVisible)
-  sk.drawMinimap(window, chrome.bottom.minimap, cameraTarget, cameraDistance)
+  if window.buttonPressed[KeyF10]:
+    applyChipClick(ChipTeam, transport)
+  if window.buttonPressed[KeyF11]:
+    applyChipClick(ChipLog, transport)
   if clusterVisible:
     sk.drawBottomUnit(
       window, chrome.bottom, transport.inHistory and netRole != NetClient
@@ -2117,25 +2718,9 @@ proc drawUi*(
       follow
     )
     followSelection = follow
-  if run.world.chunkerId != 0 and
-      run.world.tick - run.world.chunkTick < ChunkAnnounceTicks:
-    hudScratch.setLen(0)
-    hudScratch.add "P"
-    hudScratch.addHudInt(int(run.world.chunkerId))
-    hudScratch.add " denied P"
-    hudScratch.addHudInt(int(run.world.chunkOwnerId))
-    hudScratch.add "'s hook"
-    sk.drawLabel(
-      hudScratch,
-      vec2(0, 12),
-      vec2(layout.size.x, 20),
-      ReadyGold,
-      "Hud",
-      CenterAlign
-    )
+  sk.drawChatPanel(window, layout)
   sk.drawKillStinger(layout)
-  if not logOpen:
-    sk.drawKillFeed(layout)
+  sk.drawKillFeed(layout)
   let index = heroIndex()
   if humanControlActive() and isOwnedInspect() and index >= 0 and
       run.world.pudges[index].state == Dying and not run.world.gameOver:
@@ -2171,7 +2756,7 @@ proc drawUi*(
       if netRole == NetClient:
         "SPECTATING - PICK A SEAT FROM THE HOST'S LOBBY PAGE"
       else:
-        "TAKE A SEAT: PRESS 1-6, OR T OVER A BUTCHER"
+        "TAKE A SEAT: PRESS 1-0, OR T OVER A BUTCHER"
     # Shadow pass keeps the hint readable over the bright river.
     sk.drawLabel(
       seatHint,
@@ -2191,14 +2776,16 @@ proc drawUi*(
     )
   sk.drawDebugOverlaysHud(layout)
   sk.drawDebugMenu(window, cameraTarget, cameraDistance, cameraEye)
+  sk.drawFpsDebugger(window)
   # Modals last so they cover chrome, kill-feed toasts, and world labels.
   if alliesOpen:
     sk.drawRoster(window, chrome.west, WestTeam, "West bank")
     sk.drawRoster(window, chrome.east, EastTeam, "East bank")
-  if logOpen:
-    sk.drawLogOverlay(layout)
   if menuOpen:
-    sk.drawMenuOverlay(window, layout, transport)
+    if controlsOpen:
+      sk.drawControlsOverlay(window, layout, transport)
+    else:
+      sk.drawMenuOverlay(window, layout, transport)
   if run.replayMode:
     if run.replayVersionSkew:
       sk.drawError(

@@ -30,3 +30,10 @@ let game2 = newGame(map, TickRate * 30, false, ReplayData(),
 for _ in 0 ..< TickRate * 5:
   tickWorld(game2, noTurn)
 echo "1v3 roster runs; seat toggles pass"
+let map5 = generateMap(7, 5)
+let game5 = newGame(map5, TickRate * 16, false, ReplayData())
+doAssert game5.world.pudges.len == 10
+doAssert game5.world.spawnLayout.west.len == 5
+for _ in 0 ..< TickRate * 5:
+  tickWorld(game5, noTurn)
+echo "5v5 roster: 10 pudges on five pads, 5s ticked clean"
