@@ -45,6 +45,10 @@ block:
     BotGroup(path: playersDir / "denier.bas", count: 2)
   ])
   doAssert game.heroVms.len == PudgeCount
+  doAssert game.seatLabels == @[
+    "Aggressive 1", "Aggressive 2", "Support 1", "Support 2",
+    "Denier 1", "Denier 2"
+  ]
   tickWorld(game, proc() = runBotDecisions(game))
   for i in 0 ..< PudgeCount:
     doAssert not game.heroVms[i].failed

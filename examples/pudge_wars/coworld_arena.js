@@ -70,6 +70,14 @@ function drawArena(canvas, message, options) {
     ctx.arc(toX(rune.x), toY(rune.y), 5, 0, Math.PI * 2)
     ctx.fill()
   }
+  const next = message.rune_next
+  if (next && next.soon > 0 && next.x >= 0) {
+    ctx.strokeStyle = next.soon <= 32 * 5 ? '#fde047' : 'rgba(253,224,71,0.45)'
+    ctx.lineWidth = next.soon <= 32 * 5 ? 3 : 2
+    ctx.beginPath()
+    ctx.arc(toX(next.x), toY(next.y), 7, 0, Math.PI * 2)
+    ctx.stroke()
+  }
   const names = message.player_names || []
   for (const pudge of pudgesFrom(message)) {
     const color = pudge.team === 0 ? '#38bdf8' : '#fb7185'
@@ -109,5 +117,13 @@ function worldFromEvent(canvas, event, transform) {
 function scoreLine(message) {
   const score = message.score || { west: 0, east: 0 }
   const goal = message.kill_goal || 0
-  return `West ${score.west} – ${score.east} East  (first to ${goal})  tick ${message.tick}/${message.max_ticks}`
+  const next = message.rune_next
+  let line = `West ${score.west} – ${score.east} East  (first to ${goal})  tick ${message.tick}/${message.max_ticks}`
+  if (next && next.soon > 0) {
+    const names = ['Haste', '2x', 'Regen', 'Big']
+    const kind = names[next.kind] || 'Rune'
+    const end = next.y < 64 ? 'N' : 'S'
+    line += `  ·  ${kind} ${end} in ${(next.soon / 32).toFixed(1)}s`
+  }
+  return line
 }

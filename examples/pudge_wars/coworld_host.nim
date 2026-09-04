@@ -159,6 +159,18 @@ proc runeJson(rune: Rune): JsonNode =
     "y": round(pos.y, 3)
   }
 
+proc runeNextJson(world: World): JsonNode =
+  ## Public drop clock. Same numbers BASIC `runeSoon` / `runeNext*` see.
+  let soon = runeSoonTicks(world)
+  if soon <= 0:
+    return %*{"soon": 0, "kind": -1, "x": -1, "y": -1}
+  %*{
+    "soon": soon,
+    "kind": world.nextRuneKind.ord,
+    "x": RiverCenterX,
+    "y": world.nextRuneZTile
+  }
+
 proc propJson(prop: Prop): JsonNode =
   let pos = tileCoord(prop.propCenter)
   %*{
@@ -237,6 +249,7 @@ proc observation(slot: int, final = false): JsonNode =
       "props": visibleProps
     },
     "ally_ping": pingNode,
+    "rune_next": runeNextJson(world),
     "score": scoreNode(world),
     "done": final or world.gameOver or done,
     "winner": winnerName(world)
@@ -264,6 +277,7 @@ proc globalSnapshot(): JsonNode =
     "river_west": RiverWestX,
     "river_east": RiverEastX,
     "score": scoreNode(world),
+    "rune_next": runeNextJson(world),
     "pudges": pudges,
     "hooks": hooks,
     "player_names": names,

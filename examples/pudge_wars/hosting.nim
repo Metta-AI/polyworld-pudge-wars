@@ -336,6 +336,24 @@ proc startHosting*(
   hostBotNames.setLen(0)
   for path in botPaths:
     hostBotNames.add botDisplayName(path)
+  block uniquify:
+    var numbered = newSeq[string](hostBotNames.len)
+    for i, name in hostBotNames:
+      if name.len == 0:
+        continue
+      var copies = 0
+      for other in hostBotNames:
+        if other == name:
+          inc copies
+      if copies <= 1:
+        numbered[i] = name
+        continue
+      var k = 0
+      for j in 0 .. i:
+        if hostBotNames[j] == name:
+          inc k
+      numbered[i] = name & " " & $k
+    hostBotNames = numbered
   sessions.clear()
   chatLog.setLen(0)
   matchStarted = false
@@ -397,6 +415,12 @@ proc seatRoster(): seq[NetSeat] =
         name: seats[i].name,
         human: true,
         connected: seats[i].connected
+      )
+    else:
+      result[i] = NetSeat(
+        name: if i < hostBotNames.len: hostBotNames[i] else: "",
+        human: false,
+        connected: false
       )
     if seatDisabled[i]:
       result[i].off = true
@@ -874,11 +898,18 @@ proc hostRemoteSeats*(): seq[int] =
       result.add i
 
 proc hostSeatName*(slot: int): string =
-  ## Display name for one seat, or empty for a bot.
+  ## Display name for one seat: player name, else the bot personality.
   if slot == localClaim:
     return hostName
   if slot >= 0 and slot < hostSeatCount() and seats[slot].taken:
     return seats[slot].name
+  if slot >= 0 and slot < hostBotNames.len:
+    return hostBotNames[slot]
+
+proc hostSeatTaken*(slot: int): bool =
+  ## True when a human (host or remote) currently claims this well.
+  slot == localClaim or
+    (slot >= 0 and slot < hostSeatCount() and seats[slot].taken)
 
 proc hostClaimLocal*(slot: int) =
   ## The host player's own seat pick from the lobby overlay.

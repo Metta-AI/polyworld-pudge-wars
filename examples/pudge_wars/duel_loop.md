@@ -147,7 +147,8 @@ Host data (read-only variables): `selfId`, `selfTeam` (0 west,
 1 east), `selfX`, `selfY`, `selfHp`, `selfMaxHp`, `selfKills`,
 `selfPoints`, `selfLayer` (0 west bank, 1 east bank, 2 river),
 `selfHooked`, `selfShield`, `selfBuff`, `hookReady`, `worldTick`,
-`riverWest`, `riverEast`, and ally ping slots (unused in duels).
+`riverWest`, `riverEast`, ally ping slots (unused in duels), and the
+next river drop (`runeSoon`, `runeNextKind`, `runeNextX`, `runeNextY`).
 
 Host functions: `objectCount()`, `objectId/Kind/Team/X/Y/Hp/Alive/`
 `Layer/Hooked/Shielded(i)`; `hookCount()`, `hookTeam/X/Y/Flying/`
@@ -177,8 +178,13 @@ Arena facts the policy can rely on:
 - Melee: ~28 damage inside ~5.2 tiles. Drowning ticks HP away; a
   swimmer walks home along the shortest path.
 - HP: 840 + 35 per kill, full heal on respawn; the home pad heals
-  a trickle. Runes float down the river every 20 s (haste, double
-  damage, regen, big hook — hook them or wade).
+  a trickle. Runes float the river on a public clock: first drop at
+  0:20, then every 20 s. Even drops spawn north (y=16) and drift
+  south; odd spawn south (y=111). Each kind visits both ends before
+  the next (haste N/S, double damage, regen, big hook, lightning,
+  bounty). Read
+  `runeSoon` / `runeNextKind` / `runeNextX` / `runeNextY` to time
+  the spawn or gank someone camping it. Hook the orb or wade.
 
 Costed VM limits (a script that blows them fails visibly in the
 summary's `scripts:` line): 20k instructions/decision, 64 KiB source.

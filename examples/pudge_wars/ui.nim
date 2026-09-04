@@ -10,12 +10,16 @@ import
   content, maps, netproto, netclient, netsim, netpredict, sim, game, human,
   keybinds, replays
 
+when not defined(emscripten):
+  import hosting
+
 const
   PanelRoster = vec2(380, 300)
   PanelEndScreen = vec2(640, 430)
   WestColor = rgbx(214, 86, 72, 255)
   EastColor = rgbx(82, 142, 220, 255)
-  HpColor = rgbx(196, 48, 48, 255)
+  AllyHpColor* = rgbx(72, 210, 96, 255)
+  EnemyHpColor* = rgbx(220, 56, 48, 255)
   HookBarColor = rgbx(72, 148, 210, 255)
   ReadyGold = rgbx(255, 214, 120, 255)
   KillFeedSeconds = 6.0
@@ -40,12 +44,17 @@ const
     rgbx(255, 72, 214, 255),   # Haste: DotA / WC3 pink
     rgbx(64, 168, 255, 255),   # Double Damage: electric blue
     rgbx(72, 224, 104, 255),   # Regen: life green
-    rgbx(255, 164, 52, 255)    # Big Hook: amber (no WC3 analog)
+    rgbx(255, 164, 52, 255),   # Big Hook: amber (no WC3 analog)
+    rgbx(255, 236, 80, 255),   # Lightning: charged yellow
+    rgbx(255, 214, 90, 255)    # Bounty: gold
   ]
   RuneHudNames: array[RuneKind, string] = [
     "HASTE", "2X DMG", "REGEN",
-    "BIG +" & $RuneBigHookDamagePercent & "%"
+    "BIG +" & $RuneBigHookDamagePercent & "%",
+    "BOLT",
+    "BOUNTY +" & $RuneBountyGold & "G"
   ]
+  RunePlateSize = vec2(190, 22)
   HudName = rgbx(245, 229, 178, 255)
   HudMuted = rgbx(160, 171, 188, 255)
   ChipMenu = 0
@@ -549,6 +558,36 @@ proc spectatorAllPanel(banner: GameUiPanel): GameUiPanel =
     size: vec2(SpectatorAllW, banner.size.y - 8)
   )
 
+proc butcherDisplayName*(index: int): string =
+  ## Name plate for one roster seat: lobby name, bot personality, or P<id>.
+  if run == nil or index < 0 or index >= run.world.pudges.len:
+    return ""
+  let
+    pudge = run.world.pudges[index]
+    seat = int(pudge.lobbySeat)
+  if netRole == NetClient:
+    result = netSeatName(seat)
+  when not defined(emscripten):
+    if result.len == 0 and netRole == NetHost:
+      result = hostSeatName(seat)
+  if result.len == 0 and index == localSeat:
+    result = netPlayerName()
+  if result.len == 0 and index < run.seatLabels.len:
+    result = run.seatLabels[index]
+  if result.len == 0:
+    result = "P" & $pudge.id
+
+proc pudgeHpColor*(pudge: Pudge): ColorRGBX =
+  ## Ally green / enemy red from the local POV. Omniscient keeps team
+  ## colors, with fountain and river as status tints.
+  let rel = viewRelationTeam()
+  if rel >= 0:
+    if pudge.team.ord == rel: AllyHpColor else: EnemyHpColor
+  elif pudge.onIslandFountain: rgbx(96, 220, 110, 255)
+  elif pudge.inRiver: rgbx(64, 168, 196, 255)
+  elif pudge.team == WestTeam: WestColor
+  else: EastColor
+
 proc chatPanelOf(layout: GameUiLayout): GameUiPanel =
   ## Bottom-left chat / events plate, above the hero cluster / shop / strip.
   let transportH = transportStripHeight(transportBarOpen())
@@ -738,6 +777,18 @@ proc drawMinimap(
       minimapPosition(hudPoint(rune.position), area),
       5, RuneColors[rune.kind]
     )
+  if run.world.runePeriod > 0:
+    let
+      spawn = worldAtTile(RiverCenterX, int(run.world.nextRuneZTile))
+      soon = runeSoonTicks(run.world)
+      pip = if soon <= TickRate * 5: 7'f32 else: 5'f32
+    sk.drawMinimapPip(
+      area,
+      minimapPosition(hudPoint(spawn), area),
+      pip,
+      RuneColors[run.world.nextRuneKind],
+      ring = soon <= TickRate * 5
+    )
 
   let viewTeam = fogTeam()
   for prop in run.world.props:
@@ -762,7 +813,7 @@ proc drawMinimap(
       area,
       minimapPosition(hudPoint(pudge.position), area),
       7,
-      if pudge.team == WestTeam: WestColor else: EastColor,
+      pudgeHpColor(pudge),
       ring = i == heroSlot or i == spectateSlot
     )
 
@@ -783,6 +834,55 @@ proc drawMinimap(
     CenterAlign
   )
 
+proc addHudSeconds(s: var string, ticks: int32)
+
+proc runePlatePanel(layout: GameUiLayout): GameUiPanel =
+  ## Next-rune clock, stacked under the score plate.
+  let score = scorePlatePanel(layout)
+  GameUiPanel(
+    origin: vec2(score.origin.x, score.origin.y + score.size.y + 4),
+    size: RunePlateSize
+  )
+
+proc killFeedTop(layout: GameUiLayout): float32 =
+  ## Kill feed sits under the rune clock when river drops are on.
+  if run != nil and run.world.runePeriod > 0:
+    let plate = runePlatePanel(layout)
+    return plate.origin.y + plate.size.y + 6.0'f32
+  hudToastY(layout)
+
+proc drawRunePlate(sk: Silky, layout: GameUiLayout) =
+  ## Public drop clock: kind, north/south, seconds remaining.
+  if run == nil or run.world.runePeriod <= 0:
+    return
+  let
+    panel = runePlatePanel(layout)
+    kind = run.world.nextRuneKind
+    soon = runeSoonTicks(run.world)
+    north = run.world.nextRuneFromNorth
+  sk.drawEtched(panel.origin, panel.size, HudChipFill)
+  hudScratch.setLen(0)
+  hudScratch.add RuneHudNames[kind]
+  hudScratch.add " "
+  hudScratch.add(if north: "N" else: "S")
+  sk.drawLabel(
+    hudScratch,
+    panel.origin + vec2(6, 0),
+    vec2(panel.size.x * 0.68'f32, panel.size.y),
+    RuneColors[kind],
+    "Small"
+  )
+  hudScratch.setLen(0)
+  hudScratch.addHudSeconds(soon)
+  sk.drawLabel(
+    hudScratch,
+    panel.origin + vec2(panel.size.x * 0.62'f32 - 6, 0),
+    vec2(panel.size.x * 0.38'f32, panel.size.y),
+    HudName,
+    "Small",
+    RightAlign
+  )
+
 proc drawKillFeed(sk: Silky, layout: GameUiLayout) =
   ## Fading list of recent kills below the top-right score plate,
   ## League-style, so the top-center stays clear for gameplay.
@@ -792,7 +892,7 @@ proc drawKillFeed(sk: Silky, layout: GameUiLayout) =
     if now - entry.born < KillFeedSeconds:
       alive.add entry
   killFeed = alive
-  var y = hudToastY(layout)
+  var y = killFeedTop(layout)
   for i in countdown(killFeed.len - 1, 0):
     let
       entry = killFeed[i]
@@ -990,7 +1090,8 @@ proc drawRoster(
     window: Window,
     panel: GameUiPanel,
     team: Team,
-    title: string
+    title: string,
+    followSelection: var bool
 ) =
   let inner = sk.beginPanel(panel, if team == WestTeam: WestColor else: EastColor)
   sk.drawLabel(title, inner.origin, vec2(inner.size.x, 22), LabelColor, "Hud")
@@ -1006,9 +1107,9 @@ proc drawRoster(
       sk.drawRect(row.origin, row.size, rgbx(240, 218, 128, 50))
     if not humanControlActive() and window.clicked(sk, row):
       lockSpectatorEyes(pudge.id)
+      followSelection = true
     hudScratch.setLen(0)
-    hudScratch.add "P"
-    hudScratch.addHudInt(int(pudge.id))
+    hudScratch.add butcherDisplayName(pudgeIndex(run.world, pudge.id))
     hudScratch.add "  K"
     hudScratch.addHudInt(int(pudge.kills))
     hudScratch.add " D"
@@ -1053,9 +1154,7 @@ proc drawRoster(
       vec2(inner.size.x, 8),
       max(pudge.hp, 0).float32,
       max(pudge.maxHp, 1).float32,
-      if pudge.onIslandFountain: rgbx(96, 220, 110, 255)
-      elif pudge.inRiver: rgbx(64, 168, 196, 255)
-      else: HpColor
+      pudgeHpColor(pudge)
     )
     y += 50
 
@@ -1158,10 +1257,7 @@ proc drawBottomUnit(
     hookFill =
       if hookRemaining <= 0 or hookDuration <= 0: 1.0'f32
       else: 1.0'f32 - hookRemaining.float32 / hookDuration.float32
-    hpColor =
-      if hero.onIslandFountain: rgbx(96, 220, 110, 255)
-      elif hero.inRiver: rgbx(64, 168, 196, 255)
-      else: HpColor
+    hpColor = pudgeHpColor(hero)
   sk.drawWellImage(portrait, PortraitKeys[hero.team])
   let portraitInner = portrait.inset(
     min(4.0'f32, min(portrait.size.x, portrait.size.y) * 0.08'f32)
@@ -1286,9 +1382,7 @@ proc drawBottomUnit(
   )
   sk.drawSprite("health", hud.hpBar.origin + vec2(2, 2), vec2(16), hpColor)
   hudScratch.setLen(0)
-  hudScratch.add PudgeSpecs[hero.team].name
-  hudScratch.add "  P"
-  hudScratch.addHudInt(int(hero.id))
+  hudScratch.add butcherDisplayName(index)
   if not owned:
     if spectatePudgeId == hero.id:
       hudScratch.add "  EYES"
@@ -1771,7 +1865,10 @@ proc drawNetLobby*(
       if not seat.connected:
         hudScratch.add "  (away)"
     else:
-      hudScratch.add "Butcher Bot"
+      if seat.name.len > 0:
+        hudScratch.add seat.name
+      else:
+        hudScratch.add "Butcher Bot"
     sk.drawLabel(
       hudScratch,
       inner.origin + vec2(60, y),
@@ -2586,7 +2683,10 @@ proc centerCameraOnInspect(
     cameraTarget.x = clamp(pos.x, -HalfGrid, HalfGrid)
     cameraTarget.z = clamp(pos.z, -HalfGrid, HalfGrid)
 
-proc drawSpectatorBanner(sk: Silky, window: Window, layout: GameUiLayout) =
+proc drawSpectatorBanner(
+    sk: Silky, window: Window, layout: GameUiLayout,
+    followSelection: var bool
+) =
   ## Top-center POV plate: whose eyes, plus Show all to go omniscient.
   ## One string only — combat lines live in the Events tab, not here.
   if not spectatorChromeVisible() or menuOpen:
@@ -2613,11 +2713,9 @@ proc drawSpectatorBanner(sk: Silky, window: Window, layout: GameUiLayout) =
   )
   if window.clicked(sk, allBtn):
     clearSpectatorEyes()
-  let pudge = run.world.pudges[eyes]
+    followSelection = false
   var line = "EYES  "
-  line.add PudgeSpecs[pudge.team].name
-  line.add "  P"
-  line.add $pudge.id
+  line.add butcherDisplayName(eyes)
   if not fogOfWar:
     line.add "  ·  FOG OFF"
   sk.drawLabel(
@@ -2661,7 +2759,8 @@ proc drawUi*(
       clock: matchClock
     )
   )
-  sk.drawSpectatorBanner(window, layout)
+  sk.drawRunePlate(layout)
+  sk.drawSpectatorBanner(window, layout, followSelection)
   let clusterVisible = commandCardVisible()
   sk.drawBottomChrome(chrome.bottom, clusterVisible)
   sk.drawMinimap(window, chrome.bottom, cameraTarget, cameraDistance)
@@ -2779,8 +2878,8 @@ proc drawUi*(
   sk.drawFpsDebugger(window)
   # Modals last so they cover chrome, kill-feed toasts, and world labels.
   if alliesOpen:
-    sk.drawRoster(window, chrome.west, WestTeam, "West bank")
-    sk.drawRoster(window, chrome.east, EastTeam, "East bank")
+    sk.drawRoster(window, chrome.west, WestTeam, "West bank", followSelection)
+    sk.drawRoster(window, chrome.east, EastTeam, "East bank", followSelection)
   if menuOpen:
     if controlsOpen:
       sk.drawControlsOverlay(window, layout, transport)

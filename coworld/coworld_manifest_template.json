@@ -40,7 +40,7 @@
             }
           }
         },
-        "max_ticks": { "type": "integer", "minimum": 1, "maximum": 20000 },
+        "max_ticks": { "type": "integer", "minimum": 1, "maximum": 40000 },
         "tick_rate": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
         "kill_goal": { "type": "integer", "minimum": 1, "maximum": 40 },
         "seed": { "type": "integer" },
@@ -138,11 +138,11 @@
     {
       "id": "league-3v3",
       "name": "League 3v3",
-      "description": "Canonical ladder board. Six seats, first to 10, up to eight minutes at 32 Hz.",
+      "description": "Canonical ladder board. Six seats, first to 30, up to twenty minutes at 32 Hz.",
       "game_config": {
-        "max_ticks": 15360,
+        "max_ticks": 38400,
         "tick_rate": 32,
-        "kill_goal": 10,
+        "kill_goal": 30,
         "fog": true,
         "player_connect_timeout_seconds": 180,
         "players": [

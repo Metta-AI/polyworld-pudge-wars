@@ -19,7 +19,11 @@ import
   sim
 
 const
-  NetProtocolVersion* = 7'u16
+  NetProtocolVersion* = 9'u16
+    ## v9: Lightning and Bounty river runes change the public kind cycle
+    ##     and live combat hashes. Host and client must rebuild together.
+    ## v8: river rune drops follow a public north/south + kind cycle
+    ##     instead of match RNG. Live hashes change; rebuild together.
     ## v7: contested rune / clash ties and the 65-tick hook cooldown
     ##     change live hashes. Host and client must rebuild together.
     ## v6: lobby may carry 2..10 seats (N vs N, N=1..5). Older followers

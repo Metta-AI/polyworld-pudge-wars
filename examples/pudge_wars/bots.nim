@@ -10,6 +10,7 @@
 ## action is recorded.
 
 import
+  std/[os, strutils],
   polyworld/[basic, cli, pathing, profiles, rngs, tapes],
   content,
   maps,
@@ -43,7 +44,11 @@ type
     DataAllyPingAge,
     DataAllyPingBy,
     DataSelfGold,
-    DataSelfInShop
+    DataSelfInShop,
+    DataRuneSoon,
+    DataRuneNextKind,
+    DataRuneNextX,
+    DataRuneNextY
 
 const
   PudgeDataNames: array[PudgeDataSlot, string] = [
@@ -72,7 +77,11 @@ const
     "allyPingAge",
     "allyPingBy",
     "selfGold",
-    "selfInShop"
+    "selfInShop",
+    "runeSoon",
+    "runeNextKind",
+    "runeNextX",
+    "runeNextY"
   ]
 
 var
@@ -506,6 +515,33 @@ proc initPudgeHost(pudgeId: int32): Host =
   discard result.addFunction("placeWall", 2, placeWallProc, 20)
   discard result.addFunction("placeMine", 2, placeMineProc, 20)
 
+proc botScriptLabel(path: string): string =
+  ## "players/aggressive.bas" becomes "Aggressive".
+  result = path.splitFile.name
+  if result.len == 0:
+    return "Bot"
+  result[0] = result[0].toUpperAscii()
+
+proc uniquifySeatLabels(labels: var seq[string]) =
+  ## "Base","Base","Support" becomes "Base 1","Base 2","Support".
+  var numbered = newSeq[string](labels.len)
+  for i, name in labels:
+    if name.len == 0:
+      continue
+    var copies = 0
+    for other in labels:
+      if other == name:
+        inc copies
+    if copies <= 1:
+      numbered[i] = name
+      continue
+    var k = 0
+    for j in 0 .. i:
+      if labels[j] == name:
+        inc k
+    numbered[i] = name & " " & $k
+  labels = numbered
+
 proc loadBots*(game: Game, groups: openArray[BotGroup]) =
   ## Compiles bot programs into seats. With one program per seat, human
   ## seats get a VM too, so releasing control falls back to script
@@ -514,17 +550,21 @@ proc loadBots*(game: Game, groups: openArray[BotGroup]) =
   activeGame = game
   let limits = pudgeVmLimits()
   var schema = initPudgeHost(0)
-  var programs: seq[Program]
+  var
+    programs: seq[Program]
+    programPaths: seq[string]
   for group in groups:
     let program = compile(readFile(group.path), schema, limits)
     for _ in 0 ..< group.count:
       programs.add program
+      programPaths.add group.path
   let
     total = game.world.pudges.len
     humans = game.humanSlots.len
   doAssert programs.len == total or programs.len == total - humans,
     "bot programs must fill every seat or every non-human seat"
   game.heroVms.setLen(total)
+  game.seatLabels = newSeq[string](total)
   if programs.len == 0:
     return
   bindPudgeData(programs[0])
@@ -539,7 +579,10 @@ proc loadBots*(game: Game, groups: openArray[BotGroup]) =
       limits: limits,
       ready: true
     )
+    if i notin game.humanSlots:
+      game.seatLabels[i] = botScriptLabel(programPaths[next])
     inc next
+  uniquifySeatLabels(game.seatLabels)
 
 proc runPudgeScript(game: Game, index: int) {.measure.} =
   if index < 0 or index >= game.heroVms.len:
@@ -550,8 +593,8 @@ proc runPudgeScript(game: Game, index: int) {.measure.} =
   if vm == nil or vm.failed or pudge.state == Dying:
     return
   vm.runtime.restart()
-  # BASIC `print` becomes this seat's intent bubble: the client shows
-  # the latest line above the butcher so humans can read bot plans.
+  # BASIC `print` is captured on the seat for logs and tests. The
+  # world shows a nameplate, not the printed line.
   var spokenLine = ""
   let speak: PrintProc = proc(event: PrintEvent) =
     case event.kind
@@ -623,6 +666,18 @@ proc runPudgeScript(game: Game, index: int) {.measure.} =
       vm.runtime.setData(pudgeDataIds[DataAllyPingY], -1'i32)
       vm.runtime.setData(pudgeDataIds[DataAllyPingAge], -1'i32)
       vm.runtime.setData(pudgeDataIds[DataAllyPingBy], 0'i32)
+    let soon = runeSoonTicks(game.world)
+    vm.runtime.setData(pudgeDataIds[DataRuneSoon], soon)
+    if soon <= 0:
+      vm.runtime.setData(pudgeDataIds[DataRuneNextKind], -1'i32)
+      vm.runtime.setData(pudgeDataIds[DataRuneNextX], -1'i32)
+      vm.runtime.setData(pudgeDataIds[DataRuneNextY], -1'i32)
+    else:
+      vm.runtime.setData(
+        pudgeDataIds[DataRuneNextKind], int32(game.world.nextRuneKind.ord)
+      )
+      vm.runtime.setData(pudgeDataIds[DataRuneNextX], int32(RiverCenterX))
+      vm.runtime.setData(pudgeDataIds[DataRuneNextY], game.world.nextRuneZTile)
     discard vm.runtime.run(speak)
     inc vm.decisions
     if spokenLine.len > 0 and index < game.botSpeech.len:

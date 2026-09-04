@@ -8,7 +8,7 @@
     phase: 'boot',
     tick: 0,
     seconds: 0,
-    killGoal: 10,
+    killGoal: 30,
     west: 0,
     east: 0,
     you: -1,

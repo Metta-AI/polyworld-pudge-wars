@@ -231,6 +231,14 @@ block:
     BaseHookDamage + BaseHookDamage * RuneBigHookDamagePercent div 100
   doAssert bigHookDamage(0) == 0
   doAssert "damage" in shopItemBlurb(ShopBigHook)
+  doAssert RuneKindCount == 6
+  doAssert RuneLightningDamage == 120
+  doAssert RuneLightningRadius == RotRadius
+  doAssert RuneLightningRadius > MinSeparation,
+    "lightning must reach a butcher standing at melee standoff"
+  doAssert RuneBountyGold == 4
+  doAssert RuneNames[RuneLightning] == "Lightning"
+  doAssert RuneNames[RuneBounty] == "Bounty"
 
 echo "Testing published Pudge Wars recordings resolve"
 block:

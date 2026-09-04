@@ -34,7 +34,7 @@ const
     "damage", "distance", "speed", "radius"
   ]
   RuneKeys: array[RuneKind, string] = [
-    "haste", "double_damage", "regen", "big_hook"
+    "haste", "double_damage", "regen", "big_hook", "lightning", "bounty"
   ]
   DistanceBands = ["0-15", "15-30", "30-45", "45+"]
 
@@ -760,7 +760,7 @@ proc logTransitions(logger: DuelLogger, game: Game) =
     if pudge.runesTaken > logger.prevRunesTaken[i]:
       var event = logger.baseEvent("rune_taken", world.tick)
       event["id"] = %pudge.id
-      event["kind"] = %RuneKeys[pudge.buffKind]
+      event["kind"] = %RuneKeys[pudge.justRuneKind]
       event["inRiver"] = %isRiver
       logger.emit(event)
     if pudge.spent > logger.prevSpent[i]:

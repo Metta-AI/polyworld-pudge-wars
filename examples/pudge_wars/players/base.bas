@@ -28,6 +28,8 @@
 '   selfBuff (0 none, else rune kind + 1), selfRot (1 if our Rot is on)
 '   hookReady, blinkReady, worldTick, riverWest, riverEast
 '   homeX, homeY  (this butcher's spawn pad; retreat here)
+'   runeSoon (ticks until the next river drop; 0 if runes are off)
+'   runeNextKind, runeNextX, runeNextY  (the coming drop; -1 if off)
 '
 ' Objects are fog-clipped like the human view:
 '   objectId, objectTeam, objectX, objectY, objectHp, objectAlive
@@ -43,8 +45,15 @@
 '
 ' River runes (hook one to steal its power):
 '   runeCount, runeX(i), runeY(i), runeKind(i)
-' Rune kinds: 0 haste, 1 double damage, 2 regen, 3 big hook
-' Runes live in the river, so they stay visible.
+'   runeSoon, runeNextKind, runeNextX, runeNextY
+' Rune kinds: 0 haste, 1 double damage, 2 regen, 3 big hook,
+'   4 lightning, 5 bounty (instant gold; does not replace a buff)
+' Drops are a public clock, not RNG: first at 0:20, then every 20 s.
+' Even drops spawn north (y=16) and drift south; odd spawn south
+' (y=111). Each kind visits both ends before the next: haste N/S,
+' then double damage, regen, big hook, lightning, bounty. Time the
+' spawn; gank anyone camping it. Runes live in the river, so they
+' stay visible.
 '
 ' Actions return 1 when accepted:
 '   walkTo(x, y), hookTo(x, y), blinkTo(x, y), rotToggle(), attackTarget(id)
@@ -58,8 +67,8 @@
 '   5 river treads, 6 longflight brand, 7 palisade, 8 hooktrap.
 ' Permanents occupy 4 inventory slots, ranks to 5. C/V place wall/mine.
 '
-' print lines surface as intent bubbles above the butcher, so human
-' teammates can read the plan. Print on changes, not every tick.
+' print lines are captured for logs. They are not shown in the world;
+' nameplates use the bot's script name. Print on changes, not every tick.
 
 ' ---- tunables -------------------------------------------------------
 engageDist = 34      ' max tiles to attempt a lead hook
@@ -70,6 +79,8 @@ dodgeDist = 22       ' react to enemy hooks inside this range
 retreatPct = 40      ' pad-heal below this percent of max HP
 brawlMargin = 40     ' melee only if selfHp + margin >= enemy hp
 runeDist = 26        ' hook runes inside this range when idle
+runeSoonWalk = 256   ' walk to the next drop inside this many ticks (~8s)
+runeCampDist = 14    ' hook enemies camping the next drop inside this
 cutDist = 30         ' cut victim-carrying enemy hooks inside this
 blinkHop = 16        ' perpendicular dodge hop, tiles (20-tile blink)
 fogPoke = 8          ' tiles into the far bank when nobody is visible
@@ -86,6 +97,8 @@ saveIdx = -1
 saveD2 = 2147483647
 closeIdx = -1
 closeD2 = 2147483647
+campIdx = -1
+campD2 = 2147483647
 preyRot = 0
 foreignRot = 0
 rotX = 0
@@ -139,6 +152,27 @@ while index < objectCount()
       if od2 <= 30 and od2 < closeD2 then
         closeD2 = od2
         closeIdx = index
+      end if
+      if runeSoon > 0 then
+        if runeSoon <= runeSoonWalk then
+          cdx = objectX(index) - runeNextX
+          cdy = objectY(index) - runeNextY
+          if cdx < 0 then
+            cdx = 0 - cdx
+          end if
+          if cdy < 0 then
+            cdy = 0 - cdy
+          end if
+          if cdx <= runeCampDist then
+            if cdy <= runeCampDist then
+              cd2 = cdx * cdx + cdy * cdy
+              if cd2 < campD2 then
+                campD2 = cd2
+                campIdx = index
+              end if
+            end if
+          end if
+        end if
       end if
       if objectKind(index) = 1 and od2 <= 64 then
         preyRot = 1
@@ -782,6 +816,30 @@ else
       wend
     end if
     if thrown = 0 and hookReady = 1 and mood = 0 then
+      if campIdx >= 0 then
+        thrown = hookTo(objectX(campIdx), objectY(campIdx))
+        mood = 22
+      end if
+    end if
+    if thrown = 0 and hookReady = 1 and mood = 0 then
+      if runeSoon > 0 then
+        if runeSoon <= 16 then
+          rdx = runeNextX - selfX
+          if rdx < 0 then
+            rdx = 0 - rdx
+          end if
+          rdy = runeNextY - selfY
+          if rdy < 0 then
+            rdy = 0 - rdy
+          end if
+          if rdx <= runeDist and rdy <= runeDist then
+            thrown = hookTo(runeNextX, runeNextY)
+            mood = 4
+          end if
+        end if
+      end if
+    end if
+    if thrown = 0 and hookReady = 1 and mood = 0 then
       if enemyAlive = 0 and worldTick > 8 then
         thrown = hookTo(pokeX, pokeY)
         mood = 20
@@ -880,6 +938,14 @@ else
           end if
           if lineY > 119 then
             lineY = 119
+          end if
+          if runeSoon > 0 then
+            if runeSoon <= runeSoonWalk then
+              lineY = runeNextY
+              if mood = 0 then
+                mood = 21
+              end if
+            end if
           end if
           walkTo(lineX, lineY)
           if mood = 0 then
@@ -983,5 +1049,11 @@ if mood <> saidMood then
   end if
   if mood = 20 then
     print "poking the fog"
+  end if
+  if mood = 21 then
+    print "timing that rune"
+  end if
+  if mood = 22 then
+    print "punish the timer"
   end if
 end if

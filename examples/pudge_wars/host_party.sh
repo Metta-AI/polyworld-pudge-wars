@@ -4,10 +4,10 @@
 ##
 ##   examples/pudge_wars/host_party.sh [extra pw flags]
 ##
-## Party defaults: first to 15 kills, fair-handicap bots. Anything you
+## Party defaults: first to 30 kills, fair-handicap bots. Anything you
 ## pass is appended after the defaults, so your flags win, e.g.:
 ##
-##   examples/pudge_wars/host_party.sh --difficulty pro --killGoal 30
+##   examples/pudge_wars/host_party.sh --difficulty pro --killGoal 15
 ##   examples/pudge_wars/host_party.sh --human --name Aaron
 ##
 ## Launches native ./pw (not Pudge Wars.app). The browser client rebuild
@@ -73,7 +73,7 @@ roster=(
 )
 
 echo "starting native host (./pw)..."
-./pw --host --difficulty fair --killGoal 15 "${roster[@]}" "$@" 2>&1 |
+./pw --host --difficulty fair --killGoal 30 "${roster[@]}" "$@" 2>&1 |
   while IFS= read -r line; do
     echo "$line"
     case "$line" in

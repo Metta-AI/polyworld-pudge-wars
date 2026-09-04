@@ -17,13 +17,19 @@ when defined(posix):
 const
   ReplayGame* = "pudge_wars"
   ReplayFormatVersion* = 4'u16
-  ReplayGameVersion* = 26'u16
+  ReplayGameVersion* = 28'u16
     ## Physics the *viewer* runs. Observatory's static wasm must ship at
     ## this same number as the recording image (`pwcoworld`). Older tapes
     ## still load; playback skips hash checks so a rebuilt wasm does not
     ## freeze Featured Match. Bump when physics change, and bump the
     ## coworld version in lockstep. Live follow uses `NetProtocolVersion`
     ## in netproto.nim — that is not the observatory replay path.
+    ## v28: Lightning (charged splash on a landed enemy hook) and Bounty
+    ##      (instant gold, does not overwrite a combat buff) join the
+    ##      public river cycle after Big Hook.
+    ## v27: river rune location and kind follow a public cycle (north
+    ##      then south, kinds in haste/DD/regen/big-hook pairs). Match
+    ##      RNG no longer picks the drop; contested scoops still can.
     ## v26: contested rune scoops and body pickups ignore hook-list /
     ##      roster order (closest, then rng among sorted ids). Equal-
     ##      flight hook clashes break both chains with no deny gold.

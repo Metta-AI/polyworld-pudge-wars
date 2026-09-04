@@ -1,8 +1,8 @@
 # Assets the web build packs from ../polyworld_data (see
 # emscripten.nims). One file or directory per line; keeping this list
 # tight keeps the browser download small.
-characters/rpg_monsters/orc.glb
-characters/rpg_monsters/orc.profile.png
+characters/rpg_monsters/cyclops.glb
+characters/rpg_monsters/cyclops.profile.png
 characters/rpg_monsters/demon_king.glb
 characters/rpg_monsters/demon_king.profile.png
 characters/rpg_monsters/monsters_albedo.png

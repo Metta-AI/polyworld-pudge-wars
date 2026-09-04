@@ -119,7 +119,10 @@ proc initGameWindow*(
   window.makeContextCurrent()
   loadExtensions()
   let sk = newSilky(window, atlasPath)
-  window.runeInputEnabled = true
+  # Off until a text field asks for it. Windy's IME path (macOS accent
+  # popup, CJK composition) eats key-up for held letters — fatal for
+  # WASD, where A is both "walk left" and the first accented key.
+  window.runeInputEnabled = false
   window.onRune = proc(rune: Rune) =
     sk.inputRunes.add(rune)
   (window, sk)
@@ -194,7 +197,12 @@ proc captureScreenshot*(
   ## Writes one back-buffer capture after waitFrames when capturing.
   when defined(takeScreenshot):
     inc frame
-    if frame < waitFrames:
+    let needed =
+      if existsEnv("SCREENSHOT_WAIT"):
+        max(getEnv("SCREENSHOT_WAIT").parseInt, 1)
+      else:
+        waitFrames
+    if frame < needed:
       return
     let
       path =

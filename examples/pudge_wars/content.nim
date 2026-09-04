@@ -70,8 +70,10 @@ const
     ## Command forgiveness: a rejected walk target snaps to the nearest
     ## walkable tile on the butcher's bank within this Chebyshev radius.
   RunePeriodTicks* = TickRate * 20
-    ## Default ticks between river rune spawns. Matches record the live
-    ## period in their setup; 0 disables runes entirely.
+    ## Ticks between river rune drops. The clock is public: first drop
+    ## at 0:20, then every 20 s. Location and kind follow a fixed cycle
+    ## (not match RNG) so scripts can time the spawn and gank timers.
+    ## Matches record the live period; 0 disables drops.
   RuneBuffTicks* = TickRate * 15
   AllyHookHeal* = 120'i32
     ## Hooking a teammate patches them up: support play with the same
@@ -158,10 +160,14 @@ type
     UpgradeRadius
   RuneKind* = enum
     ## River rune buffs, WC3-style: one timed power-up per butcher.
+    ## Bounty is instant gold, not a timed slot: it does not overwrite
+    ## a combat buff.
     RuneHaste,
     RuneDoubleDamage,
     RuneRegen,
-    RuneBigHook
+    RuneBigHook,
+    RuneLightning,
+    RuneBounty
   ShopItem* = enum
     ## Base-pad catalog. 0-4 are timed/consumable powerups (keys 5-9);
     ## 5-8 are the four permanent inventory families (one HUD well
@@ -306,12 +312,25 @@ const
     ## Big Hook rune: extra hook damage at release (1.5× unbuffed).
     ## Same round percent as the size buff; cheaper than Double Damage
     ## (2×) because the throw also grows and wins clashes.
+  RuneLightningDamage* = 120'i32
+    ## Charged splash on a landed enemy hook: ~14% of 840 HP. The
+    ## victim also takes hook damage; clustered teammates eat this only.
+  RuneLightningRadius* = 8 * WorldScale
+    ## Same disk as Rot: a melee clump is inside, a lane partner is not.
+  RuneBountyGold* = 4'i32
+    ## Instant gold. A kill pays 3; this is a river contest worth a
+    ## shop haste/regen and does not overwrite a combat buff.
   RuneNames*: array[RuneKind, string] = [
     "Haste",
     "Double Damage",
     "Regen",
-    "Big Hook"
+    "Big Hook",
+    "Lightning",
+    "Bounty"
   ]
+  RuneKindCount* = int32(high(RuneKind).ord) + 1
+    ## Length of the public kind cycle. Each kind drops north, then
+    ## south, then the next kind: haste N/S, double damage N/S, …
   WestSpawns* = [(22, 40), (22, 64), (22, 88)]
     ## Lane-center defaults and the fallback if a pad roll cannot
     ## separate teammates. Live matches use `spawnLayoutFromSeed`.
@@ -320,13 +339,13 @@ const
   PudgeSpecs*: array[Team, PudgeSpec] = [
     PudgeSpec(
       name: "West Butcher",
-      modelPath: DataRoot & "/characters/rpg_monsters/orc.glb",
+      modelPath: DataRoot & "/characters/rpg_monsters/cyclops.glb",
       runClip: "RunForward",
       idleClip: "IdleNormal",
       deathClip: "Death",
       attackClip: "Attack01",
       victoryClip: "Victory",
-      targetHeight: 6.2
+      targetHeight: 6.4
     ),
     PudgeSpec(
       name: "East Butcher",
@@ -646,6 +665,7 @@ proc contentHash*(): uint64 =
   hash.addHashy(HookAccel)
   hash.addHashy(HookSpeedMaxMul)
   hash.addHashy(RunePeriodTicks)
+  hash.addHashy(RuneKindCount)
   hash.addHashy(RuneBuffTicks)
   hash.addHashy(AllyHookHeal)
   hash.addHashy(SightRadiusTiles)
@@ -697,4 +717,7 @@ proc contentHash*(): uint64 =
   hash.addHashy(RuneRegenPeriodTicks)
   hash.addHashy(RuneBigHookPercent)
   hash.addHashy(RuneBigHookDamagePercent)
+  hash.addHashy(RuneLightningDamage)
+  hash.addHashy(RuneLightningRadius)
+  hash.addHashy(RuneBountyGold)
   uint64(hash)

@@ -1,9 +1,10 @@
-## River runes: deterministic spawns and drift, both pickup paths, the
-## four buffs, expiry, hash coverage, and the v3 replay round-trip.
+## River runes: public spawn clock and kind/location cycle, drift, both
+## pickup paths, combat buffs, lightning splash, bounty gold, expiry,
+## hash coverage, and replay round-trip.
 
 import
   std/os,
-  polyworld/[cli, tapes],
+  polyworld/[basic, cli, tapes],
   ../examples/pudge_wars/bots,
   ../examples/pudge_wars/content,
   ../examples/pudge_wars/maps,
@@ -75,6 +76,10 @@ block:
     doAssert not islandTile(tile.x, tile.z),
       "end-of-river spawns must not land on the fountain"
     doAssert rune.dir == 1 or rune.dir == -1
+  doAssert game.world.runes[0].kind == RuneHaste
+  doAssert game.world.runes[0].dir == 1, "first drop drifts south from north"
+  doAssert game.world.runes[1].kind == RuneHaste
+  doAssert game.world.runes[1].dir == -1, "second drop drifts north from south"
   block driftFollowsCurrent:
     let
       before = game.world.runes[0].position.z
@@ -99,6 +104,92 @@ block:
   off.play(200)
   doAssert off.world.runes.len == 0, "0 must disable the river drops"
   doAssert off.world.nextRuneId == FirstRuneId
+
+echo "Testing river drops follow a public cycle, not match RNG"
+block:
+  let
+    a = freshGame(runePeriod = TickRate)
+    b = freshGame(runePeriod = TickRate)
+    otherMap = generateMap(99)
+  var c = newGame(otherMap, MatchTicks, false, ReplayData(), KillGoal, TickRate)
+  parkPudges(a)
+  parkPudges(b)
+  parkPudges(c)
+  b.world.rng.state = a.world.rng.state xor 0xC0FFEE1234'u64
+  a.play(int(TickRate) * 8)
+  b.play(int(TickRate) * 8)
+  c.play(int(TickRate) * 8)
+  doAssert a.world.runes.len == 8
+  doAssert b.world.runes.len == 8
+  doAssert c.world.runes.len == 8
+  for i in 0 ..< 8:
+    doAssert a.world.runes[i].kind == scheduledRuneKind(int32(i))
+    doAssert a.world.runes[i].kind == b.world.runes[i].kind
+    doAssert a.world.runes[i].kind == c.world.runes[i].kind
+    doAssert a.world.runes[i].dir == b.world.runes[i].dir
+    doAssert a.world.runes[i].dir == c.world.runes[i].dir
+    let
+      expectNorth = scheduledRuneFromNorth(int32(i))
+      z = tileOf(a.world.runes[i].position).z
+    if expectNorth:
+      doAssert a.world.runes[i].dir == 1
+      doAssert z >= PlayZMin
+    else:
+      doAssert a.world.runes[i].dir == -1
+      doAssert z <= PlayZMax
+  doAssert a.world.runes[0].kind == RuneHaste
+  doAssert a.world.runes[2].kind == RuneDoubleDamage
+  doAssert a.world.runes[4].kind == RuneRegen
+  doAssert a.world.runes[6].kind == RuneBigHook
+  doAssert scheduledRuneKind(8) == RuneLightning
+  doAssert scheduledRuneKind(9) == RuneLightning
+  doAssert scheduledRuneKind(10) == RuneBounty
+  doAssert scheduledRuneKind(11) == RuneBounty
+  doAssert scheduledRuneKind(12) == RuneHaste
+  doAssert runeSoonTicks(a.world) == TickRate
+  doAssert a.world.nextRuneKind == RuneLightning
+  doAssert a.world.nextRuneZTile == int32(PlayZMin)
+
+echo "Testing BASIC can read the next drop clock"
+block:
+  let
+    scriptDir = getTempDir()
+    scriptPath = scriptDir / "pw_rune_soon.bas"
+  writeFile(
+    scriptPath,
+    """
+seenSoon = runeSoon
+seenKind = runeNextKind
+seenX = runeNextX
+seenY = runeNextY
+if seenSoon <= 0 then
+  print "disabled"
+end if
+if seenX <> 64 then
+  print "bad x"
+end if
+"""
+  )
+  var game = freshGame(runePeriod = TickRate * 2)
+  parkPudges(game)
+  loadBots(game, [BotGroup(path: scriptPath, count: PudgeCount)])
+  tickWorld(game, proc() = runBotDecisions(game))
+  for i in 0 ..< PudgeCount:
+    doAssert not game.heroVms[i].failed,
+      "runeSoon script: " & game.heroVms[i].lastError
+    doAssert game.heroVms[i].runtime.getData("runeSoon") == TickRate * 2,
+      "opening decision sees the full period"
+    doAssert game.heroVms[i].runtime.getData("runeNextKind") == 0
+    doAssert game.heroVms[i].runtime.getData("runeNextX") == int32(RiverCenterX)
+    doAssert game.heroVms[i].runtime.getData("runeNextY") == int32(PlayZMin)
+  game.play(int(TickRate))
+  tickWorld(game, proc() = runBotDecisions(game))
+  let laterSoon = game.heroVms[0].runtime.getData("runeSoon")
+  doAssert laterSoon > 0 and laterSoon < TickRate * 2,
+    "clock must count down across decisions"
+  doAssert game.world.runes.len == 0
+  doAssert game.heroVms[0].runtime.getData("runeNextKind") == 0
+  doAssert game.heroVms[0].runtime.getData("runeNextY") == int32(PlayZMin)
 
 echo "Testing a rune drifting past the arena edge despawns"
 block:
@@ -257,7 +348,114 @@ block:
   doAssert stateHash(game) != baseline, "the pickup tally must be hashed"
   game.world.pudges[0].runesTaken = 0
 
+  game.world.hooks.add Hook(
+    id: 1'i32,
+    ownerId: game.world.pudges[0].id,
+    team: WestTeam,
+    phase: HookFlying
+  )
+  let withHook = stateHash(game)
+  game.world.hooks[0].lightning = true
+  doAssert stateHash(game) != withHook, "a charged hook must hash"
+  game.world.hooks.setLen(0)
+
   doAssert stateHash(game) == baseline, "every probe must restore state"
+
+echo "Testing bounty pays gold and leaves a combat buff"
+block:
+  let game = freshGame(runePeriod = 0)
+  parkPudges(game)
+  game.world.pudges[0].buffKind = RuneHaste
+  game.world.pudges[0].buffTicks = RuneBuffTicks
+  let gold0 = game.world.pudges[0].gold
+  discard game.dropRune(RuneBounty, 22, 64)
+  game.play(1)
+  doAssert game.world.runes.len == 0, "body contact must take the bounty"
+  doAssert game.world.pudges[0].gold == gold0 + RuneBountyGold
+  doAssert game.world.pudges[0].justBounty == RuneBountyGold
+  doAssert game.world.pudges[0].justRune
+  doAssert game.world.pudges[0].justRuneKind == RuneBounty
+  doAssert game.world.pudges[0].hasBuff(RuneHaste),
+    "bounty must not overwrite a combat rune"
+  doAssert game.world.pudges[0].runesTaken == 1
+block:
+  let game = freshGame(runePeriod = 0)
+  parkPudges(game)
+  let gold0 = game.world.pudges[0].gold
+  discard game.dropRune(RuneBounty, 22, 64)
+  game.play(1)
+  doAssert game.world.pudges[0].gold == gold0 + RuneBountyGold
+  doAssert game.world.pudges[0].buffTicks == 0,
+    "bounty is instant gold, not a timed slot"
+
+echo "Testing a lightning hook zaps a circle on a landed enemy"
+block:
+  let game = freshGame(runePeriod = 0)
+  parkPudges(game)
+  game.world.pudges[0].placePudge(30, 64)
+  game.world.pudges[1].placePudge(22, 40)
+  game.world.pudges[2].placePudge(22, 88)
+  game.world.pudges[3].placePudge(48, 64)
+  game.world.pudges[4].placePudge(48, 70)
+  game.world.pudges[5].placePudge(105, 40)
+  game.world.pudges[0].buffKind = RuneLightning
+  game.world.pudges[0].buffTicks = RuneBuffTicks
+  let
+    id = game.world.pudges[0].id
+    victimHp = game.world.pudges[3].hp
+    nearHp = game.world.pudges[4].hp
+    allyHp = game.world.pudges[1].hp
+    farHp = game.world.pudges[5].hp
+  doAssert applyHookTo(game.world, id, 48, 64)
+  game.play(int(HookWindupTicks))
+  doAssert game.world.hooks.len == 1
+  doAssert game.world.hooks[0].lightning, "the throw must snapshot the charge"
+  game.world.pudges[0].buffTicks = 0
+  var latched = false
+  for _ in 0 ..< 80:
+    game.play(1)
+    if game.world.pudges[3].hookedBy == id or
+        game.world.pudges[3].state == Dying:
+      latched = true
+      break
+  doAssert latched, "the charged hook must land"
+  doAssert game.world.lightningTick == game.world.tick
+  doAssert game.world.pudges[3].hp ==
+    victimHp - BaseHookDamage - RuneLightningDamage,
+    "the latched enemy takes hook damage plus the splash"
+  doAssert game.world.pudges[4].hp == nearHp - RuneLightningDamage,
+    "a clustered enemy must take the splash"
+  doAssert game.world.pudges[1].hp == allyHp, "allies are not zapped"
+  doAssert game.world.pudges[5].hp == farHp,
+    "an enemy outside the disk must be spared"
+  doAssert game.world.pudges[0].hp == game.world.pudges[0].maxHp,
+    "the caster is not zapped"
+
+echo "Testing an ally hook does not discharge lightning"
+block:
+  let game = freshGame(runePeriod = 0)
+  parkPudges(game)
+  game.world.pudges[0].placePudge(30, 64)
+  game.world.pudges[1].placePudge(48, 64)
+  game.world.pudges[3].placePudge(48, 70)
+  game.world.pudges[0].buffKind = RuneLightning
+  game.world.pudges[0].buffTicks = RuneBuffTicks
+  game.world.pudges[1].hp = game.world.pudges[1].hp - 200
+  let
+    allyHp = game.world.pudges[1].hp
+    eastHp = game.world.pudges[3].hp
+  doAssert applyHookTo(game.world, game.world.pudges[0].id, 48, 64)
+  var latched = false
+  for _ in 0 ..< 80:
+    game.play(1)
+    if game.world.pudges[1].hookedBy == game.world.pudges[0].id:
+      latched = true
+      break
+  doAssert latched
+  doAssert game.world.pudges[1].hp == allyHp + AllyHookHeal
+  doAssert game.world.pudges[3].hp == eastHp,
+    "an ally land must not splash enemies"
+  doAssert game.world.lightningTick == 0
 
 echo "Testing the stock bot hooks a rune drifting past its lane"
 block:

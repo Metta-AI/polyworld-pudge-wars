@@ -53,7 +53,8 @@ const
     ## Mirror of WestShopX across RiverCenterX (2*64 - 22).
   ShopZ* = 64
   SpawnLayoutStream = 0xC3A5E91B07F2D814'u64
-    ## Dedicated RNG salt so pad rolls do not steal the rune stream.
+    ## Dedicated RNG salt so pad rolls do not steal the match stream
+    ## (contested rune scoops and hook-clash ties).
   SpawnLaneZ* = [40, 64, 88]
   SpawnWestXMin* = 18
   SpawnWestXMax* = 36

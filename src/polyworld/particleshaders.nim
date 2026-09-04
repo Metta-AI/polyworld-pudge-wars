@@ -214,8 +214,8 @@ proc evaluateParticle(
       size = mix(0.34'f, 0.07'f, progress) *
         (0.78'f + particleRandom(state) * 0.7'f)
       color = mix(
-        vec4(0.55'f, 1.0'f, 0.22'f, 0.92'f),
-        vec4(0.12'f, 0.28'f, 0.05'f, 0.0'f),
+        vec4(0.18'f, 0.38'f, 0.10'f, 0.72'f),
+        vec4(0.04'f, 0.09'f, 0.03'f, 0.0'f),
         progress
       )
       alive = 1.0'f
@@ -242,8 +242,8 @@ proc evaluateParticle(
     size = mix(0.26'f, 0.055'f, progress) *
       (0.78'f + particleRandom(state) * 0.7'f)
     color = mix(
-      vec4(0.32'f, 0.88'f, 0.16'f, 0.82'f),
-      vec4(0.07'f, 0.18'f, 0.03'f, 0.0'f),
+      vec4(0.12'f, 0.26'f, 0.08'f, 0.58'f),
+      vec4(0.03'f, 0.07'f, 0.02'f, 0.0'f),
       progress
     )
     alive = 1.0'f

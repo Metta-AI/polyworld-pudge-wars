@@ -508,7 +508,7 @@ block:
   game.world.pudges[0].placePudge(PlayWestMax, IslandCenterZ)
   game.world.pudges[1].placePudge(22, 40)
   game.world.pudges[2].placePudge(22, 88)
-  game.world.pudges[3].placePudge(PlayEastMin, 40)
+  game.world.pudges[3].placePudge(PlayEastMin, IslandCenterZ)
   game.world.pudges[4].placePudge(105, 64)
   game.world.pudges[5].placePudge(105, 88)
   doAssert applyHookTo(
@@ -542,15 +542,17 @@ block:
     "a rebound must not punch through the fountain to the far bank"
   doAssert game.world.hookHits == 0
 
-echo "Testing a glancing fountain hit does not orbit the rocks"
+echo "Testing a glancing fountain hit still bounces without orbiting"
 block:
   ## Fog-poke through mid, aimed a few tiles off the island center.
-  ## A tangent cylinder bounce used to slide around the discrete rock
-  ## disk, pin the chain to the fountain, and spend the leftover range
-  ## there. One ricochet, then leave.
+  ## A tangent hit on the pixelated rock disk used to slide around it
+  ## and pin the chain. The fountain is a convex cylinder: one
+  ## ricochet, leftover range, no punch-through.
   let game = freshGame()
   parkPudges(game)
   game.world.pudges[0].placePudge(PlayWestMax, IslandCenterZ)
+  game.world.pudges[3].placePudge(PlayEastMin, IslandCenterZ + 8)
+  let farHp = game.world.pudges[3].hp
   doAssert applyHookTo(
     game.world,
     game.world.pudges[0].id,
@@ -563,12 +565,15 @@ block:
     maxBounces = 0
     nearTicks = 0
     islandTicks = 0
+    bounced = false
   let fountain = islandFountainPos()
   for _ in 0 ..< 200:
     if game.world.hooks.len == 0:
       break
     let hook = game.world.hooks[0]
     maxBounces = max(maxBounces, hook.bounces.len)
+    if hook.bounces.len > 0:
+      bounced = true
     let tile = tileOf(hook.position)
     if islandTile(tile.x, tile.z):
       inc islandTicks
@@ -576,9 +581,14 @@ block:
         int64(5 * WorldScale) * int64(5 * WorldScale):
       inc nearTicks
     game.play(1)
+  doAssert bounced, "the fountain must still rebound the throw"
   doAssert maxBounces <= 2, "a glance must not rattle around the fountain"
   doAssert islandTicks <= 4, "the head must not sit in the rocks"
   doAssert nearTicks <= 40, "the chain must not orbit the fountain"
+  doAssert game.world.pudges[3].hp == farHp
+  doAssert game.world.pudges[3].hookedBy == 0
+  doAssert game.world.hookHits == 0,
+    "a fountain bounce must not punch through to the far bank"
 
 echo "Testing a grapple does not latch the fountain"
 block:
@@ -1554,6 +1564,44 @@ block:
         "a tree bounce must curve off the trunk, not axis-flip"
       break
   doAssert bounced, "the glancing throw must hit the tree"
+
+echo "Testing a tree bounce does not pin the chain to the trunk"
+block:
+  ## A glance used to slide around the square tree tile, record a
+  ## bounce every nudge, and leave the head sitting in the trunk.
+  ## Same cylinder eject as the fountain: one ricochet, then leave.
+  let game = freshGame()
+  parkPudges(game)
+  let (tx, tz) = westBounceTree()
+  doAssert tx >= 0
+  game.world.pudges[0].placePudge(tx - 8, tz + 3)
+  game.world.pudges[1].placePudge(22, 40)
+  game.world.pudges[2].placePudge(22, 88)
+  game.world.pudges[3].placePudge(105, 40)
+  game.world.pudges[4].placePudge(105, 64)
+  game.world.pudges[5].placePudge(105, 88)
+  let id = game.world.pudges[0].id
+  doAssert applyHookTo(game.world, id, int32(tx), int32(tz))
+  game.play(int(HookWindupTicks))
+  doAssert game.world.hooks.len == 1
+  var
+    maxBounces = 0
+    treeTicks = 0
+    bounced = false
+  for _ in 0 ..< 200:
+    if game.world.hooks.len == 0:
+      break
+    let hook = game.world.hooks[0]
+    maxBounces = max(maxBounces, hook.bounces.len)
+    if hook.bounces.len > 0:
+      bounced = true
+    let tile = tileOf(hook.position)
+    if fieldTreeTile(tile.x, tile.z):
+      inc treeTicks
+    game.play(1)
+  doAssert bounced, "the throw must still rebound off the tree"
+  doAssert maxBounces <= 2, "a glance must not rattle around the trunk"
+  doAssert treeTicks <= 4, "the head must not sit in the tree"
 
 echo "Testing the shuriken disk latches when a blade overlaps a body"
 block:

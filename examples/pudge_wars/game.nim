@@ -53,8 +53,9 @@ proc usage() =
     " (default 1)."
   echo "  --botAimNoise NUMBER    Bot hook aim scatter in tiles" &
     " (default 0)."
-  echo "  --runes NUMBER          Seconds between river rune spawns" &
-    " (default " & $(RunePeriodTicks div TickRate) & "; 0 disables)."
+  echo "  --runes NUMBER          Seconds between river rune drops" &
+    " (default " & $(RunePeriodTicks div TickRate) &
+    "; public north/south + kind cycle; 0 disables)."
   echo "  --difficulty NAME       Bot preset: easy, fair, or pro."
   echo "  --quickcast             Hook casts on key press at the cursor."
   echo "  --autocast              Meat Hook autocast: RMB an enemy throws."

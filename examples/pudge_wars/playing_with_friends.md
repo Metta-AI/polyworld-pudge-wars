@@ -32,7 +32,7 @@ bundle automatically; rebuild it whenever the game code changes.
 ## Start a lobby
 
 The quickest way is the party script, which fills every unclaimed seat
-with `base.bas`, uses party-friendly defaults (first to 15, fair-handicap
+with `base.bas`, uses party-friendly defaults (first to 30, fair-handicap
 bots), builds anything missing, and copies the invite link to your
 clipboard:
 
@@ -125,7 +125,7 @@ Genre-standard controls (rebindable via `--keys FILE`, one
 | M | Mute |
 
 Grab the runes drifting down the river — haste, double damage, regen,
-big hook — by walking into them or hooking them.
+big hook, lightning, bounty — by walking into them or hooking them.
 
 ## Leaving, dropping, rejoining
 

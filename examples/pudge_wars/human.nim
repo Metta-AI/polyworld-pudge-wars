@@ -119,6 +119,17 @@ proc spectateIndex*(): int =
     return -1
   pudgeIndex(run.world, spectatePudgeId)
 
+proc viewRelationTeam*(): int =
+  ## Team the local view treats as allied, or -1 when omniscient.
+  ## A seated human uses their own bank; a spectator uses the selected
+  ## butcher so health bars stay green/red relative to that POV.
+  if humanControlActive() and heroIndex() >= 0:
+    return run.world.pudges[heroIndex()].team.ord
+  let eyes = spectateIndex()
+  if eyes >= 0:
+    return run.world.pudges[eyes].team.ord
+  -1
+
 proc lockSpectatorEyes*(pudgeId: int32) =
   ## Replay / idle spectator: inspect this butcher and render their
   ## team's fog. Live seats keep their own hero fog.
@@ -191,6 +202,8 @@ proc resetHumanTransients*() =
   ## Drops queued commands and pending feedback after a history seek.
   run.humanIntents.setLen(0)
   run.intentResults.setLen(0)
+  keyMoveLastDir = (0, 0)
+  keyMoveLastTime = -1.0e9
   aimingHook = false
   aimingGrapple = false
   aimingBlink = false
@@ -531,6 +544,16 @@ proc queueHero(kind: IntentKind, a = 0'i32, b = 0'i32) =
       netQueueIntent(intent)
   else:
     queueIntent(run, intent)
+
+proc releaseKeyboardSteer*() =
+  ## Stops a live WASD order. Chat, the pause menu, and history seeks
+  ## skip `handleHumanInput`, so without this a held KeyA keeps rolling
+  ## west dests after the keyboard is stolen.
+  if keyMoveLastDir == (0, 0):
+    return
+  keyMoveLastDir = (0, 0)
+  keyMoveLastTime = -1.0e9
+  queueHero(IntentStop)
 
 proc handleCheatCodes(window: Window) =
   ## Accumulates letters the way Warcraft 3 did: type `greedisgood`
@@ -945,12 +968,13 @@ proc handleSeatSwap(
 proc handleInspectClick(
     window: Window,
     viewProjection: Mat4,
-    overUi: bool
+    overUi: bool,
+    followSelection: var bool
 ) =
   ## LMB click (not a camera drag) on a butcher opens their command
   ## card; empty ground snaps back to the owned hero when one exists.
-  ## In replay / spectator mode the same click locks fog to that
-  ## butcher's team, and empty ground returns to omniscient.
+  ## In replay / spectator mode the same click locks fog and the camera
+  ## to that butcher; empty ground returns to omniscient.
   if overUi or aimingHook or aimingGrapple or aimingBlink or aimingWall or
       aimingMine or aimingMove or aimingAttack or window.buttonDown[MouseRight]:
     inspectArmed = false
@@ -968,11 +992,13 @@ proc handleInspectClick(
     inspectId = picked
     if not humanControlActive():
       spectatePudgeId = picked
+      followSelection = true
   elif humanControlActive():
     syncInspectToHero()
   else:
     spectatePudgeId = 0
     inspectId = 0
+    followSelection = false
 
 proc handleHumanInput*(
     window: Window,
@@ -993,9 +1019,15 @@ proc handleHumanInput*(
   drainIntentResults()
   handleSeatSwap(window, viewProjection, live)
   if not panHeld:
-    handleInspectClick(window, viewProjection, overUi)
+    handleInspectClick(window, viewProjection, overUi, followSelection)
   syncInspectFog()
   if not humanControlActive():
+    if window.buttonPressed[bindKey(BindCenter)] and spectateIndex() >= 0:
+      followSelection = true
+      let lock = followCameraPoint()
+      if lock.found:
+        cameraTarget.x = lock.point.x
+        cameraTarget.z = lock.point.z
     return
   let index = heroIndex()
   if index < 0:
@@ -1202,6 +1234,9 @@ proc handleHumanInput*(
   # front of the butcher; arrows pan the camera. Releasing every walk
   # key stops on the spot. Orders ride the same intent queue as RMB,
   # so whichever input spoke last wins.
+  # World axes, camera yaw 0: A is west = screen-left. KeyA is also
+  # the WASD letter macOS IME steals on hold (accent popup) unless
+  # rune input is off; that looks like an uncommanded left walk.
   block keyboardSteer:
     var dirX, dirZ = 0
     if window.buttonDown[KeyW]: dirZ -= 1

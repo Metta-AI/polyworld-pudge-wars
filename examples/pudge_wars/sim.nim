@@ -165,6 +165,9 @@ type
     runesTaken*: int32
     justRune*: bool
       ## Transient pickup flag for client feedback; never hashed.
+    justRuneKind*: RuneKind
+      ## Kind that pulsed `justRune` this tick, including Bounty which
+      ## does not occupy the buff slot. Display only.
     cheatFlags*: int32
       ## Bitfield of live WC3-style cheats (`CheatFlagGod`,
       ## `CheatFlagMana`). Hashed only when any butcher has one set,
@@ -192,6 +195,9 @@ type
     mighty*: bool
       ## Thrown under the Big Hook rune: wins clashes outright instead
       ## of trading. The buffed disk plows through lesser chains.
+    lightning*: bool
+      ## Thrown under the Lightning rune: a landed enemy hook zaps a
+      ## circle around the victim. Snapshotted at release like mighty.
     grappleLatched*: bool
       ## True once the grapple head stuck to a solid face.
     victimId*: int32
@@ -269,13 +275,17 @@ type
     chunkerId*: int32
     chunkVictimId*: int32
     chunkOwnerId*: int32
+    lightningTick*: int32
+      ## Presentation: last charged splash. Not hashed.
+    lightningPoint*: WorldPoint
     pings*: seq[Ping]
     runes*: seq[Rune]
     nextRuneId*: int32
     runePeriod*: int32
-      ## Ticks between rune spawns; 0 disables the river current drops.
+      ## Ticks between rune drops; 0 disables the river current.
     runeClock*: int32
-      ## Countdown to the next spawn.
+      ## Public countdown to the next drop. Scripts and the HUD read
+      ## this; location and kind come from `nextRuneId`, not RNG.
     props*: seq[Prop]
     nextPropId*: int32
     spawnLayout*: SpawnLayout
@@ -323,8 +333,8 @@ type
     tick*: int32
 
   BotSpeech* = object
-    ## Last `print` line one bot seat emitted, for the client's intent
-    ## bubbles. Display-only: never hashed, never on the tape.
+    ## Last `print` line one bot seat emitted, for logs and tests.
+    ## Display-only: never hashed, never on the tape.
     text*: string
     tick*: int32
 
@@ -363,7 +373,11 @@ type
     botAimNoise*: int32
       ## Bot hook aim scatter in tiles, applied before recording.
     botSpeech*: seq[BotSpeech]
-      ## Per-seat intent bubbles captured from BASIC `print`.
+      ## Per-seat last BASIC `print` line, for logs and tests.
+      ## Display-only: never hashed, never on the tape, not drawn.
+    seatLabels*: seq[string]
+      ## Per-roster display names from the loaded bot script, uniquified
+      ## when several seats share a personality. Empty for human seats.
     chatLog*: seq[MatchChatLine]
       ## Typed player chat. Display-only.
 
@@ -769,25 +783,14 @@ proc wallBlocksTile*(world: World, tileX, tileZ: int): bool =
       return true
   false
 
-proc bouncedOffIsland(hook: Hook): bool =
-  ## True after the head has already ricocheted on the fountain.
-  ## Face contact is recorded on the river tile just outside the rocks,
-  ## so this is a disk, not `islandTile`.
-  let reach = (IslandRadius + 1) * WorldScale
-  for bounce in hook.bounces:
-    if within(bounce, worldAtTile(IslandCenterX, IslandCenterZ), reach):
-      return true
-  false
-
-proc hookHitsSolid(hook: Hook, tileX, tileZ: int): bool =
+proc hookHitsSolid(tileX, tileZ: int): bool =
   ## Map solids plus living palisades: hooks rebound here.
-  ## The fountain is one bounce: after the first ricochet it is air, so
-  ## a glance cannot orbit the rocks. Grapples never latch it — the
-  ## rocks are unstandable, so a yank would dump the caster in the drink.
+  ## Fountain rocks are a cylinder in `flyHook`, not this tile test: a
+  ## pixelated island disk is concave at the stairsteps and a glance
+  ## would orbit. Grapples skip the cylinder too — the rocks are
+  ## unstandable.
   if islandTile(tileX, tileZ):
-    if hook.isGrapple or hook.bouncedOffIsland:
-      return false
-    return true
+    return false
   if hookReboundTile(tileX, tileZ):
     return true
   activeHookWorld != nil and activeHookWorld.wallBlocksTile(tileX, tileZ)
@@ -2255,7 +2258,8 @@ proc releasePendingHook(world: World, index: int) =
     radius: radius,
     damage: damage,
     isGrapple: pudge.windupGrapple,
-    mighty: not pudge.windupGrapple and pudge.hasBuff(RuneBigHook)
+    mighty: not pudge.windupGrapple and pudge.hasBuff(RuneBigHook),
+    lightning: not pudge.windupGrapple and pudge.hasBuff(RuneLightning)
   )
   inc world.nextHookId
   pudge.facing = facing
@@ -3187,21 +3191,60 @@ proc stepFountain(world: World) =
     pudge.hp = min(pudge.hp + heal, pudge.maxHp)
 
 proc grantRune(world: World, index: int, kind: RuneKind) =
-  ## Hands one rune power to a butcher. A single buff slot: picking a
-  ## second rune overwrites whatever was running.
+  ## Hands one rune power to a butcher. Combat runes share a single
+  ## buff slot: a second pickup overwrites whatever was running.
+  ## Bounty is instant gold and leaves that slot alone.
+  world.pudges[index].justRune = true
+  world.pudges[index].justRuneKind = kind
+  inc world.pudges[index].runesTaken
+  if kind == RuneBounty:
+    world.pudges[index].gold =
+      world.pudges[index].gold + RuneBountyGold
+    world.pudges[index].justBounty =
+      world.pudges[index].justBounty + RuneBountyGold
+    return
   world.pudges[index].buffKind = kind
   world.pudges[index].buffTicks = RuneBuffTicks
-  world.pudges[index].justRune = true
-  inc world.pudges[index].runesTaken
+
+proc nextRuneIndex*(world: World): int32 =
+  ## How many river drops have already happened. The next drop uses this.
+  world.nextRuneId - FirstRuneId
+
+proc scheduledRuneFromNorth*(index: int32): bool =
+  ## Even drops spawn on the north lip and drift south; odd spawn south.
+  (index and 1) == 0
+
+proc scheduledRuneKind*(index: int32): RuneKind =
+  ## Each kind visits both ends before the next: haste N/S, then DD N/S,
+  ## through lightning and bounty, then the cycle wraps.
+  RuneKind((index div 2) mod RuneKindCount)
+
+proc nextRuneFromNorth*(world: World): bool =
+  scheduledRuneFromNorth(world.nextRuneIndex)
+
+proc nextRuneKind*(world: World): RuneKind =
+  scheduledRuneKind(world.nextRuneIndex)
+
+proc nextRuneZTile*(world: World): int32 =
+  ## Tile Z of the next drop: `PlayZMin` north, `PlayZMax` south.
+  if world.nextRuneFromNorth: int32(PlayZMin) else: int32(PlayZMax)
+
+proc runeSoonTicks*(world: World): int32 =
+  ## Ticks until the next drop, including this tick's spawn step.
+  ## 0 means river drops are disabled. At script time a value of 1
+  ## means the orb appears after this decision, still this tick.
+  if world.runePeriod <= 0: 0'i32 else: world.runeClock
 
 proc spawnRune(world: World) =
-  ## Drops one rune at a random river end, on the water midline. X is the
-  ## center of tile `RiverCenterX` — the same axis as the visual water
-  ## sheet and river bed — so a bank-stander cannot reach it dry.
+  ## Drops one rune on the public schedule, on the water midline. X is
+  ## the center of tile `RiverCenterX` — the same axis as the visual
+  ## water sheet and river bed — so a bank-stander cannot reach it dry.
+  ## Location and kind are a function of `nextRuneId`, never match RNG,
+  ## so every seat can time the drop and gank the people timing it.
   let
-    fromNorth = world.rng.chance(50)
-    zTile = if fromNorth: int32(PlayZMin) else: int32(PlayZMax)
-    kind = RuneKind(world.rng.below(int32(RuneKind.high.ord) + 1))
+    fromNorth = world.nextRuneFromNorth
+    zTile = world.nextRuneZTile
+    kind = world.nextRuneKind
   world.runes.add Rune(
     id: world.nextRuneId,
     kind: kind,
@@ -3212,8 +3255,8 @@ proc spawnRune(world: World) =
   inc world.nextRuneId
 
 proc stepRunes(world: World) =
-  ## Spawns on the period clock, drifts every rune with the current,
-  ## grabs by body contact, and pulses Regen heals.
+  ## Spawns on the public period clock, drifts every rune with the
+  ## current, grabs by body contact, and pulses Regen heals.
   if world.runePeriod > 0:
     dec world.runeClock
     if world.runeClock <= 0:
@@ -3394,17 +3437,101 @@ proc stepHookAlong(hook: var Hook, delta: WorldPoint, dist, absD: int64) =
   hook.position.x = ox + int32(roundDivision(int64(delta.x) * dist, absD))
   hook.position.z = oz + int32(roundDivision(int64(delta.z) * dist, absD))
 
+proc islandHookRadius(): int32 =
+  ## Outer lip of the fountain rocks: island tile radius plus the
+  ## half-tile that tile occupancy sticks out past the tile centers.
+  int32(IslandRadius) * WorldScale + WorldScale div 2
+
+proc treeHookRadius(): int32 =
+  ## Inscribed trunk disk. Walking keeps the whole tile; hooks bounce
+  ## off the stem so a glance cannot rattle in the square corners.
+  WorldScale div 2
+
+proc insideIslandDisk(pos: WorldPoint): bool =
+  within(pos, worldAtTile(IslandCenterX, IslandCenterZ), islandHookRadius())
+
+proc insideTreeDisk(pos: WorldPoint, tileX, tileZ: int): bool =
+  within(pos, worldAtTile(tileX, tileZ), treeHookRadius())
+
+proc lastOutsideDisk(
+    fromPos, dest, center: WorldPoint,
+    radius: int32
+): WorldPoint =
+  ## Point on `fromPos`→`dest` just outside a disk.
+  if within(fromPos, center, radius) or not within(dest, center, radius):
+    return fromPos
+  var
+    lo = fromPos
+    hi = dest
+  for _ in 0 ..< 16:
+    let mid = WorldPoint(
+      x: int32((int64(lo.x) + int64(hi.x)) div 2),
+      z: int32((int64(lo.z) + int64(hi.z)) div 2)
+    )
+    if within(mid, center, radius):
+      hi = mid
+    else:
+      lo = mid
+  lo
+
+proc lastOutsideIsland(fromPos, dest: WorldPoint): WorldPoint =
+  lastOutsideDisk(
+    fromPos, dest,
+    worldAtTile(IslandCenterX, IslandCenterZ),
+    islandHookRadius()
+  )
+
+proc lastOutsideTree(fromPos, dest: WorldPoint, tileX, tileZ: int): WorldPoint =
+  lastOutsideDisk(fromPos, dest, worldAtTile(tileX, tileZ), treeHookRadius())
+
+proc ejectFromCurve(hook: var Hook, tileX, tileZ: int, left: var int32) =
+  ## Reflect about a cylinder axis and step the head off the solid.
+  ## A heading already leaving does not count as another bounce, so a
+  ## glance cannot pin the chain to a trunk or the fountain.
+  let
+    center = reboundCenter(tileX, tileZ)
+    oldX = hook.heading.x
+    oldZ = hook.heading.z
+  hook.reboundHeading(tileX, tileZ)
+  if hook.heading.x != oldX or hook.heading.z != oldZ:
+    hook.recordBounce()
+  if left <= 0:
+    return
+  let
+    outDir = hook.position - center
+    stepDist = min(left, max(1'i32, WorldScale div 4))
+  var step = scaledPlanar(outDir, stepDist)
+  if step.x == 0 and step.z == 0:
+    step = scaledPlanar(
+      WorldPoint(x: hook.heading.x, z: hook.heading.z),
+      stepDist
+    )
+  if step.x == 0 and step.z == 0:
+    return
+  hook.position = hook.position + step
+  clampHookToMap(hook.position)
+  consumeBudget(left, stepDist)
+
+proc ejectFromIsland(hook: var Hook, left: var int32) =
+  hook.ejectFromCurve(IslandCenterX, IslandCenterZ, left)
+
 proc flyHook(hook: var Hook, budget: int32): int32 =
   ## Moves a flying head, reflecting off solid faces and the map edge.
-  ## Bounces use a curved (cylindrical) heading so off-center hits
-  ## glance instead of axis-flipping. `budget` is leftover range for
-  ## this tick. A bounce never resets it.
+  ## The fountain and bounce trees are convex cylinders: angle in equals
+  ## angle out, then a radial step off the solid. Leftover range keeps
+  ## flying. Rim rock and palisades stay flat faces.
   var left = budget
   var steps = 0
   while left > 0 and steps < MaxHookFlySteps:
     inc steps
+    if insideIslandDisk(hook.position):
+      hook.ejectFromIsland(left)
+      continue
     let tile = tileOf(hook.position)
-    if hookHitsSolid(hook, tile.x, tile.z):
+    if fieldTreeTile(tile.x, tile.z):
+      hook.ejectFromCurve(tile.x, tile.z, left)
+      continue
+    if hookHitsSolid(tile.x, tile.z):
       if reboundOnRim(tile.x, tile.z):
         # Already inside the rim (or off the board). Reflecting the
         # travel axis walks a grazing heading further into the void.
@@ -3421,34 +3548,9 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
         clampHookToMap(hook.position)
         consumeBudget(left, stepDist)
         continue
-      if islandTile(tile.x, tile.z):
-        # One ricochet, then eject radially. A tangent heading would
-        # otherwise slide around the pixelated rock disk and pin the
-        # chain to the fountain until range runs out.
-        hook.reboundHeading(tile.x, tile.z)
-        if hook.heading.x == 0 and hook.heading.z == 0:
-          break
-        hook.recordBounce()
-        let
-          center = worldAtTile(IslandCenterX, IslandCenterZ)
-          outDir = hook.position - center
-          stepDist = min(left, max(1'i32, WorldScale div 4))
-        var step = scaledPlanar(outDir, stepDist)
-        if step.x == 0 and step.z == 0:
-          step = scaledPlanar(
-            WorldPoint(x: hook.heading.x, z: hook.heading.z),
-            stepDist
-          )
-        if step.x == 0 and step.z == 0:
-          break
-        hook.position = hook.position + step
-        clampHookToMap(hook.position)
-        consumeBudget(left, stepDist)
-        continue
       if bounceUsesCurve(tile.x, tile.z):
-        hook.reboundHeading(tile.x, tile.z)
-        if hook.heading.x == 0 and hook.heading.z == 0:
-          break
+        hook.ejectFromCurve(tile.x, tile.z, left)
+        continue
       else:
         let
           ax = abs(hook.heading.x)
@@ -3481,9 +3583,37 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
     )
     if delta.x == 0 and delta.z == 0:
       break
-    let
-      dest = hook.position + delta
-      destTile = tileOf(dest)
+    let dest = hook.position + delta
+    if insideIslandDisk(dest):
+      let contact = lastOutsideIsland(hook.position, dest)
+      let span = integerSqrt(distanceSquared(hook.position, contact))
+      hook.position = contact
+      clampHookToMap(hook.position)
+      if span > 0:
+        if span >= int64(left):
+          left = 0
+        else:
+          consumeBudget(left, int32(span))
+      elif left > 0:
+        consumeBudget(left, 1)
+      hook.ejectFromIsland(left)
+      continue
+    let destTile = tileOf(dest)
+    if fieldTreeTile(destTile.x, destTile.z):
+      if insideTreeDisk(dest, destTile.x, destTile.z):
+        let contact = lastOutsideTree(hook.position, dest, destTile.x, destTile.z)
+        let span = integerSqrt(distanceSquared(hook.position, contact))
+        hook.position = contact
+        clampHookToMap(hook.position)
+        if span > 0:
+          if span >= int64(left):
+            left = 0
+          else:
+            consumeBudget(left, int32(span))
+        elif left > 0:
+          consumeBudget(left, 1)
+      hook.ejectFromCurve(destTile.x, destTile.z, left)
+      continue
     if destTile.x == tile.x and destTile.z == tile.z:
       hook.position = dest
       clampHookToMap(hook.position)
@@ -3516,9 +3646,9 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
     let
       absDx = abs(int64(delta.x))
       absDz = abs(int64(delta.z))
-      solidX = signX != 0 and hookHitsSolid(hook, tile.x + signX, tile.z)
-      solidZ = signZ != 0 and hookHitsSolid(hook, tile.x, tile.z + signZ)
-      destSolid = hookHitsSolid(hook, destTile.x, destTile.z)
+      solidX = signX != 0 and hookHitsSolid(tile.x + signX, tile.z)
+      solidZ = signZ != 0 and hookHitsSolid(tile.x, tile.z + signZ)
+      destSolid = hookHitsSolid(destTile.x, destTile.z)
     var
       hitX = signX != 0
       hitZ = signZ != 0
@@ -3614,6 +3744,25 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
       consumeBudget(left, int32(consumed))
   left
 
+proc zapLightning(world: World, ownerId: int32, center: WorldPoint) =
+  ## Charged splash around a landed enemy hook. Allies and the caster
+  ## are spared; spawn shields eat it. The latched victim is inside
+  ## the disk if they are still alive.
+  world.lightningTick = world.tick
+  world.lightningPoint = center
+  let owner = world.pudgeIndex(ownerId)
+  if owner < 0:
+    return
+  let team = world.pudges[owner].team
+  for i, pudge in world.pudges:
+    if pudge.id == ownerId or pudge.team == team:
+      continue
+    if pudge.state != Alive or pudge.shieldTicks > 0:
+      continue
+    if not within(pudge.position, center, RuneLightningRadius):
+      continue
+    world.dealPudgeDamage(i, RuneLightningDamage, ownerId)
+
 proc latchHook(world: World, hook: var Hook): bool =
   ## First living unit whose body overlaps the shuriken disk along this
   ## tick's travel, outbound or return. The caster is never a target.
@@ -3663,6 +3812,8 @@ proc latchHook(world: World, hook: var Hook): bool =
         inc world.pudges[killer].headshotCount
         inc world.pudges[killer].hooksLanded
       inc world.headshots
+      if hook.lightning:
+        world.zapLightning(hook.ownerId, world.pudges[best].position)
       world.killPudge(best, hook.ownerId)
       hook.phase = HookIdle
       inc world.hookHits
@@ -3692,6 +3843,8 @@ proc latchHook(world: World, hook: var Hook): bool =
         world.pudges[owner].itemRank[ShopLongshot],
         hook.traveled
       )
+    if hook.lightning:
+      world.zapLightning(hook.ownerId, world.pudges[best].position)
     world.dealPudgeDamage(best, hit, hook.ownerId)
     if world.pudges[best].state == Dying:
       hook.victimId = 0
@@ -3989,7 +4142,7 @@ proc flyGrapple(hook: var Hook, budget: int32): int32 =
   while left > 0 and steps < MaxHookFlySteps:
     inc steps
     let tile = tileOf(hook.position)
-    if hookHitsSolid(hook, tile.x, tile.z):
+    if hookHitsSolid(tile.x, tile.z):
       clampHookToMap(hook.position)
       hook.grappleLatched = true
       return left
@@ -4003,7 +4156,7 @@ proc flyGrapple(hook: var Hook, budget: int32): int32 =
     clampHookToMap(hook.position)
     consumeBudget(left, stepDist)
     let landed = tileOf(hook.position)
-    if hookHitsSolid(hook, landed.x, landed.z):
+    if hookHitsSolid(landed.x, landed.z):
       hook.grappleLatched = true
       return left
   left
@@ -4315,6 +4468,7 @@ proc stateHash*(game: Game): uint64 {.measure.} =
     hash.addHashy(hook.isGrapple)
     hash.addHashy(hook.grappleLatched)
     hash.addHashy(hook.mighty)
+    hash.addHashy(hook.lightning)
     for bounce in hook.bounces:
       hash.addHashy(bounce)
   uint64(hash)

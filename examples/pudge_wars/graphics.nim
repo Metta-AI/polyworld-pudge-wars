@@ -1,7 +1,7 @@
 ## Window, terrain, butchers, hook ribbons, and HUD for Pudge Wars.
 
 import
-  std/[math, os, tables, times],
+  std/[math, os, strutils, tables, times],
   chroma, opengl, pixie, silky, vmath, windy,
   audio, content, director, fog, maps, sim, game, human, keybinds, netclient, netsim,
   netpredict, replays, ui,
@@ -15,9 +15,6 @@ when not defined(emscripten):
   # The embedded lobby server cannot run in a browser build; a wasm
   # client is always a follower.
   import hosting
-
-when defined(takeScreenshot):
-  import std/[os, strutils]
 
 const
   AtlasPath = DataRoot & "/themes/pw.atlas.png"
@@ -38,24 +35,16 @@ const
     ## Magenta core matching the MagicBurst fade.
   BlinkResidueSeconds = 0.55
     ## Ground glow + silhouette linger after the hashed vanish tick.
-  RotAura = rgbx(86, 196, 64, 185)
-    ## Sick-green outline of a live Rot disk.
-  RotFill = rgbx(36, 110, 42, 55)
-    ## Ground stain inside the blight.
-  RotSick = rgbx(72, 168, 56, 95)
+  RotFill = rgbx(16, 38, 18, 90)
+    ## Dark swamp stain inside the blight.
+  RotSick = rgbx(28, 62, 26, 90)
     ## Foot glow on anyone standing in Rot.
-  RotCore = rgbx(52, 168, 48, 110)
+  RotCore = rgbx(22, 48, 20, 125)
     ## Tight blight pooled under the caster.
-  RotWave = rgbx(120, 236, 72, 170)
-    ## Expanding pulse that travels out to the gameplay radius.
-  RotSpore = rgbx(96, 214, 62, 145)
+  RotSpore = rgbx(34, 64, 28, 110)
     ## Drifting motes along the blight rim.
-  FountainAura = rgbx(255, 214, 96, 150)
-    ## WC3 fountain-of-health gold ring at the heal radius.
-  FountainFill = rgbx(210, 200, 72, 28)
-    ## Soft gold stain inside the fountain disk.
-  FountainGlow = rgbx(255, 230, 120, 70)
-    ## Tight glow on the island rocks themselves.
+  LightningFlash = rgbx(255, 236, 80, 200)
+  LightningRing = rgbx(255, 214, 90, 140)
   DefaultCameraDistance = 75.0'f32
     ## Starts at the closest shipped zoom (75–155). Clamped live by
     ## zoomMinDistance / zoomMaxDistance.
@@ -70,6 +59,13 @@ const
   BankEdgeColor = rgbx(236, 236, 232, 210)
   ButcherBarLift = 6.8'f32
   ButcherBarWidth = 3.0'f32
+  NamePlateLift = 8.2'f32
+    ## World-space lift above the feet, sitting just over the HP bar.
+  NamePlateW = 176.0'f32
+  NamePlateH = 22.0'f32
+  NamePlateFill = rgbx(8, 10, 14, 210)
+  NamePlateText = rgbx(245, 229, 178, 255)
+  NamePlateEyes = rgbx(255, 214, 120, 255)
   GrabGlowRadius = 1.4'f32
   PalisadeWood = rgbx(138, 94, 54, 255)
   PalisadeBand = rgbx(78, 68, 58, 255)
@@ -260,15 +256,13 @@ proc addRotCloud(
     pulse: float32,
     seconds: float32
 ) =
-  ## Breathing blight, two overlapping damage-wave rings, and drifting
-  ## spores. `pulse` is 0 just after a rot tick and 1 just before the next.
+  ## Breathing blight stain and drifting spores. `pulse` is 0 just after
+  ## a rot tick and 1 just before the next.
   let
-    wave = 1.0'f32 - (1.0'f32 - pulse) * (1.0'f32 - pulse)
     flash = max(0.0'f32, 1.0'f32 - pulse * 3.5'f32)
     breathe = 0.5'f32 + 0.5'f32 * sin(pulse * TAU.float32)
-    fillA = 44.0'f32 + breathe * 24.0'f32 + flash * 52.0'f32
-    coreA = 72.0'f32 + breathe * 30.0'f32 + flash * 60.0'f32
-    ring = vec3(feet.x, 0, feet.z)
+    fillA = 72.0'f32 + breathe * 22.0'f32 + flash * 36.0'f32
+    coreA = 95.0'f32 + breathe * 22.0'f32 + flash * 40.0'f32
   renderer.addCircle(
     feet,
     radius * (0.94'f32 + breathe * 0.025'f32),
@@ -280,25 +274,6 @@ proc addRotCloud(
     radius * 0.26'f32,
     fadeRgbx(RotCore, coreA),
     16
-  )
-  let
-    waveR = mix(0.9'f32, radius, wave)
-    waveA = (1.0'f32 - wave) * 160.0'f32 + 32.0'f32 + flash * 45.0'f32
-  renderer.addDebugRing(
-    ring, waveR, fadeRgbx(RotWave, waveA), 0.15'f32 + flash * 0.11'f32
-  )
-  let
-    pulse2 = pulse + 0.5'f32
-    t2 = pulse2 - floor(pulse2)
-    wave2 = 1.0'f32 - (1.0'f32 - t2) * (1.0'f32 - t2)
-    wave2R = mix(0.9'f32, radius, wave2)
-    wave2A = (1.0'f32 - wave2) * 95.0'f32 + 20.0'f32
-  renderer.addDebugRing(ring, wave2R, fadeRgbx(RotAura, wave2A), 0.10'f32)
-  renderer.addDebugRing(
-    ring,
-    radius,
-    fadeRgbx(RotAura, 155.0'f32 + flash * 75.0'f32),
-    0.14'f32 + flash * 0.09'f32
   )
   const RimCount = 8
   for i in 0 ..< RimCount:
@@ -312,7 +287,7 @@ proc addRotCloud(
     renderer.addCircle(
       spore,
       0.50'f32 + flash * 0.20'f32,
-      fadeRgbx(RotSpore, 115.0'f32 + breathe * 45.0'f32),
+      fadeRgbx(RotSpore, 70.0'f32 + breathe * 28.0'f32),
       8
     )
   const InnerCount = 5
@@ -326,7 +301,7 @@ proc addRotCloud(
     renderer.addCircle(
       spore,
       0.38'f32 + breathe * 0.10'f32,
-      fadeRgbx(RotSpore, 95.0'f32 + flash * 55.0'f32),
+      fadeRgbx(RotSpore, 62.0'f32 + flash * 32.0'f32),
       8
     )
 
@@ -425,10 +400,6 @@ proc addDebugCollisionOverlays(renderer: var ShapeRenderer) =
     let east = run.world.spawnLayout.east[s]
     let ec = tileCenterRender(east.x, east.z)
     renderer.addDebugRect(ec.x - pad, ec.z - pad, ec.x + pad, ec.z + pad, SpawnPadColor)
-  let
-    fountain = tileCenterRender(IslandCenterX, IslandCenterZ)
-    fountainR = IslandFountainRadius.float32 / WorldScale.float32
-  renderer.addDebugRing(fountain, fountainR, FountainAura, 0.14'f32)
 
 proc xzDir(v: Vec3): Vec3 =
   let len = hypot(v.x, v.z)
@@ -752,6 +723,35 @@ proc addRuneGlyph(
     renderer.addRuneStroke(face, yaw, [
       vec2(0.28'f32, -0.46'f32),
       vec2(0.10'f32, -0.22'f32)
+    ], color, hw)
+  of RuneLightning:
+    # Sowilo (sun / lightning): a charged zigzag.
+    renderer.addRuneStroke(face, yaw, [
+      vec2(0.10'f32, 0.52'f32),
+      vec2(-0.22'f32, 0.08'f32),
+      vec2(0.16'f32, -0.04'f32),
+      vec2(-0.10'f32, -0.52'f32)
+    ], color, hw)
+    renderer.addRuneStroke(face, yaw, [
+      vec2(-0.22'f32, 0.08'f32),
+      vec2(0.02'f32, 0.08'f32)
+    ], color, hw)
+  of RuneBounty:
+    # Coin diamond: a river bounty, not a timed stave.
+    renderer.addRuneStroke(face, yaw, [
+      vec2(0'f32, 0.48'f32),
+      vec2(0.38'f32, 0'f32),
+      vec2(0'f32, -0.48'f32),
+      vec2(-0.38'f32, 0'f32),
+      vec2(0'f32, 0.48'f32)
+    ], color, hw)
+    renderer.addRuneStroke(face, yaw, [
+      vec2(0'f32, 0.18'f32),
+      vec2(0'f32, -0.18'f32)
+    ], color, hw)
+    renderer.addRuneStroke(face, yaw, [
+      vec2(-0.16'f32, 0'f32),
+      vec2(0.16'f32, 0'f32)
     ], color, hw)
 
 proc addRiverRune(
@@ -1327,8 +1327,9 @@ proc runGraphics*() =
   proc applyFollowLock() =
     ## Lock-cam look-at: interpolated butcher so the camera rides the
     ## same 60 Hz blend as the mesh instead of hitching on 32 Hz sim
-    ## steps.
-    if followSelection and not orbiting and not panning and
+    ## steps. A spectator POV stays locked on the selected butcher.
+    let spectatorEyes = not humanControlActive() and spectateIndex() >= 0
+    if (followSelection or spectatorEyes) and not orbiting and not panning and
         not minimapPanning:
       var
         found = false
@@ -1633,6 +1634,11 @@ proc runGraphics*() =
       clash.y = surfaceHeightNear(clash.x, clash.z, clash.y) + 1.4'f32
       particles.emitParticleBurst(CombatSparks, clash)
       particles.emitParticleBurst(FireBurst, clash)
+    if run.world.lightningTick == run.world.tick:
+      var bolt = renderPoint(run.world.lightningPoint)
+      bolt.y = surfaceHeightNear(bolt.x, bolt.z, bolt.y) + 1.4'f32
+      particles.emitParticleBurst(CombatSparks, bolt)
+      particles.emitParticleBurst(MagicBurst, bolt)
     for rune in run.world.runes:
       if rune.spawnTick == run.world.tick:
         var pos = renderPoint(rune.position)
@@ -1705,26 +1711,16 @@ proc runGraphics*() =
       weight = 0.14'f32 + 0.10'f32 * beat
     if weight <= 0:
       return
-    result.r = result.r * (1.0'f32 - weight) + 0.20'f32 * weight
-    result.g = result.g * (1.0'f32 - weight) + 0.84'f32 * weight
-    result.b = result.b * (1.0'f32 - weight) + 0.12'f32 * weight
+    result.r = result.r * (1.0'f32 - weight) + 0.10'f32 * weight
+    result.g = result.g * (1.0'f32 - weight) + 0.26'f32 * weight
+    result.b = result.b * (1.0'f32 - weight) + 0.08'f32 * weight
 
   proc pudgeLabel(id: int32): string =
-    ## Lobby names where the roster knows them; P<id> otherwise.
+    ## Lobby names, bot personality labels, or P<id>.
     let index = pudgeIndex(run.world, id)
-    let slot =
-      if index >= 0: int(run.world.pudges[index].lobbySeat)
-      else: -1
-    var name = ""
-    if netRole == NetClient:
-      name = netSeatName(slot)
-    when not defined(emscripten):
-      if netRole == NetHost:
-        name = hostSeatName(slot)
-    if name.len == 0:
-      "P" & $id
-    else:
-      name
+    if index < 0:
+      return "P" & $id
+    butcherDisplayName(index)
 
   proc emitCombatFeedback() =
     ## Damage and heal numbers, the kill feed, and one-shot sounds,
@@ -1799,14 +1795,14 @@ proc runGraphics*() =
       if fogShownPudge(pudge):
         if pudge.justRune:
           pushKillFeed(
-            pudgeLabel(pudge.id) & " took " & RuneNames[pudge.buffKind],
+            pudgeLabel(pudge.id) & " took " & RuneNames[pudge.justRuneKind],
             pudge.team
           )
           var lift = anchor
           lift.y += 3.2'f32
           floatingTexts.add FloatingText(
-            text: RuneNames[pudge.buffKind] & "!",
-            color: RuneColors[pudge.buffKind],
+            text: RuneNames[pudge.justRuneKind] & "!",
+            color: RuneColors[pudge.justRuneKind],
             world: lift,
             born: now
           )
@@ -1909,6 +1905,9 @@ proc runGraphics*() =
           run.world.chunkVictimId
         ) or heroIs(run.world.chunkOwnerId)):
       playGameSound(SndHookClash, 0.9)
+    if audible and run.world.lightningTick == run.world.tick and
+        hearAt(run.world.lightningPoint):
+      playGameSound(SndHookClash, 0.7)
 
   proc advanceRenderedSimulation() =
     captureUnitPositions()
@@ -2096,14 +2095,29 @@ proc runGraphics*() =
 
   when defined(takeScreenshot):
     var screenshotFrame = 0
-    applyScreenshotCamera(cameraDistance)
-    if existsEnv("CAM_X"): cameraTarget.x = getEnv("CAM_X").parseFloat.float32
-    if existsEnv("CAM_Z"): cameraTarget.z = getEnv("CAM_Z").parseFloat.float32
+    # Captures may sit closer or farther than the play zoom clamp.
+    zoomMinDistance = 12.0'f32
+    zoomMaxDistance = 220.0'f32
+    actionCam.takeManual()
+    proc applyCaptureLook() =
+      applyScreenshotCamera(cameraDistance)
+      if existsEnv("CAM_X"):
+        cameraTarget.x = getEnv("CAM_X").parseFloat.float32
+      if existsEnv("CAM_Z"):
+        cameraTarget.z = getEnv("CAM_Z").parseFloat.float32
+      if existsEnv("CAM_YAW"):
+        cameraYaw = getEnv("CAM_YAW").parseFloat.float32
+      if existsEnv("CAM_PITCH"):
+        cameraPitch = getEnv("CAM_PITCH").parseFloat.float32
+    applyCaptureLook()
     if existsEnv("SIM_SECONDS"):
       let wanted = int32(getEnv("SIM_SECONDS").parseFloat * TickRate.float64)
       while run.world.tick < wanted and
           run.world.tick < run.maximumTicks and not run.world.gameOver:
         advanceGame()
+    # Freeze on the requested tick so a hook stays in the air.
+    transport.playing = false
+    applyCaptureLook()
 
   const Step = 1.0'f32 / float32(TickRate)
   # Bottom-left debug readout state: exponentially-smoothed render FPS,
@@ -2166,8 +2180,7 @@ proc runGraphics*() =
                 if shiftHeld:
                   # Toggle the seat for roster experiments; claimed
                   # or host-held seats cannot be switched off.
-                  if not seatDisabled[i] and
-                      (i == localClaim or hostSeatName(i).len > 0):
+                  if not seatDisabled[i] and hostSeatTaken(i):
                     discard
                   else:
                     seatDisabled[i] = not seatDisabled[i]
@@ -2237,6 +2250,10 @@ proc runGraphics*() =
           window.buttonDown[bindKey(BindPan)],
           panTap
         )
+      else:
+        # Chat / menu skip the WASD poll. Stop so the last KeyA dest
+        # does not keep walking west after the keyboard is stolen.
+        releaseKeyboardSteer()
       let frameStart = epochTime()
       if fpsPrevStart > 0:
         let fdt = frameStart - fpsPrevStart
@@ -2413,21 +2430,27 @@ proc runGraphics*() =
           shapeRenderer.addCircle(
             feet,
             1.28'f32 + sickPulse * 0.42'f32,
-            fadeRgbx(RotSick, 78.0'f32 + sickPulse * 70.0'f32),
+            fadeRgbx(RotSick, 58.0'f32 + sickPulse * 42.0'f32),
             14
           )
-      block:
-        let
-          fountain = tileCenterRender(IslandCenterX, IslandCenterZ)
-          fountainR = IslandFountainRadius.float32 / WorldScale.float32
-          islandR = float32(IslandRadius) + 0.6'f32
-        var glow = fountain
-        glow.y = surfaceHeightNear(fountain.x, fountain.z, 0) + 0.18'f32
-        shapeRenderer.addCircle(glow, islandR, FountainGlow, 20)
-        shapeRenderer.addCircle(glow, fountainR * 0.98'f32, FountainFill, 32)
-        shapeRenderer.addDebugRing(
-          vec3(fountain.x, 0, fountain.z), fountainR, FountainAura, 0.10'f32
-        )
+      if run.world.lightningTick > 0:
+        let age = int32(run.world.tick) - run.world.lightningTick
+        if age >= 0 and age <= TickRate div 3 and
+            fogCanSee(run.world.lightningPoint):
+          let
+            boltR = RuneLightningRadius.float32 / WorldScale.float32
+            fade = 1.0'f32 - age.float32 / (TickRate div 3).float32
+            pulse = 0.85'f32 + 0.15'f32 * (1.0'f32 - fade)
+          var bolt = renderPoint(run.world.lightningPoint)
+          bolt.y = surfaceHeightNear(bolt.x, bolt.z, bolt.y) + 0.20'f32
+          shapeRenderer.addCircle(
+            bolt, boltR * pulse, fadeRgbx(LightningRing, 90.0'f32 * fade), 22
+          )
+          shapeRenderer.addCircle(
+            bolt, boltR * 0.22'f32 * pulse,
+            fadeRgbx(LightningFlash, 160.0'f32 * fade),
+            14
+          )
       block:
         let now = epochTime()
         var kept: seq[BlinkResidue]
@@ -2573,11 +2596,7 @@ proc runGraphics*() =
               maximum: max(pudge.maxHp, 1).float32,
               delayedValue: max(pudge.hp, 0).float32,
               height: 0.12'f32,
-              color:
-                if pudge.onIslandFountain: rgbx(96, 220, 110, 255)
-                elif pudge.inRiver: rgbx(64, 168, 196, 255)
-                elif pudge.team == WestTeam: WestHook
-                else: EastHook,
+              color: pudgeHpColor(pudge),
               showDamageTrail: true
             )
           ]
@@ -2609,6 +2628,20 @@ proc runGraphics*() =
       worldBarRenderer.draw(viewProjection, barRight, barUp)
       profilePop()
 
+      let captureHud =
+        when defined(takeScreenshot): getEnv("SCREENSHOT_HUD") == "1"
+        else: true
+      if not captureHud:
+        when defined(takeScreenshot):
+          captureScreenshot(
+            window,
+            screenshotFrame,
+            24,
+            "examples/pudge_wars/pw_shot.png"
+          )
+        profileBlock "present":
+          window.present(framePaceHz)
+        return
       profilePush("ui")
       glDisable(GL_DEPTH_TEST)
       glDisable(GL_CULL_FACE)
@@ -2622,40 +2655,6 @@ proc runGraphics*() =
       # Silky has no z-index: later draw calls win. Strict back → front:
       # world-space 2D, HUD chrome (inside drawUi), then modal overlays
       # (also inside drawUi), then net lobby / banner on top.
-      block:
-        # Bot intent bubbles: the latest BASIC `print` line floats
-        # above the butcher so humans can read their teammates' plans.
-        const BubbleSeconds = 3.0
-        for i in 0 ..< run.botSpeech.len:
-          let speech = run.botSpeech[i]
-          if speech.text.len == 0 or i in run.humanSlots or
-              i >= run.world.pudges.len:
-            continue
-          let age =
-            float(run.world.tick - speech.tick) / float(TickRate)
-          if age < 0 or age > BubbleSeconds:
-            continue
-          let pudge = run.world.pudges[i]
-          if pudge.state == Dying or pudge.justBlinked or not fogShownPudge(pudge):
-            continue
-          let
-            anchor = renderPoint(pudge.position) + vec3(0, 4.6'f32, 0)
-            screen = screenPoint(anchor, viewProjection) / sk.uiScale
-            fade = uint8(clamp(
-              235.0 - max(age - BubbleSeconds + 0.6, 0.0) / 0.6 * 235.0,
-              0.0, 235.0
-            ))
-            text =
-              if speech.text.len > 30: speech.text[0 ..< 30]
-              else: speech.text
-          sk.drawLabel(
-            text,
-            screen - vec2(90, 9),
-            vec2(180, 18),
-            rgbx(224, 224, 210, fade),
-            "Hud",
-            CenterAlign
-          )
       block:
         # Rising combat numbers, anchored to the world through the HUD.
         let now = epochTime()
@@ -2680,45 +2679,36 @@ proc runGraphics*() =
           )
         floatingTexts = kept
       block:
-        # Name tags over human-driven butchers so friends know who is
-        # who. Bots stay unlabeled; the seat tint already marks them.
-        # The spectator POV butcher always gets an EYES plate.
+        # Nameplates over every living butcher. Dark plate plus cream
+        # type so the seat name stays readable at RTS distance.
         let spectateSlot = spectateIndex()
         for slot in 0 ..< run.world.pudges.len:
-          let pudge = run.world.pudges[slot]
+          let pudge = predictedPudge(slot)
           if pudge.state == Dying or pudge.justBlinked or not fogShownPudge(pudge):
             continue
-          let seat = int(pudge.lobbySeat)
-          var label = ""
-          if netRole == NetClient:
-            label = netSeatName(seat)
-          when not defined(emscripten):
-            if netRole == NetHost:
-              label = hostSeatName(seat)
-          if slot == spectateSlot:
-            if label.len == 0:
-              label = PudgeSpecs[pudge.team].name
-            label = "EYES  " & label
+          var label = butcherDisplayName(slot)
           if label.len == 0:
-            continue
+            label = "P" & $pudge.id
+          if slot == spectateSlot:
+            label = "EYES  " & label
           var anchor = unitPoint(pudge.id, pudge.position)
           anchor.y = surfaceHeightNear(anchor.x, anchor.z, anchor.y) +
-            5.4'f32
+            NamePlateLift
+          let screen = screenPoint(anchor, viewProjection) / sk.uiScale
+          if screen.x < -4000:
+            continue
           let
-            screen = screenPoint(anchor, viewProjection) / sk.uiScale
-            tint =
-              if slot == spectateSlot:
-                color(0.94, 0.85, 0.50, 1)
-              else:
-                SeatTints[tintIndex(pudge)]
+            plate = vec2(NamePlateW, NamePlateH)
+            origin = screen - plate * 0.5'f32
+            textColor =
+              if slot == spectateSlot: NamePlateEyes
+              else: NamePlateText
+          sk.drawRect(origin, plate, NamePlateFill)
           sk.drawLabel(
             label,
-            screen - vec2(70, 9),
-            vec2(140, 18),
-            rgbx(
-              uint8(tint.r * 255), uint8(tint.g * 255),
-              uint8(tint.b * 255), 235
-            ),
+            origin,
+            plate,
+            textColor,
             "Hud",
             CenterAlign
           )
@@ -2779,6 +2769,10 @@ proc runGraphics*() =
         followSelection,
         cameraEye
       )
+      # IME only while the chat draft has focus. Left on during play,
+      # macOS's accent popup on held A swallows the key-up and the
+      # butcher walks west until A is tapped again.
+      window.runeInputEnabled = chatTyping()
       when not defined(emscripten):
         if netLobbyOpen:
           sk.drawNetLobby(
