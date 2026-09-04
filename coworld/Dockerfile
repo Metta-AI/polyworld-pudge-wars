@@ -8,15 +8,26 @@ RUN curl -fsSL https://github.com/nim-lang/nightlies/releases/download/2026-04-2
       | tar xJ -C /opt \
     && ln -s /opt/nim-2.2.10 /opt/nim
 ENV PATH=/opt/nim/bin:$PATH
+RUN curl -fsSL -o /usr/local/bin/nimby \
+      https://github.com/treeform/nimby/releases/download/0.2.1/nimby-Linux-X64 \
+    && chmod +x /usr/local/bin/nimby
 WORKDIR /src/polyworld
 COPY --from=engine . /src/polyworld
-# Install every polyworld.nimble require. A hand-maintained subset omitted
-# fluffy, which coworld_host pulls in through polyworld/profiles.
-# nimble setup writes nimble.paths, but the committed config.nims does not
-# include it, so the compiler would otherwise miss ~/.nimble/pkgs2.
-RUN nimble install --depsOnly -y \
-    && nimble setup \
-    && printf '\ninclude "nimble.paths"\n' >> config.nims
+# Lockfile packages into ~/.nimby/pkgs, then a real nim.cfg. config.nims
+# `include "nimble.paths"` does not expose those --path lines to `nim c`.
+RUN nimby create \
+    && nimby sync nimby.lock -g \
+    && pkgs="$HOME/.nimby/pkgs" \
+    && { \
+         echo '--path:"src"'; \
+         if [ -d "$pkgs" ]; then \
+           find "$pkgs" -mindepth 1 -maxdepth 1 -type d | sort | while read -r dir; do \
+             name=$(basename "$dir"); \
+             [ "$name" = "packages" ] && continue; \
+             if [ -d "$dir/src" ]; then echo "--path:\"$dir/src\""; else echo "--path:\"$dir\""; fi; \
+           done; \
+         fi; \
+       } > nim.cfg
 RUN nim c --threads:on -d:ssl -d:release -o:/out/pwcoworld \
       examples/pudge_wars/coworld_host.nim
 
