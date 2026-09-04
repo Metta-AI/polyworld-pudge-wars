@@ -238,6 +238,13 @@ type
       ## Drift sign on the z axis: +1 southward, -1 northward.
     spawnTick*: int32
 
+  HookRuneSweep = object
+    ## One blade segment that might scoop a rune this tick. Resolved
+    ## after every hook has moved so list order cannot claim the orb.
+    ownerId: int32
+    prior, position: WorldPoint
+    radius: int32
+
   World* = ref object
     pudges*: seq[Pudge]
     hooks*: seq[Hook]
@@ -450,6 +457,44 @@ proc segmentPointWithin(a0, a1, p: WorldPoint, radius: int32): bool =
     dx = qx - int64(p.x)
     dz = qz - int64(p.z)
   dx * dx + dz * dz <= int64(radius) * int64(radius)
+
+proc segmentPointDistSq(a0, a1, p: WorldPoint): int64 =
+  ## Squared distance from `p` to the closest point on segment `a0`–`a1`.
+  result = distanceSquared(a0, p)
+  let endDist = distanceSquared(a1, p)
+  if endDist < result:
+    result = endDist
+  let
+    ax = int64(a1.x) - int64(a0.x)
+    az = int64(a1.z) - int64(a0.z)
+    px = int64(p.x) - int64(a0.x)
+    pz = int64(p.z) - int64(a0.z)
+    denom = ax * ax + az * az
+  if denom == 0:
+    return
+  var tNum = px * ax + pz * az
+  if tNum < 0:
+    tNum = 0
+  elif tNum > denom:
+    tNum = denom
+  var
+    tScaled = tNum
+    dScaled = denom
+  let axis = max(abs(ax), abs(az))
+  if axis > 0:
+    while tScaled > high(int64) div axis:
+      tScaled = tScaled shr 1
+      dScaled = dScaled shr 1
+  if dScaled <= 0:
+    return
+  let
+    qx = int64(a0.x) + roundDivision(tScaled * ax, dScaled)
+    qz = int64(a0.z) + roundDivision(tScaled * az, dScaled)
+    dx = qx - int64(p.x)
+    dz = qz - int64(p.z)
+    projected = dx * dx + dz * dz
+  if projected < result:
+    result = projected
 
 proc hookLatchRadius(hook: Hook): int32 =
   ## Shuriken disk plus the butcher's solid body. Same circle the
@@ -1832,6 +1877,8 @@ proc applyAttackTarget*(world: World, pudgeId, targetId: int32): bool =
   true
 
 proc grantRune(world: World, index: int, kind: RuneKind)
+proc sortIds(ids: var seq[int32])
+proc pickTiedId(world: World, tied: var seq[int32]): int32
 
 proc countProps(world: World, ownerId: int32, kind: PropKind): int32 =
   for prop in world.props:
@@ -3179,13 +3226,34 @@ proc stepRunes(world: World) =
     if tile.z < PlayZMin or tile.z > PlayZMax:
       continue
     var taken = false
+    var
+      bestDist = high(int64)
+      tied: seq[int32]
     for i in 0 ..< world.pudges.len:
       if world.pudges[i].state != Alive:
         continue
-      if within(world.pudges[i].position, rune.position, RunePickupRadius):
-        world.grantRune(i, rune.kind)
+      if not within(
+          world.pudges[i].position, rune.position, RunePickupRadius
+        ):
+        continue
+      let d = distanceSquared(world.pudges[i].position, rune.position)
+      if tied.len == 0 or d < bestDist:
+        bestDist = d
+        tied = @[world.pudges[i].id]
+      elif d == bestDist:
+        var seen = false
+        for id in tied:
+          if id == world.pudges[i].id:
+            seen = true
+            break
+        if not seen:
+          tied.add world.pudges[i].id
+    if tied.len > 0:
+      let winner = world.pickTiedId(tied)
+      let idx = world.pudgeIndex(winner)
+      if idx >= 0:
+        world.grantRune(idx, rune.kind)
         taken = true
-        break
     if not taken:
       keep.add rune
   world.runes = keep
@@ -3662,8 +3730,8 @@ proc announceClash(
   world.chunkOwnerId = ownerId
   inc world.hookDenies
 
-proc interceptHooks(world: World, interceptor, other: int) =
-  ## Two shuriken disks met: both chains break, nobody takes clash damage.
+proc clashBreakBoth(world: World, interceptor, other: int) =
+  ## Snaps both chains and fires the HUD toast. Credit is separate.
   let
     chunker = world.hooks[interceptor]
     intercepted = world.hooks[other]
@@ -3681,11 +3749,29 @@ proc interceptHooks(world: World, interceptor, other: int) =
   world.hooks[other].phase = HookIdle
   world.hooks[interceptor].victimId = 0
   world.hooks[other].victimId = 0
-  let chunkerIndex = world.pudgeIndex(chunker.ownerId)
+
+proc interceptHooks(world: World, interceptor, other: int) =
+  ## Two shuriken disks met: both chains break, nobody takes clash damage.
+  ## The shorter flight (later throw / less traveled) takes the deny gold.
+  let ownerId = world.hooks[interceptor].ownerId
+  world.clashBreakBoth(interceptor, other)
+  let chunkerIndex = world.pudgeIndex(ownerId)
   if chunkerIndex >= 0:
     inc world.pudges[chunkerIndex].denyCount
     world.pudges[chunkerIndex].gold =
       world.pudges[chunkerIndex].gold + GoldPerDeny
+
+proc interceptEven(world: World, first, second: int) =
+  ## Equal-flight clash: both chains break, nobody scores the deny.
+  ## List order used to award the earlier-listed hook; that locked a
+  ## bank whenever both throws landed the same tick.
+  let
+    a = world.hooks[first].ownerId
+    b = world.hooks[second].ownerId
+  if a <= b:
+    world.clashBreakBoth(first, second)
+  else:
+    world.clashBreakBoth(second, first)
 
 proc interceptOneSided(world: World, winner, loser: int) =
   ## The mighty hook plows through: only the lesser chain breaks, the
@@ -3735,14 +3821,17 @@ proc clashHooks(world: World) =
         world.interceptOneSided(winner, loser)
         used[loser] = true
         break
-      let interceptor =
-        if world.hooks[j].phase == HookReeling or
-            world.hooks[i].traveled <= world.hooks[j].traveled:
-          i
-        else:
-          j
-      let other = if interceptor == i: j else: i
-      world.interceptHooks(interceptor, other)
+      # Flying vs a reel: the outbound disk is the interceptor.
+      # Shorter remaining flight (less traveled) wins the deny gold.
+      # Equal travel is a mutual break — list order must not pick a bank.
+      if world.hooks[j].phase == HookReeling:
+        world.interceptHooks(i, j)
+      elif world.hooks[i].traveled < world.hooks[j].traveled:
+        world.interceptHooks(i, j)
+      elif world.hooks[j].traveled < world.hooks[i].traveled:
+        world.interceptHooks(j, i)
+      else:
+        world.interceptEven(i, j)
       used[i] = true
       used[j] = true
       break
@@ -3814,20 +3903,78 @@ proc advanceReel(world: World, hook: var Hook, owner: int): bool =
   world.rideVictim(hook)
   false
 
-proc sweepRunes(world: World, hook: Hook) =
-  ## Scoops every rune the blade passed over this tick; the caster gets
-  ## the buff. Pudges win ties by construction: a latch snaps the head
-  ## onto the victim first, so this sweep never reaches beyond the body
-  ## that stopped the chain, and the hook otherwise flies on.
+proc sortIds(ids: var seq[int32]) =
+  for i in 1 ..< ids.len:
+    let key = ids[i]
+    var j = i - 1
+    while j >= 0 and ids[j] > key:
+      ids[j + 1] = ids[j]
+      dec j
+    ids[j + 1] = key
+
+proc pickTiedId(world: World, tied: var seq[int32]): int32 =
+  ## Fair pick among equally good claimants. Sort by id so hook-list
+  ## and roster order cannot bias `rng.below` toward the first listed.
+  if tied.len <= 1:
+    return if tied.len == 1: tied[0] else: 0
+  sortIds(tied)
+  tied[int(world.rng.below(int32(tied.len)))]
+
+proc recordRuneSweep(
+    world: World,
+    sweeps: var seq[HookRuneSweep],
+    hook: Hook
+) =
+  ## Notes one blade segment for a later fair resolve. Granting here
+  ## used to hand the rune to whichever hook was listed first.
   if world.runes.len == 0:
     return
   let owner = world.pudgeIndex(hook.ownerId)
   if owner < 0 or world.pudges[owner].state == Dying:
     return
-  let reach = hook.radius + RuneRadius
+  sweeps.add HookRuneSweep(
+    ownerId: hook.ownerId,
+    prior: hook.prior,
+    position: hook.position,
+    radius: hook.radius
+  )
+
+proc resolveRuneSweeps(world: World, sweeps: seq[HookRuneSweep]) =
+  ## Each rune goes to the closest blade that actually hit it this tick.
+  ## Equal distance draws the world rng among sorted owner ids.
+  if world.runes.len == 0 or sweeps.len == 0:
+    return
   var keep: seq[Rune]
   for rune in world.runes:
-    if segmentPointWithin(hook.prior, hook.position, rune.position, reach):
+    var
+      bestDist = high(int64)
+      tied: seq[int32]
+    for sweep in sweeps:
+      let reach = sweep.radius + RuneRadius
+      if not segmentPointWithin(
+          sweep.prior, sweep.position, rune.position, reach
+        ):
+        continue
+      let d = segmentPointDistSq(
+        sweep.prior, sweep.position, rune.position
+      )
+      if tied.len == 0 or d < bestDist:
+        bestDist = d
+        tied = @[sweep.ownerId]
+      elif d == bestDist:
+        var seen = false
+        for id in tied:
+          if id == sweep.ownerId:
+            seen = true
+            break
+        if not seen:
+          tied.add sweep.ownerId
+    if tied.len == 0:
+      keep.add rune
+      continue
+    let winner = world.pickTiedId(tied)
+    let owner = world.pudgeIndex(winner)
+    if owner >= 0:
       world.grantRune(owner, rune.kind)
     else:
       keep.add rune
@@ -3886,7 +4033,9 @@ proc yankOwner(world: World, hook: var Hook, owner: int): bool =
 
 proc stepHooks(world: World) =
   activeHookWorld = world
-  var keep: seq[Hook]
+  var
+    keep: seq[Hook]
+    runeSweeps: seq[HookRuneSweep]
   for hook in world.hooks.mitems:
     if hook.phase == HookIdle:
       continue
@@ -3907,23 +4056,23 @@ proc stepHooks(world: World) =
         if hook.isGrapple:
           let unused = flyGrapple(hook, budget)
           hook.traveled = hook.traveled + (budget - unused)
-          world.sweepRunes(hook)
+          world.recordRuneSweep(runeSweeps, hook)
           if hook.grappleLatched or hook.traveled >= hook.range:
             hook.phase = HookReeling
         else:
           let unused = flyHook(hook, budget)
           hook.traveled = hook.traveled + (budget - unused)
           if world.sweepMines(hook):
-            world.sweepRunes(hook)
+            world.recordRuneSweep(runeSweeps, hook)
             if hook.phase != HookIdle:
               keep.add hook
             continue
           if latchHook(world, hook):
-            world.sweepRunes(hook)
+            world.recordRuneSweep(runeSweeps, hook)
             if hook.phase != HookIdle:
               keep.add hook
             continue
-          world.sweepRunes(hook)
+          world.recordRuneSweep(runeSweeps, hook)
           if hook.traveled >= hook.range:
             hook.phase = HookReeling
     keep.add hook
@@ -3948,23 +4097,24 @@ proc stepHooks(world: World) =
       let empty = hook.victimId == 0
       if world.advanceReel(hook, owner):
         if empty:
-          world.sweepRunes(hook)
+          world.recordRuneSweep(runeSweeps, hook)
           if not hook.isGrapple:
             inc world.hookMisses
         continue
       if hook.victimId == 0 and not hook.isGrapple:
         if world.sweepMines(hook):
-          world.sweepRunes(hook)
+          world.recordRuneSweep(runeSweeps, hook)
           if hook.phase == HookIdle:
             continue
           keep.add hook
           continue
         let latched = latchHook(world, hook)
-        world.sweepRunes(hook)
+        world.recordRuneSweep(runeSweeps, hook)
         if latched and hook.phase == HookIdle:
           continue
     keep.add hook
   world.hooks = keep
+  world.resolveRuneSweeps(runeSweeps)
 
 proc stepDeaths(world: World) =
   for pudge in world.pudges.mitems:

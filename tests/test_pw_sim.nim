@@ -1878,6 +1878,11 @@ block:
   doAssert game.world.pudges[3].hp == eastHp
   doAssert game.world.pudges[0].hookedBy == 0
   doAssert game.world.pudges[3].hookedBy == 0
+  doAssert game.world.pudges[0].denyCount == 0 and
+      game.world.pudges[3].denyCount == 0,
+    "equal-flight clash must not pay deny gold to the earlier-listed hook"
+  doAssert game.world.pudges[0].gold == 0 and
+      game.world.pudges[3].gold == 0
 
 echo "Testing a flying hook clashing a reel releases without extra damage"
 block:

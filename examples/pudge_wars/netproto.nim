@@ -19,7 +19,9 @@ import
   sim
 
 const
-  NetProtocolVersion* = 6'u16
+  NetProtocolVersion* = 7'u16
+    ## v7: contested rune / clash ties and the 65-tick hook cooldown
+    ##     change live hashes. Host and client must rebuild together.
     ## v6: lobby may carry 2..10 seats (N vs N, N=1..5). Older followers
     ##     sized for six wells must rebuild with the host.
     ## v5: NmIntent carries `wantedTick`, the client's predicted tick for

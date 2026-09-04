@@ -29,7 +29,12 @@ const
     ## Default first-to-N kill win condition; matches may override it
     ## (`World.killGoal`) and replays record the active goal in their setup.
   RespawnTicks* = TickRate * 4
-  HookCooldownTicks* = TickRate * 2
+  HookCooldownTicks* = TickRate * 2 + 1
+    ## 2 s plus one tick. A round 64-tick cooldown is a multiple of
+    ## every even roster (2/4/8 butchers), so the decision-rotation
+    ## phase locked to one bank for the whole match and that bank won
+    ## every same-cycle hook/rune race. +1 tick makes the throw cycle
+    ## drift on 2, 4, 6, 8, and 10 seat boards.
   AttackTicks* = 19'i32
   DecisionTicks* = 1'i32
   MaxUpgradeLevel* = 10

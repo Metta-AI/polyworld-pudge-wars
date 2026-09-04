@@ -17,13 +17,18 @@ when defined(posix):
 const
   ReplayGame* = "pudge_wars"
   ReplayFormatVersion* = 4'u16
-  ReplayGameVersion* = 25'u16
+  ReplayGameVersion* = 26'u16
     ## Physics the *viewer* runs. Observatory's static wasm must ship at
     ## this same number as the recording image (`pwcoworld`). Older tapes
     ## still load; playback skips hash checks so a rebuilt wasm does not
     ## freeze Featured Match. Bump when physics change, and bump the
     ## coworld version in lockstep. Live follow uses `NetProtocolVersion`
     ## in netproto.nim — that is not the observatory replay path.
+    ## v26: contested rune scoops and body pickups ignore hook-list /
+    ##      roster order (closest, then rng among sorted ids). Equal-
+    ##      flight hook clashes break both chains with no deny gold.
+    ##      Hook cooldown is 65 ticks so throw cycles do not lock to
+    ##      one bank on even-sized rosters.
     ## v25: seeded spawn jitter (lane shuffle + inland X/Z, mirrored
     ##      banks). `ReplayPudge.spawnX`/`spawnZ` record the pads.
     ##      Format v4 carries those fields.

@@ -280,6 +280,68 @@ block:
       break
   doAssert contested, "a bot must hook the midline rune off the current"
 
+echo "Testing two hooks that hit one rune do not prefer list order"
+block:
+  proc fireHook(
+      game: Game,
+      owner: int,
+      startX, startZ, dirX, dirZ: int
+  ) =
+    let start = worldAtTile(startX, startZ)
+    game.world.hooks.add Hook(
+      id: game.world.nextHookId,
+      ownerId: game.world.pudges[owner].id,
+      team: game.world.pudges[owner].team,
+      phase: HookFlying,
+      position: start,
+      origin: start,
+      prior: start,
+      heading: heading(int32(dirX), int32(dirZ)),
+      range: BaseHookRange,
+      speed: BaseHookSpeed,
+      peakSpeed: BaseHookSpeed,
+      radius: BaseHookRadius,
+      damage: BaseHookDamage
+    )
+    inc game.world.nextHookId
+
+  proc contest(eastFirst: bool, rngState: uint64): int32 =
+    ## Returns the owner id that scooped the rune, or 0.
+    let game = freshGame(runePeriod = 0)
+    parkPudges(game)
+    discard game.dropRune(RuneHaste, RiverCenterX, 40)
+    game.world.rng.state = rngState
+    if eastFirst:
+      game.fireHook(3, PlayEastMin, 40, -WorldScale, 0)
+      game.fireHook(0, PlayWestMax, 40, WorldScale, 0)
+    else:
+      game.fireHook(0, PlayWestMax, 40, WorldScale, 0)
+      game.fireHook(3, PlayEastMin, 40, -WorldScale, 0)
+    for _ in 0 ..< 80:
+      game.play(1)
+      if game.world.runes.len == 0:
+        break
+    for pudge in game.world.pudges:
+      if pudge.runesTaken > 0:
+        return pudge.id
+    0
+
+  let rngState = 0xC0FFEE1234'u64
+  let westListed = contest(eastFirst = false, rngState = rngState)
+  let eastListed = contest(eastFirst = true, rngState = rngState)
+  doAssert westListed != 0, "a mirrored scoop must award the rune"
+  doAssert westListed == eastListed,
+    "hook-list order must not pick the rune winner"
+
+  var westWins, eastWins = 0
+  for salt in 0'u64 .. 31'u64:
+    let winner = contest(eastFirst = false, rngState = rngState xor salt)
+    if winner == 1: inc westWins
+    elif winner == 4: inc eastWins
+  doAssert westWins > 0 and eastWins > 0,
+    "equal-distance scoops must split across rng, not lock a bank"
+  doAssert westWins + eastWins == 32
+
 echo "Testing a v3 replay with live runes round-trips hash-exact"
 block:
   const RecordTicks = 220'i32

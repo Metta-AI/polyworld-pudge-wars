@@ -75,14 +75,17 @@ block:
   doAssert HookSpeedMaxMul >= 2'i32 and HookSpeedMaxMul <= 4'i32
   doAssert BaseHookSpeed >= 36_000'i32, "hooks should cross the river quickly"
   doAssert HookReelMul >= 2'i32, "legacy 2× table stays published"
-  doAssert HookCooldownTicks <= TickRate * 2
+  doAssert HookCooldownTicks == TickRate * 2 + 1,
+    "2s + 1 tick so throw cycles drift on every legal roster size"
+  for n in [2, 4, 6, 8, 10]:
+    doAssert HookCooldownTicks mod n != 0,
+      "hook cooldown must not lock to a bank on a " & $n & "-butcher board"
   doAssert MovePerTick >= 21_600'i32,
     "walk should be at least the prior 21_600 default"
   doAssert MovePerTick <= 32_400'i32,
     "walk should stay at or under 1.5× the prior 21_600 default"
   doAssert TickRate == 32
   doAssert RespawnTicks == TickRate * 4
-  doAssert HookCooldownTicks == TickRate * 2
   doAssert BlinkCooldownTicks == TickRate * 8
   doAssert BlinkCooldownTicks > HookCooldownTicks
   doAssert BlinkRange == BlinkRangeTiles * WorldScale
