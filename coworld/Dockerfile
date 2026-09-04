@@ -10,7 +10,9 @@ RUN curl -fsSL https://github.com/nim-lang/nightlies/releases/download/2026-04-2
 ENV PATH=/opt/nim/bin:$PATH
 WORKDIR /src/polyworld
 COPY --from=engine . /src/polyworld
-RUN nimble install -y mummy zippy crunchy webby flatty vmath \
+# Install every polyworld.nimble require. A hand-maintained subset omitted
+# fluffy, which coworld_host pulls in through polyworld/profiles.
+RUN nimble install --depsOnly -y \
     && nimble setup
 RUN nim c --threads:on -d:ssl -d:release -o:/out/pwcoworld \
       examples/pudge_wars/coworld_host.nim

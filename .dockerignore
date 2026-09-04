@@ -17,6 +17,7 @@ tmp
 dist
 build
 polyworld_data
+nim.cfg
 coworld/dist
 __pycache__
 *.pyc
