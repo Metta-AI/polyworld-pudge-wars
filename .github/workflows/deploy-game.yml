@@ -47,7 +47,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: SOFTMAX_OBSERVATORY
-    timeout-minutes: 60
+    # Hosted smoke and full certification each have a 30-minute budget after
+    # the image/viewer build, so the job timeout must cover both waits.
+    timeout-minutes: 75
     permissions:
       contents: read
     steps:
@@ -141,7 +143,7 @@ jobs:
           if [ -n "$INPUT_VERSION" ]; then
             NEXT="$INPUT_VERSION"
           else
-            NEXT=$(uvx --from "$COWORLD_CLI" coworld next-version pudge-wars)
+            NEXT=$(uvx --from "$COWORLD_CLI" coworld --elevated next-version pudge-wars)
           fi
           echo "version=${NEXT}" >> "$GITHUB_OUTPUT"
           echo "Deploying pudge-wars:${NEXT}"
@@ -153,19 +155,21 @@ jobs:
             --version "${{ steps.ver.outputs.version }}" \
             --output dist/coworld_manifest.json
 
-      - name: Upload hydrated Coworld manifest
+      - name: Upload and certify hydrated Coworld manifest
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.skip_upload != 'true' }}
         run: |
-          uvx --from "$COWORLD_CLI" coworld upload-coworld \
+          uvx --from "$COWORLD_CLI" coworld --elevated upload-coworld \
             coworld/dist/coworld_manifest.json \
             --wait-hosted-smoke \
-            --hosted-smoke-timeout-seconds 1800
+            --hosted-smoke-timeout-seconds 1800 \
+            --wait-certification \
+            --certification-timeout-seconds 1800
 
       - name: Verify canonical upload
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.skip_upload != 'true' }}
         run: |
           set -euo pipefail
-          uvx --from "$COWORLD_CLI" coworld list --json --limit 500 > /tmp/coworlds-after.json
+          uvx --from "$COWORLD_CLI" coworld --elevated list --json --limit 500 > /tmp/coworlds-after.json
           python3 - "${{ steps.ver.outputs.version }}" <<'EOF'
           import json
           import sys
