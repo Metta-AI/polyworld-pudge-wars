@@ -171,7 +171,8 @@ jobs:
           import sys
 
           expected = sys.argv[1]
-          rows = json.load(open("/tmp/coworlds-after.json"))
+          payload = json.load(open("/tmp/coworlds-after.json"))
+          rows = payload["entries"] if isinstance(payload, dict) else payload
           match = next(
               (row for row in rows if row.get("name") == "pudge-wars" and row.get("version") == expected),
               None,
