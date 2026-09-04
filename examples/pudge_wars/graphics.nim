@@ -28,6 +28,14 @@ const
   HookEdge = rgbx(196, 192, 184, 252)
   HookTrail = rgbx(236, 236, 232, 170)
   GrabGlow = rgbx(168, 72, 230, 90)
+  SpawnShieldDisk = rgbx(90, 210, 255, 95)
+    ## Ice disk under a spawn-protected butcher. Saturated so it still
+    ## reads at the far RTS zoom.
+  SpawnShieldCore = rgbx(230, 250, 255, 165)
+  SpawnShieldRim = rgbx(170, 236, 255, 220)
+  SpawnShieldCap = rgbx(210, 246, 255, 130)
+  SpawnShieldMote = rgbx(255, 255, 255, 200)
+  SpawnShieldName = rgbx(170, 236, 255, 240)
   BlinkPuff = rgbx(72, 210, 255, 110)
     ## Cyan leave-behind disk; MagicBurst's opening color, oversized so
     ## it still reads at the baked 155 play-camera zoom.
@@ -61,7 +69,7 @@ const
   ButcherBarWidth = 3.0'f32
   NamePlateLift = 7.55'f32
     ## Just over the HP bar. No backing plate — small type only.
-  NamePlateW = 120.0'f32
+  NamePlateW = 148.0'f32
   NamePlateH = 16.0'f32
   NamePlateShadow = rgbx(8, 10, 14, 180)
   NamePlateText = rgbx(236, 228, 204, 210)
@@ -70,8 +78,6 @@ const
   PalisadeWood = rgbx(138, 94, 54, 255)
   PalisadeBand = rgbx(78, 68, 58, 255)
   PalisadeTop = rgbx(162, 116, 70, 255)
-  MineMark = rgbx(42, 48, 38, 120)
-  MineRing = rgbx(92, 104, 78, 150)
   PalisadeBarLift = 2.15'f32
   PalisadeBarWidth = 1.15'f32
   ShurikenRadius = BaseHookRadius.float32 / WorldScale.float32
@@ -248,6 +254,106 @@ proc fadeRgbx(color: ColorRGBX, alpha: float32): ColorRGBX =
     color.r, color.g, color.b,
     uint8(clamp(alpha, 0.0'f32, 255.0'f32))
   )
+
+proc addHeightRing(
+    renderer: var ShapeRenderer,
+    center: Vec3,
+    radius: float32,
+    color: ColorRGBX,
+    halfWidth = 0.11'f32
+) =
+  ## Closed XZ ring at `center.y`. Unlike `addDebugRing` this does not
+  ## snap to terrain, so stacked rims stay a dome.
+  var points: seq[Vec3]
+  const Sides = 22
+  for i in 0 .. Sides:
+    let a = float32(i) / float32(Sides) * TAU.float32
+    points.add center + vec3(cos(a) * radius, 0, sin(a) * radius)
+  renderer.addPolyline(points, color, halfWidth)
+
+proc addSpawnShield(
+    renderer: var ShapeRenderer,
+    feet: Vec3,
+    remain: float32,
+    seconds: float32
+) =
+  ## WC3-style invuln bubble: ground disk, stacked rims, orbiting motes.
+  ## `remain` is 1 at spawn and 0 as the window expires.
+  let
+    flashHz = 2.2'f32 + (1.0'f32 - remain) * 5.5'f32
+    beat = 0.5'f32 + 0.5'f32 * sin(seconds * TAU.float32 * flashHz)
+    pulse = 0.92'f32 + beat * 0.10'f32
+    fade = 0.72'f32 + remain * 0.28'f32
+    outer = 3.35'f32 * pulse
+  renderer.addCircle(
+    feet,
+    outer,
+    fadeRgbx(SpawnShieldDisk, 88.0'f32 * fade + beat * 36.0'f32),
+    28
+  )
+  renderer.addCircle(
+    feet,
+    1.15'f32 + beat * 0.18'f32,
+    fadeRgbx(SpawnShieldCore, 140.0'f32 * fade + beat * 40.0'f32),
+    16
+  )
+  renderer.addHeightRing(
+    feet,
+    outer * 0.98'f32,
+    fadeRgbx(SpawnShieldRim, 200.0'f32 * fade),
+    0.14'f32
+  )
+  var waist = feet
+  waist.y += 1.15'f32
+  renderer.addCircle(
+    waist,
+    2.55'f32 * pulse,
+    fadeRgbx(SpawnShieldCap, 70.0'f32 * fade + beat * 28.0'f32),
+    22
+  )
+  renderer.addHeightRing(
+    waist,
+    2.62'f32 * pulse,
+    fadeRgbx(SpawnShieldRim, 210.0'f32 * fade),
+    0.12'f32
+  )
+  var chest = feet
+  chest.y += 2.25'f32
+  renderer.addCircle(
+    chest,
+    1.85'f32 * pulse,
+    fadeRgbx(SpawnShieldCap, 85.0'f32 * fade + beat * 30.0'f32),
+    18
+  )
+  renderer.addHeightRing(
+    chest,
+    1.92'f32 * pulse,
+    fadeRgbx(SpawnShieldRim, 190.0'f32 * fade),
+    0.11'f32
+  )
+  var cap = feet
+  cap.y += 3.15'f32
+  renderer.addCircle(
+    cap,
+    0.95'f32 + beat * 0.12'f32,
+    fadeRgbx(SpawnShieldCore, 120.0'f32 * fade + beat * 50.0'f32),
+    14
+  )
+  const MoteCount = 8
+  for i in 0 ..< MoteCount:
+    let
+      a = seconds * 2.4'f32 + float32(i) * (TAU.float32 / float32(MoteCount))
+      bob = 0.22'f32 * sin(seconds * 3.6'f32 + float32(i) * 0.9'f32)
+    var mote = feet
+    mote.x += cos(a) * outer * 0.82'f32
+    mote.z += sin(a) * outer * 0.82'f32
+    mote.y += 1.35'f32 + bob
+    renderer.addCircle(
+      mote,
+      0.38'f32 + beat * 0.14'f32,
+      fadeRgbx(SpawnShieldMote, 150.0'f32 * fade + beat * 50.0'f32),
+      8
+    )
 
 proc addRotCloud(
     renderer: var ShapeRenderer,
@@ -1363,8 +1469,8 @@ proc runGraphics*() =
     ## Camera grab is WC3/SC2-style and trackpad-first: hold the pan
     ## key (C) and move the pointer, no mouse button. MMB drag, arrow
     ## keys, fullscreen edge scroll, and the minimap still pan. RMB
-    ## commands; it never moves the camera. Alt+RMB orbits, then snaps
-    ## back.
+    ## commands; it never moves the camera. Option+LMB pings; Alt+RMB
+    ## orbits, then snaps back.
     rightClickCommand = false
     panTap = false
     var scrollPanned = false
@@ -1695,10 +1801,23 @@ proc runGraphics*() =
     )
 
   proc butcherTint(worldIndex: int, pudge: Pudge): chroma.Color =
-    ## Seat color, then a sick-green wash while Rot is on or the
-    ## butcher is standing in someone else's cloud.
+    ## Seat color, then ice while spawn-shielded, else a sick-green wash
+    ## while Rot is on or the butcher is standing in someone else's cloud.
     result = seatTint(worldIndex)
     if pudge.state == Dying:
+      return
+    if pudge.shieldTicks > 0:
+      let
+        remain =
+          pudge.shieldTicks.float32 / max(SpawnShieldTicks.float32, 1.0'f32)
+        flashHz = 2.4'f32 + (1.0'f32 - remain) * 5.0'f32
+        beat = 0.5'f32 + 0.5'f32 * sin(
+          unitTime(int32(run.world.tick)) * TAU.float32 * flashHz
+        )
+        weight = 0.48'f32 + 0.22'f32 * beat
+      result.r = result.r * (1.0'f32 - weight) + 0.62'f32 * weight
+      result.g = result.g * (1.0'f32 - weight) + 0.94'f32 * weight
+      result.b = result.b * (1.0'f32 - weight) + 1.00'f32 * weight
       return
     var weight = 0.0'f32
     if pudge.rotOn:
@@ -1776,11 +1895,17 @@ proc runGraphics*() =
             playGameSound(SndDeath)
           elif hearAt(pudge.position, pudge.lastHurtBy):
             playGameSound(SndKill, 0.8)
-      if prevState == Dying and pudge.state == Alive and heroIs(pudge.id):
-        # Respawn: bring the camera home with the hero.
-        let home = renderPoint(pudge.position)
-        cameraTarget.x = home.x
-        cameraTarget.z = home.z
+      if prevState == Dying and pudge.state == Alive:
+        if fogShownPudge(pudge):
+          var chest = renderPoint(pudge.position)
+          chest.y = surfaceHeightNear(chest.x, chest.z, chest.y) + 1.7'f32
+          particles.emitParticleBurst(MagicBurst, chest)
+          particles.emitParticleBurst(MagicBurst, chest, 0.12'f32)
+        if heroIs(pudge.id):
+          # Respawn: bring the camera home with the hero.
+          let home = renderPoint(pudge.position)
+          cameraTarget.x = home.x
+          cameraTarget.z = home.z
       if audible:
         if pudge.hooksThrown > previousThrown.getOrDefault(pudge.id, 0) and
             hearAt(pudge.position, pudge.id):
@@ -2129,6 +2254,10 @@ proc runGraphics*() =
   # stay MENU/TEAM. Auto-open when --netsim already turned the sim on.
   var netDebugPanel = netSimConfig().enabled
   window.onFrame = proc() =
+    # Start/stop Fluffy before profileBlock "frame". startTrace clears
+    # the span stack; a matching measurePop of a skipped push is IndexDefect.
+    if window.buttonPressed[KeyF2] and not chatTyping():
+      discard handleChromeKey(KeyF2)
     profileBlock "frame":
       let dt = frameDelta(lastFrameTime, Step)
       hostLobbyOpen = netLobbyOpen
@@ -2141,8 +2270,6 @@ proc runGraphics*() =
       tickGameAudio()
       if window.buttonPressed[bindKey(BindMute)]:
         toggleGameAudioMute()
-      if window.buttonPressed[KeyF2] and not chatTyping():
-        discard handleChromeKey(KeyF2)
       if window.buttonPressed[KeyF3]:
         toggleDebugMenu()
       if window.buttonPressed[KeyF8]:
@@ -2421,6 +2548,10 @@ proc runGraphics*() =
           continue
         var feet = unitPoint(pudge.id, pudge.position)
         feet.y = surfaceHeightNear(feet.x, feet.z, feet.y) + 0.16'f32
+        if pudge.shieldTicks > 0:
+          let remain =
+            pudge.shieldTicks.float32 / max(SpawnShieldTicks.float32, 1.0'f32)
+          shapeRenderer.addSpawnShield(feet, remain, rotSeconds)
         if pudge.rotOn:
           shapeRenderer.addRotCloud(feet, rotR, rotPulse(pudge), rotSeconds)
         if pudge.rotOn or run.world.rotAffected(pudge):
@@ -2570,11 +2701,12 @@ proc runGraphics*() =
           )
         else:
           var mark = base
-          mark.y += 0.06'f32
-          shapeRenderer.addSquare(mark, 0.72'f32, MineMark)
-          shapeRenderer.addCircle(mark, 0.28'f32, MineRing, 10)
+          mark.y += 0.08'f32
+          shapeRenderer.addLandMine(mark)
       shapeRenderer.addShopOverlays()
-      shapeRenderer.drawHumanOverlays(window, viewProjection)
+      shapeRenderer.drawHumanOverlays(
+        window, viewProjection, barRight, barUp
+      )
       shapeRenderer.addDebugCollisionOverlays()
       shapeRenderer.draw(viewProjection)
 
@@ -2688,6 +2820,8 @@ proc runGraphics*() =
           var label = butcherDisplayName(slot)
           if label.len == 0:
             label = "P" & $pudge.id
+          if pudge.shieldTicks > 0:
+            label = "SHIELD  " & label
           if slot == spectateSlot:
             label = "EYES  " & label
           var anchor = unitPoint(pudge.id, pudge.position)
@@ -2700,7 +2834,8 @@ proc runGraphics*() =
             plate = vec2(NamePlateW, NamePlateH)
             origin = screen - plate * 0.5'f32
             textColor =
-              if slot == spectateSlot: NamePlateEyes
+              if pudge.shieldTicks > 0: SpawnShieldName
+              elif slot == spectateSlot: NamePlateEyes
               else: NamePlateText
           sk.drawLabel(
             label, origin + vec2(1, 1), plate, NamePlateShadow, "Small",
@@ -2708,6 +2843,37 @@ proc runGraphics*() =
           )
           sk.drawLabel(
             label, origin, plate, textColor, "Small", CenterAlign
+          )
+      block:
+        # Team pings: a screen-space ! so the mark stays readable at any
+        # zoom, stacked on the world-space billboard.
+        for marker in pingMarkers():
+          var anchor = tileCenterRender(int(marker.tileX), int(marker.tileZ))
+          anchor.y = surfaceHeightNear(anchor.x, anchor.z, 0) + 1.85'f32
+          let
+            bounce =
+              if marker.age < 0.7:
+                8.0'f32 * sin(float32(marker.age) * 14.0'f32) *
+                  (1.0'f32 - float32(marker.age) / 0.7'f32)
+              else:
+                0.0'f32
+            screen = screenPoint(anchor, viewProjection) / sk.uiScale -
+              vec2(0, bounce)
+            fade = uint8(clamp(
+              255.0 * (1.0 - marker.age / PingOverlaySeconds), 0.0, 255.0
+            ))
+            plate = vec2(36, 48)
+            origin = screen - plate * 0.5'f32
+          if screen.x < -4000:
+            continue
+          sk.drawLabel(
+            "!", origin + vec2(1, 1), plate,
+            rgbx(40, 24, 8, fade), "H1", CenterAlign
+          )
+          sk.drawLabel(
+            "!", origin, plate,
+            rgbx(PingGold.r, PingGold.g, PingGold.b, fade),
+            "H1", CenterAlign
           )
       block:
         let pick = groundUnderMouse(window, viewProjection)

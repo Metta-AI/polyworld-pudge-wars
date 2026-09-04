@@ -13,13 +13,35 @@ PERSONALITY = os.environ.get("PUDGE_PERSONALITY", "rusher")
 if PERSONALITY == "idle":
     PERSONALITY = "rusher"
 
-BLINK_RANGE = 48.0
+BLINK_RANGE = 20.0
 WALK_TILES_PER_TICK = 27_000.0 / 60_000.0
 VEL_SAMPLE = 8
 RESPAWN_TICKS = 32 * 4
 GHOST_FORGET = 32 * 12
 Y_MIN = 16.0
 Y_MAX = 111.0
+MAX_UPGRADE = 10
+MAX_ITEM_RANK = 5
+# Kill-point skills: 0 damage, 1 distance, 2 speed, 3 radius.
+UPGRADE_ORDER = {
+    "rusher": (0, 1, 2, 3),  # damage, distance, speed, radius — inland finishes
+    "camper": (0, 1, 2, 3),
+    "sniper": (1, 0, 3, 2),
+}
+SHOP_FLASK = 0
+SHOP_BIG_HOOK = 3
+SHOP_BOOTS = 5
+SHOP_LONGSHOT = 6
+SHOP_WALL = 7
+SHOP_MINE = 8
+SHOP_PRICES = {
+    SHOP_FLASK: 5,
+    SHOP_BIG_HOOK: 6,
+    SHOP_BOOTS: 10,
+    SHOP_LONGSHOT: 12,
+    SHOP_WALL: 10,
+    SHOP_MINE: 10,
+}
 
 _tracks: dict[int, "Ghost"] = {}
 _last_tick = -1
@@ -41,6 +63,113 @@ class Ghost:
     sample_x: float = 0.0
     sample_y: float = 0.0
     sample_tick: int = -8
+
+
+def _levels(me: dict[str, Any], key: str, n: int) -> list[int]:
+    raw = me.get(key) or []
+    out: list[int] = []
+    for i in range(n):
+        try:
+            out.append(int(raw[i]))
+        except (IndexError, TypeError, ValueError, KeyError):
+            out.append(0)
+    return out
+
+
+def _item_ranks(me: dict[str, Any]) -> list[int]:
+    if me.get("items"):
+        return _levels(me, "items", 4)
+    return _levels(me, "item_ranks", 4)
+
+
+def _upgrade(me: dict[str, Any], kind: int) -> int:
+    return _levels(me, "upgrades", 4)[kind]
+
+
+def _spend_upgrades(me: dict[str, Any]) -> list[int]:
+    left = int(me.get("points") or 0)
+    if left <= 0:
+        return []
+    levels = _levels(me, "upgrades", 4)
+    order = UPGRADE_ORDER.get(PERSONALITY, UPGRADE_ORDER["rusher"])
+    bought: list[int] = []
+    while left > 0:
+        kind = next((k for k in order if levels[k] < MAX_UPGRADE), None)
+        if kind is None:
+            break
+        bought.append(kind)
+        levels[kind] += 1
+        left -= 1
+    return bought
+
+
+def _spend_shop(me: dict[str, Any]) -> list[int]:
+    if not me.get("in_shop"):
+        return []
+    gold = int(me.get("gold") or 0)
+    if gold <= 0:
+        return []
+    ranks = _item_ranks(me)
+    buys: list[int] = []
+    hp = float(me.get("hp") or 0)
+    max_hp = float(me.get("max_hp", 840))
+    if hp * 2 < max_hp and gold >= SHOP_PRICES[SHOP_FLASK]:
+        buys.append(SHOP_FLASK)
+        gold -= SHOP_PRICES[SHOP_FLASK]
+
+    def take(item: int, rank_i: int | None, price: int) -> None:
+        nonlocal gold
+        if gold < price:
+            return
+        if rank_i is not None and ranks[rank_i] >= MAX_ITEM_RANK:
+            return
+        buys.append(item)
+        gold -= price
+        if rank_i is not None:
+            ranks[rank_i] += 1
+
+    take(SHOP_LONGSHOT, 1, SHOP_PRICES[SHOP_LONGSHOT])
+    take(SHOP_BOOTS, 0, SHOP_PRICES[SHOP_BOOTS])
+    take(SHOP_BIG_HOOK, None, SHOP_PRICES[SHOP_BIG_HOOK])
+    take(SHOP_WALL, 2, SHOP_PRICES[SHOP_WALL])
+    take(SHOP_MINE, 3, SHOP_PRICES[SHOP_MINE])
+    return buys
+
+
+def _want_shop(me: dict[str, Any]) -> bool:
+    gold = int(me.get("gold") or 0)
+    if gold < 10 or me.get("in_shop"):
+        return False
+    ranks = _item_ranks(me)
+    if ranks[0] < MAX_ITEM_RANK or ranks[1] < MAX_ITEM_RANK:
+        return True
+    hp = float(me.get("hp") or 0)
+    max_hp = float(me.get("max_hp", 840))
+    return hp * 2 < max_hp and gold >= 5
+
+
+def _place_gadgets(
+    me: dict[str, Any],
+    river_west: float,
+    river_east: float,
+    action: dict[str, Any],
+) -> None:
+    if int(me.get("layer", 0)) == 2:
+        return
+    ranks = _item_ranks(me)
+    if ranks[2] <= 0 and ranks[3] <= 0:
+        return
+    x = float(me["x"])
+    y = float(me["y"])
+    if int(me["team"]) == 0:
+        wall_x = min(x + 3.0, river_west)
+    else:
+        wall_x = max(x - 3.0, river_east)
+    if ranks[2] > 0:
+        action.setdefault("place_wall", [wall_x, y])
+    if ranks[3] > 0:
+        mine_y = max(Y_MIN, min(Y_MAX, y + 3.0))
+        action.setdefault("place_mine", [wall_x, mine_y])
 
 
 def reset_memory() -> None:
@@ -120,6 +249,13 @@ def choose_action(obs: dict[str, Any]) -> dict[str, Any]:
         and h.get("flying", True)
         and _dist(me, h) <= 22
     ]
+    ally_flies = [
+        h for h in hooks
+        if h.get("team") == me["team"]
+        and h.get("flying", True)
+        and h.get("owner_id") != me.get("id")
+        and h.get("victim") in (None, 0)
+    ]
     carrying = [
         h for h in inbound
         if h.get("victim") not in (None, 0)
@@ -154,10 +290,21 @@ def choose_action(obs: dict[str, Any]) -> dict[str, Any]:
 
     camper = PERSONALITY == "camper"
     sniper = PERSONALITY == "sniper"
-    hold_x = _home_edge(me, river_west, river_east, camper or sniper)
+    rusher = PERSONALITY == "rusher"
+    patient = camper or sniper or rusher
+    hold_x = _home_edge(me, river_west, river_east, patient)
+    rune_next = obs.get("rune_next") or {}
+    soon = int(rune_next.get("soon") or 0)
     lane = _lane_y(me, obs, seen if seen is not None else (
         {"y": ghost_aim[1]} if ghost_aim is not None else None
     ))
+    if soon > 0 and soon <= 256 and float(rune_next.get("y", -1)) >= 0:
+        lane = max(Y_MIN, min(height - 17.0, float(rune_next["y"])))
+        if soon <= 16 and float(rune_next.get("x", -1)) >= 0:
+            runes.append({
+                "x": float(rune_next["x"]),
+                "y": float(rune_next["y"]),
+            })
 
     if threat is None:
         _dodge_side = 0
@@ -169,6 +316,12 @@ def choose_action(obs: dict[str, Any]) -> dict[str, Any]:
     ))
 
     action: dict[str, Any] = {}
+    upgrades = _spend_upgrades(me)
+    if upgrades:
+        action["buy_upgrade"] = upgrades if len(upgrades) > 1 else upgrades[0]
+    shop = _spend_shop(me)
+    if shop:
+        action["buy_power"] = shop if len(shop) > 1 else shop[0]
 
     want_rot = (
         prey_rot
@@ -195,32 +348,56 @@ def choose_action(obs: dict[str, Any]) -> dict[str, Any]:
         river_east,
         height,
     )
+    def _throw() -> list[float] | None:
+        return _pick_hook(
+            me, target, aim, seen, ghost_aim, ghost_chance,
+            carrying, inbound, saves, hooked, drowning, runes,
+            camper, sniper, tick, width, height,
+            river_west, river_east, allies, ally_flies,
+        )
+
+    thrown = None
+    close_swing = (
+        close and not sniper and not hooked
+        and not (target and target.get("shield"))
+    )
+    if rusher and me.get("hook_ready") and (not in_river or blink is None):
+        thrown = _throw()
+        if thrown is not None:
+            action["hook_to"] = thrown
+
     if blink is not None:
         action["blink_to"] = blink
-        if me.get("hook_ready") and not in_river:
-            thrown = _pick_hook(
-                me, target, aim, seen, ghost_aim, ghost_chance,
-                carrying, inbound, saves, hooked, drowning, runes,
-                camper, sniper, tick, width, height,
-                river_west, river_east,
-            )
+        if not rusher and me.get("hook_ready") and not in_river:
+            thrown = _throw()
             if thrown is not None:
                 action["hook_to"] = thrown
+        _place_gadgets(me, river_west, river_east, action)
+        return action
+    if (
+        rusher
+        and me.get("blink_ready")
+        and thrown is not None
+        and not in_river
+    ):
+        action["blink_to"] = _clamp_point([hold_x, float(me["y"])], height)
+        _place_gadgets(me, river_west, river_east, action)
         return action
 
     if foreign_rot and not want_rot:
         action["walk_to"] = [float(me.get("home_x", hold_x)), lane]
+        _place_gadgets(me, river_west, river_east, action)
         return action
 
-    if close and not sniper and not (target and target.get("shield")):
+    if rusher:
+        if thrown is None and close_swing:
+            action["attack_target"] = int(close[0]["id"])
+            _place_gadgets(me, river_west, river_east, action)
+            return action
+    elif close_swing:
         action["attack_target"] = int(close[0]["id"])
     elif me.get("hook_ready"):
-        thrown = _pick_hook(
-            me, target, aim, seen, ghost_aim, ghost_chance,
-            carrying, inbound, saves, hooked, drowning, runes,
-            camper, sniper, tick, width, height,
-            river_west, river_east,
-        )
+        thrown = _throw()
         if thrown is not None:
             action["hook_to"] = thrown
 
@@ -234,16 +411,31 @@ def choose_action(obs: dict[str, Any]) -> dict[str, Any]:
         ]
     elif in_river:
         action["walk_to"] = [hold_x, float(me["y"])]
-    elif not camper and not sniper and seen is not None and not me.get("hooked"):
-        if _dist(me, seen) <= 52:
+    elif hooked:
+        action["walk_to"] = [hold_x, float(hooked[0]["y"])]
+    elif rusher and seen is not None and not me.get("hooked"):
+        if int(me["team"]) == 0:
+            seen_home = float(seen["x"]) < river_west
+        else:
+            seen_home = float(seen["x"]) > river_east
+        home_fight = (
+            seen_home
+            and int(seen.get("layer", 0)) == int(me.get("layer", 0))
+            and not seen.get("in_river")
+            and not in_river
+        )
+        if home_fight and _dist(me, seen) <= _engage_range(me, patient) + 18:
             action["walk_to"] = [float(seen["x"]), float(seen["y"])]
         else:
             action["walk_to"] = [hold_x, float(seen["y"])]
     elif seen is None and ghost_aim is not None and ghost_chance >= 0.2:
         action["walk_to"] = [hold_x, ghost_aim[1]]
+    elif _want_shop(me) and threat is None and not dump_chase:
+        action["walk_to"] = [float(me.get("home_x", hold_x)), lane]
     else:
         action["walk_to"] = [hold_x, lane]
 
+    _place_gadgets(me, river_west, river_east, action)
     return action
 
 
@@ -291,25 +483,17 @@ def _pick_blink(
     if hooked and not low_hp:
         prey = hooked[0]
         if int(prey.get("layer", -1)) != int(me.get("layer", 0)):
-            if PERSONALITY == "rusher":
+            return _clamp_point([hold_x, float(prey["y"])], height)
+        if _dist(me, prey) > 10:
+            if int(me["team"]) == 0:
+                on_home = float(prey["x"]) < river_west
+            else:
+                on_home = float(prey["x"]) > river_east
+            if on_home and not prey.get("in_river"):
                 return _clamp_point(
                     [float(prey["x"]), float(prey["y"])], height
                 )
             return _clamp_point([hold_x, float(prey["y"])], height)
-        if _dist(me, prey) > 10:
-            return _clamp_point(
-                [float(prey["x"]), float(prey["y"])], height
-            )
-    if (
-        PERSONALITY == "rusher"
-        and seen is not None
-        and not low_hp
-        and not seen.get("shield")
-        and int(seen.get("layer", 0)) != int(me.get("layer", 0))
-        and _dist(me, seen) <= BLINK_RANGE + 8
-        and float(me["hp"]) + 40 >= float(seen.get("hp", 840))
-    ):
-        return _clamp_point([float(seen["x"]), float(seen["y"])], height)
     return None
 
 
@@ -333,6 +517,8 @@ def _pick_hook(
     height: float,
     river_west: float,
     river_east: float,
+    allies: list[dict[str, Any]],
+    ally_flies: list[dict[str, Any]],
 ) -> list[float] | None:
     if carrying:
         h = carrying[0]
@@ -340,26 +526,30 @@ def _pick_hook(
     if inbound and _dist(me, inbound[0]) <= 14:
         h = inbound[0]
         return [float(h["x"]), float(h["y"])]
-    if saves:
-        s = saves[0]
-        return [float(s["x"]), float(s["y"])]
     if hooked:
-        t = hooked[0]
-        return [float(t["x"]), float(t["y"])]
+        prey = hooked[0]
+        return _headshot_point(prey, _reeler(prey, allies, me))
+    if ally_flies:
+        fly = ally_flies[0]
+        pred = {"x": _far_lip(me, river_west, river_east), "y": float(fly["y"])}
+        return _headshot_point(pred, _reeler(pred, allies, me), 0.5)
     if drowning:
         t = drowning[0]
         return [float(t["x"]), float(t["y"])]
+    if saves:
+        s = saves[0]
+        return [float(s["x"]), float(s["y"])]
     if (
         seen is not None
         and aim is not None
         and not seen.get("shield")
         and not seen.get("ghost")
     ):
-        if sniper and float(seen.get("hp", 840)) * 2 > float(
-            me.get("max_hp", 840)
-        ):
+        if sniper and float(seen.get("hp", 840)) > _wound_max(me):
             pass
-        elif _in_range(me, seen, _engage_range(camper or sniper)):
+        elif _in_range(
+            me, seen, _engage_range(me, camper or sniper or PERSONALITY == "rusher")
+        ):
             return aim
     if ghost_aim is not None and ghost_chance >= _ghost_throw_floor():
         return ghost_aim
@@ -506,8 +696,17 @@ def _predict_ghost(
     return [pred_x, pred_y], min(1.0, chance), uncertainty
 
 
-def _engage_range(patient: bool) -> float:
-    return 44.0 if patient else 34.0
+def _engage_range(me: dict[str, Any], patient: bool) -> float:
+    reach = (44.0 if patient else 34.0) + 4.0 * _upgrade(me, 1) + float(
+        _upgrade(me, 3)
+    )
+    if int(me.get("buff") or 0) == 4:
+        reach *= 1.5
+    return reach
+
+
+def _wound_max(me: dict[str, Any]) -> float:
+    return float(me.get("max_hp", 840)) * 0.5 + 30.0 * _upgrade(me, 0)
 
 
 def _home_edge(
@@ -582,6 +781,7 @@ def _dodge_hop(
     river_west: float,
     river_east: float,
     height: float,
+    inland: float = 16.0,
 ) -> list[float]:
     global _dodge_side
     if _dodge_side == 0:
@@ -591,10 +791,10 @@ def _dodge_hop(
         if float(me["y"]) > 108:
             _dodge_side = -1
     if int(me["team"]) == 0:
-        hop_x = min(float(me["x"]) - 16.0, river_west - 1.0)
+        hop_x = min(float(me["x"]) - inland, river_west - 1.0)
     else:
-        hop_x = max(float(me["x"]) + 16.0, river_east + 1.0)
-    hop_y = float(me["y"]) + _dodge_side * 36.0
+        hop_x = max(float(me["x"]) + inland, river_east + 1.0)
+    hop_y = float(me["y"]) + _dodge_side * 16.0
     return [
         max(14.0, min(113.0, hop_x)),
         max(Y_MIN, min(height - 17.0, hop_y)),
@@ -616,11 +816,10 @@ def _stretch_landing(
     scale = BLINK_RANGE / dist
     hop_x = float(me["x"]) + dx * scale
     hop_y = float(me["y"]) + dy * scale
-    if PERSONALITY != "rusher":
-        if int(me["team"]) == 0:
-            hop_x = min(hop_x, river_west - 1.0)
-        else:
-            hop_x = max(hop_x, river_east + 1.0)
+    if int(me["team"]) == 0:
+        hop_x = min(hop_x, river_west - 1.0)
+    else:
+        hop_x = max(hop_x, river_east + 1.0)
     return _clamp_point([hop_x, hop_y], height)
 
 
@@ -639,8 +838,9 @@ def _lead_point(
     vx = ghost.vx if ghost is not None else 0.0
     vy = ghost.vy if ghost is not None else 0.0
     span = max(_dist(me, target), 8.0)
-    ax = float(target["x"]) + vx * span / 9.0
-    ay = float(target["y"]) + vy * span / 9.0
+    lead_div = max(1.0, 9.0 + float(_upgrade(me, 2)))
+    ax = float(target["x"]) + vx * span / lead_div
+    ay = float(target["y"]) + vy * span / lead_div
     return [
         max(0.5, min(width - 0.5, ax)),
         max(0.5, min(height - 0.5, ay)),
@@ -671,6 +871,30 @@ def _nearest_rune(
 
 def _dist(a: dict[str, Any], b: dict[str, Any]) -> float:
     return math.hypot(float(a["x"]) - float(b["x"]), float(a["y"]) - float(b["y"]))
+
+
+def _reeler(
+    target: dict[str, Any],
+    allies: list[dict[str, Any]],
+    me: dict[str, Any],
+) -> dict[str, Any]:
+    if allies:
+        return min(allies, key=lambda a: _dist(target, a))
+    return {
+        "x": float(me.get("home_x", me["x"])),
+        "y": float(me.get("home_y", me["y"])),
+    }
+
+
+def _headshot_point(
+    target: dict[str, Any], reeler: dict[str, Any], t: float = 0.55
+) -> list[float]:
+    tx = float(target["x"])
+    ty = float(target["y"])
+    return [
+        tx + (float(reeler["x"]) - tx) * t,
+        ty + (float(reeler["y"]) - ty) * t,
+    ]
 
 
 def _in_range(me: dict[str, Any], other: dict[str, Any], reach: float) -> bool:

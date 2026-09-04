@@ -1,10 +1,10 @@
 ## Rebindable keys for the human seat.
 ##
 ## Defaults match the research doc's layout (Q hook, E grapple, F blink,
-## R rot, X stop, G ping, F1 center, L follow, T take-over, 1-4 upgrades,
-## M mute, R rematch on the end screen). Hold C and move the pointer to
-## pan (trackpad camera grab); tap C still arms a wall. L locks the
-## camera on your butcher.
+## R rot, X stop, G ping, Option-click ping, F1 center, L follow,
+## T take-over, 1-4 upgrades, M mute, R rematch on the end screen).
+## Hold C and move the pointer to pan (trackpad camera grab); tap C
+## still arms a wall. L locks the camera on your butcher.
 ## A plain-text file overrides them, one `action = KeyName` per line,
 ## using windy button names such as KeyQ or KeyF1:
 ##

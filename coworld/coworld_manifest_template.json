@@ -88,7 +88,7 @@
     "protocols": {
       "player": {
         "type": "text",
-        "value": "Connect to COWORLD_PLAYER_WS_URL. Receive JSON observations each tick; reply with {walk_to, hook_to, blink_to, attack_target, rot_toggle, place_wall, place_mine, halt, ping}. Coordinates are tiles on the 128 map. Empty action is sticky. visible.pudges/hooks/runes/props are fog-clipped (home bank + river always; enemy bank needs a living teammate within 20 tiles). Seats 0-2 West, 3-5 East (team_pair blocks). Final message type=final."
+        "value": "Connect to COWORLD_PLAYER_WS_URL. One observation per tick after the sim step; the reply is applied on the next tick (1-tick latency) before that tick's observation is built. Reply with {walk_to, hook_to, blink_to, attack_target, rot, place_wall, place_mine, halt, ping, buy_upgrade, buy_power, print}. rot is a set (true|false), not a toggle; rot_toggle still works. buy_upgrade is 0 damage / 1 distance / 2 speed / 3 radius (int or array). buy_power is the shop catalog 0-8 (own pad). self.upgrades, self.items / self.item_ranks, self.rot, self.shield (ticks), self.buff (kind+1), and self.blink_ready (cooldown, windup, hooked, and rot) match the in-engine checks. accepted echoes the previous reply ({hook_to: true, blink_to: \"cooldown\"}). print is the intent bubble. river_west/river_east are inclusive water columns; play_west_max/play_east_min are the land lips BASIC riverWest/riverEast use. Coordinates are tiles on the 128 map. Empty action is sticky. visible.pudges/hooks/runes/props are fog-clipped (home bank + river always; enemy bank needs a living teammate within 20 tiles) in roster/object order. Seats 0-2 West, 3-5 East (team_pair blocks). Final message type=final."
       },
       "global": {
         "type": "text",
@@ -98,7 +98,7 @@
     "docs": {
       "readme": {
         "type": "text",
-        "value": "# Pudge Wars\n\nTwo banks, a river, six butchers, one hook. First team to the kill goal wins. Walk with walk_to, throw with hook_to, blink with blink_to. Fog hides the enemy bank unless a teammate is within 20 tiles. Bundled personalities: rusher, camper, sniper. Each dead-reckons fogged enemies on the far bank and blinks to dodge, stretch a flying hook, dump-chase into the river, or hop the far bank."
+        "value": "# Pudge Wars\n\nTwo banks, a river, six butchers, one hook. First team to the kill goal wins. A landed hook is 200 damage (~24% of 840 HP); a dump is not a one-chain kill. Walk with walk_to, throw with hook_to, blink with blink_to (20 tiles), set rot, spend kill points with buy_upgrade (damage/distance/speed/radius). Fog hides the enemy bank unless a teammate is within 20 tiles. Bundled personalities: rusher, camper, sniper. Each spends hook upgrades as they farm, dead-reckons fogged enemies on the far bank, and blinks to dodge, stretch a flying hook, dump-chase into the river, or hop the far bank."
       }
     }
   },
@@ -110,7 +110,7 @@
       "image": "{{PUDGEWARS_IMAGE}}",
       "run": ["python", "-m", "coworld.examples.pudgewars.player.player"],
       "env": { "PUDGE_PERSONALITY": "camper" },
-      "description": "Holds 16 tiles off the waterline. Blinks to dodge and stretch, and hooks the most likely far-bank ghost when fogged.",
+      "description": "Holds 16 tiles off the waterline. Spends kill points into damage then reach, blinks to dodge and stretch, and hooks the most likely far-bank ghost when fogged.",
       "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/player"
     },
     {
@@ -120,7 +120,7 @@
       "image": "{{PUDGEWARS_IMAGE}}",
       "run": ["python", "-m", "coworld.examples.pudgewars.player.player"],
       "env": { "PUDGE_PERSONALITY": "rusher" },
-      "description": "Closes on visible enemies, blinks across the river to finish a catch, and dead-reckons fogged far-bank positions.",
+      "description": "Closes on visible enemies, dumps kill points into hook damage and speed, blinks across the river to finish a catch, and dead-reckons fogged far-bank positions.",
       "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/player"
     },
     {
@@ -130,7 +130,7 @@
       "image": "{{PUDGEWARS_IMAGE}}",
       "run": ["python", "-m", "coworld.examples.pudgewars.player.player"],
       "env": { "PUDGE_PERSONALITY": "sniper" },
-      "description": "Standoff thrower. Saves the hook for wounded or high-likelihood ghosts, blinks inland off inbound chains, never dives.",
+      "description": "Standoff thrower. Spends kill points into hook distance, saves the hook for wounded or high-likelihood ghosts, blinks inland off inbound chains, never dives.",
       "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/player"
     }
   ],

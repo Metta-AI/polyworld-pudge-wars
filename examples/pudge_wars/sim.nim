@@ -722,6 +722,12 @@ proc pudgeIndex*(world: World, id: int32): int =
       return i
   -1
 
+proc propIndex(world: World, id: int32): int =
+  for i, prop in world.props:
+    if prop.id == id:
+      return i
+  -1
+
 proc inRiver*(pudge: Pudge): bool =
   ## Returns whether this butcher is occupying the river layer.
   pudge.layer == int32(RiverLayer)
@@ -1883,14 +1889,16 @@ proc grantRune(world: World, index: int, kind: RuneKind)
 proc sortIds(ids: var seq[int32])
 proc pickTiedId(world: World, tied: var seq[int32]): int32
 
-proc countProps(world: World, ownerId: int32, kind: PropKind): int32 =
+proc countProps*(world: World, ownerId: int32, kind: PropKind): int32 =
   for prop in world.props:
     if prop.alive and prop.ownerId == ownerId and prop.kind == kind:
       inc result
 
-proc tileHasProp(world: World, tileX, tileZ: int): bool =
+proc tileHasProp(world: World, tileX, tileZ: int, exceptId = 0'i32): bool =
   for prop in world.props:
-    if prop.alive and int(prop.tileX) == tileX and int(prop.tileZ) == tileZ:
+    if not prop.alive or prop.id == exceptId:
+      continue
+    if int(prop.tileX) == tileX and int(prop.tileZ) == tileZ:
       return true
   false
 
@@ -1916,29 +1924,40 @@ proc ownBankTile(team: Team, tileX, tileZ: int): bool =
   else:
     eastBank(tileX)
 
+proc propSiteLegal*(
+    world: World, team: Team, tileX, tileZ: int, exceptId = 0'i32
+): bool =
+  ## Own-bank walkable land that can hold a palisade or mine: not the
+  ## shop, a spawn pad, or a tile that already has a gadget.
+  if not ownBankTile(team, tileX, tileZ):
+    return false
+  if not walkableTile(homeLayer(team), int32(tileX), int32(tileZ)):
+    return false
+  if onOwnShopPad(team, tileX, tileZ) or
+      world.onOwnSpawnPad(team, tileX, tileZ):
+    return false
+  not world.tileHasProp(tileX, tileZ, exceptId)
+
 proc placementLegal(
     world: World,
     pudge: Pudge,
     tileX,
-    tileZ: int
+    tileZ: int,
+    kind: PropKind
 ): bool =
   ## Own-bank walkable land, in drop range, not a shop/spawn grief tile.
+  ## Mines plant under the butcher; a palisade still needs an empty tile.
   if pudge.state != Alive or pudge.inRiver or pudge.hookedBy != 0:
     return false
-  if not ownBankTile(pudge.team, tileX, tileZ):
-    return false
-  if not walkableTile(homeLayer(pudge.team), int32(tileX), int32(tileZ)):
-    return false
-  if onOwnShopPad(pudge.team, tileX, tileZ) or
-      world.onOwnSpawnPad(pudge.team, tileX, tileZ):
+  if not world.propSiteLegal(pudge.team, tileX, tileZ):
     return false
   let here = tileOf(pudge.position)
   if max(abs(here.x - tileX), abs(here.z - tileZ)) > int(PlaceRangeTiles):
     return false
-  if world.tileHasProp(tileX, tileZ):
-    return false
   for other in world.pudges:
     if other.state != Alive:
+      continue
+    if kind == PropMine and other.id == pudge.id:
       continue
     let at = tileOf(other.position)
     if at.x == tileX and at.z == tileZ:
@@ -2001,7 +2020,7 @@ proc applyPlaceProp(
   else:
     tileX = clamp(tileX, PlayEastMin, PlayEastMax)
   tileZ = clamp(tileZ, PlayZMin, PlayZMax)
-  if not world.placementLegal(pudge, tileX, tileZ):
+  if not world.placementLegal(pudge, tileX, tileZ, kind):
     return false
   pudge.breakShield()
   if kind == PropWall:
@@ -2069,6 +2088,7 @@ proc detonateMine(world: World, propIndex: int, hook: ptr Hook) =
   let
     blastAt = world.props[propIndex].propCenter
     ownerId = world.props[propIndex].ownerId
+    propId = world.props[propIndex].id
     owner = world.pudgeIndex(ownerId)
     rank =
       if owner >= 0: world.pudges[owner].itemRank[ShopMine]
@@ -2080,6 +2100,9 @@ proc detonateMine(world: World, propIndex: int, hook: ptr Hook) =
     hook.victimId = 0
     if hook.phase == HookFlying:
       hook.phase = HookReeling
+  for hooked in world.hooks.mitems:
+    if hooked.victimId == propId:
+      hooked.victimId = 0
   for i, pudge in world.pudges.mpairs:
     if pudge.state != Alive or pudge.team == world.props[propIndex].team:
       continue
@@ -2776,7 +2799,8 @@ proc runHumanIntents*(game: Game, slot: int) =
     if int(intent.slot) != slot:
       kept.add intent
       continue
-    if intent.kind.isReplaceableOrder:
+    if intent.kind.isReplaceableOrder or
+        intent.kind in {IntentPlaceWall, IntentPlaceMine}:
       sawOrder = true
     var accepted = false
     let recorder = game.recorder
@@ -3763,49 +3787,131 @@ proc zapLightning(world: World, ownerId: int32, center: WorldPoint) =
       continue
     world.dealPudgeDamage(i, RuneLightningDamage, ownerId)
 
+proc mineDumpLegal(
+    world: World, team: Team, tileX, tileZ: int, exceptId: int32
+): bool =
+  if not world.propSiteLegal(team, tileX, tileZ, exceptId):
+    return false
+  for other in world.pudges:
+    if other.state != Alive:
+      continue
+    let at = tileOf(other.position)
+    if at.x == tileX and at.z == tileZ:
+      return false
+  true
+
+proc snapMineToPoint(world: World, propId: int32, point: WorldPoint) =
+  ## Parks a pulled Hooktrap on the nearest legal own-bank tile.
+  let idx = world.propIndex(propId)
+  if idx < 0 or not world.props[idx].alive or
+      world.props[idx].kind != PropMine:
+    return
+  let
+    team = world.props[idx].team
+    here = tileOf(point)
+  var
+    bestX = here.x
+    bestZ = here.z
+    found = world.mineDumpLegal(team, here.x, here.z, propId)
+  if not found:
+    for radius in 1 .. 8:
+      for dz in -radius .. radius:
+        for dx in -radius .. radius:
+          if max(abs(dx), abs(dz)) != radius:
+            continue
+          let
+            x = here.x + dx
+            z = here.z + dz
+          if not world.mineDumpLegal(team, x, z, propId):
+            continue
+          bestX = x
+          bestZ = z
+          found = true
+          break
+        if found:
+          break
+      if found:
+        break
+  if found:
+    world.props[idx].tileX = int32(bestX)
+    world.props[idx].tileZ = int32(bestZ)
+
+proc rideMine(world: World, hook: Hook) =
+  let idx = world.propIndex(hook.victimId)
+  if idx < 0 or not world.props[idx].alive or
+      world.props[idx].kind != PropMine:
+    return
+  let tile = tileOf(hook.position)
+  world.props[idx].tileX = int32(tile.x)
+  world.props[idx].tileZ = int32(tile.z)
+
+proc latchMine(world: World, hook: var Hook, propIndex: int): bool =
+  ## Allied grab: stick the head to the Hooktrap and reel it in. No blast.
+  hook.victimId = world.props[propIndex].id
+  hook.phase = HookReeling
+  hook.position = world.props[propIndex].propCenter
+  inc world.hookHits
+  let owner = world.pudgeIndex(hook.ownerId)
+  if owner >= 0:
+    inc world.pudges[owner].hooksLanded
+  true
+
 proc latchHook(world: World, hook: var Hook): bool =
   ## First living unit whose body overlaps the shuriken disk along this
   ## tick's travel, outbound or return. The caster is never a target.
+  ## Allied Hooktraps are grab targets too; enemy mines detonate earlier
+  ## in `sweepMines` and never reach this search.
   let
     sweep0 = hook.prior
     sweep1 = hook.position
     reach = hookLatchRadius(hook)
+    mineReach = hook.radius + MineRadius
     ax = int64(sweep1.x) - int64(sweep0.x)
     az = int64(sweep1.z) - int64(sweep0.z)
     denom = ax * ax + az * az
   var
-    best = -1
+    bestPudge = -1
+    bestMine = -1
     bestTNum = 0'i64
     bestDist = high(int64)
+  template consider(at: WorldPoint, tReach: int32, pudgeIdx, mineIdx: int) {.dirty.} =
+    if segmentPointWithin(sweep0, sweep1, at, tReach):
+      var tNum = 0'i64
+      if denom > 0:
+        let
+          px = int64(at.x) - int64(sweep0.x)
+          pz = int64(at.z) - int64(sweep0.z)
+        tNum = px * ax + pz * az
+        if tNum < 0:
+          tNum = 0
+        elif tNum > denom:
+          tNum = denom
+      let dist = distanceSquared(sweep1, at)
+      if (bestPudge < 0 and bestMine < 0) or tNum < bestTNum or
+          (tNum == bestTNum and dist < bestDist):
+        bestPudge = pudgeIdx
+        bestMine = mineIdx
+        bestTNum = tNum
+        bestDist = dist
   for i, pudge in world.pudges:
     if pudge.id == hook.ownerId or pudge.state == Dying:
       continue
     if pudge.shieldTicks > 0:
       # Spawn protection: the head flies straight through.
       continue
-    if not segmentPointWithin(sweep0, sweep1, pudge.position, reach):
+    consider(pudge.position, reach, i, -1)
+  for i, prop in world.props:
+    if not prop.alive or prop.kind != PropMine or prop.team != hook.team:
       continue
-    var tNum = 0'i64
-    if denom > 0:
-      let
-        px = int64(pudge.position.x) - int64(sweep0.x)
-        pz = int64(pudge.position.z) - int64(sweep0.z)
-      tNum = px * ax + pz * az
-      if tNum < 0:
-        tNum = 0
-      elif tNum > denom:
-        tNum = denom
-    let dist = distanceSquared(sweep1, pudge.position)
-    if best < 0 or tNum < bestTNum or (tNum == bestTNum and dist < bestDist):
-      best = i
-      bestTNum = tNum
-      bestDist = dist
-  if best < 0:
+    consider(prop.propCenter, mineReach, -1, i)
+  if bestMine >= 0:
+    return world.latchMine(hook, bestMine)
+  if bestPudge < 0:
     return false
-  let victim = world.pudges[best]
+  let victim = world.pudges[bestPudge]
   if victim.hookedBy != 0 and victim.hookedBy != hook.ownerId:
     if victim.team != hook.team and
-        not world.pudges[best].hasCheat(CheatFlagGod):
+        not world.pudges[bestPudge].hasCheat(CheatFlagGod):
       let killer = world.pudgeIndex(hook.ownerId)
       if killer >= 0:
         world.pudges[killer].justHeadshot = true
@@ -3813,8 +3919,8 @@ proc latchHook(world: World, hook: var Hook): bool =
         inc world.pudges[killer].hooksLanded
       inc world.headshots
       if hook.lightning:
-        world.zapLightning(hook.ownerId, world.pudges[best].position)
-      world.killPudge(best, hook.ownerId)
+        world.zapLightning(hook.ownerId, world.pudges[bestPudge].position)
+      world.killPudge(bestPudge, hook.ownerId)
       hook.phase = HookIdle
       inc world.hookHits
       return true
@@ -3824,13 +3930,13 @@ proc latchHook(world: World, hook: var Hook): bool =
   # Blade contact can happen while the hub is still short of the body.
   # Stick the head on the victim so reel starts from the hit, not an
   # instant dump at the caster.
-  hook.position = world.pudges[best].position
-  world.pudges[best].hookedBy = hook.ownerId
-  world.pudges[best].hasMoveTarget = false
-  world.pudges[best].velX = 0
-  world.pudges[best].velZ = 0
-  world.pudges[best].setAnim(idleClip)
-  world.pudges[best].justGrabbed = true
+  hook.position = world.pudges[bestPudge].position
+  world.pudges[bestPudge].hookedBy = hook.ownerId
+  world.pudges[bestPudge].hasMoveTarget = false
+  world.pudges[bestPudge].velX = 0
+  world.pudges[bestPudge].velZ = 0
+  world.pudges[bestPudge].setAnim(idleClip)
+  world.pudges[bestPudge].justGrabbed = true
   inc world.hookHits
   let owner = world.pudgeIndex(hook.ownerId)
   if owner >= 0:
@@ -3844,22 +3950,26 @@ proc latchHook(world: World, hook: var Hook): bool =
         hook.traveled
       )
     if hook.lightning:
-      world.zapLightning(hook.ownerId, world.pudges[best].position)
-    world.dealPudgeDamage(best, hit, hook.ownerId)
-    if world.pudges[best].state == Dying:
+      world.zapLightning(hook.ownerId, world.pudges[bestPudge].position)
+    world.dealPudgeDamage(bestPudge, hit, hook.ownerId)
+    if world.pudges[bestPudge].state == Dying:
       hook.victimId = 0
       hook.phase = HookIdle
   else:
     # A landed ally hook is a field medic's throw: same aim skill as
     # the kill shot, spent on patching your friend up.
-    world.pudges[best].hp = min(
-      world.pudges[best].hp + AllyHookHeal,
-      world.pudges[best].maxHp
+    world.pudges[bestPudge].hp = min(
+      world.pudges[bestPudge].hp + AllyHookHeal,
+      world.pudges[bestPudge].maxHp
     )
   true
 
 proc dropVictim(world: World, hook: var Hook) =
   if hook.victimId == 0:
+    return
+  if hook.victimId >= FirstPropId:
+    world.snapMineToPoint(hook.victimId, hook.position)
+    hook.victimId = 0
     return
   let victim = world.pudgeIndex(hook.victimId)
   if victim >= 0:
@@ -3997,11 +4107,14 @@ proc finishReel(world: World, hook: var Hook, owner: int): bool =
     return false
   hook.position = dest
   if hook.victimId != 0:
-    let victim = world.pudgeIndex(hook.victimId)
-    if victim >= 0:
-      world.pudges[victim].position = dest
-      world.pudges[victim].hookedBy = 0
-      world.settlePudge(victim, true)
+    if hook.victimId >= FirstPropId:
+      world.snapMineToPoint(hook.victimId, dest)
+    else:
+      let victim = world.pudgeIndex(hook.victimId)
+      if victim >= 0:
+        world.pudges[victim].position = dest
+        world.pudges[victim].hookedBy = 0
+        world.settlePudge(victim, true)
   true
 
 proc moveHookToward(hook: var Hook, dest: WorldPoint, budget: int32): int32 =
@@ -4019,6 +4132,9 @@ proc moveHookToward(hook: var Hook, dest: WorldPoint, budget: int32): int32 =
 
 proc rideVictim(world: World, hook: Hook) =
   if hook.victimId == 0:
+    return
+  if hook.victimId >= FirstPropId:
+    world.rideMine(hook)
     return
   let victim = world.pudgeIndex(hook.victimId)
   if victim < 0 or world.pudges[victim].state != Alive:

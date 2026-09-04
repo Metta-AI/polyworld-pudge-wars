@@ -485,6 +485,14 @@ proc netPlayerName*(): string =
     return options.playerName
   if options.hostPort != 0: "Host" else: "Player"
 
+proc overlayWorld*(): World =
+  ## World the HUD and overlays should read. A predicting WASM seat
+  ## uses the look-ahead copy so a local ping appears this frame.
+  if predictor.enabled and predictor.predicted != nil:
+    predictor.predicted.world
+  else:
+    run.world
+
 proc predictedPudge*(index: int): Pudge =
   ## The state to render for one roster seat. The local WASM seat draws
   ## from the prediction world (so a click moves it this frame); every

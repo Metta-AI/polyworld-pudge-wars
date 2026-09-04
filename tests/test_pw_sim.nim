@@ -169,6 +169,23 @@ block:
     "a hook that reaches the far bank should hit"
   doAssert game.world.pudges[3].hp > 0, "base hook damage should not one-shot"
 
+echo "Testing a rank-0 lip throw reaches the far cliff"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  game.world.pudges[1].placePudge(18, 18)
+  game.world.pudges[2].placePudge(18, 110)
+  game.world.pudges[4].placePudge(106, 18)
+  game.world.pudges[5].placePudge(106, 110)
+  game.world.pudges[0].placePudge(PlayWestMax, 40)
+  game.world.pudges[3].placePudge(PlayEastMax, 40)
+  doAssert applyHookTo(
+    game.world, game.world.pudges[0].id, int32(PlayEastMax), 40
+  )
+  game.play(int(HookWindupTicks) + 200)
+  doAssert game.world.pudges[3].hp < BaseHitPoints,
+    "a rank-0 throw from the river lip must latch the far cliff"
+
 echo "Testing a hook pulls the first unit it hits"
 block:
   let game = freshGame()
@@ -2978,6 +2995,50 @@ block:
     if blew:
       break
   doAssert blew, "an enemy Meat Hook that clips a Hooktrap must detonate it"
+
+echo "Testing Hooktraps plant under the butcher"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  let id = game.world.pudges[0].id
+  game.world.pudges[0].placePudge(30, 64)
+  game.world.pudges[0].itemRank[ShopMine] = 1
+  doAssert applyPlaceMine(game.world, id, 30, 64),
+    "must drop a Hooktrap on the butcher's own tile"
+  doAssert game.world.props.len == 1
+  doAssert game.world.props[0].kind == PropMine
+  doAssert game.world.props[0].tileX == 30
+  doAssert game.world.props[0].tileZ == 64
+
+echo "Testing allied hooks grab a Hooktrap without detonating it"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  let west = game.world.pudges[0].id
+  game.world.pudges[0].placePudge(30, 62)
+  game.world.pudges[0].itemRank[ShopMine] = 1
+  doAssert applyPlaceMine(game.world, west, 32, 62)
+  let mineId = game.world.props[0].id
+  doAssert applyHookTo(game.world, west, 32, 62)
+  var grabbed = false
+  for _ in 0 ..< 220:
+    game.play(1)
+    for hook in game.world.hooks:
+      if hook.victimId == mineId:
+        grabbed = true
+    var stillAlive = false
+    for prop in game.world.props:
+      if prop.id == mineId and prop.alive:
+        stillAlive = true
+    doAssert stillAlive, "an allied grab must not detonate the Hooktrap"
+    if grabbed and game.world.hooks.len == 0:
+      break
+  doAssert grabbed, "an allied Meat Hook must latch a friendly Hooktrap"
+  var planted = false
+  for prop in game.world.props:
+    if prop.id == mineId and prop.alive and prop.kind == PropMine:
+      planted = true
+  doAssert planted, "the grabbed Hooktrap must still be on the field"
 
 echo "Testing Rot toggle damages, slows, and blocks blink"
 block:

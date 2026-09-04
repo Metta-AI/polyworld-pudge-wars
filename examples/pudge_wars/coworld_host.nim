@@ -77,6 +77,9 @@ var
   started = false
   done = false
   replayMode = false
+  lastAccepted: seq[JsonNode]
+    ## Per-seat echo of the intents just applied. Sent on the next
+    ## observation so a JSON policy can trust hookTo/blinkTo.
 
 proc jsonHeaders(): mummy.HttpHeaders =
   result["Content-Type"] = "application/json"
@@ -111,6 +114,14 @@ proc pudgeJson(world: World, pudge: Pudge, slot: int): JsonNode =
     blinkReady =
       pudge.blinkCooldown <= 0 and pudge.windupTicks <= 0 and
       pudge.hookedBy == 0 and not world.rotAffected(pudge)
+    buffOrd =
+      if pudge.buffTicks > 0: int(pudge.buffKind.ord) + 1 else: 0
+  var upgrades = newJArray()
+  for kind in UpgradeKind:
+    upgrades.add %pudge.upgrades[kind]
+  var itemRanks = newJArray()
+  for item in ShopBoots .. ShopMine:
+    itemRanks.add %pudge.itemRank[item]
   result = %*{
     "id": pudge.id,
     "slot": slot,
@@ -121,7 +132,7 @@ proc pudgeJson(world: World, pudge: Pudge, slot: int): JsonNode =
     "max_hp": pudge.maxHp,
     "alive": pudge.state == Alive,
     "hooked": pudge.hookedBy != 0,
-    "shield": pudge.shieldTicks > 0,
+    "shield": max(pudge.shieldTicks, 0),
     "hook_ready": pudge.hookCooldown <= 0 and pudge.windupTicks <= 0,
     "blink_ready": blinkReady,
     "rot": pudge.rotOn,
@@ -132,7 +143,11 @@ proc pudgeJson(world: World, pudge: Pudge, slot: int): JsonNode =
     "kills": pudge.kills,
     "in_river": pudge.inRiver,
     "home_x": home.x,
-    "home_y": home.z
+    "home_y": home.z,
+    "upgrades": upgrades,
+    "item_ranks": itemRanks,
+    "items": itemRanks,
+    "buff": buffOrd
   }
 
 proc hookJson(world: World, hook: Hook): JsonNode =
@@ -193,6 +208,98 @@ proc winnerName(world: World): string =
     return ""
   if world.winner == WestTeam: "west" else: "east"
 
+proc intentActionKey(kind: IntentKind): string =
+  case kind
+  of IntentWalk: "walk_to"
+  of IntentHook, IntentHookFine: "hook_to"
+  of IntentBlink, IntentBlinkFine: "blink_to"
+  of IntentGrapple, IntentGrappleFine: "grapple_to"
+  of IntentAttack: "attack_target"
+  of IntentBuy: "buy_upgrade"
+  of IntentBuyPower: "buy_power"
+  of IntentStop: "halt"
+  of IntentPing: "ping"
+  of IntentPlaceWall: "place_wall"
+  of IntentPlaceMine: "place_mine"
+  of IntentRot: "rot"
+  of IntentCheat: ""
+
+proc hookInFlight(world: World, ownerId: int32): bool =
+  for hook in world.hooks:
+    if hook.ownerId == ownerId and hook.phase != HookIdle:
+      return true
+  false
+
+proc intentRejectReason(slot: int, kind: IntentKind): string =
+  ## Short token for a rejected intent. Read after apply, so the
+  ## butcher state is the same as before a failed command.
+  if slot < 0 or slot >= game.world.pudges.len:
+    return "rejected"
+  let hero = game.world.pudges[slot]
+  if hero.state == Dying:
+    return "dead"
+  case kind
+  of IntentHook, IntentHookFine:
+    if hero.windupTicks > 0: "casting"
+    elif hookInFlight(game.world, hero.id): "flight"
+    elif hero.hookCooldown > 0: "cooldown"
+    else: "rejected"
+  of IntentBlink, IntentBlinkFine:
+    if game.world.rotAffected(hero): "rot"
+    elif hero.windupTicks > 0: "casting"
+    elif hero.hookedBy != 0: "hooked"
+    elif hero.blinkCooldown > 0: "cooldown"
+    else: "rejected"
+  of IntentGrapple, IntentGrappleFine:
+    if hero.windupTicks > 0: "casting"
+    elif hookInFlight(game.world, hero.id): "flight"
+    elif hero.grappleCooldown > 0: "cooldown"
+    else: "rejected"
+  of IntentBuy:
+    if hero.points <= 0: "points"
+    else: "maxed"
+  of IntentBuyPower:
+    if not hero.inOwnShop: "shop"
+    elif hero.gold <= 0: "gold"
+    else: "rejected"
+  of IntentPlaceWall, IntentPlaceMine:
+    if hero.inRiver: "river"
+    else: "rejected"
+  of IntentRot:
+    "rejected"
+  else:
+    "rejected"
+
+proc snapshotAccepted() =
+  ## Capture this tick's intentResults before WASM acks clear them.
+  if lastAccepted.len != game.world.pudges.len:
+    lastAccepted.setLen(game.world.pudges.len)
+  for i in 0 ..< lastAccepted.len:
+    lastAccepted[i] = newJObject()
+  for res in game.intentResults:
+    let
+      key = intentActionKey(res.kind)
+      slot = int(res.slot)
+    if key.len == 0 or slot < 0 or slot >= lastAccepted.len:
+      continue
+    if res.accepted:
+      lastAccepted[slot][key] = %true
+    else:
+      lastAccepted[slot][key] = %intentRejectReason(slot, res.kind)
+
+proc acceptedEcho(slot: int): JsonNode =
+  if slot >= 0 and slot < lastAccepted.len and lastAccepted[slot] != nil:
+    lastAccepted[slot]
+  else:
+    newJObject()
+
+proc printEcho(slot: int): JsonNode =
+  if slot >= 0 and slot < game.botSpeech.len and
+      game.botSpeech[slot].text.len > 0:
+    %game.botSpeech[slot].text
+  else:
+    newJNull()
+
 proc observation(slot: int, final = false): JsonNode =
   ## Fog-clipped like BASIC `objectCount` / the renderer. `fogOn` off
   ## is the omniscient spectator (`team < 0`).
@@ -240,8 +347,12 @@ proc observation(slot: int, final = false): JsonNode =
     "height": GridTiles,
     "river_west": RiverWestX,
     "river_east": RiverEastX,
+    "play_west_max": PlayWestMax,
+    "play_east_min": PlayEastMin,
     "fog": fogOn,
     "self": pudgeJson(world, viewer, slot),
+    "accepted": acceptedEcho(slot),
+    "print": printEcho(slot),
     "visible": {
       "pudges": visiblePudges,
       "hooks": visibleHooks,
@@ -276,6 +387,8 @@ proc globalSnapshot(): JsonNode =
     "height": GridTiles,
     "river_west": RiverWestX,
     "river_east": RiverEastX,
+    "play_west_max": PlayWestMax,
+    "play_east_min": PlayEastMin,
     "score": scoreNode(world),
     "rune_next": runeNextJson(world),
     "pudges": pudges,
@@ -316,6 +429,22 @@ proc toFine(value: float): int32 =
 proc toTile(value: float): int32 =
   int32(round(value))
 
+proc queueIntents(slot: int, kind: IntentKind, node: JsonNode, key: string) =
+  ## One int or an array of ints, each becoming a queued intent `a`.
+  if not node.hasKey(key):
+    return
+  let value = node[key]
+  proc one(item: JsonNode) =
+    queueIntent(
+      game,
+      HumanIntent(slot: int32(slot), kind: kind, a: int32(item.getInt))
+    )
+  if value.kind == JArray:
+    for item in value:
+      one(item)
+  else:
+    one(value)
+
 proc applyAction(slot: int, node: JsonNode) =
   if slot < 0 or slot >= game.world.pudges.len:
     return
@@ -324,6 +453,8 @@ proc applyAction(slot: int, node: JsonNode) =
   if node.hasKey("halt") and node["halt"].getBool:
     queueIntent(game, HumanIntent(slot: int32(slot), kind: IntentStop))
     return
+  queueIntents(slot, IntentBuy, node, "buy_upgrade")
+  queueIntents(slot, IntentBuyPower, node, "buy_power")
   if node.hasKey("blink_to") and node["blink_to"].kind == JArray and
       node["blink_to"].len >= 2:
     queueIntent(
@@ -366,8 +497,17 @@ proc applyAction(slot: int, node: JsonNode) =
         a: int32(node["attack_target"].getInt)
       )
     )
-  if node.hasKey("rot_toggle") and node["rot_toggle"].getBool:
+  if node.hasKey("rot"):
+    if node["rot"].getBool != game.world.pudges[slot].rotOn:
+      queueIntent(game, HumanIntent(slot: int32(slot), kind: IntentRot))
+  elif node.hasKey("rot_toggle") and node["rot_toggle"].getBool:
     queueIntent(game, HumanIntent(slot: int32(slot), kind: IntentRot))
+  if node.hasKey("print") and node["print"].kind == JString:
+    let line = node["print"].getStr
+    if line.len > 0:
+      if game.botSpeech.len <= slot:
+        game.botSpeech.setLen(slot + 1)
+      game.botSpeech[slot] = BotSpeech(text: line, tick: game.world.tick)
   if node.hasKey("place_wall") and node["place_wall"].kind == JArray and
       node["place_wall"].len >= 2:
     queueIntent(
@@ -996,6 +1136,7 @@ proc main() =
     # the confirmed slice must leave the moment a tick is hashed. Never
     # let a late browser stall the 32 Hz clock (the sleep below is fixed).
     streamGameTicks()
+    snapshotAccepted()
     forwardGameResults()
     broadcastPlayers()
     if steps mod 4 == 0:

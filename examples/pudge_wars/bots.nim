@@ -394,6 +394,15 @@ proc initPudgeHost(pudgeId: int32): Host =
     activeGame.world.pudges[index].itemRank[
       ShopItem(int32(ShopBoots.ord) + kind)
     ]
+  let upgradeLevelProc: HostProc = proc(
+      arguments: openArray[int32]
+  ): int32 =
+    let
+      index = activeGame.world.pudgeIndex(pudgeId)
+      kind = arguments[0]
+    if index < 0 or kind < 0 or kind > UpgradeKind.high.ord:
+      return 0
+    activeGame.world.pudges[index].upgrades[UpgradeKind(kind)]
   let stopProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
@@ -508,6 +517,7 @@ proc initPudgeHost(pudgeId: int32): Host =
   discard result.addFunction("buyUpgrade", 1, buyUpgradeProc, 20)
   discard result.addFunction("buyPower", 1, buyPowerProc, 20)
   discard result.addFunction("itemRank", 1, itemRankProc, 4)
+  discard result.addFunction("upgradeLevel", 1, upgradeLevelProc, 4)
   discard result.addFunction("halt", 0, stopProc, 20)
   discard result.addFunction("ping", 2, pingProc, 20)
   discard result.addFunction("blinkTo", 2, blinkToProc, 400)

@@ -36,15 +36,16 @@ Website (create): `polyworld/web/pudge-wars/` **or** a sibling Vercel project. D
 
 ---
 
-## Live platform IDs (as of 2026-09-01)
+## Live platform IDs (as of 2026-09-04)
 
 | What | ID |
 |------|-----|
 | League | [Pudge Wars](https://softmax.com/observatory/v2?detail=league:league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0) `league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0` |
+| League seed | `lseed_44f5072a-3066-4542-9fbd-b52cfa2e225c` (`pudge-wars/ladder`, variant `league-3v3`) |
 | Division | `div_471aedc1-00f7-41dd-971d-f0beff95a439` |
 | Ladder | `team_pair` + **`team_layout: blocks`** (0–2 West, 3–5 East). Never interleaved. |
-| Canonical coworld (check before upload) | name `pudge-wars`; was 0.2.1 `cow_c01d6094-bc09-469f-93bc-e179a884e83f` then local dist showed **0.2.4** — **query live canonical** with `uv run coworld --elevated status` / list. Ship hosted-play host as **0.3.x**. |
-| Game image (reuse unless host binary changes) | `public.ecr.aws/q5f4m8t9/cogames@sha256:46141f07d1b2243416517fd511c9e108caeb1630a31fe1d9a97ba0003cbd2a64` |
+| Canonical coworld | `pudge-wars` **0.3.8** `cow_81fbce34-d950-49bb-af45-fdfa1468d202` (certified). League unlocked — follows canonical. Hook is 200 damage (~24% of 840 HP); a dump is not a one-chain kill. JSON player protocol is 1:1 with BASIC (`buy_upgrade` / `buy_power`, `rot` set, `accepted` echo, land-edge `play_west_max` / `play_east_min`). |
+| Game image | `public.ecr.aws/q5f4m8t9/cogames@sha256:d716e33934ea5ffa3af6789b4167b90549d052195cb279c00921ac2e87311baa` |
 
 **Starter policies (Aaron), league champions after upgrade:**
 
@@ -82,7 +83,7 @@ examples/pudge_wars/host_party.sh --human --name Aaron
 
 - Game: [`coworld_host.nim`](coworld_host.nim) (`pwcoworld`). JSON `/player`, `/global`, 2D `/client/player` (click-to-walk — **not** the product client).
 - All seats `humanSlots` (no BASIC). Policies send `{walk_to, hook_to, halt, ping}`. Sticky `{}`.
-- Fog: home bank always visible; enemy bank needs ally sight. Coords = **tiles**. Hook range ~56. Walking cannot cross the river.
+- Fog: home bank always visible; enemy bank needs ally sight. Coords = **tiles**. Hook range ~60. Walking cannot cross the river.
 - Replay: `.pwr` via `COGAME_SAVE_REPLAY_URI`. Observatory viewer is **replay-only** webshell (`?replay=`), gzip public copies without `Content-Encoding`.
 - Tick rate **32**. Map 128×128. River west/east ~53/75. Spawn pads are seeded: lane shuffle + inland jitter, east mirrored (west X 18–36, east = 128−X). Shop stays at (22, 64) / (106, 64).
 

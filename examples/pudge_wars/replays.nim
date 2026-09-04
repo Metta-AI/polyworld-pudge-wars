@@ -17,13 +17,17 @@ when defined(posix):
 const
   ReplayGame* = "pudge_wars"
   ReplayFormatVersion* = 4'u16
-  ReplayGameVersion* = 28'u16
+  ReplayGameVersion* = 30'u16
     ## Physics the *viewer* runs. Observatory's static wasm must ship at
     ## this same number as the recording image (`pwcoworld`). Older tapes
     ## still load; playback skips hash checks so a rebuilt wasm does not
     ## freeze Featured Match. Bump when physics change, and bump the
     ## coworld version in lockstep. Live follow uses `NetProtocolVersion`
     ## in netproto.nim — that is not the observatory replay path.
+    ## v30: Allied Hooktrap latch/reel; dump snaps to a legal own-bank
+    ##      tile instead of vanishing or overlapping a butcher.
+    ## v29: BaseHookRange 56 → 60 so a rank-0 lip throw latches the far
+    ##      cliff. Mid-lane still rebounds on the fountain.
     ## v28: Lightning (charged splash on a landed enemy hook) and Bounty
     ##      (instant gold, does not overwrite a combat buff) join the
     ##      public river cycle after Big Hook.

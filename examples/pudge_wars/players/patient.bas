@@ -6,32 +6,47 @@
 '
 ' See base.bas for the full host API.
 
-if selfPoints >= 2 then
-  if buyUpgrade(0) = 0 then
-    if buyUpgrade(1) = 0 then
-      buyUpgrade(3)
-    end if
-  end if
-end if
-if selfInShop = 1 then
-  if itemRank(1) = 0 then
-    buyPower(6)
+' Bank one point, then dump the rest: damage > distance > radius.
+left = selfPoints
+while left >= 2
+  got = 0
+  if buyUpgrade(0) = 1 then
+    got = 1
   else
-    if itemRank(0) = 0 then
-      buyPower(5)
+    if buyUpgrade(1) = 1 then
+      got = 1
     else
-      if itemRank(2) = 0 then
-        buyPower(7)
+      if buyUpgrade(3) = 1 then
+        got = 1
       else
-        if itemRank(3) = 0 then
-          buyPower(8)
-        else
-          if buyPower(6) = 0 then
-            buyPower(5)
-          end if
+        if buyUpgrade(2) = 1 then
+          got = 1
         end if
       end if
     end if
+  end if
+  if got = 1 then
+    left = left - 1
+  else
+    left = 0
+  end if
+wend
+if selfInShop = 1 then
+  if selfHp * 2 < selfMaxHp then
+    buyPower(0)
+  end if
+  if itemRank(1) < 5 then
+    buyPower(6)
+  end if
+  if itemRank(0) < 5 then
+    buyPower(5)
+  end if
+  buyPower(3)
+  if itemRank(2) < 5 then
+    buyPower(7)
+  end if
+  if itemRank(3) < 5 then
+    buyPower(8)
   end if
 end if
 
@@ -321,7 +336,9 @@ if dodgeFlash = 1 then
         mood = 3
       else
         if headId <> 0 then
-          hookTo(headX, headY)
+          hx = headX + (homeX - headX) / 2
+          hy = headY + (homeY - headY) / 2
+          hookTo(hx, hy)
           mood = 1
         else
           hookTo(pokeX, pokeY)
@@ -341,7 +358,9 @@ if hookReady = 1 then
       mood = 7
     else
       if headId <> 0 then
-        hookTo(headX, headY)
+        hx = headX + (homeX - headX) / 2
+        hy = headY + (homeY - headY) / 2
+        hookTo(hx, hy)
         mood = 1
       else
         if drownId <> 0 then
@@ -374,10 +393,10 @@ if flashed = 0 then
         end if
       end if
       needCore = 0
-      if itemRank(1) = 0 then
+      if itemRank(1) < 5 then
         needCore = 1
       end if
-      if itemRank(0) = 0 then
+      if itemRank(0) < 5 then
         needCore = 1
       end if
       if needCore = 1 then

@@ -87,8 +87,15 @@ function drawArena(canvas, message, options) {
     ctx.arc(toX(pudge.x), toY(pudge.y), 8, 0, Math.PI * 2)
     ctx.fill()
     if (pudge.shield) {
-      ctx.strokeStyle = '#f8fafc'
+      ctx.strokeStyle = 'rgba(125, 211, 252, 0.95)'
+      ctx.lineWidth = 5
+      ctx.beginPath()
+      ctx.arc(toX(pudge.x), toY(pudge.y), 13, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.strokeStyle = '#f0f9ff'
       ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.arc(toX(pudge.x), toY(pudge.y), 8, 0, Math.PI * 2)
       ctx.stroke()
     }
     ctx.globalAlpha = 1

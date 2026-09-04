@@ -7,37 +7,56 @@
 '
 ' See base.bas for the full host API.
 
-if selfPoints > 0 then
-  if buyUpgrade(0) = 0 then
-    if buyUpgrade(2) = 0 then
-      if buyUpgrade(1) = 0 then
-        buyUpgrade(3)
-      end if
-    end if
-  end if
-end if
-if selfInShop = 1 then
-  if itemRank(1) = 0 then
-    buyPower(6)
+' Spend every kill point this tick. selfPoints is a snapshot.
+left = selfPoints
+while left > 0
+  got = 0
+  if buyUpgrade(0) = 1 then
+    got = 1
   else
-    if itemRank(0) = 0 then
-      buyPower(5)
+    if buyUpgrade(2) = 1 then
+      got = 1
     else
-      if buyPower(3) = 0 then
-        if itemRank(2) = 0 then
-          buyPower(7)
-        else
-          if itemRank(3) = 0 then
-            buyPower(8)
-          else
-            if buyPower(6) = 0 then
-              buyPower(5)
-            end if
-          end if
+      if buyUpgrade(1) = 1 then
+        got = 1
+      else
+        if buyUpgrade(3) = 1 then
+          got = 1
         end if
       end if
     end if
   end if
+  if got = 1 then
+    left = left - 1
+  else
+    left = 0
+  end if
+wend
+if selfInShop = 1 then
+  if selfHp * 2 < selfMaxHp then
+    buyPower(0)
+  end if
+  if itemRank(1) < 5 then
+    buyPower(6)
+  end if
+  if itemRank(0) < 5 then
+    buyPower(5)
+  end if
+  buyPower(3)
+  if itemRank(2) < 5 then
+    buyPower(7)
+  end if
+  if itemRank(3) < 5 then
+    buyPower(8)
+  end if
+end if
+reachNow = 52 + 4 * upgradeLevel(1) + upgradeLevel(3)
+if selfBuff = 4 then
+  reachNow = reachNow + reachNow / 2
+end if
+leadNow = 9 + upgradeLevel(2)
+if leadNow < 1 then
+  leadNow = 1
 end if
 
 headId = 0
@@ -163,8 +182,8 @@ end if
 if dy > span then
   span = dy
 end if
-aimX = bestX + evx * span / 9
-aimY = bestY + evy * span / 9
+aimX = bestX + evx * span / leadNow
+aimY = bestY + evy * span / leadNow
 if aimX < 8 then
   aimX = 8
 end if
@@ -404,6 +423,12 @@ if fleeRot = 0 and closeId <> 0 then
   mood = 1
 else
   if hookReady = 1 then
+    if headId <> 0 then
+      hx = headX + (homeX - headX) / 2
+      hy = headY + (homeY - headY) / 2
+      hookTo(hx, hy)
+      mood = 2
+    else
     if cutX >= 0 then
       hookTo(cutX, cutY)
       mood = 8
@@ -412,10 +437,6 @@ else
         hookTo(saveX, saveY)
         mood = 9
       else
-        if headId <> 0 then
-          hookTo(headX, headY)
-          mood = 2
-        else
           if lowId <> 0 then
             if lowHp * 3 <= selfMaxHp then
               hookTo(lowX, aimY)
@@ -424,7 +445,7 @@ else
           end if
           if mood = 0 then
             if bestId <> 0 then
-              if dx <= 52 then
+              if dx <= reachNow then
                 hookTo(aimX, aimY)
                 mood = 4
               end if
@@ -435,8 +456,8 @@ else
               end if
             end if
           end if
-        end if
       end if
+    end if
     end if
   end if
 end if
@@ -452,10 +473,10 @@ if flashed = 0 then
         end if
       end if
       needCore = 0
-      if itemRank(1) = 0 then
+      if itemRank(1) < 5 then
         needCore = 1
       end if
-      if itemRank(0) = 0 then
+      if itemRank(0) < 5 then
         needCore = 1
       end if
       if needCore = 1 then

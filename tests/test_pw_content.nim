@@ -61,7 +61,7 @@ block:
   doAssert hookSpeed(1) > hookSpeed(0)
   doAssert hookReelSpeed(1) > hookReelSpeed(0)
   doAssert hookRadius(1) > hookRadius(0)
-  doAssert BaseHookRange == 56 * WorldScale
+  doAssert BaseHookRange == 60 * WorldScale
   doAssert BaseHookRange >= (36 * WorldScale * 3) div 2,
     "default range should be at least 1.5× the prior 36-tile throw"
   doAssert BaseHookRange <= 36 * WorldScale * 2,
@@ -231,6 +231,37 @@ block:
     BaseHookDamage + BaseHookDamage * RuneBigHookDamagePercent div 100
   doAssert bigHookDamage(0) == 0
   doAssert "damage" in shopItemBlurb(ShopBigHook)
+  doAssert attackTooltipLines(BaseMeleeDamage, AttackTicks).len == 3
+  doAssert $BaseMeleeDamage in attackTooltipLines(BaseMeleeDamage, AttackTicks)[2]
+  block:
+    let hook = hookTooltipLines(
+      thrownHookDamage(0, false, false),
+      thrownHookRange(0, false),
+      0, false, false, false, false
+    )
+    doAssert hook.len == 3
+    doAssert hook[0] == "Meat Hook"
+    doAssert $BaseHookDamage in hook[2]
+    doAssert $AllyHookHeal in hook[2]
+    let buffed = hookTooltipLines(
+      thrownHookDamage(0, true, true),
+      thrownHookRange(0, true),
+      2, false, true, true, true
+    )
+    doAssert "2x" in buffed[0]
+    doAssert $RuneLightningDamage in buffed[3]
+  doAssert $RotDamage in rotTooltipLines(false)[2]
+  doAssert "ON" in rotTooltipLines(true)[0]
+  doAssert $BlinkRangeTiles in blinkTooltipLines()[2]
+  doAssert $mineBlastDamage(2) in shopItemTooltipLines(ShopMine, 2)[2]
+  doAssert MineCooldownTicks == TickRate * 15
+  doAssert $wallMaxHp(2) in shopItemTooltipLines(ShopWall, 2)[2]
+  doAssert "0 damage" in grappleTooltipLines()[2]
+  doAssert formatTiles(GrappleRange) in grappleTooltipLines()[2]
+  doAssert $hookDamage(0) in upgradeTooltipLines(UpgradeDamage, 0)[2]
+  doAssert "MAXED" in upgradeTooltipLines(UpgradeDamage, MaxUpgradeLevel)[2]
+  doAssert thrownHookDamage(0, false, true) == BaseHookDamage * RuneDamageMul
+  doAssert thrownHookDamage(0, true, false) == bigHookDamage(BaseHookDamage)
   doAssert RuneKindCount == 6
   doAssert RuneLightningDamage == 120
   doAssert RuneLightningRadius == RotRadius

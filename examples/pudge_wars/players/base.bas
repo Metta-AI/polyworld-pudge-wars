@@ -57,15 +57,17 @@
 '
 ' Actions return 1 when accepted:
 '   walkTo(x, y), hookTo(x, y), blinkTo(x, y), rotToggle(), attackTarget(id)
-'   buyUpgrade(kind), buyPower(id), itemRank(kind), placeWall(x, y)
-'   placeMine(x, y), halt(), ping(x, y)
+'   buyUpgrade(kind), buyPower(id), itemRank(kind), upgradeLevel(kind)
+'   placeWall(x, y), placeMine(x, y), halt(), ping(x, y)
 ' Rot is a toggle: 8-tile blight, 48 DPS including self, 40% slow,
 ' and nobody in a cloud can blink. Turn it on to finish a melee;
 ' turn it off and walk inland when someone else is rotting you.
 ' Upgrade kinds: 0 damage, 1 distance, 2 speed, 3 radius
-' Shop (own pad, gold): 0 flask, 1 haste, 2 regen, 3 big hook, 4 2x
-'   5 river treads, 6 longflight brand, 7 palisade, 8 hooktrap.
-' Permanents occupy 4 inventory slots, ranks to 5. C/V place wall/mine.
+' Spend every kill point the same tick; throw range and lead scale
+' with upgradeLevel after the buy. Shop (own pad, gold): 0 flask,
+' 1 haste, 2 regen, 3 big hook, 4 2x, 5 river treads, 6 longflight
+' brand, 7 palisade, 8 hooktrap. Permanents occupy 4 inventory
+' slots and rank to 5 — keep buying the same family. C/V place wall/mine.
 '
 ' print lines are captured for logs. They are not shown in the world;
 ' nameplates use the bot's script name. Print on changes, not every tick.
@@ -99,6 +101,8 @@ closeIdx = -1
 closeD2 = 2147483647
 campIdx = -1
 campD2 = 2147483647
+allyX = homeX
+allyY = homeY
 preyRot = 0
 foreignRot = 0
 rotX = 0
@@ -115,6 +119,8 @@ while index < objectCount()
       end if
     end if
     if objectId(index) <> selfId and objectAlive(index) = 1 then
+      allyX = objectX(index)
+      allyY = objectY(index)
       adx = objectX(index) - selfX
       ady = objectY(index) - selfY
       ad2 = adx * adx + ady * ady
@@ -274,40 +280,66 @@ else
   end if
 end if
 
-' ---- shopping: damage > speed > distance > radius -------------------
-if selfPoints > 0 then
-  if buyUpgrade(0) = 0 then
-    if buyUpgrade(2) = 0 then
-      if buyUpgrade(1) = 0 then
-        buyUpgrade(3)
-      end if
-    end if
-  end if
-end if
-
-' ---- gold shop: Longflight + Treads, then Big Hook, palisade, mines ---
-if selfInShop = 1 then
-  if itemRank(1) = 0 then
-    buyPower(6)
+' ---- shopping: spend every point; damage > speed > distance > radius
+' selfPoints is a start-of-tick snapshot, so count spends locally.
+left = selfPoints
+while left > 0
+  got = 0
+  if buyUpgrade(0) = 1 then
+    got = 1
   else
-    if itemRank(0) = 0 then
-      buyPower(5)
+    if buyUpgrade(2) = 1 then
+      got = 1
     else
-      if buyPower(3) = 0 then
-        if itemRank(2) = 0 then
-          buyPower(7)
-        else
-          if itemRank(3) = 0 then
-            buyPower(8)
-          else
-            if buyPower(6) = 0 then
-              buyPower(5)
-            end if
-          end if
+      if buyUpgrade(1) = 1 then
+        got = 1
+      else
+        if buyUpgrade(3) = 1 then
+          got = 1
         end if
       end if
     end if
   end if
+  if got = 1 then
+    left = left - 1
+  else
+    left = 0
+  end if
+wend
+
+' ---- gold shop: flask if hurting, then rank Longflight/Treads to 5 ---
+if selfInShop = 1 then
+  if selfHp * 2 < selfMaxHp then
+    buyPower(0)
+  end if
+  if itemRank(1) < 5 then
+    buyPower(6)
+  end if
+  if itemRank(0) < 5 then
+    buyPower(5)
+  end if
+  buyPower(3)
+  if itemRank(2) < 5 then
+    buyPower(7)
+  end if
+  if itemRank(3) < 5 then
+    buyPower(8)
+  end if
+end if
+
+' Live hook stats after this tick's spends.
+' Host calls stay on their own assignment — nested upgradeLevel
+' in an arithmetic expression parse-fails on some binaries.
+distLv = upgradeLevel(1)
+radLv = upgradeLevel(3)
+spdLv = upgradeLevel(2)
+engageNow = engageDist + 4 * distLv + radLv
+if selfBuff = 4 then
+  engageNow = engageNow + engageNow / 2
+end if
+leadNow = leadDiv + spdLv
+if leadNow < 1 then
+  leadNow = 1
 end if
 
 ' ---- incoming hooks: threat to me, or a victim to cut free ----------
@@ -699,8 +731,8 @@ if dodgeBlink = 1 then
       if dy > span then
         span = dy
       end if
-      aimX = ex + evx * span / leadDiv
-      aimY = ey + evy * span / leadDiv
+      aimX = ex + evx * span / leadNow
+      aimY = ey + evy * span / leadNow
       if aimX < 8 then
         aimX = 8
       end if
@@ -728,6 +760,20 @@ if dodgeBlink = 1 then
   end if
 end if
 
+' Headshot even after a blink onto the catch. Same-tick throw.
+if hookReady = 1 then
+  if headIdx >= 0 then
+    hx = objectX(headIdx)
+    hy = objectY(headIdx)
+    hx = hx + (allyX - hx) / 2
+    hy = hy + (allyY - hy) / 2
+    thrown = hookTo(hx, hy)
+    if thrown = 1 then
+      mood = 2
+    end if
+  end if
+end if
+
 ' ---- decide ---------------------------------------------------------
 if blinked = 0 then
 if selfLayer = 2 or selfHooked = 1 then
@@ -745,51 +791,58 @@ else
         thrown = hookTo(threatX, threatY)
         mood = 12
       end if
+      if thrown = 0 then
+        if headIdx >= 0 then
+          hx = objectX(headIdx)
+          hy = objectY(headIdx)
+          hx = hx + (allyX - hx) / 2
+          hy = hy + (allyY - hy) / 2
+          thrown = hookTo(hx, hy)
+          mood = 2
+        end if
+      end if
       if thrown = 0 and cutX >= 0 then
         ' An ally is on a chain: shoot it down.
         thrown = hookTo(cutX, cutY)
         mood = 8
       end if
       if thrown = 0 then
-        if headIdx >= 0 then
-          thrown = hookTo(objectX(headIdx), objectY(headIdx))
+        if swimIdx >= 0 then
+          thrown = hookTo(objectX(swimIdx), objectY(swimIdx))
           mood = 2
         else
-          if swimIdx >= 0 then
-            thrown = hookTo(objectX(swimIdx), objectY(swimIdx))
-            mood = 2
+          if saveIdx >= 0 then
+            thrown = hookTo(objectX(saveIdx), objectY(saveIdx))
+            mood = 10
           else
-            if saveIdx >= 0 then
-              thrown = hookTo(objectX(saveIdx), objectY(saveIdx))
-              mood = 10
-            else
-              engageEff = engageDist
-              if cutterMode = 1 then
+            engageEff = engageNow
+            if cutterMode = 1 then
+              if engageEff < 44 then
                 engageEff = 44
               end if
-              if enemyAlive = 1 and eshield = 0 and losClear = 1 then
-                if pokeSafe = 1 and dx <= engageEff and dy <= engageEff then
-                  span = dx
-                  if dy > span then
-                    span = dy
-                  end if
-                  aimX = ex + evx * span / leadDiv
-                  aimY = ey + evy * span / leadDiv
-                  if aimX < 8 then
-                    aimX = 8
-                  end if
-                  if aimX > 119 then
-                    aimX = 119
-                  end if
-                  if aimY < 8 then
-                    aimY = 8
-                  end if
-                  if aimY > 119 then
-                    aimY = 119
-                  end if
-                  thrown = hookTo(aimX, aimY)
-                  mood = 3
+            end if
+            if enemyAlive = 1 and eshield = 0 and losClear = 1 then
+              if pokeSafe = 1 and dx <= engageEff and dy <= engageEff then
+                span = dx
+                if dy > span then
+                  span = dy
                 end if
+                aimX = ex + evx * span / leadNow
+                aimY = ey + evy * span / leadNow
+                if aimX < 8 then
+                  aimX = 8
+                end if
+                if aimX > 119 then
+                  aimX = 119
+                end if
+                if aimY < 8 then
+                  aimY = 8
+                end if
+                if aimY > 119 then
+                  aimY = 119
+                end if
+                thrown = hookTo(aimX, aimY)
+                mood = 3
               end if
             end if
           end if
@@ -889,11 +942,16 @@ else
         pulling = 1
       end if
       needCore = 0
-      if itemRank(1) = 0 then
+      if itemRank(1) < 5 then
         needCore = 1
       end if
-      if itemRank(0) = 0 then
+      if itemRank(0) < 5 then
         needCore = 1
+      end if
+      if selfHp * 2 < selfMaxHp then
+        if selfGold >= 5 then
+          needCore = 1
+        end if
       end if
       wantShop = 0
       if needCore = 1 and selfGold >= 10 and threatX < 0 and headIdx < 0 then

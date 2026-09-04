@@ -168,7 +168,7 @@ Arena facts the policy can rely on:
   Read `homeX`/`homeY` — do not hardcode 22/106. Kills respawn on your
   pad after 4 s with a 2 s untargetable shield that breaks on acting.
   Shop stays at (22, 64) west / (106, 64) east.
-- Hooks: base 56-tile range, ~20 tiles/s launch accelerating in
+- Hooks: base 60-tile range, ~20 tiles/s launch accelerating in
   flight, 2 s cooldown, 80 damage +15 per damage level. A hooked
   enemy is reeled to you; hooking an ally heals them a little;
   hooking a corpse denies. Hooks bounce off the island rocks and

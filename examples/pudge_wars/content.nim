@@ -110,7 +110,7 @@ const
   ShopWallGold* = 10'i32
     ## Bank Palisade: place a timed HP wall on your bank.
   ShopMineGold* = 10'i32
-    ## Hooktrap: place an invisible mine enemies can hook.
+    ## Hooktrap: hidden mine. Enemy hooks detonate; allied hooks grab.
   InventorySlots* = 4'i32
     ## HUD inventory wells. One unique family per slot; buy-again ranks it.
   ItemMaxRank* = 5'i32
@@ -133,11 +133,11 @@ const
   MineDurationTicks* = TickRate * 40
   MineBaseDamage* = 80'i32
   MineDamagePerRank* = 20'i32
-  MineCooldownTicks* = TickRate * 8
+  MineCooldownTicks* = TickRate * 15
   MineRadius* = WorldScale
     ## Mine body the hook disk has to clip.
   MineBlastRadius* = WorldScale * 2
-  MaxMinesPerPlayer* = 2'i32
+  MaxMinesPerPlayer* = 3'i32
   FirstPropId* = 2000'i32
   WallObjectKind* = 2'i32
   MineObjectKind* = 3'i32
@@ -225,11 +225,12 @@ const
     ## A landed hook is a real chunk: ~24% of 840 HP, five hits to
     ## kill from full. Upgrades and runes still climb from here.
   HookDamagePerLevel* = 15'i32
-  BaseHookRange* = 56 * WorldScale
-    ## Trimmed from 64: throws are commitments again; the Distance
-    ## upgrade climbs back toward the old cross-map reach.
-    ## ~1.78× the prior 36-tile default. The river is ~24 tiles; this
-    ## crosses it from a spawn with leftover for bank depth and bounces.
+  BaseHookRange* = 60 * WorldScale
+    ## Lip-to-cliff is 62 tile-centers (`PlayEastMax - PlayWestMax`);
+    ## 56 fell ~0.4 tiles short of the grab disk. 60 latches a still
+    ## butcher on the far cliff from the river lip (Distance rank 0).
+    ## Mid-lane still dies on the fountain. Distance climbs toward the
+    ## old 64-tile cross-map reach.
   HookRangePerLevel* = 4 * WorldScale
   BaseHookSpeed* = 36_000'i32
   HookSpeedPerLevel* = 1_800'i32
@@ -423,20 +424,22 @@ proc isPermanent*(item: ShopItem): bool =
   ## True for inventory families; false for flask/rune powerups.
   item >= ShopBoots
 
-proc shopItemBlurb*(item: ShopItem): string =
-  ## One-line HUD tooltip for a shop row.
+proc shopItemBlurb*(
+    item: ShopItem; wallKey = "C", mineKey = "V"
+): string =
+  ## Short explanation for a shop row or inventory well.
   case item
-  of ShopFlask: "Instant full heal."
-  of ShopHaste: "15s haste rune."
-  of ShopRegen: "15s regen rune."
-  of ShopBigHook: "15s bigger hook, +" & $RuneBigHookDamagePercent &
-    "% damage."
-  of ShopDoubleDamage: "15s double hook damage."
-  of ShopBoots: "+" & $ItemBootsSpeedPercent & "% move speed per rank."
-  of ShopLongshot: "Hook hits deal +" & $ItemLongshotPercent &
-    "% damage per tile of flight, per rank."
-  of ShopWall: "Place a HP wall on your bank (tap C, then click). Cooldown."
-  of ShopMine: "Place a hidden mine (V, then click). Enemy hooks detonate it."
+  of ShopFlask: "Drink at the base shop to restore all missing health."
+  of ShopHaste: "Haste rune: sprint on land and in the river."
+  of ShopRegen: "Regen rune: heal over time."
+  of ShopBigHook: "Bigger hook: longer throw, wider grab, extra damage."
+  of ShopDoubleDamage: "Double Damage rune: next hooks hit twice as hard."
+  of ShopBoots: "Passive. Extra walk speed on land and in the river."
+  of ShopLongshot: "Passive. Hook damage grows with how far the hook flew."
+  of ShopWall: "Place a HP wall on your bank (" & wallKey & ", then click)."
+  of ShopMine:
+    "Plant a hidden mine (" & mineKey &
+      ", then click; walks there if needed). Ally hooks grab it; enemy hooks detonate it."
 
 proc iconPath*(name: string, kind = "icons"): string =
   ## Returns a polyworld_data path for one published PNG.
@@ -600,8 +603,203 @@ proc maxWallsForRank*(rank: int32): int32 =
   if rank >= 3: MaxWallsPerPlayer else: 1'i32
 
 proc maxMinesForRank*(rank: int32): int32 =
-  ## Simultaneous mines: one at ranks 1-2, two from rank 3.
-  if rank >= 3: MaxMinesPerPlayer else: 1'i32
+  ## Simultaneous mines: up to three once Hooktrap is owned.
+  if rank <= 0: 0'i32 else: MaxMinesPerPlayer
+
+proc formatTiles*(worldUnits: int32): string =
+  ## World units as "N.N" tiles for HUD copy.
+  let tenths = int(int64(max(worldUnits, 0'i32)) * 10 div WorldScale)
+  $(tenths div 10) & "." & $(tenths mod 10)
+
+proc formatSeconds*(ticks: int32): string =
+  ## Duration ticks as "N.Ns".
+  let tenths =
+    (int(max(ticks, 0'i32)) * 10 + int(TickRate) - 1) div int(TickRate)
+  $(tenths div 10) & "." & $(tenths mod 10) & "s"
+
+proc rotDps*(): int32 {.inline.} =
+  ## Rot pulse converted to damage per second.
+  RotDamage * TickRate div max(RotPeriodTicks, 1'i32)
+
+proc thrownHookDamage*(level: int32, bigHook, doubleDamage: bool): int32 =
+  ## Meat Hook hit damage after the damage upgrade and combat runes.
+  result = hookDamage(level)
+  if bigHook:
+    result = bigHookDamage(result)
+  if doubleDamage:
+    result = result * RuneDamageMul
+
+proc thrownHookRange*(level: int32, bigHook: bool): int32 =
+  ## Meat Hook travel distance after the distance upgrade and Big Hook.
+  result = hookRange(level)
+  if bigHook:
+    result = result + result * RuneBigHookPercent div 100
+
+proc attackTooltipLines*(damage, periodTicks: int32): seq[string] =
+  ## Title, how-to, and swing numbers for the cleaver well.
+  @[
+    "Attack",
+    "Right-click an enemy to walk in and swing. Also chips palisades.",
+    $damage & " damage every " & formatSeconds(periodTicks)
+  ]
+
+proc hookTooltipLines*(
+    damage, rangeUnits: int32,
+    longshotRank: int32,
+    quickcast, bigHook, doubleDamage, lightning: bool,
+    hookKey = "Q"
+): seq[string] =
+  ## Title, how-to, and live hook numbers for the Meat Hook well.
+  var title = "Meat Hook"
+  if doubleDamage or bigHook or lightning:
+    title.add "  ["
+    var first = true
+    if doubleDamage:
+      title.add "2x"
+      first = false
+    if bigHook:
+      if not first: title.add " + "
+      title.add "Big"
+      first = false
+    if lightning:
+      if not first: title.add " + "
+      title.add "Bolt"
+    title.add "]"
+  let how =
+    if quickcast:
+      "Throws at the cursor. Enemy latch damages and pulls; ally latch heals."
+    else:
+      "Press " & hookKey &
+        ", then click. Enemy latch damages and pulls; ally latch heals."
+  var nums = $damage & " dmg  ·  ally +" & $AllyHookHeal & " HP  ·  " &
+    formatTiles(rangeUnits) & " tiles  ·  CD " & formatSeconds(HookCooldownTicks)
+  result = @[title, how, nums]
+  var extra = ""
+  if longshotRank > 0:
+    extra.add "+" & $(ItemLongshotPercent * longshotRank) & "% dmg/tile"
+  if lightning:
+    if extra.len > 0:
+      extra.add "  ·  "
+    extra.add $RuneLightningDamage & " splash / " &
+      formatTiles(RuneLightningRadius) & " tiles"
+  if extra.len > 0:
+    result.add extra
+
+proc grappleTooltipLines*(grappleKey = "E"): seq[string] =
+  ## Title, how-to, and pull numbers for the E-grapple (not on the bar).
+  @[
+    "Grapple",
+    "Press " & grappleKey &
+      ", then click. Latches terrain and yanks you to it. Deals no damage.",
+    "0 damage  ·  " & formatTiles(GrappleRange) & " tiles  ·  CD " &
+      formatSeconds(GrappleCooldownTicks)
+  ]
+
+proc rotTooltipLines*(active: bool, rotKey = "R"): seq[string] =
+  ## Title, how-to, and pulse numbers for the Rot well.
+  @[
+    if active: "Rot  [ON]" else: "Rot",
+    "Toggle (" & rotKey &
+      ") a blight cloud. Damages everyone inside, including you.",
+    $RotDamage & " dmg / " & formatSeconds(RotPeriodTicks) &
+      " (" & $rotDps() & " DPS)  ·  " & formatTiles(RotRadius) &
+      " tiles  ·  " & $RotSlowPercent & "% slow"
+  ]
+
+proc blinkTooltipLines*(blinkKey = "F"): seq[string] =
+  ## Title, how-to, and hop numbers for the Blink well.
+  @[
+    "Blink",
+    "Hop toward the cursor (" & blinkKey &
+      "). Stops at the last legal tile (cliffs, walls, bodies).",
+    $BlinkRangeTiles & " tiles  ·  CD " & formatSeconds(BlinkCooldownTicks)
+  ]
+
+proc shopItemTitle*(item: ShopItem, rank: int32): string =
+  ## Catalog name, plus rank for inventory families.
+  result = ShopItemNames[item]
+  if item.isPermanent:
+    result.add "  [rank " & $max(rank, 0'i32) & "/" & $ItemMaxRank & "]"
+
+proc shopItemEffect*(item: ShopItem, rank: int32): string =
+  ## Numeric damage, heal, or buff for one catalog row at this rank.
+  let shown = max(rank, 1'i32)
+  case item
+  of ShopFlask:
+    "Restores all missing HP"
+  of ShopHaste:
+    "+" & $RuneHastePercent & "% move speed for " & formatSeconds(RuneBuffTicks)
+  of ShopRegen:
+    $RuneRegenPercent & "% max HP every " & formatSeconds(RuneRegenPeriodTicks) &
+      " for " & formatSeconds(RuneBuffTicks)
+  of ShopBigHook:
+    "+" & $RuneBigHookPercent & "% size  ·  +" & $RuneBigHookDamagePercent &
+      "% hook damage for " & formatSeconds(RuneBuffTicks)
+  of ShopDoubleDamage:
+    $RuneDamageMul & "x hook damage for " & formatSeconds(RuneBuffTicks)
+  of ShopBoots:
+    "+" & $(ItemBootsSpeedPercent * shown) & "% move speed (" &
+      $ItemBootsSpeedPercent & "% per rank)"
+  of ShopLongshot:
+    "+" & $(ItemLongshotPercent * shown) & "% hook damage per tile of flight (" &
+      $ItemLongshotPercent & "% per rank)"
+  of ShopWall:
+    $wallMaxHp(shown) & " HP  ·  " & formatSeconds(wallDurationTicks(shown)) &
+      " life  ·  max " & $maxWallsForRank(shown) & "  ·  CD " &
+      formatSeconds(wallCooldownTicks(shown))
+  of ShopMine:
+    $mineBlastDamage(shown) & " dmg  ·  " & formatTiles(MineBlastRadius) &
+      "-tile blast  ·  max " & $maxMinesForRank(shown) & "  ·  " &
+      formatSeconds(MineDurationTicks) & " life  ·  CD " &
+      formatSeconds(MineCooldownTicks)
+
+proc shopItemTooltipLines*(
+    item: ShopItem, rank: int32; wallKey = "C", mineKey = "V"
+): seq[string] =
+  ## Title, explanation, and effect numbers for a shop or inventory well.
+  @[
+    shopItemTitle(item, rank),
+    shopItemBlurb(item, wallKey, mineKey),
+    shopItemEffect(item, rank)
+  ]
+
+proc upgradeTooltipLines*(kind: UpgradeKind, level: int32): seq[string] =
+  ## Title, explanation, and current/next numbers for a hook upgrade well.
+  let
+    maxed = level >= MaxUpgradeLevel
+    nextLevel = min(level + 1, MaxUpgradeLevel)
+  var effect, numbers: string
+  case kind
+  of UpgradeDamage:
+    effect = "Each rank: +" & $HookDamagePerLevel & " enemy hook damage."
+    numbers = $hookDamage(level) & " damage"
+    if not maxed:
+      numbers.add " > " & $hookDamage(nextLevel)
+  of UpgradeDistance:
+    effect = "Each rank: +" & formatTiles(HookRangePerLevel) &
+      " tiles of hook range."
+    numbers = formatTiles(hookRange(level)) & " tiles"
+    if not maxed:
+      numbers.add " > " & formatTiles(hookRange(nextLevel))
+  of UpgradeSpeed:
+    effect = "Each rank: faster hook flight (and reel)."
+    numbers = formatTiles(hookSpeed(level) * TickRate) & " tiles/s"
+    if not maxed:
+      numbers.add " > " & formatTiles(hookSpeed(nextLevel) * TickRate)
+  of UpgradeRadius:
+    effect = "Each rank: a wider hook grab (easier latches)."
+    numbers = formatTiles(hookRadius(level)) & " tiles"
+    if not maxed:
+      numbers.add " > " & formatTiles(hookRadius(nextLevel))
+  if maxed:
+    numbers.add "  ·  MAXED"
+  else:
+    numbers.add "  ·  cost: 1 point"
+  @[
+    UpgradeNames[kind] & "  [rank " & $level & "/" & $MaxUpgradeLevel & "]",
+    effect,
+    numbers
+  ]
 
 proc clampTeamSize*(n: int): int {.inline.} =
   ## N vs N is 1..5 a side.

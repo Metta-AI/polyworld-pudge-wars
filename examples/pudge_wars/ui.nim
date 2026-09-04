@@ -20,6 +20,9 @@ const
   EastColor = rgbx(82, 142, 220, 255)
   AllyHpColor* = rgbx(72, 210, 96, 255)
   EnemyHpColor* = rgbx(220, 56, 48, 255)
+  ShieldHpColor = rgbx(140, 230, 255, 255)
+    ## Ice HP while spawn-protected. Overrides ally/enemy so the
+    ## window is readable on bars, pips, and the portrait.
   HookBarColor = rgbx(72, 148, 210, 255)
   ReadyGold = rgbx(255, 214, 120, 255)
   KillFeedSeconds = 6.0
@@ -579,7 +582,10 @@ proc butcherDisplayName*(index: int): string =
 
 proc pudgeHpColor*(pudge: Pudge): ColorRGBX =
   ## Ally green / enemy red from the local POV. Omniscient keeps team
-  ## colors, with fountain and river as status tints.
+  ## colors, with fountain and river as status tints. Spawn shield
+  ## paints ice over that so invuln is obvious on every HP surface.
+  if pudge.shieldTicks > 0 and pudge.state == Alive:
+    return ShieldHpColor
   let rel = viewRelationTeam()
   if rel >= 0:
     if pudge.team.ord == rel: AllyHpColor else: EnemyHpColor
@@ -645,10 +651,18 @@ proc updateMinimapCamera*(
     followSelection: var bool
 ) =
   ## Pans the camera while the primary button drags on the compass well.
+  ## Option+click issues a team ping at that tile instead of panning.
   if menuOpen:
     minimapPanning = false
     return
   let area = minimapArea(window)
+  if altModifierDown(window):
+    minimapPanning = false
+    if window.buttonPressed[MouseLeft] and insideMinimapCircle(area, mouse):
+      let world = minimapWorldPoint(mouse, area.origin, area.size, HalfGrid)
+      let (tileX, tileY) = tileOfGround(vec3(world.x, 0, world.y))
+      discard issueMapPing(tileX, tileY)
+    return
   if window.buttonPressed[MouseLeft] and insideMinimapCircle(area, mouse):
     minimapPanning = true
     followSelection = false
@@ -814,7 +828,7 @@ proc drawMinimap(
       minimapPosition(hudPoint(pudge.position), area),
       7,
       pudgeHpColor(pudge),
-      ring = i == heroSlot or i == spectateSlot
+      ring = i == heroSlot or i == spectateSlot or pudge.shieldTicks > 0
     )
 
   let aspect = currentLayout(window).worldPanel.aspect
@@ -1116,6 +1130,8 @@ proc drawRoster(
     hudScratch.addHudInt(int(pudge.deaths))
     if pudge.hookedBy != 0:
       hudScratch.add "  hooked"
+    elif pudge.shieldTicks > 0:
+      hudScratch.add "  shield"
     elif pudge.onIslandFountain:
       hudScratch.add "  fountain"
     elif pudge.inRiver:
@@ -1194,7 +1210,7 @@ proc drawHudTooltip(
   if lines.len == 0:
     return
   let
-    tipW = 400.0'f32
+    tipW = 520.0'f32
     tipH = 14.0'f32 + lines.len.float32 * 18.0'f32
     tipOrigin = vec2(
       clamp(
@@ -1265,7 +1281,17 @@ proc drawBottomUnit(
   if hero.state == Dying:
     sk.drawRect(portraitInner.origin, portraitInner.size, rgbx(12, 14, 20, 170))
   elif hero.shieldTicks > 0:
-    sk.drawRect(portraitInner.origin, portraitInner.size, rgbx(120, 200, 255, 70))
+    sk.drawRect(portraitInner.origin, portraitInner.size, rgbx(80, 200, 255, 150))
+    sk.drawRect(
+      portraitInner.origin,
+      vec2(portraitInner.size.x, 3),
+      rgbx(180, 240, 255, 230)
+    )
+    sk.drawRect(
+      portraitInner.origin + vec2(0, portraitInner.size.y - 3),
+      vec2(portraitInner.size.x, 3),
+      rgbx(180, 240, 255, 230)
+    )
 
   let
     hookOverlay = cooldownOverlay(
@@ -1359,7 +1385,19 @@ proc drawBottomUnit(
     sk.drawLabel(
       hudScratch, portrait.origin, portrait.size, ReadyGold, "Small", CenterAlign
     )
-  elif hero.state != Dying and hero.buffTicks > 0:
+  elif hero.shieldTicks > 0:
+    let
+      plateSize = vec2(portrait.size.x - 8, 16)
+      plateOrigin = portrait.origin + vec2(4, 4)
+    sk.drawRect(plateOrigin, plateSize, rgbx(8, 18, 28, 210))
+    hudScratch.setLen(0)
+    hudScratch.add "INVULN "
+    hudScratch.addHudSeconds(hero.shieldTicks)
+    sk.drawLabel(
+      hudScratch, plateOrigin, plateSize,
+      ShieldHpColor, "Small", CenterAlign
+    )
+  if hero.state != Dying and hero.buffTicks > 0:
     let
       plateSize = vec2(portrait.size.x - 8, 14)
       plateOrigin = portrait.origin + vec2(4, portrait.size.y - 18)
@@ -1524,100 +1562,6 @@ proc drawBottomUnit(
       if hookWell.contains(sk.mousePos):
         toggleHookAutocast()
 
-    block hookTooltip:
-      let well = hud.actions.actionWell(1)
-      if not well.contains(sk.mousePos):
-        break hookTooltip
-      sk.drawHudTooltip(
-        window,
-        well,
-        [
-          "Meat Hook",
-          if options.quickcast: "Quickcast: throws at the cursor."
-          else: "Press " & bindLabel(BindHook) & ", then click to throw.",
-          if options.autocast:
-            "Autocast ON: right-click an enemy to hook."
-          else:
-            "Right-click this well to arm autocast."
-        ]
-      )
-
-    block itemTooltip:
-      var hovered = ShopFlask
-      var found = false
-      var well = hud.items
-      for i in 0 ..< itemWellCount:
-        let slot = hud.actions.actionWell(4 + i)
-        if slot.contains(sk.mousePos):
-          hovered = itemWells[i]
-          well = slot
-          found = true
-          break
-      if not found:
-        break itemTooltip
-      let rank = hero.itemRank[hovered]
-      sk.drawHudTooltip(
-        window,
-        well,
-        [
-          ShopItemNames[hovered] & "  [rank " & $rank & "/" &
-            $ItemMaxRank & "]",
-          shopItemBlurb(hovered)
-        ]
-      )
-
-    block upgradeTooltip:
-      var hoveredKind = -1
-      var well = hud.inventory
-      for kind in UpgradeKind:
-        let slot = hud.actions.actionWell(6 + ord(kind))
-        if slot.contains(sk.mousePos):
-          hoveredKind = kind.ord
-          well = slot
-      if hoveredKind < 0:
-        break upgradeTooltip
-      let
-        kind = UpgradeKind(hoveredKind)
-        level = hero.upgrades[kind]
-        maxed = level >= MaxUpgradeLevel
-      proc tiles(value: int32): string =
-        let tenths = int(int64(value) * 10 div WorldScale)
-        $(tenths div 10) & "." & $(tenths mod 10)
-      var effect, numbers: string
-      case kind
-      of UpgradeDamage:
-        effect = "Each rank: +" & $HookDamagePerLevel & " hook damage."
-        numbers = "damage " & $hookDamage(level) &
-          (if maxed: "" else: " > " & $hookDamage(level + 1))
-      of UpgradeDistance:
-        effect = "Each rank: +" & tiles(HookRangePerLevel) &
-          " tiles of hook range."
-        numbers = "range " & tiles(hookRange(level)) &
-          (if maxed: "" else: " > " & tiles(hookRange(level + 1))) &
-          " tiles"
-      of UpgradeSpeed:
-        effect = "Each rank: faster hook flight (and reel)."
-        numbers = "speed " & tiles(hookSpeed(level) * TickRate) &
-          (if maxed: ""
-           else: " > " & tiles(hookSpeed(level + 1) * TickRate)) &
-          " tiles/s"
-      of UpgradeRadius:
-        effect = "Each rank: a wider hook grab (easier latches)."
-        numbers = "radius " & tiles(hookRadius(level)) &
-          (if maxed: "" else: " > " & tiles(hookRadius(level + 1))) &
-          " tiles"
-      sk.drawHudTooltip(
-        window,
-        well,
-        [
-          UpgradeNames[kind] & "  [rank " & $level & "/" &
-            $MaxUpgradeLevel & "]",
-          effect,
-          if maxed: "MAXED"
-          else: numbers & "   cost: 1 point (kills earn points)"
-        ]
-      )
-
     let (errText, errAlpha) = humanErrorLine()
     if errText.len > 0:
       sk.drawLabel(
@@ -1628,6 +1572,75 @@ proc drawBottomUnit(
         "Hud",
         CenterAlign
       )
+
+  block actionTooltip:
+    var hovered = -1
+    var well = hud.bar
+    for i in 0 ..< ActionSlotCount:
+      if actionSpecs[i].icon.len == 0:
+        continue
+      let slot = hud.actions.actionWell(i)
+      if slot.contains(sk.mousePos):
+        hovered = i
+        well = slot
+        break
+    if hovered < 0:
+      break actionTooltip
+    case hovered
+    of 0:
+      sk.drawHudTooltip(
+        window, well, attackTooltipLines(hero.meleeDamage, hero.attackPeriod)
+      )
+    of 1:
+      sk.drawHudTooltip(
+        window,
+        well,
+        hookTooltipLines(
+          thrownHookDamage(
+            hero.upgrades[UpgradeDamage],
+            hero.hasBuff(RuneBigHook),
+            hero.hasBuff(RuneDoubleDamage)
+          ),
+          thrownHookRange(
+            hero.upgrades[UpgradeDistance],
+            hero.hasBuff(RuneBigHook)
+          ),
+          hero.itemRank[ShopLongshot],
+          options.quickcast,
+          hero.hasBuff(RuneBigHook),
+          hero.hasBuff(RuneDoubleDamage),
+          hero.hasBuff(RuneLightning),
+          bindLabel(BindHook)
+        )
+      )
+    of 2:
+      sk.drawHudTooltip(
+        window, well, rotTooltipLines(hero.rotOn, bindLabel(BindRot))
+      )
+    of 3:
+      sk.drawHudTooltip(
+        window, well, blinkTooltipLines(bindLabel(BindBlink))
+      )
+    of 4, 5:
+      let itemIdx = hovered - 4
+      if itemIdx < itemWellCount:
+        sk.drawHudTooltip(
+          window,
+          well,
+          shopItemTooltipLines(
+            itemWells[itemIdx],
+            hero.itemRank[itemWells[itemIdx]],
+            bindLabel(BindWall),
+            bindLabel(BindMine)
+          )
+        )
+    of 6, 7, 8, 9:
+      let kind = UpgradeKind(hovered - 6)
+      sk.drawHudTooltip(
+        window, well, upgradeTooltipLines(kind, hero.upgrades[kind])
+      )
+    else:
+      discard
 
 proc canBuyShopRow(hero: Pudge, item: ShopItem): bool =
   if hero.gold < shopPrice(item):
@@ -1695,31 +1708,30 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
   block shopTip:
     var hovered = ShopFlask
     var found = false
+    var well = grid
     var i = 0
     for item in ShopBoots..ShopMine:
       let
         col = i mod PermanentShopCols
         row = i div PermanentShopCols
-      if grid.gridSlot(
+        slot = grid.gridSlot(
           col, row, PermanentShopCols, PermanentShopRows
-      ).contains(sk.mousePos):
+        )
+      if slot.contains(sk.mousePos):
         hovered = item
+        well = slot
         found = true
         break
       inc i
     if found:
-      let
-        rank = hero.itemRank[hovered]
-        tip = ShopItemNames[hovered] & "  " & $shopPrice(hovered) &
-          "g   " & shopItemBlurb(hovered) &
-          (if rank > 0: "  owned " & $rank else: "")
-      sk.drawLabel(
-        tip,
-        panel.origin + vec2(8, 124),
-        vec2(panel.size.x - 16, 16),
-        LabelColor,
-        "Small"
+      var lines = shopItemTooltipLines(
+        hovered,
+        hero.itemRank[hovered],
+        bindLabel(BindWall),
+        bindLabel(BindMine)
       )
+      lines[0] = lines[0] & "  ·  " & $shopPrice(hovered) & "g"
+      sk.drawHudTooltip(window, well, lines)
   sk.drawLabel(
     "POWERUPS",
     panel.origin + vec2(10, 144),
@@ -1734,7 +1746,7 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
   var
     hoveredPower = ShopFlask
     foundPower = false
-    hoveredRowY = 0.0'f32
+    hoveredRow = GameUiPanel()
   for i, item in Powerups:
     let
       row = GameUiPanel(
@@ -1746,10 +1758,8 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
       row.origin, row.size,
       if afford: rgbx(24, 28, 36, 220) else: rgbx(16, 18, 24, 220)
     )
-    var label = "[" & PowerKeys[i] & "]  " & ShopItemNames[item] &
+    let label = "[" & PowerKeys[i] & "]  " & ShopItemNames[item] &
       "  " & $shopPrice(item) & "g"
-    if item == ShopBigHook:
-      label.add "  +" & $RuneBigHookDamagePercent & "% dmg"
     sk.drawLabel(
       label,
       row.origin + vec2(6, 3),
@@ -1762,21 +1772,11 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
     if row.contains(sk.mousePos):
       hoveredPower = item
       foundPower = true
-      hoveredRowY = row.origin.y
+      hoveredRow = row
   if foundPower:
-    let
-      tip = shopItemBlurb(hoveredPower)
-      tipW = min(panel.size.x, 320.0'f32)
-      tipH = 28.0'f32
-      tipOrigin = vec2(panel.origin.x, hoveredRowY - tipH - 4.0'f32)
-    sk.drawRect(tipOrigin, vec2(tipW, tipH), rgbx(10, 12, 16, 230))
-    sk.drawLabel(
-      tip,
-      tipOrigin + vec2(8, 6),
-      vec2(tipW - 16, 16),
-      LabelColor,
-      "Small"
-    )
+    var lines = shopItemTooltipLines(hoveredPower, 0)
+    lines[0] = lines[0] & "  ·  " & $shopPrice(hoveredPower) & "g"
+    sk.drawHudTooltip(window, hoveredRow, lines)
 
 proc drawNetBanner*(sk: Silky, window: Window, text: string) =
   ## One urgent center-screen line: desync, connection loss, reconnect.
@@ -2831,6 +2831,20 @@ proc drawUi*(
       vec2(0, layout.size.y * 0.38'f32),
       vec2(layout.size.x, 30),
       ReadyGold,
+      "H1",
+      CenterAlign
+    )
+  elif humanControlActive() and isOwnedInspect() and index >= 0 and
+      run.world.pudges[index].shieldTicks > 0 and not run.world.gameOver and
+      not transport.inHistory:
+    hudScratch.setLen(0)
+    hudScratch.add "INVULNERABLE  "
+    hudScratch.addHudSeconds(run.world.pudges[index].shieldTicks)
+    sk.drawLabel(
+      hudScratch,
+      vec2(0, layout.size.y * 0.38'f32),
+      vec2(layout.size.x, 30),
+      ShieldHpColor,
       "H1",
       CenterAlign
     )

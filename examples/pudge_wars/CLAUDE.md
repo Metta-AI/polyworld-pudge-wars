@@ -1,3 +1,13 @@
+# Private 2v2 teammate (if `players/partner.bas` exists)
+
+If `players/partner.bas` is on disk, this session is **teammate
+training**, not the 1v1 challenger ladder. Do **not** `git add`,
+commit, or push `players/partner.bas` or `squad/` — both are
+gitignored. Evolve only `partner.bas`. Play with `squad.sh`;
+sanity-check with `squad_spar.sh`. Notes live in `squad/NOTES.md`.
+
+---
+
 # Hosted WASM lobby (implement this first if that is the task)
 
 If the session is **hosted play / pudgewars.com / play sessions / prediction-rollback**,

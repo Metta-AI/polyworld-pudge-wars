@@ -216,4 +216,78 @@ block:
   doAssert abs(aimY - 40) <= 12,
     "the fog hook should follow the last-seen river lane"
 
+echo "Testing the default bot spends every kill point in one tick"
+block:
+  var game = newGame(map, 100, false, ReplayData())
+  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  parkBots(game)
+  game.world.pudges[0].points = 3
+  tickWorld(game, proc() = runBotDecisions(game))
+  doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
+  doAssert game.world.pudges[0].points == 0,
+    "base bot must dump every unspent kill point the same think"
+  doAssert game.world.pudges[0].upgrades[UpgradeDamage] == 3,
+    "base bot fills Hook Damage before the other skills"
+  doAssert game.world.pudges[0].upgrades[UpgradeSpeed] == 0
+  doAssert game.world.pudges[0].upgrades[UpgradeDistance] == 0
+  doAssert game.world.pudges[0].upgrades[UpgradeRadius] == 0
+
+echo "Testing the default bot rolls into speed once damage is maxed"
+block:
+  var game = newGame(map, 100, false, ReplayData())
+  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  parkBots(game)
+  game.world.pudges[0].upgrades[UpgradeDamage] = MaxUpgradeLevel
+  game.world.pudges[0].points = 2
+  tickWorld(game, proc() = runBotDecisions(game))
+  doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
+  doAssert game.world.pudges[0].points == 0
+  doAssert game.world.pudges[0].upgrades[UpgradeDamage] == MaxUpgradeLevel
+  doAssert game.world.pudges[0].upgrades[UpgradeSpeed] == 2
+
+echo "Testing hook distance upgrades extend the default bot's throw"
+block:
+  var game = newGame(map, 100, false, ReplayData())
+  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  parkBots(game)
+  game.world.pudges[0].placePudge(22, 40)
+  game.world.pudges[1].placePudge(90, 40)
+  game.world.pudges[3].placePudge(PlayEastMin, 40)
+  game.world.pudges[0].shieldTicks = 0
+  game.world.pudges[1].shieldTicks = 0
+  game.world.pudges[3].shieldTicks = 0
+  game.world.pudges[0].hookCooldown = 0
+  game.world.pudges[0].upgrades[UpgradeDistance] = 6
+  tickWorld(game, proc() = runBotDecisions(game))
+  doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
+  doAssert game.world.pudges[0].windupTicks > 0,
+    "a distance-stacked bot must throw across the river at long range"
+  let
+    longAimX = game.world.pudges[0].windupAimX div FineAimScale
+  doAssert longAimX >= PlayEastMin - 2,
+    "the long throw must aim at the far-bank butcher"
+
+echo "Testing the default bot leads a headshot toward the reeler"
+block:
+  var game = newGame(map, 100, false, ReplayData())
+  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  parkBots(game)
+  game.world.pudges[0].placePudge(30, 50)
+  game.world.pudges[1].placePudge(22, 50)
+  game.world.pudges[3].placePudge(RiverCenterX, 50)
+  for i in 0 ..< PudgeCount:
+    game.world.pudges[i].shieldTicks = 0
+    game.world.pudges[i].hookCooldown = 0
+    game.world.pudges[i].windupTicks = 0
+    game.world.pudges[i].blinkCooldown = BlinkCooldownTicks
+  game.world.pudges[3].hookedBy = game.world.pudges[1].id
+  tickWorld(game, proc() = runBotDecisions(game))
+  doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
+  doAssert game.world.pudges[0].windupTicks > 0,
+    "base bot must throw at an ally's catch"
+  let
+    hsAimX = game.world.pudges[0].windupAimX div FineAimScale
+  doAssert hsAimX > 22, "headshot aim must not target the reeler"
+  doAssert hsAimX < RiverCenterX, "headshot aim must lead toward our bank"
+
 echo "test_pw_bots: all checks passed"

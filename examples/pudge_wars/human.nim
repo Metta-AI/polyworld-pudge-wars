@@ -32,7 +32,8 @@ const
     KeyM, KeyN, KeyO, KeyP, KeyQ, KeyR, KeyS, KeyT, KeyU, KeyV, KeyW, KeyX,
     KeyY, KeyZ
   ]
-  PingWorldSeconds = 2.0
+  PingOverlaySeconds* = 3.0
+    ## Team ping lifetime on the world overlay and minimap.
   PickSpineHeights = [0.25'f32, 1.1'f32, 2.0'f32, 3.1'f32]
     ## Feet → head samples along the butcher's spine.
   PickRingRadius = 0.95'f32
@@ -42,8 +43,24 @@ const
   AttackRed = rgbx(236, 92, 70, 220)
   AimGold = rgbx(240, 218, 128, 200)
   RingGold = rgbx(240, 218, 128, 110)
+  MineHull = rgbx(52, 56, 40, 245)
+  MineRim = rgbx(128, 134, 78, 250)
+  MinePlate = rgbx(92, 98, 58, 250)
+  MineFuse = rgbx(188, 176, 72, 255)
+  MineBolt = rgbx(28, 30, 24, 255)
+  MineGhostHull = rgbx(78, 92, 32, 235)
+  MineGhostRim = rgbx(232, 238, 96, 255)
+  MineGhostPlate = rgbx(168, 186, 58, 250)
+  MineGhostFuse = rgbx(255, 248, 140, 255)
+  MineGhostHalo = rgbx(220, 230, 90, 90)
+  MineGhostBadHull = rgbx(110, 32, 28, 235)
+  MineGhostBadRim = rgbx(240, 92, 70, 255)
+  MineGhostBadPlate = rgbx(190, 58, 46, 250)
+  MineGhostBadFuse = rgbx(255, 180, 140, 255)
+  MineGhostBadHalo = rgbx(232, 86, 68, 90)
   SpectateGold = rgbx(240, 218, 128, 230)
-  PingGold = rgbx(255, 214, 90, 220)
+  PingGold* = rgbx(255, 214, 90, 220)
+  PingInk = rgbx(48, 32, 8, 230)
   TelegraphWest = rgbx(220, 72, 64, 150)
   TelegraphEast = rgbx(72, 148, 230, 150)
   AllyInspect = rgbx(120, 200, 255, 200)
@@ -55,6 +72,10 @@ var
   aimingBlink = false
   aimingWall = false
   aimingMine = false
+  pendingMine = false
+    ## Walk-then-plant: click a bank tile, walk there, drop underfoot.
+  pendingMineX = 0'i32
+  pendingMineZ = 0'i32
   aimingMove = false
   keyMoveLastDir = (0, 0)
   keyMoveLastTime = -1.0e9
@@ -189,12 +210,16 @@ proc aimingHookNow*(): bool =
 proc aimingBlinkNow*(): bool =
   aimingBlink
 
+proc cancelPendingMine() =
+  pendingMine = false
+
 proc cancelAim*() =
   aimingHook = false
   aimingGrapple = false
   aimingBlink = false
   aimingWall = false
   aimingMine = false
+  cancelPendingMine()
   aimingMove = false
   aimingAttack = false
 
@@ -209,6 +234,7 @@ proc resetHumanTransients*() =
   aimingBlink = false
   aimingWall = false
   aimingMine = false
+  pendingMine = false
   aimingMove = false
   aimingAttack = false
   inspectId = 0
@@ -616,6 +642,40 @@ proc canIssueFromHud(): bool =
     return false
   true
 
+proc altModifierDown*(window: Window): bool =
+  ## Option on macOS, Alt elsewhere. Used for ping (LMB) and orbit (RMB).
+  window.buttonDown[KeyLeftAlt] or window.buttonDown[KeyRightAlt]
+
+proc issueMapPing*(tileX, tileY: int32): bool =
+  ## Queues a team ping at one map tile. Same gates as other HUD orders.
+  if not canIssueFromHud():
+    return false
+  if run.historyPlayback and netRole != NetClient:
+    setHumanError("SPECTATING THE PAST - RETURN TO LIVE TO PLAY")
+    return false
+  queueHero(IntentPing, tileX, tileY)
+  true
+
+type
+  PingMarker* = object
+    ## One visible team ping for the world overlay and minimap.
+    tileX*, tileZ*: int32
+    age*: float
+
+proc pingMarkers*(): seq[PingMarker] =
+  ## Recent pings the local view should draw: own team while seated or
+  ## spectating a butcher, every team when omniscient.
+  let
+    world = overlayWorld()
+    viewTeam = viewRelationTeam()
+  for ping in world.pings:
+    if viewTeam >= 0 and ping.team.ord != viewTeam:
+      continue
+    let age = float(world.tick - ping.tick) / float(TickRate)
+    if age < 0 or age > PingOverlaySeconds:
+      continue
+    result.add PingMarker(tileX: ping.x, tileZ: ping.y, age: age)
+
 proc beginMoveCommand*() =
   ## Next ground click walks, Warcraft 3 Move-button style.
   if not canIssueFromHud():
@@ -625,6 +685,7 @@ proc beginMoveCommand*() =
   aimingBlink = false
   aimingWall = false
   aimingMine = false
+  cancelPendingMine()
   aimingAttack = false
   aimingMove = true
 
@@ -637,6 +698,7 @@ proc beginAttackCommand*() =
   aimingBlink = false
   aimingWall = false
   aimingMine = false
+  cancelPendingMine()
   aimingMove = false
   aimingAttack = true
 
@@ -655,6 +717,7 @@ proc beginHookCommand*() =
   aimingBlink = false
   aimingWall = false
   aimingMine = false
+  cancelPendingMine()
   aimingHook = true
 
 proc beginBlinkCommand*() =
@@ -673,6 +736,7 @@ proc beginBlinkCommand*() =
   aimingGrapple = false
   aimingWall = false
   aimingMine = false
+  cancelPendingMine()
   aimingBlink = true
 
 proc beginRotCommand*() =
@@ -713,6 +777,14 @@ proc placeBlockReason(hero: Pudge, item: ShopItem): string =
     return hudCooldown("WALL", hero.wallCooldown)
   if item == ShopMine and hero.mineCooldown > 0:
     return hudCooldown("MINE", hero.mineCooldown)
+  if item == ShopMine and
+      run.world.countProps(hero.id, PropMine) >=
+        maxMinesForRank(hero.itemRank[ShopMine]):
+    return "MAX MINES PLANTED"
+  if item == ShopWall and
+      run.world.countProps(hero.id, PropWall) >=
+        maxWallsForRank(hero.itemRank[ShopWall]):
+    return "MAX WALLS PLANTED"
   ""
 
 proc facingDropTile(hero: Pudge): (int32, int32) =
@@ -726,6 +798,75 @@ proc facingDropTile(hero: Pudge): (int32, int32) =
     int32(here.x + int(int64(hero.facing.x) * 2 div mag)),
     int32(here.z + int(int64(hero.facing.z) * 2 div mag))
   )
+
+proc standingOn(hero: Pudge, tileX, tileZ: int32): bool =
+  let here = tileOf(hero.position)
+  here.x == int(tileX) and here.z == int(tileZ)
+
+proc groundAtTile(tileX, tileZ: int32): Vec3 =
+  groundLift(
+    vec3(
+      float32(tileX) - HalfGrid + 0.5'f32,
+      0,
+      float32(tileZ) - HalfGrid + 0.5'f32
+    ),
+    0.08'f32
+  )
+
+proc mineSiteError(hero: Pudge, tileX, tileZ: int32): string =
+  if riverTile(int(tileX)) or islandTile(int(tileX), int(tileZ)):
+    return "CANNOT PLACE IN THE RIVER"
+  if not run.world.propSiteLegal(hero.team, int(tileX), int(tileZ)):
+    return "CANNOT PLACE THERE"
+  ""
+
+proc issueMineAt(hero: Pudge, tileX, tileZ: int32): bool =
+  ## Plants underfoot, or walks to the tile and plants on arrival.
+  let reason = placeBlockReason(hero, ShopMine)
+  if reason.len > 0:
+    setHumanError(reason)
+    return false
+  let site = mineSiteError(hero, tileX, tileZ)
+  if site.len > 0:
+    setHumanError(site)
+    return false
+  aimingMine = false
+  if standingOn(hero, tileX, tileZ):
+    cancelPendingMine()
+    queueHero(IntentPlaceMine, tileX, tileZ)
+    return true
+  pendingMine = true
+  pendingMineX = tileX
+  pendingMineZ = tileZ
+  queueHero(IntentWalk, tileX, tileZ)
+  walkPulsePoint = groundAtTile(tileX, tileZ)
+  walkPulseTime = epochTime()
+  true
+
+proc flushPendingMine(hero: Pudge) =
+  ## Drops the queued Hooktrap once the butcher is standing on it.
+  if not pendingMine:
+    return
+  if hero.state == Dying or hero.hookedBy != 0:
+    cancelPendingMine()
+    return
+  if not standingOn(hero, pendingMineX, pendingMineZ):
+    return
+  let reason = placeBlockReason(hero, ShopMine)
+  if reason.len > 0:
+    if hero.mineCooldown > 0 and hero.itemRank[ShopMine] > 0 and
+        not hero.inRiver:
+      return
+    setHumanError(reason)
+    cancelPendingMine()
+    return
+  let site = mineSiteError(hero, pendingMineX, pendingMineZ)
+  if site.len > 0:
+    setHumanError(site)
+    cancelPendingMine()
+    return
+  queueHero(IntentPlaceMine, pendingMineX, pendingMineZ)
+  cancelPendingMine()
 
 proc beginPlaceCommand*(item: ShopItem) =
   ## Inventory or hotkey: next ground click drops a wall or mine.
@@ -743,6 +884,7 @@ proc beginPlaceCommand*(item: ShopItem) =
   aimingBlink = false
   aimingMove = false
   aimingAttack = false
+  cancelPendingMine()
   aimingWall = item == ShopWall
   aimingMine = item == ShopMine
 
@@ -752,30 +894,29 @@ proc castPlaceAtCursor(
     hero: Pudge,
     item: ShopItem
 ): bool =
-  let reason = placeBlockReason(hero, item)
-  if reason.len > 0:
-    setHumanError(reason)
-    return false
   let pick = groundUnderMouse(window, viewProjection)
   if not pick.found:
     return false
   let (tileX, tileY) = tileOfGround(pick.point)
-  if item == ShopWall:
-    queueHero(IntentPlaceWall, tileX, tileY)
-  else:
-    queueHero(IntentPlaceMine, tileX, tileY)
+  if item == ShopMine:
+    return issueMineAt(hero, tileX, tileY)
+  let reason = placeBlockReason(hero, item)
+  if reason.len > 0:
+    setHumanError(reason)
+    return false
+  queueHero(IntentPlaceWall, tileX, tileY)
   true
 
 proc castPlaceAhead(hero: Pudge, item: ShopItem): bool =
+  if item == ShopMine:
+    let here = tileOf(hero.position)
+    return issueMineAt(hero, int32(here.x), int32(here.z))
   let reason = placeBlockReason(hero, item)
   if reason.len > 0:
     setHumanError(reason)
     return false
   let (tx, tz) = facingDropTile(hero)
-  if item == ShopWall:
-    queueHero(IntentPlaceWall, tx, tz)
-  else:
-    queueHero(IntentPlaceMine, tx, tz)
+  queueHero(IntentPlaceWall, tx, tz)
   true
 
 proc castHookAtCursor(
@@ -877,6 +1018,8 @@ proc drainIntentResults() =
       continue
     if not res.accepted:
       setHumanError(rejectReason(res))
+      if pendingMine and res.kind in {IntentWalk, IntentPlaceMine}:
+        cancelPendingMine()
   run.intentResults.setLen(0)
 
 proc anyCommandPressed(
@@ -897,7 +1040,8 @@ proc anyCommandPressed(
     window.buttonPressed[bindKey(BindUpgrade4)] or
     wallPressed or
     window.buttonPressed[bindKey(BindMine)] or
-    window.buttonPressed[bindKey(BindPing)]
+    window.buttonPressed[bindKey(BindPing)] or
+    (altModifierDown(window) and window.buttonPressed[MouseLeft])
 
 proc handleSeatSwap(
     window: Window,
@@ -976,7 +1120,8 @@ proc handleInspectClick(
   ## In replay / spectator mode the same click locks fog and the camera
   ## to that butcher; empty ground returns to omniscient.
   if overUi or aimingHook or aimingGrapple or aimingBlink or aimingWall or
-      aimingMine or aimingMove or aimingAttack or window.buttonDown[MouseRight]:
+      aimingMine or aimingMove or aimingAttack or window.buttonDown[MouseRight] or
+      altModifierDown(window):
     inspectArmed = false
     return
   if window.buttonPressed[MouseLeft]:
@@ -1055,6 +1200,7 @@ proc handleHumanInput*(
     aimingBlink = false
     aimingWall = false
     aimingMine = false
+    cancelPendingMine()
   if (aimingMove or aimingAttack) and
       (window.buttonPressed[KeyEscape] or window.buttonPressed[MouseRight]):
     if window.buttonPressed[MouseRight]:
@@ -1076,7 +1222,12 @@ proc handleHumanInput*(
     rmbBlockedCommand = false
     return
 
+  if pendingMine and window.buttonPressed[KeyEscape]:
+    cancelPendingMine()
+    queueHero(IntentStop)
+
   if window.buttonPressed[bindKey(BindHook)]:
+    cancelPendingMine()
     if options.quickcast:
       discard castHookAtCursor(window, viewProjection, hero)
     else:
@@ -1091,6 +1242,7 @@ proc handleHumanInput*(
         aimingHook = true
 
   if window.buttonPressed[bindKey(BindGrapple)]:
+    cancelPendingMine()
     if options.quickcast:
       discard castGrappleAtCursor(window, viewProjection, hero)
     else:
@@ -1105,6 +1257,7 @@ proc handleHumanInput*(
         aimingGrapple = true
 
   if window.buttonPressed[bindKey(BindBlink)]:
+    cancelPendingMine()
     # F hops toward the cursor, even while WASD is held. Facing and
     # walk heading used to steal this into a "blink the way you look"
     # hop; the mouse is the aim.
@@ -1118,6 +1271,7 @@ proc handleHumanInput*(
     if panSharesWall(): panTap
     else: window.buttonPressed[bindKey(BindWall)]
   if wallPressed:
+    cancelPendingMine()
     if options.quickcast:
       discard castPlaceAhead(hero, ShopWall)
       aimingWall = false
@@ -1131,27 +1285,39 @@ proc handleHumanInput*(
     else:
       beginPlaceCommand(ShopMine)
 
-  if aimingHook and window.buttonPressed[MouseLeft] and not overUi:
+  let pingClick =
+    altModifierDown(window) and window.buttonPressed[MouseLeft] and not overUi
+
+  if aimingHook and window.buttonPressed[MouseLeft] and not overUi and
+      not pingClick:
     if castHookAtCursor(window, viewProjection, hero):
       aimingHook = false
 
-  if aimingGrapple and window.buttonPressed[MouseLeft] and not overUi:
+  if aimingGrapple and window.buttonPressed[MouseLeft] and not overUi and
+      not pingClick:
     if castGrappleAtCursor(window, viewProjection, hero):
       aimingGrapple = false
 
-  if aimingBlink and window.buttonPressed[MouseLeft] and not overUi:
+  if aimingBlink and window.buttonPressed[MouseLeft] and not overUi and
+      not pingClick:
     if castBlinkAtCursor(window, viewProjection, hero):
       aimingBlink = false
 
-  if aimingWall and window.buttonPressed[MouseLeft] and not overUi:
+  if aimingWall and window.buttonPressed[MouseLeft] and not overUi and
+      not pingClick:
     if castPlaceAtCursor(window, viewProjection, hero, ShopWall):
       aimingWall = false
 
-  if aimingMine and window.buttonPressed[MouseLeft] and not overUi:
+  if aimingMine and window.buttonPressed[MouseLeft] and not overUi and
+      not pingClick:
     if castPlaceAtCursor(window, viewProjection, hero, ShopMine):
       aimingMine = false
 
-  if aimingMove and window.buttonPressed[MouseLeft] and not overUi:
+  flushPendingMine(hero)
+
+  if aimingMove and window.buttonPressed[MouseLeft] and not overUi and
+      not pingClick:
+    cancelPendingMine()
     let pick = groundUnderMouse(window, viewProjection)
     if pick.found:
       let (tileX, tileY) = tileOfGround(pick.point)
@@ -1160,7 +1326,9 @@ proc handleHumanInput*(
       walkPulseTime = epochTime()
     aimingMove = false
 
-  if aimingAttack and window.buttonPressed[MouseLeft] and not overUi:
+  if aimingAttack and window.buttonPressed[MouseLeft] and not overUi and
+      not pingClick:
+    cancelPendingMine()
     let picked = pickEnemyPudge(window, viewProjection, hero.team)
     if picked != 0:
       let target = pudgeIndex(run.world, picked)
@@ -1176,6 +1344,7 @@ proc handleHumanInput*(
     aimingAttack = false
 
   if rightClickCommand and not overUi and not rmbBlockedCommand:
+    cancelPendingMine()
     var targetId = pickEnemyPudge(window, viewProjection, hero.team)
     var groundFound = false
     var groundPoint = vec3(0)
@@ -1207,6 +1376,7 @@ proc handleHumanInput*(
     rmbBlockedCommand = false
 
   if window.buttonPressed[bindKey(BindStop)]:
+    cancelPendingMine()
     queueHero(IntentStop)
 
   let buyBinds = [
@@ -1223,11 +1393,11 @@ proc handleHumanInput*(
     if window.buttonPressed[key]:
       queueHero(IntentBuyPower, int32(i))
 
-  if window.buttonPressed[bindKey(BindPing)]:
+  if window.buttonPressed[bindKey(BindPing)] or pingClick:
     let pick = groundUnderMouse(window, viewProjection)
     if pick.found:
       let (tileX, tileY) = tileOfGround(pick.point)
-      queueHero(IntentPing, tileX, tileY)
+      discard issueMapPing(tileX, tileY)
 
   # Direct keyboard steering, live alongside the mouse: WASD pushes a
   # rolling walk order ~8 tiles ahead each tick so the dest stays in
@@ -1255,6 +1425,7 @@ proc handleHumanInput*(
       break keyboardSteer
     keyMoveLastDir = (dirX, dirZ)
     keyMoveLastTime = now
+    cancelPendingMine()
     let
       heroTile = tileOf(hero.position)
       dest = keyboardSteerDest(heroTile.x, heroTile.z, dirX, dirZ)
@@ -1291,10 +1462,121 @@ proc addShopOverlays*(renderer: var ShapeRenderer) =
     )
     renderer.addGroundRing(center, 0.6'f32, ShopGold, 0.06'f32)
 
+proc addLandMine*(
+    renderer: var ShapeRenderer,
+    base: Vec3,
+    ghost = false,
+    legal = true
+) =
+  ## Pressure-mine: wide hull, raised rim, plate, and center fuse.
+  ## Ghosts are oversized so the plant preview reads at RTS zoom.
+  let
+    scale = if ghost: 1.85'f32 else: 1.08'f32
+    hull =
+      if not ghost: MineHull
+      elif legal: MineGhostHull
+      else: MineGhostBadHull
+    rim =
+      if not ghost: MineRim
+      elif legal: MineGhostRim
+      else: MineGhostBadRim
+    plate =
+      if not ghost: MinePlate
+      elif legal: MineGhostPlate
+      else: MineGhostBadPlate
+    fuse =
+      if not ghost: MineFuse
+      elif legal: MineGhostFuse
+      else: MineGhostBadFuse
+  if ghost:
+    let halo = if legal: MineGhostHalo else: MineGhostBadHalo
+    renderer.addCircle(base, 1.18'f32 * scale, halo, 24)
+  var layer = base
+  renderer.addCircle(layer, 0.98'f32 * scale, hull, 22)
+  layer.y += 0.07'f32 * scale
+  renderer.addCircle(layer, 0.84'f32 * scale, MineBolt, 20)
+  layer.y += 0.06'f32 * scale
+  renderer.addCircle(layer, 0.78'f32 * scale, rim, 20)
+  layer.y += 0.08'f32 * scale
+  renderer.addCircle(layer, 0.50'f32 * scale, plate, 16)
+  layer.y += 0.08'f32 * scale
+  renderer.addCircle(layer, 0.22'f32 * scale, fuse, 12)
+  layer.y += 0.07'f32 * scale
+  renderer.addCircle(layer, 0.09'f32 * scale, MineBolt, 8)
+  const Bolts = [
+    (1.0'f32, 0.0'f32), (-1.0'f32, 0.0'f32),
+    (0.0'f32, 1.0'f32), (0.0'f32, -1.0'f32)
+  ]
+  for (bx, bz) in Bolts:
+    var peg = base
+    peg.x += bx * 0.62'f32 * scale
+    peg.z += bz * 0.62'f32 * scale
+    peg.y += 0.10'f32 * scale
+    renderer.addSquare(peg, 0.16'f32 * scale, rim)
+
+proc addMinePreview(
+    renderer: var ShapeRenderer,
+    tileX, tileZ: int32,
+    legal: bool
+) =
+  ## Ghost Hooktrap on one tile: a landmine, not a skillshot line.
+  renderer.addLandMine(groundAtTile(tileX, tileZ), ghost = true, legal = legal)
+
+proc addBillboardRect(
+    renderer: var ShapeRenderer,
+    origin, right, up: Vec3,
+    x0, y0, x1, y1: float32,
+    color: ColorRGBX
+) =
+  ## Camera-facing rectangle in the right/up plane through `origin`.
+  renderer.addQuad(
+    origin + right * x0 + up * y0,
+    origin + right * x1 + up * y0,
+    origin + right * x1 + up * y1,
+    origin + right * x0 + up * y1,
+    color
+  )
+
+proc addExclamationMark(
+    renderer: var ShapeRenderer,
+    origin, right, up: Vec3,
+    scale: float32,
+    color: ColorRGBX
+) =
+  ## Billboarded ! : a tall stem over a square dot.
+  let
+    ink = rgbx(PingInk.r, PingInk.g, PingInk.b, color.a)
+    outline = 0.07'f32 * scale
+  renderer.addBillboardRect(
+    origin, right, up,
+    -0.16'f32 * scale - outline, 0.52'f32 * scale - outline,
+    0.16'f32 * scale + outline, 2.12'f32 * scale + outline,
+    ink
+  )
+  renderer.addBillboardRect(
+    origin, right, up,
+    -0.18'f32 * scale - outline, 0.04'f32 * scale - outline,
+    0.18'f32 * scale + outline, 0.42'f32 * scale + outline,
+    ink
+  )
+  renderer.addBillboardRect(
+    origin, right, up,
+    -0.16'f32 * scale, 0.52'f32 * scale,
+    0.16'f32 * scale, 2.12'f32 * scale,
+    color
+  )
+  renderer.addBillboardRect(
+    origin, right, up,
+    -0.18'f32 * scale, 0.04'f32 * scale,
+    0.18'f32 * scale, 0.42'f32 * scale,
+    color
+  )
+
 proc drawHumanOverlays*(
     renderer: var ShapeRenderer,
     window: Window,
-    viewProjection: Mat4
+    viewProjection: Mat4,
+    cameraRight, cameraUp: Vec3
 ) =
   ## World-space feedback: cast telegraphs, aim ring and line, walk
   ## pulse, attack flash, and recent team pings.
@@ -1362,7 +1644,7 @@ proc drawHumanOverlays*(
           renderer.addCircle(
             groundLift(pick.point, 0.45'f32), 0.35'f32, AimGold, 12
           )
-      elif aimingWall or aimingMine:
+      elif aimingWall:
         renderer.addGroundRing(
           center, PlaceRangeTiles.float32 + 0.5'f32, RingGold, 0.10'f32
         )
@@ -1377,6 +1659,16 @@ proc drawHumanOverlays*(
           renderer.addCircle(
             groundLift(pick.point, 0.45'f32), 0.35'f32, AimGold, 12
           )
+      elif aimingMine:
+        let pick = groundUnderMouse(window, viewProjection)
+        if pick.found:
+          let (tileX, tileZ) = tileOfGround(pick.point)
+          renderer.addMinePreview(
+            tileX, tileZ,
+            mineSiteError(hero, tileX, tileZ).len == 0
+          )
+      if pendingMine and not aimingMine:
+        renderer.addMinePreview(pendingMineX, pendingMineZ, true)
       renderer.addGroundRing(center, 1.35'f32, AckGreen, 0.06'f32)
 
   let spectateIdx = spectateIndex()
@@ -1425,19 +1717,24 @@ proc drawHumanOverlays*(
         0.09'f32
       )
 
-  if heroIdx >= 0:
-    let team = run.world.pudges[heroIdx].team
-    for ping in run.world.pings:
-      if ping.team != team:
-        continue
-      let age =
-        float(run.world.tick - ping.tick) / float(TickRate)
-      if age > PingWorldSeconds:
-        continue
-      let
-        center = renderPoint(worldAtTile(int(ping.x), int(ping.y)))
-        grow = float32(age / PingWorldSeconds)
-      renderer.addGroundRing(
-        center, 0.5'f32 + grow * 1.6'f32, PingGold, 0.09'f32
+  for marker in pingMarkers():
+    let
+      fade = float32(clamp(1.0 - marker.age / PingOverlaySeconds, 0.0, 1.0))
+      pulse =
+        if marker.age < 0.7:
+          1.0'f32 + 0.14'f32 * sin(float32(marker.age) * 14.0'f32) *
+            (1.0'f32 - float32(marker.age) / 0.7'f32)
+        else:
+          1.0'f32
+      alpha = uint8(clamp(220.0 * fade, 0.0, 220.0))
+      origin = groundLift(
+        renderPoint(worldAtTile(int(marker.tileX), int(marker.tileZ))),
+        0.35'f32
       )
-      renderer.addCircle(groundLift(center, 0.3'f32), 0.25'f32, PingGold, 10)
+    renderer.addExclamationMark(
+      origin,
+      cameraRight,
+      cameraUp,
+      0.95'f32 * pulse,
+      rgbx(PingGold.r, PingGold.g, PingGold.b, alpha)
+    )

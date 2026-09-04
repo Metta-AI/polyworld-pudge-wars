@@ -6,35 +6,52 @@
 '
 ' See base.bas for the full host API.
 
-if selfPoints > 0 then
-  if buyUpgrade(2) = 0 then
-    if buyUpgrade(3) = 0 then
-      if buyUpgrade(0) = 0 then
-        buyUpgrade(1)
-      end if
-    end if
-  end if
-end if
-if selfInShop = 1 then
-  if itemRank(1) = 0 then
-    buyPower(6)
+' Spend every kill point: speed > radius > damage > distance.
+left = selfPoints
+while left > 0
+  got = 0
+  if buyUpgrade(2) = 1 then
+    got = 1
   else
-    if itemRank(0) = 0 then
-      buyPower(5)
+    if buyUpgrade(3) = 1 then
+      got = 1
     else
-      if itemRank(2) = 0 then
-        buyPower(7)
+      if buyUpgrade(0) = 1 then
+        got = 1
       else
-        if itemRank(3) = 0 then
-          buyPower(8)
-        else
-          if buyPower(6) = 0 then
-            buyPower(5)
-          end if
+        if buyUpgrade(1) = 1 then
+          got = 1
         end if
       end if
     end if
   end if
+  if got = 1 then
+    left = left - 1
+  else
+    left = 0
+  end if
+wend
+if selfInShop = 1 then
+  if selfHp * 2 < selfMaxHp then
+    buyPower(0)
+  end if
+  if itemRank(1) < 5 then
+    buyPower(6)
+  end if
+  if itemRank(0) < 5 then
+    buyPower(5)
+  end if
+  buyPower(3)
+  if itemRank(2) < 5 then
+    buyPower(7)
+  end if
+  if itemRank(3) < 5 then
+    buyPower(8)
+  end if
+end if
+reachNow = 36 + 4 * upgradeLevel(1) + upgradeLevel(3)
+if selfBuff = 4 then
+  reachNow = reachNow + reachNow / 2
 end if
 
 headId = 0
@@ -366,7 +383,9 @@ else
           mood = 9
         else
           if headId <> 0 then
-            hookTo(headX, headY)
+            hx = headX + (homeX - headX) / 2
+            hy = headY + (homeY - headY) / 2
+            hookTo(hx, hy)
             mood = 4
           else
             if drownId <> 0 then
@@ -374,7 +393,7 @@ else
               mood = 5
             else
               if bestId <> 0 then
-                if dx <= 36 then
+                if dx <= reachNow then
                   hookTo(bestX, bestY)
                   mood = 6
                 end if
@@ -403,10 +422,10 @@ if flashed = 0 then
         end if
       end if
       needCore = 0
-      if itemRank(1) = 0 then
+      if itemRank(1) < 5 then
         needCore = 1
       end if
-      if itemRank(0) = 0 then
+      if itemRank(0) < 5 then
         needCore = 1
       end if
       if needCore = 1 then

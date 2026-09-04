@@ -35,11 +35,23 @@ proc runtimeTraceActive*(): bool =
   ## True while an F2 Fluffy capture is recording.
   runtimeTracing
 
+proc tracingNow(): bool {.inline.} =
+  ## True when a compile-time or F2 capture should pair push/pop.
+  runtimeTracing or (profileStarted and not profileDumped)
+
 proc ensureProfileDir(path: string) =
   ## Creates the parent directory for the profile trace.
   let dir = path.parentDir()
   if dir.len > 0:
     createDir(dir)
+
+proc writeMeasures(path: string) =
+  ## Writes the Fluffy capture. dumpMeasures indexes events[0] and
+  ## raises IndexDefect when the capture recorded no completed spans.
+  try:
+    dumpMeasures(path)
+  except IndexDefect:
+    echo "Fluffy trace has no completed spans; skipped ", path
 
 proc startProfileTrace*() =
   ## Starts the compile-time Fluffy capture once.
@@ -60,7 +72,7 @@ proc finishProfileTrace*() =
     profileDumped = true
     endTrace()
     ensureProfileDir(ActiveTracePath)
-    dumpMeasures(ActiveTracePath)
+    writeMeasures(ActiveTracePath)
 
 proc profileShouldDump*(frames: int): bool =
   ## Returns true when the compile-time frame budget has elapsed.
@@ -78,11 +90,21 @@ proc noteProfileFrame*(): bool =
 
 template profileBlock*(name: string, body: untyped) =
   ## Measures a named block while a Fluffy trace is active.
-  measurePush(name)
+  ## Snapshot at entry: F2's startTrace clears Fluffy's span stack and
+  ## enables tracing, so a matching pop of a skipped push is IndexDefect.
+  let measureThis = tracingNow()
+  if measureThis:
+    measurePush(name)
   try:
     body
   finally:
-    measurePop()
+    if measureThis:
+      # startTrace mid-block (F2 while a compile-time capture is live)
+      # clears Fluffy's stack; pop would raise IndexDefect.
+      try:
+        measurePop()
+      except IndexDefect:
+        discard
 
 template profilePush*(name: string) =
   ## Starts a named span. Pair with `profilePop`.
@@ -136,11 +158,12 @@ proc toggleRuntimeTrace*() =
     if runtimeTracing:
       endTrace()
       ensureProfileDir(RuntimeTracePath)
-      dumpMeasures(RuntimeTracePath)
+      writeMeasures(RuntimeTracePath)
       runtimeTracing = false
       if fileExists(RuntimeTracePath):
         openFluffy(RuntimeTracePath)
     else:
-      startTrace()
+      if not tracingNow():
+        startTrace()
       runtimeTracing = true
       echo "Runtime Fluffy trace started; F2 writes ", RuntimeTracePath
