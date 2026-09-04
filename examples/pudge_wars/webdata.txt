@@ -13,6 +13,7 @@ items/river_treads.png
 items/longflight_brand.png
 items/bank_palisade.png
 items/hooktrap.png
+items/warding_chalk.png
 icons
 themes/main
 ui

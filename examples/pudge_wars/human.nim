@@ -72,10 +72,14 @@ var
   aimingBlink = false
   aimingWall = false
   aimingMine = false
+  aimingWard = false
   pendingMine = false
     ## Walk-then-plant: click a bank tile, walk there, drop underfoot.
   pendingMineX = 0'i32
   pendingMineZ = 0'i32
+  pendingWard = false
+  pendingWardX = 0'i32
+  pendingWardZ = 0'i32
   aimingMove = false
   keyMoveLastDir = (0, 0)
   keyMoveLastTime = -1.0e9
@@ -126,8 +130,9 @@ proc fogTeam*(): int =
 
 proc fogCanSee*(position: WorldPoint): bool =
   ## Team-shared sight: the whole home bank and the river stay lit.
-  ## The enemy bank needs a living teammate within `SightRadiusTiles`.
-  ## Hooks do not scout — a chain in the dark stays dark.
+  ## The enemy bank needs a living teammate or team ward within
+  ## `SightRadiusTiles`, or a tile in the padded corridor along an
+  ## in-flight team hook.
   fogCanSeeTeam(run.world, fogTeam(), position)
 
 proc fogShownPudge*(pudge: Pudge): bool =
@@ -213,13 +218,21 @@ proc aimingBlinkNow*(): bool =
 proc cancelPendingMine() =
   pendingMine = false
 
+proc cancelPendingWard() =
+  pendingWard = false
+
+proc cancelPendingPlace() =
+  cancelPendingMine()
+  cancelPendingWard()
+
 proc cancelAim*() =
   aimingHook = false
   aimingGrapple = false
   aimingBlink = false
   aimingWall = false
   aimingMine = false
-  cancelPendingMine()
+  aimingWard = false
+  cancelPendingPlace()
   aimingMove = false
   aimingAttack = false
 
@@ -234,7 +247,9 @@ proc resetHumanTransients*() =
   aimingBlink = false
   aimingWall = false
   aimingMine = false
+  aimingWard = false
   pendingMine = false
+  pendingWard = false
   aimingMove = false
   aimingAttack = false
   inspectId = 0
@@ -685,7 +700,8 @@ proc beginMoveCommand*() =
   aimingBlink = false
   aimingWall = false
   aimingMine = false
-  cancelPendingMine()
+  aimingWard = false
+  cancelPendingPlace()
   aimingAttack = false
   aimingMove = true
 
@@ -698,7 +714,8 @@ proc beginAttackCommand*() =
   aimingBlink = false
   aimingWall = false
   aimingMine = false
-  cancelPendingMine()
+  aimingWard = false
+  cancelPendingPlace()
   aimingMove = false
   aimingAttack = true
 
@@ -717,7 +734,8 @@ proc beginHookCommand*() =
   aimingBlink = false
   aimingWall = false
   aimingMine = false
-  cancelPendingMine()
+  aimingWard = false
+  cancelPendingPlace()
   aimingHook = true
 
 proc beginBlinkCommand*() =
@@ -736,7 +754,8 @@ proc beginBlinkCommand*() =
   aimingGrapple = false
   aimingWall = false
   aimingMine = false
-  cancelPendingMine()
+  aimingWard = false
+  cancelPendingPlace()
   aimingBlink = true
 
 proc beginRotCommand*() =
@@ -766,7 +785,7 @@ proc issueBuyPower*(item: ShopItem) =
   queueHero(IntentBuyPower, int32(item.ord))
 
 proc placeBlockReason(hero: Pudge, item: ShopItem): string =
-  ## Same-frame denial text for a wall or mine drop.
+  ## Same-frame denial text for a wall, mine, or ward drop.
   if hero.itemRank[item] <= 0:
     return "BUY IT AT YOUR SHOP PAD FIRST"
   if hero.inRiver:
@@ -777,6 +796,8 @@ proc placeBlockReason(hero: Pudge, item: ShopItem): string =
     return hudCooldown("WALL", hero.wallCooldown)
   if item == ShopMine and hero.mineCooldown > 0:
     return hudCooldown("MINE", hero.mineCooldown)
+  if item == ShopWard and hero.wardCooldown > 0:
+    return hudCooldown("WARD", hero.wardCooldown)
   if item == ShopMine and
       run.world.countProps(hero.id, PropMine) >=
         maxMinesForRank(hero.itemRank[ShopMine]):
@@ -785,6 +806,10 @@ proc placeBlockReason(hero: Pudge, item: ShopItem): string =
       run.world.countProps(hero.id, PropWall) >=
         maxWallsForRank(hero.itemRank[ShopWall]):
     return "MAX WALLS PLANTED"
+  if item == ShopWard and
+      run.world.countProps(hero.id, PropWard) >=
+        maxWardsForRank(hero.itemRank[ShopWard]):
+    return "MAX WARDS PLANTED"
   ""
 
 proc facingDropTile(hero: Pudge): (int32, int32) =
@@ -814,9 +839,16 @@ proc groundAtTile(tileX, tileZ: int32): Vec3 =
   )
 
 proc mineSiteError(hero: Pudge, tileX, tileZ: int32): string =
-  if riverTile(int(tileX)) or islandTile(int(tileX), int(tileZ)):
+  if riverTile(int(tileX), int(tileZ)) or islandTile(int(tileX), int(tileZ)):
     return "CANNOT PLACE IN THE RIVER"
   if not run.world.propSiteLegal(hero.team, int(tileX), int(tileZ)):
+    return "CANNOT PLACE THERE"
+  ""
+
+proc wardSiteError(tileX, tileZ: int32): string =
+  if riverTile(int(tileX), int(tileZ)) or islandTile(int(tileX), int(tileZ)):
+    return "CANNOT PLACE IN THE RIVER"
+  if not run.world.wardSiteLegal(int(tileX), int(tileZ)):
     return "CANNOT PLACE THERE"
   ""
 
@@ -868,11 +900,59 @@ proc flushPendingMine(hero: Pudge) =
   queueHero(IntentPlaceMine, pendingMineX, pendingMineZ)
   cancelPendingMine()
 
+proc issueWardAt(hero: Pudge, tileX, tileZ: int32): bool =
+  ## Plants underfoot, or walks to the tile and plants on arrival.
+  let reason = placeBlockReason(hero, ShopWard)
+  if reason.len > 0:
+    setHumanError(reason)
+    return false
+  let site = wardSiteError(tileX, tileZ)
+  if site.len > 0:
+    setHumanError(site)
+    return false
+  aimingWard = false
+  if standingOn(hero, tileX, tileZ):
+    cancelPendingWard()
+    queueHero(IntentPlaceWard, tileX, tileZ)
+    return true
+  pendingWard = true
+  pendingWardX = tileX
+  pendingWardZ = tileZ
+  queueHero(IntentWalk, tileX, tileZ)
+  walkPulsePoint = groundAtTile(tileX, tileZ)
+  walkPulseTime = epochTime()
+  true
+
+proc flushPendingWard(hero: Pudge) =
+  ## Drops the queued Farwatch Ward once the butcher is standing on it.
+  if not pendingWard:
+    return
+  if hero.state == Dying or hero.hookedBy != 0:
+    cancelPendingWard()
+    return
+  if not standingOn(hero, pendingWardX, pendingWardZ):
+    return
+  let reason = placeBlockReason(hero, ShopWard)
+  if reason.len > 0:
+    if hero.wardCooldown > 0 and hero.itemRank[ShopWard] > 0 and
+        not hero.inRiver:
+      return
+    setHumanError(reason)
+    cancelPendingWard()
+    return
+  let site = wardSiteError(pendingWardX, pendingWardZ)
+  if site.len > 0:
+    setHumanError(site)
+    cancelPendingWard()
+    return
+  queueHero(IntentPlaceWard, pendingWardX, pendingWardZ)
+  cancelPendingWard()
+
 proc beginPlaceCommand*(item: ShopItem) =
-  ## Inventory or hotkey: next ground click drops a wall or mine.
+  ## Inventory or hotkey: next ground click drops a wall, mine, or ward.
   if not canIssueFromHud():
     return
-  if item != ShopWall and item != ShopMine:
+  if item != ShopWall and item != ShopMine and item != ShopWard:
     return
   let hero = run.world.pudges[heroIndex()]
   let reason = placeBlockReason(hero, item)
@@ -884,9 +964,10 @@ proc beginPlaceCommand*(item: ShopItem) =
   aimingBlink = false
   aimingMove = false
   aimingAttack = false
-  cancelPendingMine()
+  cancelPendingPlace()
   aimingWall = item == ShopWall
   aimingMine = item == ShopMine
+  aimingWard = item == ShopWard
 
 proc castPlaceAtCursor(
     window: Window,
@@ -900,6 +981,8 @@ proc castPlaceAtCursor(
   let (tileX, tileY) = tileOfGround(pick.point)
   if item == ShopMine:
     return issueMineAt(hero, tileX, tileY)
+  if item == ShopWard:
+    return issueWardAt(hero, tileX, tileY)
   let reason = placeBlockReason(hero, item)
   if reason.len > 0:
     setHumanError(reason)
@@ -911,6 +994,9 @@ proc castPlaceAhead(hero: Pudge, item: ShopItem): bool =
   if item == ShopMine:
     let here = tileOf(hero.position)
     return issueMineAt(hero, int32(here.x), int32(here.z))
+  if item == ShopWard:
+    let here = tileOf(hero.position)
+    return issueWardAt(hero, int32(here.x), int32(here.z))
   let reason = placeBlockReason(hero, item)
   if reason.len > 0:
     setHumanError(reason)
@@ -1001,8 +1087,9 @@ proc rejectReason(res: IntentResult): string =
     else: "NOT ENOUGH GOLD, MAXED, OR INVENTORY FULL"
   of IntentStop, IntentPing:
     "COMMAND REJECTED"
-  of IntentPlaceWall, IntentPlaceMine:
-    if hero.itemRank[ShopWall] <= 0 and hero.itemRank[ShopMine] <= 0:
+  of IntentPlaceWall, IntentPlaceMine, IntentPlaceWard:
+    if hero.itemRank[ShopWall] <= 0 and hero.itemRank[ShopMine] <= 0 and
+        hero.itemRank[ShopWard] <= 0:
       "BUY IT AT YOUR SHOP PAD FIRST"
     elif hero.inRiver: "CANNOT PLACE IN THE RIVER"
     else: "CANNOT PLACE THERE"
@@ -1020,6 +1107,8 @@ proc drainIntentResults() =
       setHumanError(rejectReason(res))
       if pendingMine and res.kind in {IntentWalk, IntentPlaceMine}:
         cancelPendingMine()
+      if pendingWard and res.kind in {IntentWalk, IntentPlaceWard}:
+        cancelPendingWard()
   run.intentResults.setLen(0)
 
 proc anyCommandPressed(
@@ -1040,6 +1129,7 @@ proc anyCommandPressed(
     window.buttonPressed[bindKey(BindUpgrade4)] or
     wallPressed or
     window.buttonPressed[bindKey(BindMine)] or
+    window.buttonPressed[bindKey(BindWard)] or
     window.buttonPressed[bindKey(BindPing)] or
     (altModifierDown(window) and window.buttonPressed[MouseLeft])
 
@@ -1120,7 +1210,8 @@ proc handleInspectClick(
   ## In replay / spectator mode the same click locks fog and the camera
   ## to that butcher; empty ground returns to omniscient.
   if overUi or aimingHook or aimingGrapple or aimingBlink or aimingWall or
-      aimingMine or aimingMove or aimingAttack or window.buttonDown[MouseRight] or
+      aimingMine or aimingWard or aimingMove or aimingAttack or
+      window.buttonDown[MouseRight] or
       altModifierDown(window):
     inspectArmed = false
     return
@@ -1191,7 +1282,7 @@ proc handleHumanInput*(
 
   let hero = run.world.pudges[index]
   if (aimingHook or aimingGrapple or aimingBlink or aimingWall or
-      aimingMine) and
+      aimingMine or aimingWard) and
       (window.buttonPressed[KeyEscape] or window.buttonPressed[MouseRight]):
     if window.buttonPressed[MouseRight]:
       rmbBlockedCommand = true
@@ -1200,7 +1291,8 @@ proc handleHumanInput*(
     aimingBlink = false
     aimingWall = false
     aimingMine = false
-    cancelPendingMine()
+    aimingWard = false
+    cancelPendingPlace()
   if (aimingMove or aimingAttack) and
       (window.buttonPressed[KeyEscape] or window.buttonPressed[MouseRight]):
     if window.buttonPressed[MouseRight]:
@@ -1222,12 +1314,12 @@ proc handleHumanInput*(
     rmbBlockedCommand = false
     return
 
-  if pendingMine and window.buttonPressed[KeyEscape]:
-    cancelPendingMine()
+  if (pendingMine or pendingWard) and window.buttonPressed[KeyEscape]:
+    cancelPendingPlace()
     queueHero(IntentStop)
 
   if window.buttonPressed[bindKey(BindHook)]:
-    cancelPendingMine()
+    cancelPendingPlace()
     if options.quickcast:
       discard castHookAtCursor(window, viewProjection, hero)
     else:
@@ -1239,10 +1331,11 @@ proc handleHumanInput*(
         aimingBlink = false
         aimingWall = false
         aimingMine = false
+        aimingWard = false
         aimingHook = true
 
   if window.buttonPressed[bindKey(BindGrapple)]:
-    cancelPendingMine()
+    cancelPendingPlace()
     if options.quickcast:
       discard castGrappleAtCursor(window, viewProjection, hero)
     else:
@@ -1254,10 +1347,11 @@ proc handleHumanInput*(
         aimingBlink = false
         aimingWall = false
         aimingMine = false
+        aimingWard = false
         aimingGrapple = true
 
   if window.buttonPressed[bindKey(BindBlink)]:
-    cancelPendingMine()
+    cancelPendingPlace()
     # F hops toward the cursor, even while WASD is held. Facing and
     # walk heading used to steal this into a "blink the way you look"
     # hop; the mouse is the aim.
@@ -1271,7 +1365,7 @@ proc handleHumanInput*(
     if panSharesWall(): panTap
     else: window.buttonPressed[bindKey(BindWall)]
   if wallPressed:
-    cancelPendingMine()
+    cancelPendingPlace()
     if options.quickcast:
       discard castPlaceAhead(hero, ShopWall)
       aimingWall = false
@@ -1279,11 +1373,20 @@ proc handleHumanInput*(
       beginPlaceCommand(ShopWall)
 
   if window.buttonPressed[bindKey(BindMine)]:
+    cancelPendingWard()
     if options.quickcast:
       discard castPlaceAhead(hero, ShopMine)
       aimingMine = false
     else:
       beginPlaceCommand(ShopMine)
+
+  if window.buttonPressed[bindKey(BindWard)]:
+    cancelPendingMine()
+    if options.quickcast:
+      discard castPlaceAhead(hero, ShopWard)
+      aimingWard = false
+    else:
+      beginPlaceCommand(ShopWard)
 
   let pingClick =
     altModifierDown(window) and window.buttonPressed[MouseLeft] and not overUi
@@ -1313,11 +1416,17 @@ proc handleHumanInput*(
     if castPlaceAtCursor(window, viewProjection, hero, ShopMine):
       aimingMine = false
 
+  if aimingWard and window.buttonPressed[MouseLeft] and not overUi and
+      not pingClick:
+    if castPlaceAtCursor(window, viewProjection, hero, ShopWard):
+      aimingWard = false
+
   flushPendingMine(hero)
+  flushPendingWard(hero)
 
   if aimingMove and window.buttonPressed[MouseLeft] and not overUi and
       not pingClick:
-    cancelPendingMine()
+    cancelPendingPlace()
     let pick = groundUnderMouse(window, viewProjection)
     if pick.found:
       let (tileX, tileY) = tileOfGround(pick.point)
@@ -1328,7 +1437,7 @@ proc handleHumanInput*(
 
   if aimingAttack and window.buttonPressed[MouseLeft] and not overUi and
       not pingClick:
-    cancelPendingMine()
+    cancelPendingPlace()
     let picked = pickEnemyPudge(window, viewProjection, hero.team)
     if picked != 0:
       let target = pudgeIndex(run.world, picked)
@@ -1344,7 +1453,7 @@ proc handleHumanInput*(
     aimingAttack = false
 
   if rightClickCommand and not overUi and not rmbBlockedCommand:
-    cancelPendingMine()
+    cancelPendingPlace()
     var targetId = pickEnemyPudge(window, viewProjection, hero.team)
     var groundFound = false
     var groundPoint = vec3(0)
@@ -1376,7 +1485,7 @@ proc handleHumanInput*(
     rmbBlockedCommand = false
 
   if window.buttonPressed[bindKey(BindStop)]:
-    cancelPendingMine()
+    cancelPendingPlace()
     queueHero(IntentStop)
 
   let buyBinds = [
@@ -1425,7 +1534,7 @@ proc handleHumanInput*(
       break keyboardSteer
     keyMoveLastDir = (dirX, dirZ)
     keyMoveLastTime = now
-    cancelPendingMine()
+    cancelPendingPlace()
     let
       heroTile = tileOf(hero.position)
       dest = keyboardSteerDest(heroTile.x, heroTile.z, dirX, dirZ)
@@ -1521,6 +1630,49 @@ proc addMinePreview(
 ) =
   ## Ghost Hooktrap on one tile: a landmine, not a skillshot line.
   renderer.addLandMine(groundAtTile(tileX, tileZ), ghost = true, legal = legal)
+
+proc addObserverWard*(
+    renderer: var ShapeRenderer,
+    base: Vec3,
+    ghost = false,
+    legal = true
+) =
+  ## Sight stake: stacked disks for a pole and a glowing orb. Ghosts
+  ## are oversized so the plant preview reads at RTS zoom.
+  let
+    scale = if ghost: 1.70'f32 else: 1.0'f32
+    shaft =
+      if not ghost: rgbx(72, 86, 78, 250)
+      elif legal: rgbx(88, 168, 148, 235)
+      else: rgbx(232, 86, 68, 235)
+    band =
+      if not ghost: rgbx(180, 214, 168, 255)
+      elif legal: rgbx(210, 255, 196, 255)
+      else: rgbx(255, 150, 120, 255)
+    orb =
+      if not ghost: rgbx(120, 255, 196, 255)
+      elif legal: rgbx(168, 255, 214, 255)
+      else: rgbx(255, 120, 96, 255)
+  if ghost:
+    let halo = if legal: rgbx(90, 230, 170, 90) else: rgbx(232, 86, 68, 90)
+    renderer.addCircle(base, 1.10'f32 * scale, halo, 24)
+  var layer = base
+  renderer.addCircle(layer, 0.22'f32 * scale, shaft, 12)
+  layer.y += 0.28'f32 * scale
+  renderer.addCircle(layer, 0.16'f32 * scale, shaft, 10)
+  layer.y += 0.28'f32 * scale
+  renderer.addCircle(layer, 0.14'f32 * scale, band, 10)
+  layer.y += 0.22'f32 * scale
+  renderer.addCircle(layer, 0.32'f32 * scale, orb, 16)
+  layer.y += 0.08'f32 * scale
+  renderer.addCircle(layer, 0.16'f32 * scale, rgbx(240, 255, 230, 255), 10)
+
+proc addWardPreview(
+    renderer: var ShapeRenderer,
+    tileX, tileZ: int32,
+    legal: bool
+) =
+  renderer.addObserverWard(groundAtTile(tileX, tileZ), ghost = true, legal = legal)
 
 proc addBillboardRect(
     renderer: var ShapeRenderer,
@@ -1667,8 +1819,18 @@ proc drawHumanOverlays*(
             tileX, tileZ,
             mineSiteError(hero, tileX, tileZ).len == 0
           )
+      elif aimingWard:
+        let pick = groundUnderMouse(window, viewProjection)
+        if pick.found:
+          let (tileX, tileZ) = tileOfGround(pick.point)
+          renderer.addWardPreview(
+            tileX, tileZ,
+            wardSiteError(tileX, tileZ).len == 0
+          )
       if pendingMine and not aimingMine:
         renderer.addMinePreview(pendingMineX, pendingMineZ, true)
+      if pendingWard and not aimingWard:
+        renderer.addWardPreview(pendingWardX, pendingWardZ, true)
       renderer.addGroundRing(center, 1.35'f32, AckGreen, 0.06'f32)
 
   let spectateIdx = spectateIndex()

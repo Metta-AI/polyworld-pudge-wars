@@ -120,7 +120,7 @@ proc pudgeJson(world: World, pudge: Pudge, slot: int): JsonNode =
   for kind in UpgradeKind:
     upgrades.add %pudge.upgrades[kind]
   var itemRanks = newJArray()
-  for item in ShopBoots .. ShopMine:
+  for item in ShopBoots .. ShopWard:
     itemRanks.add %pudge.itemRank[item]
   result = %*{
     "id": pudge.id,
@@ -190,7 +190,11 @@ proc propJson(prop: Prop): JsonNode =
   let pos = tileCoord(prop.propCenter)
   %*{
     "id": prop.id,
-    "kind": if prop.kind == PropWall: "wall" else: "mine",
+    "kind":
+      case prop.kind
+      of PropWall: "wall"
+      of PropMine: "mine"
+      of PropWard: "ward",
     "team": prop.team.ord,
     "x": round(pos.x, 3),
     "y": round(pos.y, 3),
@@ -221,6 +225,7 @@ proc intentActionKey(kind: IntentKind): string =
   of IntentPing: "ping"
   of IntentPlaceWall: "place_wall"
   of IntentPlaceMine: "place_mine"
+  of IntentPlaceWard: "place_ward"
   of IntentRot: "rot"
   of IntentCheat: ""
 
@@ -262,7 +267,7 @@ proc intentRejectReason(slot: int, kind: IntentKind): string =
     if not hero.inOwnShop: "shop"
     elif hero.gold <= 0: "gold"
     else: "rejected"
-  of IntentPlaceWall, IntentPlaceMine:
+  of IntentPlaceWall, IntentPlaceMine, IntentPlaceWard:
     if hero.inRiver: "river"
     else: "rejected"
   of IntentRot:
@@ -528,6 +533,17 @@ proc applyAction(slot: int, node: JsonNode) =
         kind: IntentPlaceMine,
         a: toTile(node["place_mine"][0].getFloat),
         b: toTile(node["place_mine"][1].getFloat)
+      )
+    )
+  if node.hasKey("place_ward") and node["place_ward"].kind == JArray and
+      node["place_ward"].len >= 2:
+    queueIntent(
+      game,
+      HumanIntent(
+        slot: int32(slot),
+        kind: IntentPlaceWard,
+        a: toTile(node["place_ward"][0].getFloat),
+        b: toTile(node["place_ward"][1].getFloat)
       )
     )
   if node.hasKey("ping") and node["ping"].kind == JArray and
@@ -845,9 +861,6 @@ proc envMethod(name, fallback: string): string =
     return value
   fallback
 
-proc clipScore(value: float): float =
-  max(0.0, min(1.0, value))
-
 proc resultsJson(): JsonNode =
   let world = game.world
   var scores = newJArray()
@@ -855,13 +868,12 @@ proc resultsJson(): JsonNode =
   let
     west = world.teamKills[WestTeam.ord]
     east = world.teamKills[EastTeam.ord]
-    goal = max(world.killGoal, 1'i32)
   for i, pudge in world.pudges:
     let
       mine = if pudge.team == WestTeam: west else: east
       theirs = if pudge.team == WestTeam: east else: west
-      margin = (float(mine) - float(theirs)) / float(goal)
-    scores.add %round(clipScore(0.5 + 0.5 * margin), 4)
+    # Win or fail per seated agent: 1 if that bank is ahead, else 0 (draws fail).
+    scores.add %(if mine > theirs: 1.0 else: 0.0)
     perSeat.add %*{
       "slot": i,
       "team": pudge.team.ord,

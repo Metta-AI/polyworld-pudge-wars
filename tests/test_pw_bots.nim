@@ -290,4 +290,127 @@ block:
   doAssert hsAimX > 22, "headshot aim must not target the reeler"
   doAssert hsAimX < RiverCenterX, "headshot aim must lead toward our bank"
 
+if fileExists(playersDir / "partner.bas"):
+  echo "Testing the partner bot headshots a visible catch"
+  block:
+    var game = newGame(map, 100, false, ReplayData())
+    loadBots(game, [
+      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: playersDir / "partner.bas", count: 1),
+      BotGroup(path: playersDir / "base.bas", count: 4)
+    ])
+    parkBots(game)
+    game.world.pudges[0].placePudge(22, 50)
+    game.world.pudges[1].placePudge(30, 50)
+    game.world.pudges[3].placePudge(RiverCenterX, 50)
+    for i in 0 ..< PudgeCount:
+      game.world.pudges[i].shieldTicks = 0
+      game.world.pudges[i].hookCooldown = 0
+      game.world.pudges[i].windupTicks = 0
+    game.world.pudges[3].hookedBy = game.world.pudges[0].id
+    tickWorld(game, proc() = runBotDecisions(game))
+    doAssert not game.heroVms[1].failed, game.heroVms[1].lastError
+    doAssert game.world.pudges[1].windupTicks > 0,
+      "partner must throw at an ally's catch"
+    let
+      pAimX = game.world.pudges[1].windupAimX div FineAimScale
+      pAimY = game.world.pudges[1].windupAimY div FineAimScale
+    doAssert pAimX > 24, "partner must not hook the reeler"
+    doAssert pAimX < RiverCenterX - 4, "partner must lead toward the reeler"
+    doAssert abs(pAimY - 50) <= 12, "partner headshot should stay on the catch lane"
+
+  echo "Testing the partner bot combos a flying ally hook"
+  block:
+    var game = newGame(map, 100, false, ReplayData())
+    loadBots(game, [
+      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: playersDir / "partner.bas", count: 1),
+      BotGroup(path: playersDir / "base.bas", count: 4)
+    ])
+    parkBots(game)
+    game.world.pudges[0].placePudge(22, 50)
+    game.world.pudges[1].placePudge(30, 50)
+    game.world.pudges[3].placePudge(105, 88)
+    game.world.pudges[4].placePudge(105, 40)
+    game.world.pudges[5].placePudge(105, 96)
+    for i in 0 ..< PudgeCount:
+      game.world.pudges[i].shieldTicks = 200
+      game.world.pudges[i].hookCooldown = 0
+      game.world.pudges[i].windupTicks = 0
+    game.world.hooks.add Hook(
+      id: game.world.nextHookId,
+      ownerId: game.world.pudges[0].id,
+      team: WestTeam,
+      phase: HookFlying,
+      position: worldAtTile(RiverCenterX, 50),
+      origin: worldAtTile(22, 50),
+      prior: worldAtTile(RiverCenterX, 50),
+      heading: heading(WorldScale, 0),
+      range: BaseHookRange,
+      speed: BaseHookSpeed,
+      peakSpeed: BaseHookSpeed,
+      radius: BaseHookRadius,
+      damage: BaseHookDamage
+    )
+    inc game.world.nextHookId
+    tickWorld(game, proc() = runBotDecisions(game))
+    doAssert not game.heroVms[1].failed, game.heroVms[1].lastError
+    doAssert game.world.pudges[1].windupTicks > 0,
+      "partner must combo-throw along a flying ally hook"
+    let
+      cAimX = game.world.pudges[1].windupAimX div FineAimScale
+    doAssert cAimX > 28, "combo aim must not target the ally"
+    doAssert cAimX < RiverCenterX - 4,
+      "combo must intercept the reel, not the far lip or hook head"
+
+  echo "Testing the partner bot hooks a point-blank fight"
+  block:
+    var game = newGame(map, 100, false, ReplayData())
+    loadBots(game, [
+      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: playersDir / "partner.bas", count: 1),
+      BotGroup(path: playersDir / "base.bas", count: 4)
+    ])
+    parkBots(game)
+    game.world.pudges[1].placePudge(30, 64)
+    game.world.pudges[3].placePudge(33, 64)
+    for i in 0 ..< PudgeCount:
+      game.world.pudges[i].shieldTicks = 0
+      game.world.pudges[i].hookCooldown = 0
+      game.world.pudges[i].windupTicks = 0
+      game.world.pudges[i].blinkCooldown = BlinkCooldownTicks
+    tickWorld(game, proc() = runBotDecisions(game))
+    doAssert not game.heroVms[1].failed, game.heroVms[1].lastError
+    doAssert game.world.pudges[1].windupTicks > 0,
+      "partner must hook when the hook is ready in melee"
+    doAssert game.world.pudges[1].attackTargetId == 0,
+      "a ready hook must beat the 28-dmg melee swing"
+    let
+      mAimX = game.world.pudges[1].windupAimX div FineAimScale
+    doAssert abs(mAimX - 33) <= 8,
+      "the brawl hook must aim at the close enemy, not a fog poke"
+
+  echo "Testing the partner bot melees when the hook is down"
+  block:
+    var game = newGame(map, 100, false, ReplayData())
+    loadBots(game, [
+      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: playersDir / "partner.bas", count: 1),
+      BotGroup(path: playersDir / "base.bas", count: 4)
+    ])
+    parkBots(game)
+    game.world.pudges[1].placePudge(30, 64)
+    game.world.pudges[3].placePudge(33, 64)
+    for i in 0 ..< PudgeCount:
+      game.world.pudges[i].shieldTicks = 0
+      game.world.pudges[i].windupTicks = 0
+      game.world.pudges[i].blinkCooldown = BlinkCooldownTicks
+    game.world.pudges[1].hookCooldown = 20
+    tickWorld(game, proc() = runBotDecisions(game))
+    doAssert not game.heroVms[1].failed, game.heroVms[1].lastError
+    doAssert game.world.pudges[1].windupTicks == 0,
+      "partner must not start a windup while the hook is cooling"
+    doAssert game.world.pudges[1].attackTargetId == game.world.pudges[3].id,
+      "partner must melee the close enemy while the hook is down"
+
 echo "test_pw_bots: all checks passed"

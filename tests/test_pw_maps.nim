@@ -133,6 +133,52 @@ block waterMidline:
   doAssert IslandCenterX == RiverCenterX,
     "the fountain must sit on the same midline as the water"
 
+echo "Testing both banks step in on X around the fountain"
+block fountainLandBulge:
+  discard generateMap(2026)
+  doAssert RiverMidHalfWidth == RiverHalfWidth - IslandLandReach
+  doAssert riverHalfWidthAt(IslandCenterZ) == RiverMidHalfWidth
+  doAssert riverHalfWidthAt(20) == RiverHalfWidth
+  doAssert riverHalfWidthAt(40) == RiverHalfWidth
+  doAssert playWestMaxAt(IslandCenterZ) ==
+    RiverCenterX - RiverMidHalfWidth - 1
+  doAssert playEastMinAt(IslandCenterZ) ==
+    RiverCenterX + RiverMidHalfWidth + 1
+  doAssert playWestMaxAt(IslandCenterZ) > PlayWestMax
+  doAssert playEastMinAt(IslandCenterZ) < PlayEastMin
+  doAssert not riverTile(playWestMaxAt(IslandCenterZ), IslandCenterZ)
+  doAssert westBank(playWestMaxAt(IslandCenterZ), IslandCenterZ)
+  doAssert eastBank(playEastMinAt(IslandCenterZ), IslandCenterZ)
+  doAssert isWalkable(
+    WestLayer, playWestMaxAt(IslandCenterZ), IslandCenterZ
+  ), "the west fountain bulge must be walkable bank"
+  doAssert isWalkable(
+    EastLayer, playEastMinAt(IslandCenterZ), IslandCenterZ
+  ), "the east fountain bulge must be walkable bank"
+  doAssert layerAt(playWestMaxAt(IslandCenterZ), IslandCenterZ) ==
+    int32(WestLayer)
+  doAssert layerAt(playEastMinAt(IslandCenterZ), IslandCenterZ) ==
+    int32(EastLayer)
+  doAssert riverTile(RiverWestX, 20)
+  doAssert not riverTile(RiverWestX, IslandCenterZ)
+  doAssert riverTile(RiverCenterX, IslandCenterZ)
+  doAssert not islandTile(playWestMaxAt(IslandCenterZ), IslandCenterZ)
+  let
+    gap = playEastMinAt(IslandCenterZ) - playWestMaxAt(IslandCenterZ)
+    waterWest = playWestMaxAt(IslandCenterZ) + 1
+  doAssert gap > IslandRadius * 2,
+    "a water channel must still separate the two lips"
+  doAssert riverTile(waterWest, IslandCenterZ)
+  doAssert not layers[WaterLayer].tiles[
+    IslandCenterZ * GridTiles + playWestMaxAt(IslandCenterZ)
+  ].exists, "the bulge should sit above the water sheet"
+  doAssert layers[WestLayer].tiles[
+    IslandCenterZ * GridTiles + playWestMaxAt(IslandCenterZ)
+  ].kind == GrassTile
+  doAssert layers[RiverLayer].tiles[
+    IslandCenterZ * GridTiles + IslandCenterX
+  ].kind == StoneTile
+
 echo "Testing the rim is a cliff lip with woods behind it"
 block rimWallsAndTrees:
   discard generateMap(2026)

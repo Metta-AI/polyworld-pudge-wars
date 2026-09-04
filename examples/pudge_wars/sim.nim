@@ -90,7 +90,7 @@ type
       ## has a non-zero streak, so fair pre-spree ticks keep the old
       ## hash. Own-streak and shutdown gold read this.
     spent*: int32
-    itemRank*: array[ShopBoots..ShopMine, int32]
+    itemRank*: array[ShopBoots..ShopWard, int32]
       ## Permanent shop families: 0 unowned, 1..ItemMaxRank in inventory.
     upgrades*: array[UpgradeKind, int32]
     hookCooldown*: int32
@@ -113,6 +113,8 @@ type
       ## Ticks until the next palisade drop.
     mineCooldown*: int32
       ## Ticks until the next mine drop.
+    wardCooldown*: int32
+      ## Ticks until the next sight ward.
     windupAimX*: int32
       ## Pending hook aim in `FineAimScale` units from the map origin.
     windupAimY*: int32
@@ -204,7 +206,7 @@ type
     bounces*: seq[WorldPoint]
 
   Prop* = object
-    ## One placed palisade or mine. Tile-snapped, sim-deterministic.
+    ## One placed palisade, mine, or sight ward. Tile-snapped, sim-deterministic.
     id*: int32
     kind*: PropKind
     ownerId*: int32
@@ -316,7 +318,8 @@ type
     IntentPlaceWall,
     IntentPlaceMine,
     IntentCheat,
-    IntentRot
+    IntentRot,
+    IntentPlaceWard
 
   HumanIntent* = object
     slot*: int32
@@ -435,7 +438,7 @@ proc distanceSquared*(first, second: WorldPoint): int64 =
 proc within(first, second: WorldPoint, distance: int32): bool =
   distanceSquared(first, second) <= int64(distance) * int64(distance)
 
-proc segmentPointWithin(a0, a1, p: WorldPoint, radius: int32): bool =
+proc segmentPointWithin*(a0, a1, p: WorldPoint, radius: int32): bool =
   ## True when point `p` is within `radius` of segment `a0`–`a1`.
   if within(a0, p, radius) or within(a1, p, radius):
     return true
@@ -735,7 +738,10 @@ proc inRiver*(pudge: Pudge): bool =
 proc layerAt*(position: WorldPoint): int32 =
   ## Returns the gameplay layer that owns this world point.
   let tile = tileOf(position)
-  layerAtX(clamp(tile.x, 0, GridTiles - 1))
+  layerAt(
+    clamp(tile.x, 0, GridTiles - 1),
+    clamp(tile.z, 0, GridTiles - 1)
+  )
 
 proc bindPudgeBody*(pudge: var Pudge) =
   pudge.body = bindBody(pudge.position, pudge.facing)
@@ -769,9 +775,9 @@ proc tileStandable(layer: int32, tileX, tileZ: int): bool =
   if tileX < 0 or tileX >= GridTiles or tileZ < 0 or tileZ >= GridTiles:
     return false
   if layer == int32(RiverLayer):
-    return riverTile(tileX) and not islandTile(tileX, tileZ) and
+    return riverTile(tileX, tileZ) and not islandTile(tileX, tileZ) and
       tileZ >= PlayZMin and tileZ <= PlayZMax
-  if riverTile(tileX):
+  if riverTile(tileX, tileZ):
     return false
   isWalkable(int(layer), tileX, tileZ)
 
@@ -802,8 +808,10 @@ proc hookHitsSolid(tileX, tileZ: int): bool =
   activeHookWorld != nil and activeHookWorld.wallBlocksTile(tileX, tileZ)
 
 proc propVisibleTo*(prop: Prop, team: Team): bool =
-  ## Walls are public; mines stay hidden from the other team.
-  prop.alive and (prop.kind != PropMine or prop.team == team)
+  ## Walls are public; mines and wards stay hidden from the other team.
+  prop.alive and (
+    prop.kind == PropWall or prop.team == team
+  )
 
 proc mineVisibleTo*(world: World, propId: int32, team: Team): bool =
   ## Test helper: whether one mine shows up for a team's queries.
@@ -1233,7 +1241,7 @@ proc attackPeriod*(pudge: Pudge): int32 =
 
 proc ownedPermanents*(pudge: Pudge): int32 =
   ## How many inventory families currently occupy a HUD slot.
-  for item in ShopBoots..ShopMine:
+  for item in ShopBoots..ShopWard:
     if pudge.itemRank[item] > 0:
       inc result
 
@@ -1241,7 +1249,7 @@ proc inventoryItem*(pudge: Pudge, slot: int): ShopItem =
   ## The family shown in one HUD inventory well, or ShopFlask as empty
   ## sentinel when the well is vacant (callers check rank).
   var index = 0
-  for item in ShopBoots..ShopMine:
+  for item in ShopBoots..ShopWard:
     if pudge.itemRank[item] > 0:
       if index == slot:
         return item
@@ -1323,7 +1331,10 @@ proc settlePudge(world: World, index: int, creditDump: bool) =
 proc placePudge*(pudge: var Pudge, tileX, tileZ: int) =
   ## Snaps one butcher onto a map tile and rebuilds its planar body.
   pudge.position = worldAtTile(tileX, tileZ)
-  pudge.layer = layerAtX(clamp(tileX, 0, GridTiles - 1))
+  pudge.layer = layerAt(
+    clamp(tileX, 0, GridTiles - 1),
+    clamp(tileZ, 0, GridTiles - 1)
+  )
   pudge.bindPudgeBody()
   pudge.hasMoveTarget = false
   pudge.velX = 0
@@ -1357,6 +1368,18 @@ proc reelSpeed(hook: Hook): int32 =
   ## Pull-in uses the peak outbound speed reached, not base and not 2×.
   if hook.peakSpeed > 0: hook.peakSpeed
   else: hook.speed
+
+proc reelChaseSpeed(world: World, hook: Hook, owner: int): int32 =
+  ## Reel at peak outbound speed, but never slower than the caster's
+  ## walk. An early latch vs Treads used to let the owner kite their
+  ## own victim forever: the chain chased a dump point one tile ahead
+  ## of a faster butcher.
+  result = reelSpeed(hook)
+  if owner < 0 or owner >= world.pudges.len:
+    return
+  let need = world.moveSpeed(world.pudges[owner]) + WorldScale div 8
+  if need > result:
+    result = need
 
 proc clone*(w: World): World {.measure.} =
   result = World()
@@ -1917,12 +1940,22 @@ proc onOwnSpawnPad(world: World, team: Team, tileX, tileZ: int): bool =
 proc ownBankTile(team: Team, tileX, tileZ: int): bool =
   if tileZ < PlayZMin or tileZ > PlayZMax:
     return false
-  if riverTile(tileX) or islandTile(tileX, tileZ):
+  if riverTile(tileX, tileZ) or islandTile(tileX, tileZ):
     return false
   if team == WestTeam:
-    westBank(tileX)
+    westBank(tileX, tileZ)
   else:
-    eastBank(tileX)
+    eastBank(tileX, tileZ)
+
+proc landLayer(tileX, tileZ: int): int32 =
+  layerAt(tileX, tileZ)
+
+proc onAnyShopPad(tileX, tileZ: int): bool =
+  onOwnShopPad(WestTeam, tileX, tileZ) or onOwnShopPad(EastTeam, tileX, tileZ)
+
+proc onAnySpawnPad(world: World, tileX, tileZ: int): bool =
+  world.onOwnSpawnPad(WestTeam, tileX, tileZ) or
+    world.onOwnSpawnPad(EastTeam, tileX, tileZ)
 
 proc propSiteLegal*(
     world: World, team: Team, tileX, tileZ: int, exceptId = 0'i32
@@ -1938,6 +1971,22 @@ proc propSiteLegal*(
     return false
   not world.tileHasProp(tileX, tileZ, exceptId)
 
+proc wardSiteLegal*(
+    world: World, tileX, tileZ: int, exceptId = 0'i32
+): bool =
+  ## Either-bank walkable land for a sight ward: not the river, a shop,
+  ## a spawn pad, or a tile that already has a gadget.
+  if tileZ < PlayZMin or tileZ > PlayZMax:
+    return false
+  if riverTile(tileX, tileZ) or islandTile(tileX, tileZ) or
+      not landTile(tileX, tileZ):
+    return false
+  if not walkableTile(landLayer(tileX, tileZ), int32(tileX), int32(tileZ)):
+    return false
+  if onAnyShopPad(tileX, tileZ) or world.onAnySpawnPad(tileX, tileZ):
+    return false
+  not world.tileHasProp(tileX, tileZ, exceptId)
+
 proc placementLegal(
     world: World,
     pudge: Pudge,
@@ -1945,11 +1994,15 @@ proc placementLegal(
     tileZ: int,
     kind: PropKind
 ): bool =
-  ## Own-bank walkable land, in drop range, not a shop/spawn grief tile.
-  ## Mines plant under the butcher; a palisade still needs an empty tile.
+  ## Walkable land, in drop range, not a shop/spawn grief tile.
+  ## Walls and mines stay on the home bank; wards may sit on either.
+  ## Mines and wards plant under the butcher; a palisade needs an empty tile.
   if pudge.state != Alive or pudge.inRiver or pudge.hookedBy != 0:
     return false
-  if not world.propSiteLegal(pudge.team, tileX, tileZ):
+  if kind == PropWard:
+    if not world.wardSiteLegal(tileX, tileZ):
+      return false
+  elif not world.propSiteLegal(pudge.team, tileX, tileZ):
     return false
   let here = tileOf(pudge.position)
   if max(abs(here.x - tileX), abs(here.z - tileZ)) > int(PlaceRangeTiles):
@@ -1957,7 +2010,7 @@ proc placementLegal(
   for other in world.pudges:
     if other.state != Alive:
       continue
-    if kind == PropMine and other.id == pudge.id:
+    if kind in {PropMine, PropWard} and other.id == pudge.id:
       continue
     let at = tileOf(other.position)
     if at.x == tileX and at.z == tileZ:
@@ -1998,43 +2051,65 @@ proc applyPlaceProp(
   if index < 0:
     return false
   template pudge: untyped = world.pudges[index]
-  let item = if kind == PropWall: ShopWall else: ShopMine
+  let item = case kind
+    of PropWall: ShopWall
+    of PropMine: ShopMine
+    of PropWard: ShopWard
   let rank = pudge.itemRank[item]
   if rank <= 0:
     return false
-  if kind == PropWall:
+  case kind
+  of PropWall:
     if pudge.cooling(pudge.wallCooldown):
       return false
     if world.countProps(pudge.id, PropWall) >= maxWallsForRank(rank):
       return false
-  else:
+  of PropMine:
     if pudge.cooling(pudge.mineCooldown):
       return false
     if world.countProps(pudge.id, PropMine) >= maxMinesForRank(rank):
       return false
+  of PropWard:
+    if pudge.cooling(pudge.wardCooldown):
+      return false
+    if world.countProps(pudge.id, PropWard) >= maxWardsForRank(rank):
+      return false
   var
     tileX = int(mapX)
-    tileZ = int(mapY)
-  if pudge.team == WestTeam:
-    tileX = clamp(tileX, PlayWestMin, PlayWestMax)
+    tileZ = clamp(int(mapY), PlayZMin, PlayZMax)
+  if kind == PropWard:
+    if westBank(tileX, tileZ):
+      tileX = clamp(tileX, PlayWestMin, playWestMaxAt(tileZ))
+    elif eastBank(tileX, tileZ):
+      tileX = clamp(tileX, playEastMinAt(tileZ), PlayEastMax)
+    else:
+      return false
+  elif pudge.team == WestTeam:
+    tileX = clamp(tileX, PlayWestMin, playWestMaxAt(tileZ))
   else:
-    tileX = clamp(tileX, PlayEastMin, PlayEastMax)
-  tileZ = clamp(tileZ, PlayZMin, PlayZMax)
+    tileX = clamp(tileX, playEastMinAt(tileZ), PlayEastMax)
   if not world.placementLegal(pudge, tileX, tileZ, kind):
     return false
   pudge.breakShield()
-  if kind == PropWall:
+  case kind
+  of PropWall:
     world.spawnProp(
       pudge, PropWall, tileX, tileZ,
       wallMaxHp(rank), wallDurationTicks(rank)
     )
     pudge.wallCooldown = pudge.armedCooldown(wallCooldownTicks(rank))
-  else:
+  of PropMine:
     world.spawnProp(
       pudge, PropMine, tileX, tileZ,
       1, MineDurationTicks
     )
     pudge.mineCooldown = pudge.armedCooldown(MineCooldownTicks)
+  of PropWard:
+    world.spawnProp(
+      pudge, PropWard, tileX, tileZ,
+      1, WardDurationTicks
+    )
+    pudge.wardCooldown = pudge.armedCooldown(WardCooldownTicks)
   true
 
 proc applyPlaceWall*(world: World, pudgeId, mapX, mapY: int32): bool =
@@ -2044,6 +2119,10 @@ proc applyPlaceWall*(world: World, pudgeId, mapX, mapY: int32): bool =
 proc applyPlaceMine*(world: World, pudgeId, mapX, mapY: int32): bool =
   ## Drops a hidden mine on a nearby own-bank tile. Spends cooldown.
   world.applyPlaceProp(pudgeId, mapX, mapY, PropMine)
+
+proc applyPlaceWard*(world: World, pudgeId, mapX, mapY: int32): bool =
+  ## Drops a hidden sight ward on a nearby land tile. Spends cooldown.
+  world.applyPlaceProp(pudgeId, mapX, mapY, PropWard)
 
 proc hurtProp*(world: World, propId, amount, attackerId: int32): bool =
   ## Damages one living palisade. Mines ignore melee chips.
@@ -2217,7 +2296,7 @@ proc applyBuyPower*(world: World, pudgeId, itemId: int32): bool =
     world.grantRune(index, RuneBigHook)
   of ShopDoubleDamage:
     world.grantRune(index, RuneDoubleDamage)
-  of ShopBoots, ShopLongshot, ShopWall, ShopMine:
+  of ShopBoots, ShopLongshot, ShopWall, ShopMine, ShopWard:
     return false
   world.pudges[index].gold = world.pudges[index].gold - shopPrice(item)
   true
@@ -2388,7 +2467,11 @@ proc blinkLandable(
   let tile = tileOf(pos)
   if tile.x < 0 or tile.x >= GridTiles or tile.z < 0 or tile.z >= GridTiles:
     return false
-  let layer = layerAtX(tile.x)
+  let layer = layerAt(tile.x, tile.z)
+  if pudge.layer != int32(RiverLayer) and
+      (layer == int32(WestLayer) or layer == int32(EastLayer)) and
+      layer != pudge.layer:
+    return false
   if not tileStandable(layer, tile.x, tile.z):
     return false
   if world.wallBlocksTile(tile.x, tile.z):
@@ -2404,16 +2487,20 @@ proc blinkRayStops(
     crossing: bool
 ): bool =
   ## True when the hop should halt here and keep the last legal landing.
-  ## Empty river water is air: the ray flies over it. Range, not this
-  ## test, is what stops a bank butcher short of the far side. An
-  ## occupied river body stops the ray (back up). The fountain is air.
-  ## Cliffs, off-map, dest-bank palisades, and dest-bank bodies stop
-  ## it. Origin-bank walls and bodies do not stop a hop that has the
-  ## range to clear the river.
+  ## Empty river water is air: the ray flies over it. Range stops a
+  ## side-lane hop short of the far lip; at mid the banks step in, so
+  ## the opposite bank itself is also a stop. An occupied river body
+  ## stops the ray (back up). The fountain is air. Cliffs, off-map,
+  ## dest-bank palisades, and dest-bank bodies stop it. Origin-bank
+  ## walls and bodies do not stop a hop that has the range to splash.
   let tile = tileOf(pos)
   if tile.x < 0 or tile.x >= GridTiles or tile.z < 0 or tile.z >= GridTiles:
     return true
-  let layer = layerAtX(tile.x)
+  let layer = layerAt(tile.x, tile.z)
+  if pudge.layer != int32(RiverLayer) and
+      (layer == int32(WestLayer) or layer == int32(EastLayer)) and
+      layer != pudge.layer:
+    return true
   if layer == int32(RiverLayer):
     return occupiedAt(world, pos, pudge.id, layer)
   if not tileStandable(layer, tile.x, tile.z):
@@ -2629,7 +2716,7 @@ proc grantCheatGold(pudge: var Pudge, amount: int32) =
     pudge.gold = int32(next)
 
 proc fillShopGoods(pudge: var Pudge) =
-  for item in ShopBoots..ShopMine:
+  for item in ShopBoots..ShopWard:
     pudge.itemRank[item] = ItemMaxRank
 
 proc clearCooldowns(pudge: var Pudge) =
@@ -2638,6 +2725,7 @@ proc clearCooldowns(pudge: var Pudge) =
   pudge.blinkCooldown = 0
   pudge.wallCooldown = 0
   pudge.mineCooldown = 0
+  pudge.wardCooldown = 0
 
 proc applyCheat*(world: World, pudgeId, kindId, amount: int32): bool =
   ## Applies one WC3-style cheat to a butcher. Always succeeds for a
@@ -2716,6 +2804,8 @@ proc applyReplayAction*(world: World, action: ReplayAction) =
     discard applyPlaceWall(world, action.pudgeId, action.first, action.second)
   of ActionPlaceMine:
     discard applyPlaceMine(world, action.pudgeId, action.first, action.second)
+  of ActionPlaceWard:
+    discard applyPlaceWard(world, action.pudgeId, action.first, action.second)
   of ActionCheat:
     discard applyCheat(
       world, action.pudgeId, action.first, action.second
@@ -2800,7 +2890,7 @@ proc runHumanIntents*(game: Game, slot: int) =
       kept.add intent
       continue
     if intent.kind.isReplaceableOrder or
-        intent.kind in {IntentPlaceWall, IntentPlaceMine}:
+        intent.kind in {IntentPlaceWall, IntentPlaceMine, IntentPlaceWard}:
       sawOrder = true
     var accepted = false
     let recorder = game.recorder
@@ -2866,6 +2956,10 @@ proc runHumanIntents*(game: Game, slot: int) =
         if recorder != nil:
           recorder.recordPlaceMine(tick, pudgeId, intent.a, intent.b)
         accepted = applyPlaceMine(game.world, pudgeId, intent.a, intent.b)
+      of IntentPlaceWard:
+        if recorder != nil:
+          recorder.recordPlaceWard(tick, pudgeId, intent.a, intent.b)
+        accepted = applyPlaceWard(game.world, pudgeId, intent.a, intent.b)
       of IntentCheat:
         if recorder != nil:
           recorder.recordCheat(tick, pudgeId, intent.a, intent.b)
@@ -2958,27 +3052,73 @@ proc fogTeamOf*(world: World, pudgeId: int32): int =
 
 proc fogBaseVisible*(team: int, position: WorldPoint): bool =
   ## Your base is your entire home bank: the whole friendly side up to
-  ## the river stays lit. The enemy bank gets no such courtesy.
-  let (tx, _) = tileOf(position)
+  ## the river stays lit, including the mid-fountain bulge. The enemy
+  ## bank gets no such courtesy.
+  let (tx, tz) = tileOf(position)
   if team == WestTeam.ord:
-    tx <= PlayWestMax
+    tx < RiverCenterX and not riverTile(tx, tz)
   else:
-    tx >= PlayEastMin
+    tx > RiverCenterX and not riverTile(tx, tz)
+
+iterator fogSightOrigins*(world: World, team: int): WorldPoint =
+  ## Living teammates and living team wards share a `SightRadiusTiles`
+  ## disk. Idle hooks and dying butchers do not. In-flight hooks use
+  ## `hookSightSegments` instead of this circle.
+  for pudge in world.pudges:
+    if pudge.team.ord != team or pudge.state == Dying:
+      continue
+    yield pudge.position
+  for prop in world.props:
+    if not prop.alive or prop.kind != PropWard or prop.team.ord != team:
+      continue
+    yield prop.propCenter
+
+proc hookSightTip(hook: Hook, prev, head: WorldPoint): WorldPoint =
+  ## Pushes the corridor `HookSightPadTiles` past the head so the pad
+  ## is ahead of the shuriken, not only beside the chain.
+  let reach = HookSightPadTiles * WorldScale
+  var delta = head - prev
+  if delta.x == 0 and delta.z == 0:
+    delta = WorldPoint(x: hook.heading.x, z: hook.heading.z)
+  result = head + scaledPlanar(delta, reach)
+
+iterator hookSightSegments*(world: World, hook: Hook): tuple[a0, a1: WorldPoint] =
+  ## The taut chain the renderer draws: thrower (or `origin` if the
+  ## owner is gone), then bounce pins, then a tip past the head.
+  var prev = hook.origin
+  let owner = pudgeIndex(world, hook.ownerId)
+  if owner >= 0:
+    prev = world.pudges[owner].position
+  for bounce in hook.bounces:
+    yield (prev, bounce)
+    prev = bounce
+  yield (prev, hookSightTip(hook, prev, hook.position))
+
+proc hookCorridorSees*(world: World, hook: Hook, position: WorldPoint): bool =
+  ## True when `position` sits in the padded capsule along this hook.
+  let pad = HookSightPadTiles * WorldScale
+  for segment in hookSightSegments(world, hook):
+    if segmentPointWithin(segment.a0, segment.a1, position, pad):
+      return true
+  false
 
 proc fogCanSeeTeam*(world: World, team: int, position: WorldPoint): bool =
   ## Whether `team` currently lights `position`. `team < 0` is omniscient.
   if team < 0:
     return true
-  let (tx, _) = tileOf(position)
-  if riverTile(tx):
+  let (tx, tz) = tileOf(position)
+  if riverTile(tx, tz):
     return true
   if fogBaseVisible(team, position):
     return true
   let radius = int64(SightRadiusTiles) * WorldScale
-  for pudge in world.pudges:
-    if pudge.team.ord != team or pudge.state == Dying:
+  for origin in fogSightOrigins(world, team):
+    if distanceSquared(origin, position) <= radius * radius:
+      return true
+  for hook in world.hooks:
+    if hook.team.ord != team or hook.phase == HookIdle:
       continue
-    if distanceSquared(pudge.position, position) <= radius * radius:
+    if hookCorridorSees(world, hook, position):
       return true
   false
 
@@ -2997,8 +3137,10 @@ proc scriptTeamOf(world: World, pudgeId: int32): tuple[team: Team, teamOrd: int]
 
 proc worldObjectCount*(world: World, pudgeId: int32): int =
   ## Fog-clipped observation for one butcher: own team always, enemies
-  ## and walls only inside shared sight (home bank, river, and living
-  ## teammates within `SightRadiusTiles`). Enemy mines stay hidden.
+  ## and walls only inside shared sight (home bank, river, living
+  ## teammates and team wards within `SightRadiusTiles`, and the padded
+  ## corridor along in-flight team hooks). Enemy mines and wards stay
+  ## hidden.
   let (team, teamOrd) = world.scriptTeamOf(pudgeId)
   world.scriptObjects.setLen(world.pudges.len + world.props.len)
   world.scriptObjectCount = 0
@@ -3025,11 +3167,19 @@ proc worldObjectCount*(world: World, pudgeId: int32): int =
     if prop.kind == PropWall and
         not fogCanSeeTeam(world, teamOrd, prop.propCenter):
       continue
+    let kind =
+      case prop.kind
+      of PropWall: WallObjectKind
+      of PropMine: MineObjectKind
+      of PropWard: WardObjectKind
     world.scriptObjects[world.scriptObjectCount] = WorldObject(
       id: prop.id,
-      kind: if prop.kind == PropWall: WallObjectKind else: MineObjectKind,
+      kind: kind,
       team: prop.team,
-      layer: homeLayer(prop.team),
+      layer:
+        if prop.kind == PropWard:
+          landLayer(int(prop.tileX), int(prop.tileZ))
+        else: homeLayer(prop.team),
       position: prop.propCenter,
       hp: max(prop.hp, 0'i32),
       maxHp: prop.maxHp,
@@ -3481,8 +3631,12 @@ proc lastOutsideDisk(
     fromPos, dest, center: WorldPoint,
     radius: int32
 ): WorldPoint =
-  ## Point on `fromPos`→`dest` just outside a disk.
-  if within(fromPos, center, radius) or not within(dest, center, radius):
+  ## Point on `fromPos`→`dest` just outside a disk. A through-shot
+  ## (dest past the far lip) still returns the entry; the old dest-must-
+  ## be-inside test punched through any disk thinner than one tick step.
+  if within(fromPos, center, radius):
+    return fromPos
+  if not segmentPointWithin(fromPos, dest, center, radius):
     return fromPos
   var
     lo = fromPos
@@ -3492,7 +3646,7 @@ proc lastOutsideDisk(
       x: int32((int64(lo.x) + int64(hi.x)) div 2),
       z: int32((int64(lo.z) + int64(hi.z)) div 2)
     )
-    if within(mid, center, radius):
+    if segmentPointWithin(fromPos, mid, center, radius):
       hi = mid
     else:
       lo = mid
@@ -3508,36 +3662,115 @@ proc lastOutsideIsland(fromPos, dest: WorldPoint): WorldPoint =
 proc lastOutsideTree(fromPos, dest: WorldPoint, tileX, tileZ: int): WorldPoint =
   lastOutsideDisk(fromPos, dest, worldAtTile(tileX, tileZ), treeHookRadius())
 
+proc alreadyBouncedTree(hook: Hook, tileX, tileZ: int): bool =
+  ## One trunk per throw. A 180° reverse used to rim-bounce back into
+  ## the same tree until range died; the reel then yo-yoed the victim.
+  if not fieldTreeTile(tileX, tileZ) or hook.bounces.len == 0:
+    return false
+  let center = worldAtTile(tileX, tileZ)
+  let reach = treeHookRadius() + WorldScale
+  for pin in hook.bounces:
+    if within(pin, center, reach):
+      return true
+  false
+
+proc glanceSign(offset, tile: int): int32 =
+  if offset > 0: 1'i32
+  elif offset < 0: -1'i32
+  elif (tile and 1) == 0: 1'i32
+  else: -1'i32
+
+proc ensureTreeGlance(hook: var Hook, tileX, tileZ: int) =
+  ## A dead-on trunk hit used to reverse 180° and ping-pong off the
+  ## nearest rim until range ran out; the reel then yo-yoed a victim
+  ## through the same points. Tilt a one-axis reverse into a glance.
+  if not fieldTreeTile(tileX, tileZ):
+    return
+  let
+    hx = hook.heading.x
+    hz = hook.heading.z
+  if hx == 0 and hz == 0:
+    return
+  let center = reboundCenter(tileX, tileZ)
+  if abs(int64(hz)) * 3 < abs(int64(hx)):
+    let tilt = glanceSign(int(hook.position.z) - int(center.z), tileZ)
+    hook.heading.z = tilt * (abs(hx) div 3)
+    if hook.heading.z == 0:
+      hook.heading.z = tilt * max(abs(hx) div 3, 1'i32)
+  elif abs(int64(hx)) * 3 < abs(int64(hz)):
+    let tilt = glanceSign(int(hook.position.x) - int(center.x), tileX)
+    hook.heading.x = tilt * (abs(hz) div 3)
+    if hook.heading.x == 0:
+      hook.heading.x = tilt * max(abs(hz) div 3, 1'i32)
+
 proc ejectFromCurve(hook: var Hook, tileX, tileZ: int, left: var int32) =
   ## Reflect about a cylinder axis and step the head off the solid.
   ## A heading already leaving does not count as another bounce, so a
-  ## glance cannot pin the chain to a trunk or the fountain.
+  ## glance cannot pin the chain to a trunk or the fountain. The bounce
+  ## pin is recorded after the eject so a reel does not walk a victim
+  ## into the trunk. Leftover 0 still steps off: a range-exhausted hit
+  ## must not sit in the solid until the next tick.
   let
     center = reboundCenter(tileX, tileZ)
     oldX = hook.heading.x
     oldZ = hook.heading.z
   hook.reboundHeading(tileX, tileZ)
-  if hook.heading.x != oldX or hook.heading.z != oldZ:
-    hook.recordBounce()
-  if left <= 0:
-    return
+  hook.ensureTreeGlance(tileX, tileZ)
+  let bounced = hook.heading.x != oldX or hook.heading.z != oldZ
   let
     outDir = hook.position - center
-    stepDist = min(left, max(1'i32, WorldScale div 4))
+    want = max(1'i32, WorldScale div 2)
+    stepDist = if left > 0: min(left, want) else: want
   var step = scaledPlanar(outDir, stepDist)
   if step.x == 0 and step.z == 0:
     step = scaledPlanar(
       WorldPoint(x: hook.heading.x, z: hook.heading.z),
       stepDist
     )
-  if step.x == 0 and step.z == 0:
-    return
-  hook.position = hook.position + step
-  clampHookToMap(hook.position)
-  consumeBudget(left, stepDist)
+  if step.x != 0 or step.z != 0:
+    hook.position = hook.position + step
+    clampHookToMap(hook.position)
+    if left > 0:
+      consumeBudget(left, stepDist)
+  if bounced:
+    hook.recordBounce()
 
 proc ejectFromIsland(hook: var Hook, left: var int32) =
   hook.ejectFromCurve(IslandCenterX, IslandCenterZ, left)
+
+proc hookHitsFlat(tileX, tileZ: int): bool =
+  ## Square solids for the face-collision path. Field trees are
+  ## cylinders (`bounceOffTreeDisk`); treating them as tiles made a
+  ## corner clip bounce as if it hit the trunk.
+  hookHitsSolid(tileX, tileZ) and not fieldTreeTile(tileX, tileZ)
+
+proc bounceOffTreeDisk(
+    hook: var Hook,
+    fromPos, dest: WorldPoint,
+    tileX, tileZ: int,
+    left: var int32
+): bool =
+  ## True when this step enters a tree's inscribed disk. Moves to the
+  ## entry and ejects. A dest that only clips the square tile misses.
+  if not fieldTreeTile(tileX, tileZ) or hook.alreadyBouncedTree(tileX, tileZ):
+    return false
+  if not segmentPointWithin(
+      fromPos, dest, worldAtTile(tileX, tileZ), treeHookRadius()
+    ):
+    return false
+  let contact = lastOutsideTree(fromPos, dest, tileX, tileZ)
+  let span = integerSqrt(distanceSquared(hook.position, contact))
+  hook.position = contact
+  clampHookToMap(hook.position)
+  if span > 0:
+    if span >= int64(left):
+      left = 0
+    else:
+      consumeBudget(left, int32(span))
+  elif left > 0:
+    consumeBudget(left, 1)
+  hook.ejectFromCurve(tileX, tileZ, left)
+  true
 
 proc flyHook(hook: var Hook, budget: int32): int32 =
   ## Moves a flying head, reflecting off solid faces and the map edge.
@@ -3552,10 +3785,12 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
       hook.ejectFromIsland(left)
       continue
     let tile = tileOf(hook.position)
-    if fieldTreeTile(tile.x, tile.z):
+    if fieldTreeTile(tile.x, tile.z) and
+        insideTreeDisk(hook.position, tile.x, tile.z) and
+        not hook.alreadyBouncedTree(tile.x, tile.z):
       hook.ejectFromCurve(tile.x, tile.z, left)
       continue
-    if hookHitsSolid(tile.x, tile.z):
+    if hookHitsFlat(tile.x, tile.z):
       if reboundOnRim(tile.x, tile.z):
         # Already inside the rim (or off the board). Reflecting the
         # travel axis walks a grazing heading further into the void.
@@ -3608,7 +3843,12 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
     if delta.x == 0 and delta.z == 0:
       break
     let dest = hook.position + delta
-    if insideIslandDisk(dest):
+    if insideIslandDisk(dest) or
+        segmentPointWithin(
+          hook.position, dest,
+          worldAtTile(IslandCenterX, IslandCenterZ),
+          islandHookRadius()
+        ):
       let contact = lastOutsideIsland(hook.position, dest)
       let span = integerSqrt(distanceSquared(hook.position, contact))
       hook.position = contact
@@ -3623,26 +3863,6 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
       hook.ejectFromIsland(left)
       continue
     let destTile = tileOf(dest)
-    if fieldTreeTile(destTile.x, destTile.z):
-      if insideTreeDisk(dest, destTile.x, destTile.z):
-        let contact = lastOutsideTree(hook.position, dest, destTile.x, destTile.z)
-        let span = integerSqrt(distanceSquared(hook.position, contact))
-        hook.position = contact
-        clampHookToMap(hook.position)
-        if span > 0:
-          if span >= int64(left):
-            left = 0
-          else:
-            consumeBudget(left, int32(span))
-        elif left > 0:
-          consumeBudget(left, 1)
-      hook.ejectFromCurve(destTile.x, destTile.z, left)
-      continue
-    if destTile.x == tile.x and destTile.z == tile.z:
-      hook.position = dest
-      clampHookToMap(hook.position)
-      left = 0
-      break
     let
       signX =
         if destTile.x > tile.x: 1
@@ -3652,6 +3872,19 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
         if destTile.z > tile.z: 1
         elif destTile.z < tile.z: -1
         else: 0
+    if hook.bounceOffTreeDisk(hook.position, dest, destTile.x, destTile.z, left) or
+        (signX != 0 and hook.bounceOffTreeDisk(
+          hook.position, dest, tile.x + signX, tile.z, left
+        )) or
+        (signZ != 0 and hook.bounceOffTreeDisk(
+          hook.position, dest, tile.x, tile.z + signZ, left
+        )):
+      continue
+    if destTile.x == tile.x and destTile.z == tile.z:
+      hook.position = dest
+      clampHookToMap(hook.position)
+      left = 0
+      break
     var
       distX = 0'i64
       distZ = 0'i64
@@ -3670,9 +3903,9 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
     let
       absDx = abs(int64(delta.x))
       absDz = abs(int64(delta.z))
-      solidX = signX != 0 and hookHitsSolid(tile.x + signX, tile.z)
-      solidZ = signZ != 0 and hookHitsSolid(tile.x, tile.z + signZ)
-      destSolid = hookHitsSolid(destTile.x, destTile.z)
+      solidX = signX != 0 and hookHitsFlat(tile.x + signX, tile.z)
+      solidZ = signZ != 0 and hookHitsFlat(tile.x, tile.z + signZ)
+      destSolid = hookHitsFlat(destTile.x, destTile.z)
     var
       hitX = signX != 0
       hitZ = signZ != 0
@@ -4102,8 +4335,14 @@ proc clashHooks(world: World) =
 proc finishReel(world: World, hook: var Hook, owner: int): bool =
   let
     dest = landingPoint(world.pudges[owner], hook)
-    step = reelSpeed(hook)
-  if not within(hook.position, dest, step + WorldScale div 4):
+    step = world.reelChaseSpeed(hook, owner)
+  # Arrive on the caster, not the moving dump point. Dest is one tile
+  # along heading from the owner; chasing that offset let a walking
+  # butcher stay just out of reach of an early-latch reel.
+  if not within(
+      hook.position, world.pudges[owner].position,
+      step + HookDumpDistance
+    ):
     return false
   hook.position = dest
   if hook.victimId != 0:
@@ -4148,7 +4387,7 @@ proc rideVictim(world: World, hook: Hook) =
 proc advanceReel(world: World, hook: var Hook, owner: int): bool =
   ## Retraces the chain: head → last bounce → … → first bounce → dump.
   ## Returns true when the hook is finished and should be discarded.
-  var left = reelSpeed(hook)
+  var left = world.reelChaseSpeed(hook, owner)
   var steps = 0
   while left > 0 and steps < MaxHookFlySteps:
     inc steps
@@ -4400,6 +4639,8 @@ proc stepDeaths(world: World) =
         dec pudge.wallCooldown
       if pudge.mineCooldown > 0:
         dec pudge.mineCooldown
+      if pudge.wardCooldown > 0:
+        dec pudge.wardCooldown
     if pudge.shieldTicks > 0:
       dec pudge.shieldTicks
     if pudge.buffTicks > 0:
@@ -4513,7 +4754,7 @@ proc stateHash*(game: Game): uint64 {.measure.} =
     hash.addHashy(pudge.points)
     hash.addHashy(pudge.gold)
     hash.addHashy(pudge.spent)
-    for item in ShopBoots..ShopMine:
+    for item in ShopBoots..ShopWard:
       hash.addHashy(pudge.itemRank[item])
     for kind in UpgradeKind:
       hash.addHashy(pudge.upgrades[kind])
@@ -4525,6 +4766,7 @@ proc stateHash*(game: Game): uint64 {.measure.} =
     hash.addHashy(pudge.rotTicks)
     hash.addHashy(pudge.wallCooldown)
     hash.addHashy(pudge.mineCooldown)
+    hash.addHashy(pudge.wardCooldown)
     hash.addHashy(pudge.windupGrapple)
     hash.addHashy(pudge.windupTicks)
     hash.addHashy(pudge.windupAimX)

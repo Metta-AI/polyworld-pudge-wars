@@ -40,10 +40,14 @@ Website (create): `polyworld/web/pudge-wars/` **or** a sibling Vercel project. D
 
 | What | ID |
 |------|-----|
-| League | [Pudge Wars](https://softmax.com/observatory/v2?detail=league:league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0) `league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0` |
-| League seed | `lseed_44f5072a-3066-4542-9fbd-b52cfa2e225c` (`pudge-wars/ladder`, variant `league-3v3`) |
-| Division | `div_471aedc1-00f7-41dd-971d-f0beff95a439` |
-| Ladder | `team_pair` + **`team_layout: blocks`** (0–2 West, 3–5 East). Never interleaved. |
+| 3v3 league | [Pudge Wars](https://softmax.com/observatory/v2?detail=league:league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0) `league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0` |
+| 3v3 seed | `lseed_44f5072a-3066-4542-9fbd-b52cfa2e225c` (`pudge-wars/ladder`, variant `league-3v3`) |
+| 3v3 division | `div_471aedc1-00f7-41dd-971d-f0beff95a439` |
+| 3v3 ladder | `team_n` + `team_count: 6` + `allied_teams: [[0,1,2],[3,4,5]]` + **`team_layout: blocks`** + `distinct_teammates`. Six distinct champions, seats 0–2 West / 3–5 East. `do_not_run` below 6. Ranking is `score` mean (1 win / 0 fail per seat once the game image emits binary scores). |
+| 1v1 league | [Pudge Wars 1v1](https://softmax.com/observatory/v2?detail=league:league_f81c4e63-ad7b-4f32-a837-b7931929545b) `league_f81c4e63-ad7b-4f32-a837-b7931929545b` |
+| 1v1 seed | `lseed_b9dc699b-c11a-4623-a581-14a0c984ab3c` (`pudge-wars/duel`, variant `duel-1v1`) |
+| 1v1 division | `div_157803f2-6b50-49dd-ae4f-c4b2219d269c` |
+| 1v1 ladder | `team_pair` + **`team_layout: blocks`** on 2 seats (no clones). `filler_policy` until a second champion exists. Same `score` mean ranking. |
 | Canonical coworld | `pudge-wars` **0.3.8** `cow_81fbce34-d950-49bb-af45-fdfa1468d202` (certified). League unlocked — follows canonical. Hook is 200 damage (~24% of 840 HP); a dump is not a one-chain kill. JSON player protocol is 1:1 with BASIC (`buy_upgrade` / `buy_power`, `rot` set, `accepted` echo, land-edge `play_west_max` / `play_east_min`). |
 | Game image | `public.ecr.aws/q5f4m8t9/cogames@sha256:d716e33934ea5ffa3af6789b4167b90549d052195cb279c00921ac2e87311baa` |
 

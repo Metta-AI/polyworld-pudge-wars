@@ -2,6 +2,8 @@
 ##
 ## The 128×128 grid is generated from an explicit seed using only integers.
 ## West and east are separate walkable layers that stop at the river.
+## Around the fountain both banks step in on X so the water narrows
+## the way the WC3 map does; the rocks stay an island.
 ## The river is its own walkable layer (`RiverLayer`): butchers dumped or
 ## blinked into the water walk there. Pathing `isWalkable` stays false on
 ## the bed so banks never graph-link through it; gameplay standing uses
@@ -27,6 +29,14 @@ const
     ## Tile column at the visual water / river-bed midline. Inclusive
     ## river columns are `RiverWestX` .. `RiverEastX`; pickups spawn here.
   RiverHalfWidth* = 11
+  IslandLandReach* = 6
+    ## Tiles each bank steps toward the fountain at mid, matching the
+    ## WC3 river pinch. Side lanes keep the full `RiverHalfWidth`.
+  IslandLandHalfZ* = 16
+    ## Half-depth of the bulge. Lanes at 40/88 stay at full width.
+  RiverMidHalfWidth* = RiverHalfWidth - IslandLandReach
+    ## Water half-width on the fountain row. Island radius 3 plus a
+    ## two-tile channel so the rocks stay an island.
   RiverWestX* = RiverCenterX - RiverHalfWidth
   RiverEastX* = RiverCenterX + RiverHalfWidth
   PlayWestMin* = 14
@@ -107,14 +117,36 @@ type
     west*: seq[SpawnPad]
     east*: seq[SpawnPad]
 
-proc riverBlend(x: int): int32 =
+proc riverHalfWidthAt*(z: int): int =
+  ## Inclusive water half-width on this row. A parabola pinches both
+  ## banks toward the fountain; outside `IslandLandHalfZ` this is the
+  ## full side-lane river.
+  let dz = abs(z - IslandCenterZ)
+  if dz >= IslandLandHalfZ:
+    return RiverHalfWidth
+  let
+    span = IslandLandHalfZ * IslandLandHalfZ
+    extra = IslandLandReach * (span - dz * dz) div span
+  RiverHalfWidth - extra
+
+proc playWestMaxAt*(z: int): int =
+  ## West waterline on this row, inclusive.
+  RiverCenterX - riverHalfWidthAt(z) - 1
+
+proc playEastMinAt*(z: int): int =
+  ## East waterline on this row, inclusive.
+  RiverCenterX + riverHalfWidthAt(z) + 1
+
+proc riverBlend(x, z: int): int32 =
   ## How deep inside the river band a *corner* is, 0 on the banks to 1 at
   ## the bed. Peak is the midline of tile `RiverCenterX` — halfway between
   ## corners `RiverCenterX` and `RiverCenterX + 1` — so the water sheet,
-  ## river bed, fountain, and pickup spawn share one X.
+  ## river bed, fountain, and pickup spawn share one X. Width follows
+  ## `riverHalfWidthAt(z)` so the mid bulge has a real bank slope.
   let
+    half = max(riverHalfWidthAt(z), 1)
     span = abs(x * 2 - (RiverCenterX * 2 + 1))
-    bankSpan = RiverHalfWidth * 2 + 1
+    bankSpan = half * 2 + 1
     ratio = clamp(
       int32((bankSpan - span) * MapBlendScale div bankSpan),
       0'i32,
@@ -123,20 +155,38 @@ proc riverBlend(x: int): int32 =
   smoothstep(ratio)
 
 proc riverTile*(x: int): bool =
-  ## Returns whether this column is the uncrossable river.
+  ## Returns whether this column sits in the bounding river band (the
+  ## full side-lane width). Prefer `riverTile(x, z)` when the row
+  ## matters: both banks step in around the fountain.
   abs(x - RiverCenterX) <= RiverHalfWidth
 
+proc riverTile*(x, z: int): bool =
+  ## Returns whether this tile is uncrossable river water on this row.
+  abs(x - RiverCenterX) <= riverHalfWidthAt(z)
+
 proc westBank*(x: int): bool =
-  ## Returns whether a tile sits on the west playable bank.
+  ## Returns whether a column sits on the bounding west playable bank.
   x >= PlayWestMin and x <= PlayWestMax
 
+proc westBank*(x, z: int): bool =
+  ## West playable land on this row, including the fountain bulge.
+  x >= PlayWestMin and x < RiverCenterX and not riverTile(x, z)
+
 proc eastBank*(x: int): bool =
-  ## Returns whether a tile sits on the east playable bank.
+  ## Returns whether a column sits on the bounding east playable bank.
   x >= PlayEastMin and x <= PlayEastMax
 
+proc eastBank*(x, z: int): bool =
+  ## East playable land on this row, including the fountain bulge.
+  x > RiverCenterX and x <= PlayEastMax and not riverTile(x, z)
+
 proc landTile*(x: int): bool =
-  ## Returns whether a column is walkable land rather than river.
+  ## Returns whether a column is bounding walkable land rather than river.
   westBank(x) or eastBank(x)
+
+proc landTile*(x, z: int): bool =
+  ## Returns whether this tile is walkable land rather than river water.
+  westBank(x, z) or eastBank(x, z)
 
 proc keyboardSteerDest*(tileX, tileZ, dirX, dirZ: int): tuple[x, z: int] =
   ## WASD walk target: about 8 tiles along the pressed axes,
@@ -321,26 +371,32 @@ proc hookReboundTile*(x, z: int): bool =
   ## True when a flying Meat Hook reflects here.
   ##
   ## Map edge, the fountain, and blocked land are solid. River water is
-  ## open: hooks fly over it.
+  ## open: hooks fly over it. The mid-bank bulge is grass, so hooks
+  ## pass the same way they do on the rest of the field.
   if x < 0 or x >= GridTiles or z < 0 or z >= GridTiles:
     return true
   if islandTile(x, z):
     return true
-  if riverTile(x):
+  if riverTile(x, z):
     return false
   if x < RiverCenterX:
     not isWalkable(WestLayer, x, z)
   else:
     not isWalkable(EastLayer, x, z)
 
-proc layerAtX*(x: int): int32 =
-  ## Returns the gameplay layer that owns this world column.
-  if riverTile(x):
+proc layerAt*(x, z: int): int32 =
+  ## Returns the gameplay layer that owns this tile. The mid bulge is
+  ## bank land even though those columns are river at the side lanes.
+  if riverTile(x, z):
     int32(RiverLayer)
   elif x < RiverCenterX:
     int32(WestLayer)
   else:
     int32(EastLayer)
+
+proc layerAtX*(x: int): int32 =
+  ## Bounding column layer: the side-lane river (full width).
+  layerAt(x, 0)
 
 proc mapFingerprint(): uint64 =
   ## Hashes packed terrain and walkability in stable order.
@@ -384,7 +440,7 @@ proc generateMap*(seed: int32, teamSize = TeamSize): MapData {.measure.} =
 
   proc makeCorner(cx, cz: int): int32 =
     result = ground(cx, cz) + BankRaiseSteps
-    result = blendHeight(result, RiverBedSteps, riverBlend(cx))
+    result = blendHeight(result, RiverBedSteps, riverBlend(cx, cz))
 
   var cornerHeights: array[(GridTiles + 1) * (GridTiles + 1), int16]
   for z in 0 .. GridTiles:
@@ -413,7 +469,7 @@ proc generateMap*(seed: int32, teamSize = TeamSize): MapData {.measure.} =
         ]
         heightSum = tops[0] + tops[1] + tops[2] + tops[3]
         kind =
-          if riverTile(x): MarshTile
+          if riverTile(x, z): MarshTile
           elif z <= 6 or z >= GridTiles - 7: RockTile
           else: GrassTile
       var tile = Tile(
@@ -422,7 +478,7 @@ proc generateMap*(seed: int32, teamSize = TeamSize): MapData {.measure.} =
         tops: packedHeights(tops)
       )
       let outsideField =
-        not riverTile(x) and (
+        not riverTile(x, z) and (
           x < PlayWestMin or x > PlayEastMax or
           z < PlayZMin or z > PlayZMax
         )
@@ -458,7 +514,7 @@ proc generateMap*(seed: int32, teamSize = TeamSize): MapData {.measure.} =
             tile.kind = GrassTile
         tile.tops = packedHeights(raised)
         tile.impassable = true
-      if riverTile(x):
+      if riverTile(x, z):
         tile.impassable = true
         if islandTile(x, z):
           let

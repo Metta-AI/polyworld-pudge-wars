@@ -38,6 +38,7 @@ type
     BindUpgrade4 = "upgrade4"
     BindWall = "wall"
     BindMine = "mine"
+    BindWard = "ward"
     BindMute = "mute"
     BindRematch = "rematch"
     BindPan = "pan"
@@ -48,7 +49,7 @@ var keyBinds: array[BindAction, Button] = [
   # F blink: E is already grapple; Space stays free for rebinds.
   # R rot in-match; rematch keeps R on the end screen only.
   KeyQ, KeyE, KeyF, KeyR, KeyX, KeyG, KeyF1, KeyL, KeyT,
-  Key1, Key2, Key3, Key4, KeyC, KeyV, KeyM, KeyR,
+  Key1, Key2, Key3, Key4, KeyC, KeyV, KeyB, KeyM, KeyR,
   # Hold to grab-pan the camera (trackpad: no mouse button). Shares C
   # with wall: a tap still arms the palisade, a hold-and-move pans.
   KeyC,

@@ -422,31 +422,31 @@ proc addDebugMapOverlays(renderer: var ShapeRenderer) =
       for x in 0 ..< GridTiles:
         if islandTile(x, z):
           renderer.addDebugTile(x, z, debugTint(DebugIsland, 120), 0.04, 0.18)
-        elif waterSheetAt(x, z) and riverTile(x):
+        elif waterSheetAt(x, z) and riverTile(x, z):
           renderer.addDebugTile(x, z, debugTint(DebugWater, 100), 0.08, 0.16)
-        elif riverTile(x):
+        elif riverTile(x, z):
           renderer.addDebugTile(x, z, debugTint(DebugRiver), 0.04, 0.12)
-        elif westBank(x):
+        elif westBank(x, z):
           if isWalkable(WestLayer, x, z):
             renderer.addDebugTile(x, z, debugTint(DebugWest, 70))
           else:
             renderer.addDebugTile(x, z, debugTint(DebugBlocked, 130))
-        elif eastBank(x):
+        elif eastBank(x, z):
           if isWalkable(EastLayer, x, z):
             renderer.addDebugTile(x, z, debugTint(DebugEast, 70))
           else:
             renderer.addDebugTile(x, z, debugTint(DebugBlocked, 130))
-        elif landTile(x) or x < PlayWestMin or x > PlayEastMax or
+        elif landTile(x, z) or x < PlayWestMin or x > PlayEastMax or
             z < PlayZMin or z > PlayZMax:
           renderer.addDebugTile(x, z, debugTint(DebugBlocked, 70), 0.10, 0.08)
   if showWalkable:
     for z in PlayZMin .. PlayZMax:
       for x in PlayWestMin .. PlayEastMax:
-        if riverTile(x) or waterSheetAt(x, z):
+        if riverTile(x, z) or waterSheetAt(x, z):
           renderer.addDebugTile(x, z, debugTint(DebugWater, 110), 0.18, 0.20)
-        elif westBank(x) and isWalkable(WestLayer, x, z):
+        elif westBank(x, z) and isWalkable(WestLayer, x, z):
           renderer.addDebugTile(x, z, debugTint(DebugWalk, 80), 0.18, 0.20)
-        elif eastBank(x) and isWalkable(EastLayer, x, z):
+        elif eastBank(x, z) and isWalkable(EastLayer, x, z):
           renderer.addDebugTile(x, z, debugTint(DebugWalk, 80), 0.18, 0.20)
         else:
           renderer.addDebugTile(x, z, debugTint(DebugNoWalk, 130), 0.18, 0.20)
@@ -1102,7 +1102,7 @@ proc runGraphics*() =
       addIcon(PortraitKeys[team], portraitPath(team))
     for kind in UpgradeKind:
       addIcon(UpgradeIcons[kind], iconPath(UpgradeIcons[kind]))
-    for item in ShopBoots..ShopMine:
+    for item in ShopBoots..ShopWard:
       let name = ShopItemIcons[item]
       if name.len == 0:
         continue
@@ -2699,6 +2699,10 @@ proc runGraphics*() =
           shapeRenderer.addAxisBox(
             cap, 0.44'f32, 0.06'f32, 0.20'f32, PalisadeTop
           )
+        elif prop.kind == PropWard:
+          var mark = base
+          mark.y += 0.08'f32
+          shapeRenderer.addObserverWard(mark)
         else:
           var mark = base
           mark.y += 0.08'f32

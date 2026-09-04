@@ -182,7 +182,7 @@ block:
     dataRel(iconPath(AttackIcon))
   ]:
     doAssert packed(rel), "webdata.txt missing " & rel
-  for item in ShopBoots .. ShopMine:
+  for item in ShopBoots .. ShopWard:
     let name = ShopItemIcons[item]
     if name.len == 0:
       continue
@@ -211,16 +211,21 @@ block:
     "missing bank palisade item icon"
   doAssert fileExists(iconPath("hooktrap", "items")),
     "missing hooktrap item icon"
-  doAssert InventorySlots == 4
+  doAssert fileExists(iconPath("warding_chalk", "items")),
+    "missing farwatch ward item icon"
+  doAssert InventorySlots == 5
   doAssert ItemMaxRank == 5
   doAssert isPermanent(ShopBoots)
   doAssert isPermanent(ShopLongshot)
   doAssert isPermanent(ShopWall)
   doAssert isPermanent(ShopMine)
+  doAssert isPermanent(ShopWard)
   doAssert not isPermanent(ShopFlask)
   doAssert shopPrice(ShopLongshot) == ShopLongshotGold
   doAssert shopPrice(ShopWall) == ShopWallGold
   doAssert shopPrice(ShopMine) == ShopMineGold
+  doAssert shopPrice(ShopWard) == ShopWardGold
+  doAssert WardDurationTicks == TickRate * 45
   doAssert longshotDamage(100, 0, 10 * WorldScale) == 100
   doAssert longshotDamage(100, 1, 10 * WorldScale) == 110
   doAssert longshotDamage(100, 1, 20 * WorldScale) == 120
@@ -256,6 +261,8 @@ block:
   doAssert $mineBlastDamage(2) in shopItemTooltipLines(ShopMine, 2)[2]
   doAssert MineCooldownTicks == TickRate * 15
   doAssert $wallMaxHp(2) in shopItemTooltipLines(ShopWall, 2)[2]
+  doAssert "45" in shopItemTooltipLines(ShopWard, 1)[2]
+  doAssert "sight" in shopItemTooltipLines(ShopWard, 1)[2]
   doAssert "0 damage" in grappleTooltipLines()[2]
   doAssert formatTiles(GrappleRange) in grappleTooltipLines()[2]
   doAssert $hookDamage(0) in upgradeTooltipLines(UpgradeDamage, 0)[2]

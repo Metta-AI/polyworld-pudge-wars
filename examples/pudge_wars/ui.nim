@@ -91,8 +91,8 @@ const
   CmdBlink = 5
   CmdRot = 6
   KillFeedW = 300.0'f32
-  ShopPanelSize = vec2(340, 304)
-  PermanentShopCols = 4
+  ShopPanelSize = vec2(400, 304)
+  PermanentShopCols = 5
   PermanentShopRows = 1
   DebugWindowTitle = "Debug"
   DebugWindowOrigin = vec2(16, 40)
@@ -742,6 +742,22 @@ proc drawMinimap(
     vec2(max(play.size.x - westW - riverW, 1), play.size.y),
     MinimapEast
   )
+  let
+    cellW = area.size.x / grid
+    cellH = area.size.y / grid
+  for z in PlayZMin .. PlayZMax:
+    let hw = riverHalfWidthAt(z)
+    if hw >= RiverHalfWidth:
+      continue
+    let y = area.origin.y + float32(z) * cellH
+    let west0 = area.origin.x + float32(RiverWestX) * cellW
+    let west1 = area.origin.x + float32(RiverCenterX - hw) * cellW
+    if west1 > west0:
+      sk.drawRect(vec2(west0, y), vec2(west1 - west0, cellH), MinimapWest)
+    let east0 = area.origin.x + float32(RiverCenterX + hw + 1) * cellW
+    let east1 = area.origin.x + float32(RiverEastX + 1) * cellW
+    if east1 > east0:
+      sk.drawRect(vec2(east0, y), vec2(east1 - east0, cellH), MinimapEast)
   let islandSize = vec2(
     float32(IslandRadius * 2 + 1) / grid * area.size.x,
     float32(IslandRadius * 2 + 1) / grid * area.size.y
@@ -815,6 +831,8 @@ proc drawMinimap(
     let point = minimapPosition(hudPoint(prop.propCenter), area)
     if prop.kind == PropWall:
       sk.drawMinimapPip(area, point, 6, rgbx(138, 94, 54, 255))
+    elif prop.kind == PropWard:
+      sk.drawMinimapPip(area, point, 5, rgbx(120, 255, 196, 230))
     else:
       sk.drawMinimapPip(area, point, 4, rgbx(88, 96, 72, 200))
 
@@ -1200,6 +1218,27 @@ proc cooldownOverlay(remaining, duration: int32, extra = ""): string =
     return $cooldownSeconds(remaining)
   ""
 
+proc wrapTooltipLine(
+    sk: Silky,
+    font, line: string,
+    maxW: float32
+): seq[string] =
+  ## Word-wraps one HUD line so the shop plate can stay narrow.
+  if line.len == 0 or sk.getTextSize(font, line).x <= maxW:
+    return @[line]
+  var current = ""
+  for word in line.split(' '):
+    if word.len == 0:
+      continue
+    let trial = if current.len == 0: word else: current & " " & word
+    if current.len > 0 and sk.getTextSize(font, trial).x > maxW:
+      result.add current
+      current = word
+    else:
+      current = trial
+  if current.len > 0:
+    result.add current
+
 proc drawHudTooltip(
     sk: Silky,
     window: Window,
@@ -1207,43 +1246,64 @@ proc drawHudTooltip(
     lines: openArray[string]
 ) =
   ## Floating plate above a well. First line is the gold title.
+  ## Sizes to the text so a long ward blurb wraps instead of clipping,
+  ## and keeps the whole plate on-screen (shop tips sit to the right
+  ## of the panel so chat cannot eat the title).
   if lines.len == 0:
     return
+  const
+    PadX = 10.0'f32
+    PadY = 8.0'f32
+    LineH = 18.0'f32
+    MaxInner = 360.0'f32
+  var
+    wrapped: seq[string]
+    fonts: seq[string]
+  for i, line in lines:
+    let font = if i == 0: "Hud" else: "Small"
+    for part in sk.wrapTooltipLine(font, line, MaxInner):
+      wrapped.add part
+      fonts.add font
+  var innerW = 0.0'f32
+  for i, line in wrapped:
+    innerW = max(innerW, sk.getTextSize(fonts[i], line).x)
   let
-    tipW = 520.0'f32
-    tipH = 14.0'f32 + lines.len.float32 * 18.0'f32
+    view = currentLayout(window).size
+    tipW = min(MaxInner, innerW) + PadX * 2
+    tipH = PadY * 2 + wrapped.len.float32 * LineH
+    maxX = max(4.0'f32, view.x - tipW - 4.0'f32)
+    maxY = max(4.0'f32, view.y - tipH - 4.0'f32)
     tipOrigin = vec2(
-      clamp(
-        anchor.origin.x, 4.0'f32,
-        currentLayout(window).size.x - tipW - 4.0'f32
-      ),
-      anchor.origin.y - tipH - 6.0'f32
+      clamp(anchor.origin.x, 4.0'f32, maxX),
+      clamp(anchor.origin.y - tipH - 6.0'f32, 4.0'f32, maxY)
     )
   sk.drawRect(tipOrigin, vec2(tipW, tipH), rgbx(10, 12, 16, 230))
-  for i, line in lines:
+  for i, line in wrapped:
     sk.drawLabel(
       line,
-      tipOrigin + vec2(10, 8.0'f32 + float32(i) * 18.0'f32),
-      vec2(tipW - 20, 16),
-      if i == 0: ReadyGold else: LabelColor,
-      if i == 0: "Hud" else: "Small"
+      tipOrigin + vec2(PadX, PadY + float32(i) * LineH),
+      vec2(tipW - PadX * 2, 16),
+      if fonts[i] == "Hud": ReadyGold else: LabelColor,
+      fonts[i]
     )
 
 proc itemHotkey(item: ShopItem): string =
   case item
   of ShopWall: bindLabel(BindWall)
   of ShopMine: bindLabel(BindMine)
+  of ShopWard: bindLabel(BindWard)
   else: ""
 
 proc itemCooldown(hero: Pudge, item: ShopItem): (int32, int32) =
   case item
   of ShopWall: (hero.wallCooldown, wallCooldownTicks(hero.itemRank[item]))
   of ShopMine: (hero.mineCooldown, MineCooldownTicks)
+  of ShopWard: (hero.wardCooldown, WardCooldownTicks)
   else: (0'i32, 0'i32)
 
 proc carriedShopItems(hero: Pudge): seq[ShopItem] =
-  ## Actives first so wall/mine keep a well when the bag is full.
-  for item in [ShopWall, ShopMine, ShopBoots, ShopLongshot]:
+  ## Actives first so wall/mine/ward keep a well when the bag is full.
+  for item in [ShopWall, ShopMine, ShopWard, ShopBoots, ShopLongshot]:
     if hero.itemRank[item] > 0:
       result.add item
 
@@ -1461,9 +1521,9 @@ proc drawBottomUnit(
   elif hookReady:
     hookCaption.add "READY"
     if owned and options.quickcast:
-      hookCaption.add " · QC"
+      hookCaption.add " - QC"
     if owned and options.autocast:
-      hookCaption.add " · AC"
+      hookCaption.add " - AC"
   elif hookRemaining > 0:
     hookCaption.addHudInt(int(cooldownSeconds(hookRemaining)))
     hookCaption.add " s"
@@ -1556,6 +1616,8 @@ proc drawBottomUnit(
           beginPlaceCommand(ShopWall)
         elif spec.id == ShopMine.ord:
           beginPlaceCommand(ShopMine)
+        elif spec.id == ShopWard.ord:
+          beginPlaceCommand(ShopWard)
 
     if window.buttonPressed[MouseRight]:
       let hookWell = hud.actions.actionWell(1)
@@ -1631,7 +1693,8 @@ proc drawBottomUnit(
             itemWells[itemIdx],
             hero.itemRank[itemWells[itemIdx]],
             bindLabel(BindWall),
-            bindLabel(BindMine)
+            bindLabel(BindMine),
+            bindLabel(BindWard)
           )
         )
     of 6, 7, 8, 9:
@@ -1691,7 +1754,7 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
       size: vec2(panel.size.x - 16, 92)
     )
   var permanents: seq[CommandSlotSpec]
-  for item in ShopBoots..ShopMine:
+  for item in ShopBoots..ShopWard:
     let rank = hero.itemRank[item]
     permanents.add CommandSlotSpec(
       id: item.ord,
@@ -1703,14 +1766,14 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
   let clickedPerm = sk.drawCommandGrid(
     window, grid, permanents, PermanentShopCols, PermanentShopRows
   )
-  if clickedPerm >= ShopBoots.ord and clickedPerm <= ShopMine.ord:
+  if clickedPerm >= ShopBoots.ord and clickedPerm <= ShopWard.ord:
     issueBuyPower(ShopItem(clickedPerm))
   block shopTip:
     var hovered = ShopFlask
     var found = false
     var well = grid
     var i = 0
-    for item in ShopBoots..ShopMine:
+    for item in ShopBoots..ShopWard:
       let
         col = i mod PermanentShopCols
         row = i div PermanentShopCols
@@ -1728,10 +1791,21 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
         hovered,
         hero.itemRank[hovered],
         bindLabel(BindWall),
-        bindLabel(BindMine)
+        bindLabel(BindMine),
+        bindLabel(BindWard)
       )
-      lines[0] = lines[0] & "  ·  " & $shopPrice(hovered) & "g"
-      sk.drawHudTooltip(window, well, lines)
+      lines[0] = lines[0] & " - " & $shopPrice(hovered) & "g"
+      sk.drawHudTooltip(
+        window,
+        GameUiPanel(
+          origin: vec2(
+            panel.origin.x + panel.size.x + 8.0'f32,
+            well.origin.y
+          ),
+          size: well.size
+        ),
+        lines
+      )
   sk.drawLabel(
     "POWERUPS",
     panel.origin + vec2(10, 144),
@@ -1775,8 +1849,18 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
       hoveredRow = row
   if foundPower:
     var lines = shopItemTooltipLines(hoveredPower, 0)
-    lines[0] = lines[0] & "  ·  " & $shopPrice(hoveredPower) & "g"
-    sk.drawHudTooltip(window, hoveredRow, lines)
+    lines[0] = lines[0] & " - " & $shopPrice(hoveredPower) & "g"
+    sk.drawHudTooltip(
+      window,
+      GameUiPanel(
+        origin: vec2(
+          panel.origin.x + panel.size.x + 8.0'f32,
+          hoveredRow.origin.y
+        ),
+        size: hoveredRow.size
+      ),
+      lines
+    )
 
 proc drawNetBanner*(sk: Silky, window: Window, text: string) =
   ## One urgent center-screen line: desync, connection loss, reconnect.
@@ -2698,7 +2782,7 @@ proc drawSpectatorBanner(
   let eyes = spectateIndex()
   if eyes < 0:
     sk.drawLabel(
-      "OMNISCIENT  ·  CLICK A BUTCHER",
+      "OMNISCIENT - CLICK A BUTCHER",
       banner.origin,
       banner.size,
       ReadyGold,
@@ -2717,7 +2801,7 @@ proc drawSpectatorBanner(
   var line = "EYES  "
   line.add butcherDisplayName(eyes)
   if not fogOfWar:
-    line.add "  ·  FOG OFF"
+    line.add " - FOG OFF"
   sk.drawLabel(
     line,
     banner.origin + vec2(SpectatorAllW + 8, 0),

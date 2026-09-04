@@ -3,7 +3,7 @@
   "tags": ["strategy", "real-time", "multiplayer", "team"],
   "game": {
     "name": "pudge-wars",
-    "description": "Two banks split by a river, six butchers, one hook. First team to the kill goal wins. Fog on the enemy bank. Platform-ladder 3v3 clone teams.",
+    "description": "Two banks split by a river, six butchers, one hook. First team to the kill goal wins. Fog on the enemy bank. Platform ladder: 3v3 distinct players per team, plus a sibling 1v1 duel league.",
     "owner": "coworld@softmax.com",
     "runnable": {
       "type": "game",

@@ -36,8 +36,14 @@ block:
     "own spawn pad must stay lit"
   doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(PlayWestMax, 64)),
     "the whole home bank stays lit"
+  doAssert fogCanSeeTeam(
+    game.world, westTeam, worldAtTile(playWestMaxAt(IslandCenterZ), 64)
+  ), "the west fountain bulge is home bank"
   doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(RiverCenterX, 64)),
     "the river is always terrain-visible"
+  doAssert not fogCanSeeTeam(
+    game.world, westTeam, worldAtTile(playEastMinAt(IslandCenterZ), 64)
+  ), "the east fountain bulge stays dark"
   doAssert not fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 64)),
     "the far enemy fountain is dark until a teammate carries sight"
 
@@ -118,20 +124,58 @@ block:
   doAssert hasScriptObject(game.world, west, wallId),
     "shared sight must reveal the same wall a human would see"
 
-echo "Testing worldHookCount hides a hook in the dark"
+echo "Testing a team ward scouts the enemy bank"
 block:
   let game = freshGame()
-  let west = game.world.pudges[0].id
+  let
+    west = game.world.pudges[0].id
+    westTeam = fogTeamOf(game.world, west)
+    east = game.world.pudges[3].id
   game.world.pudges[0].placePudge(22, 64)
   game.world.pudges[3].placePudge(105, 64)
-  game.world.hooks.add Hook(
-    id: game.world.nextHookId,
-    ownerId: game.world.pudges[3].id,
-    team: EastTeam,
-    phase: HookFlying,
-    position: worldAtTile(105, 64),
-    origin: worldAtTile(105, 64),
-    prior: worldAtTile(105, 64),
+  doAssert not fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 64))
+  game.world.props.add Prop(
+    id: game.world.nextPropId,
+    kind: PropWard,
+    ownerId: west,
+    team: WestTeam,
+    tileX: 100,
+    tileZ: 64,
+    hp: 1,
+    maxHp: 1,
+    ticksLeft: WardDurationTicks,
+    alive: true
+  )
+  inc game.world.nextPropId
+  let wardId = game.world.props[^1].id
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 64)),
+    "a living ward must light tiles around its stake"
+  doAssert fogShownPudgeTeam(game.world, westTeam, game.world.pudges[3]),
+    "an enemy standing on the ward must come out of the fog"
+  doAssert hasScriptObject(game.world, west, east),
+    "scripts must share the ward's sight"
+  doAssert hasScriptObject(game.world, west, wardId),
+    "the planting team always sees its own ward"
+  doAssert not hasScriptObject(game.world, east, wardId),
+    "the other team must not see a hidden ward"
+  game.world.props[^1].alive = false
+  doAssert not fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 64)),
+    "a dead ward must stop scouting"
+
+proc addTestHook(
+    world: World,
+    owner: Pudge,
+    tileX, tileZ: int,
+    phase = HookFlying
+) =
+  world.hooks.add Hook(
+    id: world.nextHookId,
+    ownerId: owner.id,
+    team: owner.team,
+    phase: phase,
+    position: worldAtTile(tileX, tileZ),
+    origin: worldAtTile(tileX, tileZ),
+    prior: worldAtTile(tileX, tileZ),
     heading: heading(-WorldScale, 0),
     range: BaseHookRange,
     speed: BaseHookSpeed,
@@ -139,17 +183,104 @@ block:
     radius: BaseHookRadius,
     damage: BaseHookDamage
   )
-  inc game.world.nextHookId
+  inc world.nextHookId
+
+echo "Testing worldHookCount hides a hook in the dark"
+block:
+  let game = freshGame()
+  let west = game.world.pudges[0].id
+  game.world.pudges[0].placePudge(22, 64)
+  game.world.pudges[3].placePudge(105, 64)
+  addTestHook(game.world, game.world.pudges[3], 105, 64)
   doAssert worldHookCount(game.world, west) == 0,
     "a hook head on the far bank is in the fog"
   game.world.hooks[^1].position = worldAtTile(RiverCenterX, 64)
   doAssert worldHookCount(game.world, west) == 1,
     "the same hook becomes visible once its head enters the river"
 
+echo "Testing a flying hook scouts the enemy bank"
+block:
+  let game = freshGame()
+  let westTeam = fogTeamOf(game.world, game.world.pudges[0].id)
+  game.world.pudges[0].placePudge(22, 64)
+  game.world.pudges[3].placePudge(105, 64)
+  doAssert not fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 64))
+  addTestHook(game.world, game.world.pudges[0], 105, 64)
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 64)),
+    "an in-flight hook must light tiles on its chain"
+  doAssert fogShownPudgeTeam(game.world, westTeam, game.world.pudges[3]),
+    "an enemy standing on the hook head must come out of the fog"
+  doAssert hasScriptObject(game.world, game.world.pudges[0].id, game.world.pudges[3].id),
+    "scripts must share the hook's sight"
+
+echo "Testing a hook lights a padded line, not a disk"
+block:
+  let game = freshGame()
+  let westTeam = fogTeamOf(game.world, game.world.pudges[0].id)
+  game.world.pudges[0].placePudge(22, 64)
+  addTestHook(game.world, game.world.pudges[0], 90, 64)
+  let pad = int(HookSightPadTiles)
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(90, 64)),
+    "the head sits on the corridor"
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(80, 64)),
+    "tiles already swept behind the head stay lit"
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(90, 64 + pad)),
+    "padding off the chain stays lit"
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(90 + pad, 64)),
+    "the corridor must continue past the head along the throw"
+  doAssert not fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 64)),
+    "tiles well past the look-ahead must stay fogged"
+  doAssert not fogCanSeeTeam(game.world, westTeam, worldAtTile(90, 64 + pad + 2)),
+    "a butcher-disk offset off the chain must stay dark"
+
+echo "Testing a bounced hook follows both segments"
+block:
+  let game = freshGame()
+  let westTeam = fogTeamOf(game.world, game.world.pudges[0].id)
+  game.world.pudges[0].placePudge(22, 64)
+  addTestHook(game.world, game.world.pudges[0], 90, 50)
+  game.world.hooks[^1].bounces.add worldAtTile(90, 40)
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(90, 40)),
+    "the bounce pin sits on the corridor"
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(90, 45)),
+    "the outbound stub after the bounce stays lit"
+  doAssert not fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 40)),
+    "a disk around the bounce must not light the far fountain lane"
+
+echo "Testing an idle hook does not scout"
+block:
+  let game = freshGame()
+  let westTeam = fogTeamOf(game.world, game.world.pudges[0].id)
+  game.world.pudges[0].placePudge(22, 64)
+  addTestHook(game.world, game.world.pudges[0], 105, 64, HookIdle)
+  doAssert not fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 64)),
+    "a hook still in the hand must not light the far bank"
+
+echo "Testing a reeling hook still scouts"
+block:
+  let game = freshGame()
+  let westTeam = fogTeamOf(game.world, game.world.pudges[0].id)
+  game.world.pudges[0].placePudge(22, 64)
+  addTestHook(game.world, game.world.pudges[0], 105, 40, HookReeling)
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 40)),
+    "a reeling hook must keep lighting its chain"
+
+echo "Testing a dying butcher's hook still scouts"
+block:
+  let game = freshGame()
+  let westTeam = fogTeamOf(game.world, game.world.pudges[0].id)
+  game.world.pudges[0].placePudge(22, 64)
+  game.world.pudges[0].state = Dying
+  addTestHook(game.world, game.world.pudges[0], 105, 64)
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 64)),
+    "a chain already in the air must keep scouting after the thrower dies"
+
 echo "Testing fillTeamVision matches per-tile fogCanSeeTeam"
 block:
   let game = freshGame()
   game.world.pudges[0].placePudge(90, 64)
+  addTestHook(game.world, game.world.pudges[0], 105, 40)
+  game.world.hooks[^1].bounces.add worldAtTile(100, 40)
   var mask: seq[uint8]
   fillTeamVision(game.world, WestTeam.ord, mask)
   doAssert mask.len == GridTiles * GridTiles

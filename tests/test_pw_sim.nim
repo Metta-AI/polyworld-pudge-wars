@@ -146,13 +146,17 @@ block:
   doAssert applyWalkTo(game.world, west, int32(RiverCenterX), 64),
     "a river click should snap to the bank, not reject"
   doAssert game.world.pudges[0].hasMoveTarget
-  doAssert game.world.pudges[0].moveX <= int32(PlayWestMax),
-    "the snapped target must stay on the west bank"
-  doAssert not riverTile(int(game.world.pudges[0].moveX))
+  doAssert westBank(
+    int(game.world.pudges[0].moveX), int(game.world.pudges[0].moveZ)
+  ), "the snapped target must stay on the west bank"
+  doAssert not riverTile(
+    int(game.world.pudges[0].moveX), int(game.world.pudges[0].moveZ)
+  )
   doAssert applyWalkTo(game.world, west, int32(PlayEastMin), 64),
     "an enemy-bank click should snap back across the river"
-  doAssert game.world.pudges[0].moveX <= int32(PlayWestMax),
-    "walking must stay on the bank layer"
+  doAssert westBank(
+    int(game.world.pudges[0].moveX), int(game.world.pudges[0].moveZ)
+  ), "walking must stay on the bank layer"
   doAssert applyWalkTo(game.world, west, int32(PlayWestMax), 64)
   game.world.pudges[0].placePudge(48, 48)
   game.world.pudges[3].placePudge(78, 48)
@@ -1126,8 +1130,9 @@ block:
     int(game.world.pudges[0].moveZ)
   )
   doAssert applyWalkTo(game.world, west, int32(RiverCenterX + 3), 64)
-  doAssert game.world.pudges[0].moveX <= int32(PlayWestMax),
-    "a mid-river click must resolve to this butcher's own bank"
+  doAssert westBank(
+    int(game.world.pudges[0].moveX), int(game.world.pudges[0].moveZ)
+  ), "a mid-river click must resolve to this butcher's own bank"
 
 echo "Testing stop drops the order and momentum brakes to rest"
 block:
@@ -1619,6 +1624,123 @@ block:
   doAssert bounced, "the throw must still rebound off the tree"
   doAssert maxBounces <= 2, "a glance must not rattle around the trunk"
   doAssert treeTicks <= 4, "the head must not sit in the tree"
+
+echo "Testing a head-on tree hit glances instead of rim ping-pong"
+block:
+  ## A dead-on trunk used to reverse 180°, bounce off the west rim,
+  ## hit the same tree, and yo-yo until range died. The reel then
+  ## dragged anyone on the chain through the same zigzag.
+  let game = freshGame()
+  parkPudges(game)
+  let (tx, tz) = westBounceTree()
+  doAssert tx >= 0
+  game.world.pudges[0].placePudge(tx - 8, tz)
+  game.world.pudges[1].placePudge(18, 32)
+  game.world.pudges[2].placePudge(18, 96)
+  game.world.pudges[3].placePudge(105, 40)
+  game.world.pudges[4].placePudge(105, 64)
+  game.world.pudges[5].placePudge(105, 88)
+  doAssert applyHookTo(
+    game.world, game.world.pudges[0].id, int32(tx), int32(tz)
+  )
+  game.play(int(HookWindupTicks))
+  doAssert game.world.hooks.len == 1
+  var
+    maxBounces = 0
+    treePins = 0
+    treeTicks = 0
+    bounced = false
+  let trunk = worldAtTile(tx, tz)
+  for _ in 0 ..< 200:
+    if game.world.hooks.len == 0:
+      break
+    let hook = game.world.hooks[0]
+    maxBounces = max(maxBounces, hook.bounces.len)
+    var pins = 0
+    for pin in hook.bounces:
+      if distSq(pin, trunk) <= int64(WorldScale) * int64(WorldScale) * 4:
+        inc pins
+    treePins = max(treePins, pins)
+    if hook.bounces.len > 0:
+      bounced = true
+    let tile = tileOf(hook.position)
+    if fieldTreeTile(tile.x, tile.z):
+      inc treeTicks
+    game.play(1)
+  doAssert bounced, "a head-on throw must still hit the trunk"
+  doAssert treeTicks <= 4, "the head must not sit in the tree"
+  doAssert treePins <= 1,
+    "the same trunk must not be a bounce pin more than once (treePins=" &
+      $treePins & " maxBounces=" & $maxBounces & ")"
+
+echo "Testing a throw that clips a tree tile corner misses the trunk"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  let (tx, tz) = westBounceTree()
+  doAssert tx >= 0
+  game.world.pudges[0].placePudge(tx - 8, tz)
+  game.world.pudges[1].placePudge(18, 32)
+  game.world.pudges[2].placePudge(18, 96)
+  game.world.pudges[3].placePudge(105, 40)
+  game.world.pudges[4].placePudge(105, 64)
+  game.world.pudges[5].placePudge(105, 88)
+  doAssert applyHookTo(
+    game.world, game.world.pudges[0].id, int32(tx - 1), int32(tz - 1)
+  )
+  game.play(int(HookWindupTicks))
+  doAssert game.world.hooks.len == 1
+  var bounced = false
+  for _ in 0 ..< 200:
+    if game.world.hooks.len == 0:
+      break
+    if game.world.hooks[0].bounces.len > 0:
+      bounced = true
+      break
+    game.play(1)
+  doAssert not bounced,
+    "a corner clip of the tree tile must miss the inscribed trunk"
+
+echo "Testing a walking owner cannot kite a reeled victim"
+block:
+  ## Early latch + Treads used to make reel speed lose to the caster,
+  ## and finishReel chased a dump point one tile ahead of them. The
+  ## victim stayed hookedBy while the owner walked away.
+  let game = freshGame()
+  parkPudges(game)
+  game.world.pudges[0].placePudge(30, 64)
+  game.world.pudges[3].placePudge(36, 64)
+  game.world.pudges[0].itemRank[ShopBoots] = ItemMaxRank
+  game.world.pudges[0].buffKind = RuneHaste
+  game.world.pudges[0].buffTicks = TickRate * 20
+  let start = game.world.pudges[0].position
+  discard game.addFlyingHook(
+    WorldPoint(x: start.x + WorldScale, z: start.z),
+    WorldScale,
+    0
+  )
+  var latched = false
+  for _ in 0 ..< 40:
+    game.play(1)
+    if game.world.hooks.len == 0:
+      break
+    if game.world.hooks[0].victimId == game.world.pudges[3].id:
+      latched = true
+      break
+  doAssert latched, "the nearby butcher must latch"
+  doAssert applyWalkTo(game.world, game.world.pudges[0].id, 16, 40)
+  var finished = false
+  for _ in 0 ..< 90:
+    game.play(1)
+    if game.world.hooks.len == 0:
+      finished = true
+      break
+  doAssert finished, "a reel must catch a walking booted owner"
+  doAssert game.world.pudges[3].hookedBy == 0,
+    "the victim must be released when the reel ends"
+  let tile = tileOf(game.world.pudges[3].position)
+  doAssert not fieldTreeTile(tile.x, tile.z),
+    "the dump must not leave the victim in a tree"
 
 echo "Testing the shuriken disk latches when a blade overlaps a body"
 block:
@@ -2524,6 +2646,9 @@ block:
   game.world.pudges[0].gold = ShopMineGold
   doAssert applyBuyPower(game.world, id, int32(ShopMine.ord))
   doAssert game.world.pudges[0].ownedPermanents == 4
+  game.world.pudges[0].gold = ShopWardGold
+  doAssert applyBuyPower(game.world, id, int32(ShopWard.ord))
+  doAssert game.world.pudges[0].ownedPermanents == 5
   game.world.pudges[0].gold = ShopBootsGold
   doAssert applyBuyPower(game.world, id, int32(ShopBoots.ord)),
     "buy-again must still rank an owned family"
@@ -2642,6 +2767,31 @@ block:
   doAssert not game.world.pudges[0].inRiver
   doAssert game.world.pudges[0].layer == int32(WestLayer)
   doAssert westBank(westTile.x)
+
+echo "Testing blink from the mid bulge cannot clear the pinched river"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  game.world.pudges[3].placePudge(105, 40)
+  game.world.pudges[4].placePudge(105, 88)
+  game.world.pudges[5].placePudge(110, 40)
+  let lipX = playWestMaxAt(IslandCenterZ)
+  game.world.pudges[0].placePudge(lipX, IslandCenterZ)
+  doAssert game.world.pudges[0].layer == int32(WestLayer)
+  doAssert westBank(lipX, IslandCenterZ)
+  let
+    origin = game.world.pudges[0].position
+    id = game.world.pudges[0].id
+    destX = int32(playEastMinAt(IslandCenterZ))
+  doAssert applyBlinkTo(game.world, id, destX, int32(IslandCenterZ)),
+    "a far-bank click from mid must still fire"
+  let dest = game.world.pudges[0].position
+  let tile = tileOf(dest)
+  doAssert dest.x > origin.x
+  doAssert not eastBank(tile.x, tile.z),
+    "the mid pinch must not let blink land on the far bank"
+  doAssert riverTile(tile.x, tile.z) or westBank(tile.x, tile.z)
+  doAssert game.world.pudges[0].layer != int32(EastLayer)
 
 echo "Testing blink toward the rim lands on the last walkable tile"
 block:
@@ -2913,7 +3063,7 @@ block:
   doAssert not applyPlaceWall(game.world, id, 32, 64),
     "cannot place without owning Bank Palisade"
   game.world.pudges[0].itemRank[ShopWall] = 1
-  doAssert not applyPlaceWall(game.world, id, int32(RiverWestX), 64),
+  doAssert not applyPlaceWall(game.world, id, int32(RiverCenterX), 64),
     "cannot place a wall in the river"
   doAssert not applyPlaceWall(
     game.world, id, int32(PlayEastMin), 64
@@ -2957,7 +3107,7 @@ block:
   doAssert not applyPlaceMine(game.world, west, 32, 64),
     "cannot place without owning Hooktrap"
   game.world.pudges[0].itemRank[ShopMine] = 1
-  doAssert not applyPlaceMine(game.world, west, int32(RiverWestX), 64),
+  doAssert not applyPlaceMine(game.world, west, int32(RiverCenterX), 64),
     "cannot place a mine in the river"
   doAssert applyPlaceMine(game.world, west, 32, 62)
   doAssert game.world.props.len == 1
@@ -3039,6 +3189,41 @@ block:
     if prop.id == mineId and prop.alive and prop.kind == PropMine:
       planted = true
   doAssert planted, "the grabbed Hooktrap must still be on the field"
+
+echo "Testing Farwatch Wards plant on either bank, hide from enemies, and expire"
+block:
+  let game = freshGame()
+  parkPudges(game)
+  let west = game.world.pudges[0].id
+  game.world.pudges[0].placePudge(30, 64)
+  doAssert not applyPlaceWard(game.world, west, 32, 64),
+    "cannot place without owning Farwatch Ward"
+  game.world.pudges[0].itemRank[ShopWard] = 1
+  doAssert not applyPlaceWard(game.world, west, int32(RiverCenterX), 64),
+    "cannot place a ward in the river"
+  doAssert applyPlaceWard(game.world, west, 32, 64)
+  doAssert game.world.props.len == 1
+  doAssert game.world.props[0].kind == PropWard
+  doAssert game.world.props[0].ticksLeft == WardDurationTicks
+  let ownId = game.world.props[0].id
+  doAssert mineVisibleTo(game.world, ownId, WestTeam)
+  doAssert not mineVisibleTo(game.world, ownId, EastTeam),
+    "enemies must not see a Farwatch Ward"
+  game.world.pudges[0].wardCooldown = 0
+  doAssert not applyPlaceWard(game.world, west, 34, 64),
+    "rank 1 allows only one living ward"
+  game.world.pudges[0].itemRank[ShopWard] = 3
+  game.world.pudges[0].placePudge(90, 64)
+  doAssert applyPlaceWard(game.world, west, 92, 64),
+    "must plant a ward on the enemy bank"
+  doAssert game.world.countProps(west, PropWard) == 2
+  game.world.props[0].ticksLeft = 1
+  game.play(1)
+  var living = 0
+  for prop in game.world.props:
+    if prop.alive and prop.kind == PropWard:
+      inc living
+  doAssert living == 1, "a spent ward must expire"
 
 echo "Testing Rot toggle damages, slows, and blocks blink"
 block:

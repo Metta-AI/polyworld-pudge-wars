@@ -63,8 +63,9 @@ const
     ## One pulse per second, matching the WC3 fountain.
   IslandFountainRadiusTiles* = 16'i32
     ## Euclidean tiles from the island center. Covers the water around
-    ## the rocks and a few tiles of each bank at mid (the river lip is
-    ## 12 tiles out). Spawn pads and the side lanes stay outside.
+    ## the rocks and a few tiles of each bank at mid (the side-lane lip
+    ## is 12 tiles out; the fountain bulge sits closer). Spawn pads and
+    ## the side lanes stay outside.
   IslandFountainRadius* = IslandFountainRadiusTiles * WorldScale
   WalkSnapTiles* = 24'i32
     ## Command forgiveness: a rejected walk target snaps to the nearest
@@ -79,9 +80,14 @@ const
     ## Hooking a teammate patches them up: support play with the same
     ## aim skill as the kill shot (~14% of base HP per landed save).
   SightRadiusTiles* = 20'i32
-    ## Fog-of-war vision radius per living butcher (team-shared).
-    ## Presentation and bot observations share this: scripts only see
-    ## what a human on that team would. Physics stay omniscient.
+    ## Fog-of-war vision radius per living butcher and team ward
+    ## (team-shared). Presentation and bot observations share this:
+    ## scripts only see what a human on that team would. Physics stay
+    ## omniscient.
+  HookSightPadTiles* = 6'i32
+    ## Half-width of the fog corridor along an in-flight hook, and how
+    ## far the last segment continues past the head along the throw.
+    ## Side padding alone left the tip flush with the shuriken.
   GoldPerKill* = 3'i32
     ## Shop currency: earned only through play, spent only in base.
   GoldPerDeny* = 1'i32
@@ -111,7 +117,9 @@ const
     ## Bank Palisade: place a timed HP wall on your bank.
   ShopMineGold* = 10'i32
     ## Hooktrap: hidden mine. Enemy hooks detonate; allied hooks grab.
-  InventorySlots* = 4'i32
+  ShopWardGold* = 8'i32
+    ## Farwatch Ward: plant a 45 s sight totem on either bank.
+  InventorySlots* = 5'i32
     ## HUD inventory wells. One unique family per slot; buy-again ranks it.
   ItemMaxRank* = 5'i32
     ## Matches WC3 Pudge Wars v2.03d: five levels, purchase upgrades in place.
@@ -138,9 +146,14 @@ const
     ## Mine body the hook disk has to clip.
   MineBlastRadius* = WorldScale * 2
   MaxMinesPerPlayer* = 3'i32
+  WardDurationTicks* = TickRate * 45
+    ## Observer lifetime: 45 s of team sight, then the stake crumbles.
+  WardCooldownTicks* = TickRate * 8
+  MaxWardsPerPlayer* = 2'i32
   FirstPropId* = 2000'i32
   WallObjectKind* = 2'i32
   MineObjectKind* = 3'i32
+  WardObjectKind* = 4'i32
 
 type
   Team* = enum
@@ -170,7 +183,7 @@ type
     RuneBounty
   ShopItem* = enum
     ## Base-pad catalog. 0-4 are timed/consumable powerups (keys 5-9);
-    ## 5-8 are the four permanent inventory families (one HUD well
+    ## 5-9 are the five permanent inventory families (one HUD well
     ## each). Buy-again ranks to 5; inventory full rejects a new
     ## family. Flask/rune powerups stay distinct from the wells.
     ShopFlask,
@@ -181,11 +194,14 @@ type
     ShopBoots,
     ShopLongshot,
     ShopWall,
-    ShopMine
+    ShopMine,
+    ShopWard
   PropKind* = enum
-    ## Placed shop gadgets: a visible HP wall, or a hidden mine.
+    ## Placed shop gadgets: a visible HP wall, a hidden mine, or a
+    ## timed sight ward.
     PropWall,
-    PropMine
+    PropMine,
+    PropWard
   PudgeSpec* = object
     name*: string
     modelPath*: string
@@ -254,12 +270,12 @@ const
   GrappleRadius* = WorldScale
     ## Slim head: it grabs walls, not butchers.
   BlinkRangeTiles* = 20'i32
-    ## Sidestep, not a map hop. Lip-to-lip across the river is 24
-    ## tiles (`PlayEastMin - PlayWestMax`); this stays under that so a
-    ## bank butcher cannot land on the far side. River water is a
-    ## legal landing, and a hop from the water can still reach a bank.
-    ## Cliffs, palisades, and occupied circles truncate to the last
-    ## legal point in front of them.
+    ## Sidestep, not a map hop. Side-lane lip-to-lip is 24 tiles
+    ## (`PlayEastMin - PlayWestMax`); this stays under that. At mid the
+    ## banks step in, so blink also refuses the opposite bank. River
+    ## water is a legal landing, and a hop from the water can still
+    ## reach a bank. Cliffs, palisades, and occupied circles truncate
+    ## to the last legal point in front of them.
   BlinkRange* = BlinkRangeTiles * WorldScale
   BlinkCooldownTicks* = TickRate * 8
     ## 8 s: clearly longer than Meat Hook's 2 s, a real commitment.
@@ -391,7 +407,8 @@ const
     "River Treads",
     "Longflight Brand",
     "Bank Palisade",
-    "Hooktrap"
+    "Hooktrap",
+    "Farwatch Ward"
   ]
   ShopItemIcons*: array[ShopItem, string] = [
     "",
@@ -402,7 +419,8 @@ const
     "river_treads",
     "longflight_brand",
     "bank_palisade",
-    "hooktrap"
+    "hooktrap",
+    "warding_chalk"
   ]
   ShopPrices*: array[ShopItem, int32] = [
     ShopFlaskGold,
@@ -413,7 +431,8 @@ const
     ShopBootsGold,
     ShopLongshotGold,
     ShopWallGold,
-    ShopMineGold
+    ShopMineGold,
+    ShopWardGold
   ]
 
 proc shopPrice*(item: ShopItem): int32 =
@@ -425,7 +444,7 @@ proc isPermanent*(item: ShopItem): bool =
   item >= ShopBoots
 
 proc shopItemBlurb*(
-    item: ShopItem; wallKey = "C", mineKey = "V"
+    item: ShopItem; wallKey = "C", mineKey = "V", wardKey = "B"
 ): string =
   ## Short explanation for a shop row or inventory well.
   case item
@@ -440,6 +459,9 @@ proc shopItemBlurb*(
   of ShopMine:
     "Plant a hidden mine (" & mineKey &
       ", then click; walks there if needed). Ally hooks grab it; enemy hooks detonate it."
+  of ShopWard:
+    "Plant a hidden sight ward on either bank (" & wardKey &
+      ", then click). Lights fog for your team."
 
 proc iconPath*(name: string, kind = "icons"): string =
   ## Returns a polyworld_data path for one published PNG.
@@ -606,6 +628,12 @@ proc maxMinesForRank*(rank: int32): int32 =
   ## Simultaneous mines: up to three once Hooktrap is owned.
   if rank <= 0: 0'i32 else: MaxMinesPerPlayer
 
+proc maxWardsForRank*(rank: int32): int32 =
+  ## Simultaneous wards: one at ranks 1-2, two from rank 3.
+  if rank <= 0: 0'i32
+  elif rank >= 3: MaxWardsPerPlayer
+  else: 1'i32
+
 proc formatTiles*(worldUnits: int32): string =
   ## World units as "N.N" tiles for HUD copy.
   let tenths = int(int64(max(worldUnits, 0'i32)) * 10 div WorldScale)
@@ -671,15 +699,15 @@ proc hookTooltipLines*(
     else:
       "Press " & hookKey &
         ", then click. Enemy latch damages and pulls; ally latch heals."
-  var nums = $damage & " dmg  ·  ally +" & $AllyHookHeal & " HP  ·  " &
-    formatTiles(rangeUnits) & " tiles  ·  CD " & formatSeconds(HookCooldownTicks)
+  var nums = $damage & " dmg - ally +" & $AllyHookHeal & " HP - " &
+    formatTiles(rangeUnits) & " tiles - CD " & formatSeconds(HookCooldownTicks)
   result = @[title, how, nums]
   var extra = ""
   if longshotRank > 0:
     extra.add "+" & $(ItemLongshotPercent * longshotRank) & "% dmg/tile"
   if lightning:
     if extra.len > 0:
-      extra.add "  ·  "
+      extra.add " - "
     extra.add $RuneLightningDamage & " splash / " &
       formatTiles(RuneLightningRadius) & " tiles"
   if extra.len > 0:
@@ -691,7 +719,7 @@ proc grappleTooltipLines*(grappleKey = "E"): seq[string] =
     "Grapple",
     "Press " & grappleKey &
       ", then click. Latches terrain and yanks you to it. Deals no damage.",
-    "0 damage  ·  " & formatTiles(GrappleRange) & " tiles  ·  CD " &
+    "0 damage - " & formatTiles(GrappleRange) & " tiles - CD " &
       formatSeconds(GrappleCooldownTicks)
   ]
 
@@ -702,8 +730,8 @@ proc rotTooltipLines*(active: bool, rotKey = "R"): seq[string] =
     "Toggle (" & rotKey &
       ") a blight cloud. Damages everyone inside, including you.",
     $RotDamage & " dmg / " & formatSeconds(RotPeriodTicks) &
-      " (" & $rotDps() & " DPS)  ·  " & formatTiles(RotRadius) &
-      " tiles  ·  " & $RotSlowPercent & "% slow"
+      " (" & $rotDps() & " DPS) - " & formatTiles(RotRadius) &
+      " tiles - " & $RotSlowPercent & "% slow"
   ]
 
 proc blinkTooltipLines*(blinkKey = "F"): seq[string] =
@@ -712,7 +740,7 @@ proc blinkTooltipLines*(blinkKey = "F"): seq[string] =
     "Blink",
     "Hop toward the cursor (" & blinkKey &
       "). Stops at the last legal tile (cliffs, walls, bodies).",
-    $BlinkRangeTiles & " tiles  ·  CD " & formatSeconds(BlinkCooldownTicks)
+    $BlinkRangeTiles & " tiles - CD " & formatSeconds(BlinkCooldownTicks)
   ]
 
 proc shopItemTitle*(item: ShopItem, rank: int32): string =
@@ -733,7 +761,7 @@ proc shopItemEffect*(item: ShopItem, rank: int32): string =
     $RuneRegenPercent & "% max HP every " & formatSeconds(RuneRegenPeriodTicks) &
       " for " & formatSeconds(RuneBuffTicks)
   of ShopBigHook:
-    "+" & $RuneBigHookPercent & "% size  ·  +" & $RuneBigHookDamagePercent &
+    "+" & $RuneBigHookPercent & "% size - +" & $RuneBigHookDamagePercent &
       "% hook damage for " & formatSeconds(RuneBuffTicks)
   of ShopDoubleDamage:
     $RuneDamageMul & "x hook damage for " & formatSeconds(RuneBuffTicks)
@@ -744,22 +772,27 @@ proc shopItemEffect*(item: ShopItem, rank: int32): string =
     "+" & $(ItemLongshotPercent * shown) & "% hook damage per tile of flight (" &
       $ItemLongshotPercent & "% per rank)"
   of ShopWall:
-    $wallMaxHp(shown) & " HP  ·  " & formatSeconds(wallDurationTicks(shown)) &
-      " life  ·  max " & $maxWallsForRank(shown) & "  ·  CD " &
+    $wallMaxHp(shown) & " HP - " & formatSeconds(wallDurationTicks(shown)) &
+      " life - max " & $maxWallsForRank(shown) & " - CD " &
       formatSeconds(wallCooldownTicks(shown))
   of ShopMine:
-    $mineBlastDamage(shown) & " dmg  ·  " & formatTiles(MineBlastRadius) &
-      "-tile blast  ·  max " & $maxMinesForRank(shown) & "  ·  " &
-      formatSeconds(MineDurationTicks) & " life  ·  CD " &
+    $mineBlastDamage(shown) & " dmg - " & formatTiles(MineBlastRadius) &
+      "-tile blast - max " & $maxMinesForRank(shown) & " - " &
+      formatSeconds(MineDurationTicks) & " life - CD " &
       formatSeconds(MineCooldownTicks)
+  of ShopWard:
+    formatTiles(SightRadiusTiles * WorldScale) & "-tile sight - max " &
+      $maxWardsForRank(shown) & " - " & formatSeconds(WardDurationTicks) &
+      " life - CD " & formatSeconds(WardCooldownTicks)
 
 proc shopItemTooltipLines*(
-    item: ShopItem, rank: int32; wallKey = "C", mineKey = "V"
+    item: ShopItem, rank: int32;
+    wallKey = "C", mineKey = "V", wardKey = "B"
 ): seq[string] =
   ## Title, explanation, and effect numbers for a shop or inventory well.
   @[
     shopItemTitle(item, rank),
-    shopItemBlurb(item, wallKey, mineKey),
+    shopItemBlurb(item, wallKey, mineKey, wardKey),
     shopItemEffect(item, rank)
   ]
 
@@ -792,9 +825,9 @@ proc upgradeTooltipLines*(kind: UpgradeKind, level: int32): seq[string] =
     if not maxed:
       numbers.add " > " & formatTiles(hookRadius(nextLevel))
   if maxed:
-    numbers.add "  ·  MAXED"
+    numbers.add " - MAXED"
   else:
-    numbers.add "  ·  cost: 1 point"
+    numbers.add " - cost: 1 point"
   @[
     UpgradeNames[kind] & "  [rank " & $level & "/" & $MaxUpgradeLevel & "]",
     effect,
@@ -867,6 +900,7 @@ proc contentHash*(): uint64 =
   hash.addHashy(RuneBuffTicks)
   hash.addHashy(AllyHookHeal)
   hash.addHashy(SightRadiusTiles)
+  hash.addHashy(HookSightPadTiles)
   hash.addHashy(GoldPerKill)
   hash.addHashy(GoldPerDeny)
   hash.addHashy(GoldFirstBlood)
@@ -883,6 +917,7 @@ proc contentHash*(): uint64 =
   hash.addHashy(ShopLongshotGold)
   hash.addHashy(ShopWallGold)
   hash.addHashy(ShopMineGold)
+  hash.addHashy(ShopWardGold)
   hash.addHashy(InventorySlots)
   hash.addHashy(ItemMaxRank)
   hash.addHashy(ItemBootsSpeedPercent)
@@ -903,9 +938,13 @@ proc contentHash*(): uint64 =
   hash.addHashy(MineRadius)
   hash.addHashy(MineBlastRadius)
   hash.addHashy(MaxMinesPerPlayer)
+  hash.addHashy(WardDurationTicks)
+  hash.addHashy(WardCooldownTicks)
+  hash.addHashy(MaxWardsPerPlayer)
   hash.addHashy(FirstPropId)
   hash.addHashy(WallObjectKind)
   hash.addHashy(MineObjectKind)
+  hash.addHashy(WardObjectKind)
   hash.addHashy(RuneDriftPerTick)
   hash.addHashy(RuneRadius)
   hash.addHashy(RunePickupRadius)

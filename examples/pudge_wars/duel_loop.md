@@ -155,15 +155,20 @@ Host functions: `objectCount()`, `objectId/Kind/Team/X/Y/Hp/Alive/`
 `Victim(h)`; `runeCount()`, `runeX/Y/Kind(r)`; actions `walkTo(x, y)`,
 `hookTo(x, y)`, `attackTarget(id)`, `buyUpgrade(kind)` (0 damage,
 1 distance, 2 speed, 3 radius; 1 kill point each, level cap 10),
-`halt()`, `ping(x, y)`. Object, hook, and rune queries are fog-clipped
-the same way the renderer is: own team always, enemies only on the
-home bank, in the river, or within 20 tiles of a living teammate.
+`halt()`, `ping(x, y)`, `placeWard(x, y)`. Object, hook, and rune queries
+are fog-clipped the same way the renderer is: own team always, enemies
+only on the home bank, in the river, within 20 tiles of a living
+teammate or team ward, or along the padded corridor of an in-flight
+team hook. Shop permanents
+include Farwatch Ward (id 9): 45 s of hidden team sight on either bank.
 
 Arena facts the policy can rely on:
 
-- Playable tiles run 8..119 on both axes. River columns are 53..75;
-  west bank ends at x = 52 (`riverWest`), east begins at 76
-  (`riverEast`). The fountain island sits at (64, 64).
+- Playable tiles run 8..119 on both axes. River columns are 53..75
+  at the side lanes; west bank ends at x = 52 (`riverWest`), east
+  begins at 76 (`riverEast`). Around the fountain both banks step in
+  on X — walkable land closer than those lips. The fountain island
+  sits at (64, 64).
 - Spawn pads are seeded (lane shuffle + inland jitter, east mirrored).
   Read `homeX`/`homeY` — do not hardcode 22/106. Kills respawn on your
   pad after 4 s with a 2 s untargetable shield that breaks on acting.

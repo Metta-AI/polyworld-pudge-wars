@@ -17,13 +17,15 @@ when defined(posix):
 const
   ReplayGame* = "pudge_wars"
   ReplayFormatVersion* = 4'u16
-  ReplayGameVersion* = 30'u16
+  ReplayGameVersion* = 31'u16
     ## Physics the *viewer* runs. Observatory's static wasm must ship at
     ## this same number as the recording image (`pwcoworld`). Older tapes
     ## still load; playback skips hash checks so a rebuilt wasm does not
     ## freeze Featured Match. Bump when physics change, and bump the
     ## coworld version in lockstep. Live follow uses `NetProtocolVersion`
     ## in netproto.nim — that is not the observatory replay path.
+    ## v31: Farwatch Ward shop family. Wards last 45 s and stamp team
+    ##      sight; `itemRank` and `wardCooldown` hash.
     ## v30: Allied Hooktrap latch/reel; dump snaps to a legal own-bank
     ##      tile instead of vanishing or overlapping a butcher.
     ## v29: BaseHookRange 56 → 60 so a rank-0 lip throw latches the far
@@ -135,6 +137,8 @@ const
     ## optional gold amount (0 uses the default purse).
   ActionRotToggle* = 17'u8
     ## Flip Rot on or off. No aim, no cooldown, no mana.
+  ActionPlaceWard* = 18'u8
+    ## Drop a hidden sight ward on a nearby land tile.
   FineAimScale* = 256'i32
     ## Fine-aim units per tile for `ActionHookToFine`.
   ControllerBot* = 0'u8
@@ -199,7 +203,7 @@ proc fail(message: string) {.noreturn.} =
   raise newException(ReplayError, message)
 
 proc validKind(kind: uint8): bool =
-  kind >= ActionWalkTo and kind <= ActionRotToggle
+  kind >= ActionWalkTo and kind <= ActionPlaceWard
 
 proc initReplayData*(setup: Setup): ReplayData =
   ## Creates an empty replay with a versioned deterministic setup.
@@ -479,6 +483,22 @@ proc recordRotToggle*(
     tick: tick,
     pudgeId: pudgeId,
     kind: ActionRotToggle
+  )
+
+proc recordPlaceWard*(
+    recorder: ReplayRecorder,
+    tick: uint32,
+    pudgeId,
+    x,
+    y: int32
+) =
+  ## Records one sight-ward drop.
+  recorder.record ReplayAction(
+    tick: tick,
+    pudgeId: pudgeId,
+    kind: ActionPlaceWard,
+    first: x,
+    second: y
   )
 
 proc recordHash*(recorder: ReplayRecorder, hash: uint64) =

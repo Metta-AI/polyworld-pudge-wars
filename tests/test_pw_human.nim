@@ -377,7 +377,7 @@ block:
   doAssert game.intentResults.len == 1
   doAssert game.intentResults[0].accepted
   doAssert game.world.pudges[HeroSlot].gold == CheatGoldAmount
-  for item in ShopBoots..ShopMine:
+  for item in ShopBoots..ShopWard:
     doAssert game.world.pudges[HeroSlot].itemRank[item] == ItemMaxRank,
       $item & " should be maxed as the lumber analog"
 

@@ -27,6 +27,7 @@
 '   selfKills, selfPoints, selfGold, selfInShop, selfLayer, selfHooked
 '   selfBuff (0 none, else rune kind + 1), selfRot (1 if our Rot is on)
 '   hookReady, blinkReady, worldTick, riverWest, riverEast
+'     (side-lane lips 52/76; mid fountain land sits closer)
 '   homeX, homeY  (this butcher's spawn pad; retreat here)
 '   runeSoon (ticks until the next river drop; 0 if runes are off)
 '   runeNextKind, runeNextX, runeNextY  (the coming drop; -1 if off)
@@ -34,10 +35,12 @@
 ' Objects are fog-clipped like the human view:
 '   objectId, objectTeam, objectX, objectY, objectHp, objectAlive
 '   objectLayer, objectHooked, objectShielded, objectRot
-'   objectKind: 1 butcher, else a gadget (wall/mine)
+'   objectKind: 1 butcher, else a gadget (wall/mine/ward)
 ' Own team always shows. Enemies and walls only inside shared sight
-' (home bank, river, and 20 tiles of a living teammate). Enemy mines
-' stay hidden. Layers: 0 west bank, 1 east bank, 2 river
+' (home bank, river, 20 tiles of a living teammate or team ward, or
+' the padded corridor along an in-flight team hook). Enemy mines and
+' wards stay hidden.
+' Layers: 0 west bank, 1 east bank, 2 river
 '
 ' Flying hooks (both teams; filter with hookTeam / hookOwner):
 '   hookCount, hookTeam, hookX, hookY, hookFlying, hookVictim, hookOwner
@@ -58,7 +61,7 @@
 ' Actions return 1 when accepted:
 '   walkTo(x, y), hookTo(x, y), blinkTo(x, y), rotToggle(), attackTarget(id)
 '   buyUpgrade(kind), buyPower(id), itemRank(kind), upgradeLevel(kind)
-'   placeWall(x, y), placeMine(x, y), halt(), ping(x, y)
+'   placeWall(x, y), placeMine(x, y), placeWard(x, y), halt(), ping(x, y)
 ' Rot is a toggle: 8-tile blight, 48 DPS including self, 40% slow,
 ' and nobody in a cloud can blink. Turn it on to finish a melee;
 ' turn it off and walk inland when someone else is rotting you.
@@ -66,8 +69,9 @@
 ' Spend every kill point the same tick; throw range and lead scale
 ' with upgradeLevel after the buy. Shop (own pad, gold): 0 flask,
 ' 1 haste, 2 regen, 3 big hook, 4 2x, 5 river treads, 6 longflight
-' brand, 7 palisade, 8 hooktrap. Permanents occupy 4 inventory
-' slots and rank to 5 — keep buying the same family. C/V place wall/mine.
+' brand, 7 palisade, 8 hooktrap, 9 farwatch ward. Permanents occupy 5
+' inventory slots and rank to 5 — keep buying the same family.
+' C/V/B place wall/mine/ward. Wards last 45 s and light fog.
 '
 ' print lines are captured for logs. They are not shown in the world;
 ' nameplates use the bot's script name. Print on changes, not every tick.

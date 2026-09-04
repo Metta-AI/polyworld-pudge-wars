@@ -389,7 +389,7 @@ proc initPudgeHost(pudgeId: int32): Host =
       index = activeGame.world.pudgeIndex(pudgeId)
       kind = arguments[0]
     if index < 0 or kind < 0 or
-        kind > int32(ShopMine.ord - ShopBoots.ord):
+        kind > int32(ShopWard.ord - ShopBoots.ord):
       return 0
     activeGame.world.pudges[index].itemRank[
       ShopItem(int32(ShopBoots.ord) + kind)
@@ -487,6 +487,21 @@ proc initPudgeHost(pudgeId: int32): Host =
       activeGame.recordingError = error.msg
       raise newException(BasicError, "replay recording failed: " & error.msg)
     int32(applyPlaceMine(activeGame.world, pudgeId, arguments[0], arguments[1]))
+  let placeWardProc: HostProc = proc(
+      arguments: openArray[int32]
+  ): int32 =
+    try:
+      if activeGame.recorder != nil:
+        activeGame.recorder.recordPlaceWard(
+          uint32(activeGame.world.tick),
+          pudgeId,
+          arguments[0],
+          arguments[1]
+        )
+    except ReplayError as error:
+      activeGame.recordingError = error.msg
+      raise newException(BasicError, "replay recording failed: " & error.msg)
+    int32(applyPlaceWard(activeGame.world, pudgeId, arguments[0], arguments[1]))
 
   discard result.addFunction("objectCount", 0, objectCountProc, 2)
   discard result.addFunction("objectId", 1, objectIdProc, 4)
@@ -524,6 +539,7 @@ proc initPudgeHost(pudgeId: int32): Host =
   discard result.addFunction("rotToggle", 0, rotToggleProc, 20)
   discard result.addFunction("placeWall", 2, placeWallProc, 20)
   discard result.addFunction("placeMine", 2, placeMineProc, 20)
+  discard result.addFunction("placeWard", 2, placeWardProc, 20)
 
 proc botScriptLabel(path: string): string =
   ## "players/aggressive.bas" becomes "Aggressive".
