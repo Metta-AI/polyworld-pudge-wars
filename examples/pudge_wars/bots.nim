@@ -568,6 +568,17 @@ proc uniquifySeatLabels(labels: var seq[string]) =
     numbered[i] = name & " " & $k
   labels = numbered
 
+proc applySeatLabels*(game: Game, names: openArray[string]) =
+  ## Nameplates and kill feed: one display name per roster seat.
+  ## Coworld hosted dispatch writes these into `players[].name`.
+  if game == nil:
+    return
+  let total = game.world.pudges.len
+  game.seatLabels = newSeq[string](total)
+  for i in 0 ..< min(total, names.len):
+    game.seatLabels[i] = names[i]
+  uniquifySeatLabels(game.seatLabels)
+
 proc loadBots*(game: Game, groups: openArray[BotGroup]) =
   ## Compiles bot programs into seats. With one program per seat, human
   ## seats get a VM too, so releasing control falls back to script
