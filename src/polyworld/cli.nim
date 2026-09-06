@@ -75,6 +75,9 @@ type
       ## Seat continuity token from the lobby page, for the web client.
     playerName*: string
       ## Display name sent to the host when joining or hosting.
+    seatLabels*: seq[string]
+      ## Per-roster nameplates. Coworld and the web viewer pass one
+      ## `--label` per seat; later values fill seats in order.
     autoStart*: bool
       ## Skip the host lobby and start the match immediately; joiners
       ## grab bot seats mid-match.

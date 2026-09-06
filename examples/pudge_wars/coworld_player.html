@@ -34,7 +34,7 @@
     last = message
     status.textContent = message.done ? 'Match over' : (message.self && message.self.alive ? 'Fighting' : 'Dead')
     scores.textContent = scoreLine(message)
-    transform = drawArena(canvas, message, { showNames: false })
+    transform = drawArena(canvas, message, { showNames: true })
   }
   socket.onclose = () => { status.textContent = 'Disconnected' }
   canvas.onclick = (event) => {

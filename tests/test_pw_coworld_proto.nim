@@ -150,4 +150,12 @@ block:
     "the top-level print echo stays"
   doAssert mate["self"]["say_tick"].getInt >= 0, "say_tick stamps the line"
 
+echo "Testing file:// artifact URIs resolve to /coworld/replay"
+block:
+  doAssert artifactPath("file:///coworld/replay") == "/coworld/replay"
+  doAssert artifactPath("file:///coworld/results.json") ==
+    "/coworld/results.json"
+  doAssert artifactPath("file://coworld/replay") == "/coworld/replay"
+  doAssert artifactPath("/tmp/replay") == "/tmp/replay"
+
 echo "test_pw_coworld_proto: all checks passed"

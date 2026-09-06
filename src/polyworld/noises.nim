@@ -11,10 +11,17 @@ const MapBlendScale* = 1024'i32
 proc roundDivision*(numerator, denominator: int64): int64 =
   ## Divides signed integers with deterministic half-away-from-zero rounding.
   doAssert denominator > 0, "rounding denominator must be positive"
+  let half = denominator div 2
   if numerator >= 0:
-    (numerator + denominator div 2) div denominator
+    if half > 0 and numerator > high(int64) - half:
+      numerator div denominator
+    else:
+      (numerator + half) div denominator
+  elif numerator == low(int64) or
+      (half > 0 and -numerator > high(int64) - half):
+    numerator div denominator
   else:
-    -((-numerator + denominator div 2) div denominator)
+    -((-numerator + half) div denominator)
 
 proc floorDiv(value, divisor: int): int =
   ## Divides toward negative infinity so lattice cells stay uniform.

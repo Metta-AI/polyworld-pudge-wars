@@ -37,8 +37,8 @@ const
   MaxChatDraft = 120
   MinimapWest = rgbx(78, 58, 48, 255)
   MinimapEast = rgbx(46, 64, 78, 255)
-  MinimapRiver = rgbx(46, 92, 124, 255)
-  MinimapIsland = rgbx(168, 176, 96, 255)
+  MinimapRiver = rgbx(255, 78, 12, 255)
+  MinimapIsland = rgbx(148, 132, 96, 255)
   MinimapForest = rgbx(22, 24, 22, 255)
   MinimapShop = rgbx(232, 196, 86, 255)
   MinimapPing = rgbx(255, 214, 90, 255)
@@ -107,8 +107,8 @@ const
   ZoomOutSliderMax = 400.0'f32
   DebugWest* = rgbx(214, 86, 72, 255)
   DebugEast* = rgbx(82, 142, 220, 255)
-  DebugRiver* = rgbx(48, 110, 168, 255)
-  DebugWater* = rgbx(72, 196, 214, 255)
+  DebugRiver* = rgbx(168, 56, 28, 255)
+  DebugWater* = rgbx(255, 120, 40, 255)
   DebugIsland* = rgbx(214, 196, 120, 255)
   DebugBlocked* = rgbx(118, 72, 48, 255)
   DebugWalk* = rgbx(72, 196, 96, 255)
@@ -590,7 +590,7 @@ proc pudgeHpColor*(pudge: Pudge): ColorRGBX =
   if rel >= 0:
     if pudge.team.ord == rel: AllyHpColor else: EnemyHpColor
   elif pudge.onIslandFountain: rgbx(96, 220, 110, 255)
-  elif pudge.inRiver: rgbx(64, 168, 196, 255)
+  elif pudge.inRiver: rgbx(220, 88, 40, 255)
   elif pudge.team == WestTeam: WestColor
   else: EastColor
 
@@ -1153,7 +1153,7 @@ proc drawRoster(
     elif pudge.onIslandFountain:
       hudScratch.add "  fountain"
     elif pudge.inRiver:
-      hudScratch.add "  river"
+      hudScratch.add "  pit"
     elif pudge.state == Dying:
       hudScratch.add "  down"
     if spectatePudgeId == pudge.id:
@@ -2536,9 +2536,9 @@ proc drawDebugOverlaysHud(sk: Silky, layout: GameUiLayout) =
   y += 14
   sk.drawDebugLegendSwatch(vec2(x, y), DebugEast, "East bank")
   y += 14
-  sk.drawDebugLegendSwatch(vec2(x, y), DebugRiver, "River bed")
+  sk.drawDebugLegendSwatch(vec2(x, y), DebugRiver, "Fire pit")
   y += 14
-  sk.drawDebugLegendSwatch(vec2(x, y), DebugWater, "Visual water")
+  sk.drawDebugLegendSwatch(vec2(x, y), DebugWater, "Coals")
   y += 14
   sk.drawDebugLegendSwatch(vec2(x, y), DebugIsland, "Fountain / island")
   y += 14
@@ -2775,7 +2775,7 @@ proc drawSpectatorBanner(
   ## One string only — combat lines live in the Events tab, not here.
   if not spectatorChromeVisible() or menuOpen:
     return
-  if run.replayMode and (run.replayVersionSkew or run.hashCheck.error.len > 0):
+  if run.replayMode and run.hashCheck.error.len > 0:
     return
   let banner = spectatorBannerPanel(layout)
   sk.drawEtched(banner.origin, banner.size, HudChipFill)
@@ -2954,7 +2954,7 @@ proc drawUi*(
         "SPECTATING - PICK A SEAT FROM THE HOST'S LOBBY PAGE"
       else:
         "TAKE A SEAT: PRESS 1-0, OR T OVER A BUTCHER"
-    # Shadow pass keeps the hint readable over the bright river.
+    # Shadow pass keeps the hint readable over the fire pit.
     sk.drawLabel(
       seatHint,
       vec2(1, chromeFloor - 25),
@@ -2984,14 +2984,7 @@ proc drawUi*(
     else:
       sk.drawMenuOverlay(window, layout, transport)
   if run.replayMode:
-    if run.replayVersionSkew:
-      sk.drawError(
-        layout.size,
-        "TAPE v" & $run.replayData.header.gameVersion &
-          " / SIM v" & $ReplayGameVersion & " — HASHES SKIPPED",
-        "This build's physics differ from the recording; watching anyway"
-      )
-    elif run.hashCheck.error.len > 0:
+    if run.hashCheck.error.len > 0:
       sk.drawError(
         layout.size,
         "REPLAY DIVERGED — continuing " &

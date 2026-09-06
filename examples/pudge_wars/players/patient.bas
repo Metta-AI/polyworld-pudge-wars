@@ -6,20 +6,20 @@
 '
 ' See base.bas for the full host API.
 
-' Bank one point, then dump the rest: damage > distance > radius.
+' Bank one point, then dump the rest: radius > distance > speed.
 left = selfPoints
 while left >= 2
   got = 0
-  if buyUpgrade(0) = 1 then
+  if buyUpgrade(3) = 1 then
     got = 1
   else
     if buyUpgrade(1) = 1 then
       got = 1
     else
-      if buyUpgrade(3) = 1 then
+      if buyUpgrade(2) = 1 then
         got = 1
       else
-        if buyUpgrade(2) = 1 then
+        if buyUpgrade(0) = 1 then
           got = 1
         end if
       end if

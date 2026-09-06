@@ -69,5 +69,11 @@ block:
           " live=", expected.toHex(16), " replay=", stateHash(client).toHex(16)
   doAssert firstBad < 0,
     "all-human live recording diverged from its replay at tick " & $firstBad
+  doAssert host.recordingError.len == 0, host.recordingError
+  let encoded = encodeCoworldReplay(host.recorder.data)
+  let decoded = decodeReplay(encoded)
+  doAssert decoded.header.setup.maximumTicks == uint32(Ticks)
+  doAssert decoded.hashes.len == Ticks
+  doAssert decoded.actions.len == host.recorder.data.actions.len
 
 echo "test_pw_coworld_record: all checks passed"

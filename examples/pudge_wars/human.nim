@@ -789,7 +789,7 @@ proc placeBlockReason(hero: Pudge, item: ShopItem): string =
   if hero.itemRank[item] <= 0:
     return "BUY IT AT YOUR SHOP PAD FIRST"
   if hero.inRiver:
-    return "CANNOT PLACE IN THE RIVER"
+    return "CANNOT PLACE IN THE FIRE PIT"
   if hero.hookedBy != 0:
     return "HOOKED"
   if item == ShopWall and hero.wallCooldown > 0:
@@ -840,14 +840,14 @@ proc groundAtTile(tileX, tileZ: int32): Vec3 =
 
 proc mineSiteError(hero: Pudge, tileX, tileZ: int32): string =
   if riverTile(int(tileX), int(tileZ)) or islandTile(int(tileX), int(tileZ)):
-    return "CANNOT PLACE IN THE RIVER"
+    return "CANNOT PLACE IN THE FIRE PIT"
   if not run.world.propSiteLegal(hero.team, int(tileX), int(tileZ)):
     return "CANNOT PLACE THERE"
   ""
 
 proc wardSiteError(tileX, tileZ: int32): string =
   if riverTile(int(tileX), int(tileZ)) or islandTile(int(tileX), int(tileZ)):
-    return "CANNOT PLACE IN THE RIVER"
+    return "CANNOT PLACE IN THE FIRE PIT"
   if not run.world.wardSiteLegal(int(tileX), int(tileZ)):
     return "CANNOT PLACE THERE"
   ""
@@ -1091,7 +1091,7 @@ proc rejectReason(res: IntentResult): string =
     if hero.itemRank[ShopWall] <= 0 and hero.itemRank[ShopMine] <= 0 and
         hero.itemRank[ShopWard] <= 0:
       "BUY IT AT YOUR SHOP PAD FIRST"
-    elif hero.inRiver: "CANNOT PLACE IN THE RIVER"
+    elif hero.inRiver: "CANNOT PLACE IN THE FIRE PIT"
     else: "CANNOT PLACE THERE"
   of IntentCheat:
     "CHEAT REJECTED"

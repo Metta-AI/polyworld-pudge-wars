@@ -859,24 +859,45 @@ block:
     "ticking past the configured tape should record the error"
   doAssert game.world.tick == 3, "the window should keep simulating"
 
-echo "Testing a different tape game version skips hash checks"
+echo "Testing a different tape game version is rejected"
 block:
   let live = freshGame()
   startRecording(live, 8)
   live.play(8)
   var data = live.recorder.data
-  doAssert data.hashes.len == 8
   data.header.gameVersion = ReplayGameVersion - 1
-  for i in 0 ..< data.hashes.len:
-    data.hashes[i] = 0xDEADBEEF'u64
+  try:
+    discard data.encodeReplay()
+    doAssert false, "a tape from another simulation version must not encode"
+  except ReplayError:
+    discard
+  try:
+    data.validate()
+    doAssert false, "validate must reject another simulation version"
+  except ReplayError as error:
+    doAssert error.msg.contains("unsupported replay game version")
+
+echo "Testing a hash mismatch fails replay verification"
+block:
+  let live = freshGame()
+  startRecording(live, 8)
+  live.play(8)
+  var data = live.recorder.data
+  data.hashes[0] = data.hashes[0] xor 1
   var replay = newGame(map, int32(data.header.setup.maximumTicks), true, data)
   replay.replayPlayer = initReplayPlayer(data)
   replay.historyPlayback = true
-  doAssert replay.replayVersionSkew
-  while uint32(replay.world.tick) < data.header.setup.maximumTicks:
+  while replay.world.tick < data.hashes.len:
     tickWorld(replay, proc() = discard)
-  doAssert replay.hashCheck.mismatches == 0,
-    "older tapes must play without hashing against this sim"
+  doAssert replay.hashCheck.mismatches > 0
+  try:
+    replay.hashCheck.requireReplayComplete(
+      uint32(replay.world.tick),
+      data.hashes.len
+    )
+    doAssert false, "a hash mismatch must fail replay verification"
+  except ReplayError as error:
+    doAssert error.msg.contains("first at tick 1")
 
 echo "Testing walk plays run then returns to idle"
 block:
@@ -2195,6 +2216,34 @@ block:
   discard segmentsWithin(
     a0, a1, worldAtTile(20, 20), worldAtTile(100, 100), radius
   )
+
+echo "Testing extreme headings and walk aims do not overflow"
+block:
+  ## Nim 2.2 still overflow-checks in `-d:release`. A saturated heading
+  ## (`low, low`) used to raise in `scaledPlanar` / fog tip / `abs`.
+  discard distanceSquared(
+    WorldPoint(x: low(int32), z: low(int32)),
+    WorldPoint(x: high(int32), z: high(int32))
+  )
+  discard segmentsWithin(
+    WorldPoint(x: low(int32), z: 0),
+    WorldPoint(x: high(int32), z: 0),
+    WorldPoint(x: 0, z: low(int32)),
+    WorldPoint(x: 0, z: high(int32)),
+    BaseHookRadius
+  )
+  discard worldAtTile(100_000, -100_000)
+  let game = freshGame()
+  parkPudges(game)
+  discard applyWalkTo(game.world, game.world.pudges[0].id, low(int32), 64'i32)
+  discard game.addFlyingHook(
+    worldAtTile(40, 64), low(int32), low(int32), BaseHookRange, HookSpeedMax
+  )
+  discard hookCorridorSees(
+    game.world, game.world.hooks[0], worldAtTile(64, 64)
+  )
+  game.play(3)
+  doAssert tileOnGrid(tileOf(game.world.pudges[0].position))
 
 echo "Testing a south-rim bounce does not teleport the hook"
 block:

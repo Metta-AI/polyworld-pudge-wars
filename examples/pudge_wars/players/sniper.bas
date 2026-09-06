@@ -1,22 +1,22 @@
 ' Pudge Wars deadeye — holds the waterline, stacks hook distance and
-' damage, and only throws at wounded targets in hook range (never brawls).
+' radius, and only throws at wounded targets in hook range (never brawls).
 '
 ' Rot: only blight a hooked, drowning, or badly wounded butcher already
 ' in the 8-tile disk; walk inland out of anyone else's cloud.
 '
 ' See base.bas for the full host API.
 
-' Spend every kill point: distance > damage > radius > speed.
+' Spend every kill point: distance > radius > damage > speed.
 left = selfPoints
 while left > 0
   got = 0
   if buyUpgrade(1) = 1 then
     got = 1
   else
-    if buyUpgrade(0) = 1 then
+    if buyUpgrade(3) = 1 then
       got = 1
     else
-      if buyUpgrade(3) = 1 then
+      if buyUpgrade(0) = 1 then
         got = 1
       else
         if buyUpgrade(2) = 1 then

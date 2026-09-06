@@ -68,3 +68,22 @@ cp "${src}/pw.wasm" "${output_dir}/pw.wasm"
 if [[ -f "${src}/pw.data" ]]; then
   cp "${src}/pw.data" "${output_dir}/pw.data"
 fi
+sim_version="$(
+  sed -n 's/^  ReplayGameVersion\* = \([0-9][0-9]*\).*/\1/p' \
+    "${polyworld_root}/examples/pudge_wars/replays.nim" | head -1
+)"
+if [[ -z "${sim_version}" ]]; then
+  echo "could not read ReplayGameVersion from replays.nim" >&2
+  exit 1
+fi
+printf '{"game":"pudge_wars","simVersion":%s}\n' "${sim_version}" \
+  > "${output_dir}/sim-version.json"
+cover="${polyworld_root}/examples/pudge_wars/cover.webp"
+if [[ -f "$cover" ]]; then
+  cp "$cover" "${output_dir}/cover.webp"
+  cp "$cover" "${src}/cover.webp"
+fi
+preview="${polyworld_root}/coworld/preview.jpg"
+if [[ -f "$preview" ]]; then
+  cp "$preview" "${output_dir}/preview.jpg"
+fi

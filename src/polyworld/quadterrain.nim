@@ -292,9 +292,26 @@ proc terrainFrag(
     vec3(gray, gray, gray) * (1.0 - visibility)
   fragColor = vec4(color.x, color.y, color.z, 1.0)
 
-## Water shader: transparent blue with a Blinn-Phong specular highlight.
+## Fire-pit sheet: viscous Voronoi lava. The mesh is still the
+## transparent water layer; only the look is molten.
 
 var cameraPos: Uniform[Vec3]
+var waterTime: Uniform[float32]
+
+template lavaCell(ox, oz: untyped) =
+  ## One jittered Voronoi neighbor. Reads px/pz/waterTime; writes d1/d2.
+  let
+    cellX = ix + ox
+    cellZ = iz + oz
+    h1 = fract(sin(cellX * 127.1 + cellZ * 311.7) * 43758.5453)
+    h2 = fract(sin(cellX * 269.5 + cellZ * 183.3) * 43758.5453)
+    jx = (h1 - 0.5) * 0.84 + 0.14 * sin(waterTime * 0.70 + h1 * 6.2832)
+    jz = (h2 - 0.5) * 0.84 + 0.14 * sin(waterTime * 0.58 + h2 * 6.2832)
+    dx = px - cellX - jx
+    dz = pz - cellZ - jz
+    d = dx * dx + dz * dz
+  d2 = min(d2, max(d1, d))
+  d1 = min(d1, d)
 
 proc waterVert(
     gl_Position: var Vec4,
@@ -313,14 +330,14 @@ proc waterFrag(
     worldPos: Vec3,
     waterNormal: Vec3
 ) =
-  ## Shades transparent water with a view-dependent highlight.
+  ## Packed lava cells: amber bowls, yellow-white ridges, glossy pops.
   let
     specular = pow(
     max(dot(
       normalize(waterNormal),
       normalize(normalize(cameraPos - worldPos) + envLightDirection)
     ), 0.0),
-    48.0)
+    28.0)
     visibilityUv = vec2(
       (worldPos.x + visibilityOffset) * visibilityScale,
       (worldPos.z + visibilityOffset) * visibilityScale
@@ -330,13 +347,45 @@ proc waterFrag(
       0.95,
       texture(visibilityTex, visibilityUv).x
     )
-  let water: Vec3 = vec3(
-    (0.05 + 0.08 * visibility) + specular * visibility * envLightLevel,
-    (0.10 + 0.24 * visibility) + specular * visibility * envLightLevel,
-    (0.16 + 0.42 * visibility) + specular * visibility * envLightLevel
-  ) * envHighlight
-  fragColor = vec4(water.x, water.y, water.z,
-    clamp(0.55 + specular * envLightLevel * 0.45, 0.0, 1.0))
+    warpX = sin(worldPos.z * 0.34 + waterTime * 0.42) * 0.22
+    warpZ = sin(worldPos.x * 0.29 + waterTime * 0.36) * 0.22
+    px = (worldPos.x + warpX) * 0.46 + waterTime * 0.05
+    pz = (worldPos.z + warpZ) * 0.46
+    ix = floor(px)
+    iz = floor(pz)
+  var
+    d1 = 8.0
+    d2 = 8.0
+  lavaCell(-1.0, -1.0)
+  lavaCell(0.0, -1.0)
+  lavaCell(1.0, -1.0)
+  lavaCell(-1.0, 0.0)
+  lavaCell(0.0, 0.0)
+  lavaCell(1.0, 0.0)
+  lavaCell(-1.0, 1.0)
+  lavaCell(0.0, 1.0)
+  lavaCell(1.0, 1.0)
+  let
+    f1 = sqrt(max(d1, 0.0))
+    f2 = sqrt(max(d2, 0.0))
+    edge = f2 - f1
+    ridge = 1.0 - smoothstep(0.0, 0.12, edge)
+    ridge2 = ridge * ridge
+    bowl = clamp(f1 * 2.8, 0.0, 1.0)
+    pulse = 0.90 + 0.10 * sin(waterTime * 1.6 + px * 1.2 + pz * 0.8)
+    mottle = 0.78 + 0.22 * sin(px * 7.2 + pz * 5.8 + waterTime * 1.1) *
+      sin(px * 4.4 - pz * 6.5 + waterTime * 0.85)
+    glow = 0.92 + 0.08 * visibility
+    spec = specular * (0.06 + 0.18 * ridge2)
+    r = 0.40 + 0.50 * bowl + 0.22 * ridge2 * pulse
+    g = (0.04 + 0.16 * bowl + 0.18 * ridge2 * pulse) * mottle
+    b = 0.006 + 0.012 * bowl + 0.03 * ridge2
+  fragColor = vec4(
+    clamp(r * glow + spec, 0.0, 1.25),
+    clamp(g * glow + spec * 0.28, 0.0, 0.62),
+    clamp(b * glow + spec * 0.04, 0.0, 0.14),
+    0.97
+  )
 
 ## Prop shader: baked vertex colors with half-lambert lighting.
 
@@ -578,7 +627,7 @@ var
   visibilityOffsetLocation, visibilityScaleLocation: GLint
   terrainTextureArray, visibilityTexture: GLuint
   waterProgram: GLuint
-  waterMvpLocation, waterCameraLocation: GLint
+  waterMvpLocation, waterCameraLocation, waterTimeLocation: GLint
   waterVisibilityTexLocation: GLint
   waterVisibilityOffsetLocation, waterVisibilityScaleLocation: GLint
   propProgram: GLuint
@@ -1917,8 +1966,8 @@ proc emitLayer(
         )
 
 proc emitWaterLayer(layer: QuadLayer) =
-  ## Flat water surface plus side faces where the water ends; drawn in its
-  ## own transparent pass, so it goes to a separate mesh.
+  ## Flat fire-pit surface plus side faces where the sheet ends; drawn in
+  ## its own transparent pass, so it goes to a separate mesh.
   proc addWaterTriangle(a, b, c, normal: Vec3) =
     ## Appends one position-and-normal water triangle.
     for v in [a, b, c]:
@@ -2093,6 +2142,7 @@ proc initTerrain*() =
   waterMvpLocation = glGetUniformLocation(waterProgram, "mvp")
   waterEnv = envLocations(waterProgram)
   waterCameraLocation = glGetUniformLocation(waterProgram, "cameraPos")
+  waterTimeLocation = glGetUniformLocation(waterProgram, "waterTime")
   waterVisibilityTexLocation = glGetUniformLocation(
     waterProgram,
     "visibilityTex"
@@ -2517,8 +2567,12 @@ proc drawTerrain*(
     glBindVertexArray(0)
   glUseProgram(0)
 
-proc drawWater*(viewProjection: Mat4, cameraEye: Vec3) =
-  ## Transparent water pass; call after all opaque drawing.
+proc drawWater*(
+    viewProjection: Mat4,
+    cameraEye: Vec3,
+    seconds = 0.0'f32
+) =
+  ## Transparent fire-pit pass; call after all opaque drawing.
   if waterMesh.len == 0:
     return
   glDisable(GL_CULL_FACE)
@@ -2527,6 +2581,7 @@ proc drawWater*(viewProjection: Mat4, cameraEye: Vec3) =
   mvp = viewProjection
   glUniformMatrix4fv(waterMvpLocation, 1, GL_FALSE, cast[ptr float32](mvp.addr))
   glUniform3f(waterCameraLocation, cameraEye.x, cameraEye.y, cameraEye.z)
+  glUniform1f(waterTimeLocation, seconds)
   glUniform1f(waterVisibilityOffsetLocation, HalfGrid)
   glUniform1f(
     waterVisibilityScaleLocation,

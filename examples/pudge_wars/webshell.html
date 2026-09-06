@@ -3,12 +3,23 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#07080b">
     <title>Pudge Wars</title>
+    <link rel="preload" as="image" href="cover.webp">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+        }
+      }
+    </script>
     <style>
       html, body {
         margin: 0;
         padding: 0;
-        background: #0b0e14;
+        background: #07080b;
+        color-scheme: dark;
       }
       canvas.emscripten {
         border: none;
@@ -21,65 +32,122 @@
       #boot {
         position: fixed;
         inset: 0;
-        background:
-          radial-gradient(1200px 500px at 50% -10%, #182032 0%, #0b0e14 60%);
-        color: #e2e6ef;
+        background: #07080b;
+        color: #e1e0cc;
         font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 18px;
         z-index: 10;
+        overflow: hidden;
         transition: opacity 0.45s ease;
       }
       #boot.gone { opacity: 0; pointer-events: none; }
-      #boot h1 {
-        margin: 0;
-        font-size: 40px;
-        letter-spacing: 10px;
-        font-weight: 800;
-        color: #f0da80;
-        text-shadow: 0 2px 18px rgba(240, 218, 128, 0.25);
+      #boot [data-pw-void] {
+        position: absolute;
+        inset: -4%;
+        width: 108%;
+        height: 108%;
+        display: block;
+        filter: blur(12px) saturate(0.75) brightness(0.7);
+        transform: scale(1.04);
       }
-      #boot .track {
-        width: 320px;
-        height: 8px;
-        background: #131824;
-        border: 1px solid #2a3345;
-        border-radius: 4px;
+      #boot::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse at 50% 46%, rgba(7, 8, 11, 0.15) 0%, rgba(7, 8, 11, 0.58) 48%, rgba(7, 8, 11, 0.88) 100%);
+        z-index: 1;
+      }
+      .boot-ui {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding: 8px 20px 24px;
+        max-width: min(40rem, calc(100vw - 24px));
+        background: rgba(7, 8, 11, 0.42);
+        border: 1px solid rgba(225, 224, 204, 0.08);
+      }
+      .pw-hero {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.7em;
+        width: 100%;
+      }
+      .pw-hero-cover {
+        display: block;
+        width: min(36rem, 86vw);
+        height: auto;
+        max-height: min(58vh, 28rem);
+        object-fit: contain;
+        filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55));
+      }
+      .pw-hero-mark {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .pw-hero-rule {
+        display: block;
+        width: 100%;
+        height: 2px;
+        background: rgba(225, 224, 204, 0.18);
         overflow: hidden;
       }
-      #boot .track i {
+      .pw-hero-rule i {
         display: block;
         height: 100%;
-        width: 0%;
-        background: #f0da80;
-        border-radius: 4px;
+        width: 8%;
+        background: #e1e0cc;
         transition: width 0.2s ease;
       }
       #boot .note {
-        color: #8b94a7;
-        font-size: 13px;
-        letter-spacing: 2px;
-        min-height: 16px;
-        animation: pulse 1.6s ease-in-out infinite;
+        color: #d4d0c2;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        line-height: 1.45;
+        text-align: center;
+        max-width: 28rem;
       }
       #boot .note.error {
-        color: #dc4840;
-        animation: none;
+        color: #f0a8a2;
       }
-      @keyframes pulse { 50% { opacity: 0.45; } }
     </style>
   </head>
   <body>
     <div id="boot">
-      <h1>PUDGE WARS</h1>
-      <div class="track"><i id="bootBar"></i></div>
-      <div id="bootNote" class="note">LOADING&hellip;</div>
+      <div class="boot-ui">
+        <div class="pw-hero">
+          <h1 class="pw-hero-mark">Pudge Wars</h1>
+          <img
+            class="pw-hero-cover"
+            src="cover.webp"
+            alt="Pudge Wars"
+            width="1010"
+            height="748"
+          >
+          <span class="pw-hero-rule"><i id="bootBar"></i></span>
+        </div>
+        <div id="bootNote" class="note">Loading…</div>
+      </div>
     </div>
     <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     <script src="recap-overlay.js"></script>
+    <script type="module" src="boot-scene.js"></script>
     <script type='text/javascript'>
       function bootError(text) {
         var boot = document.getElementById('boot');
@@ -87,8 +155,16 @@
         if (boot) boot.className = '';
         if (note) {
           note.className = 'note error';
-          note.textContent = text.toUpperCase();
+          note.textContent = text;
         }
+        if (window.pwBoot) window.pwBoot.setError(true);
+      }
+      function bootGone() {
+        var boot = document.getElementById('boot');
+        if (boot) boot.className = 'gone';
+        setTimeout(function() {
+          if (window.pwBoot) window.pwBoot.dispose();
+        }, 480);
       }
       function watchLine(line) {
         if (window.pwHandleGameLine && window.pwHandleGameLine(line)) {
@@ -113,7 +189,7 @@
           var note = document.getElementById('bootNote');
           if (note && note.className.indexOf('error') === -1) {
             note.dataset.live = '1';
-            note.textContent = line.replace(/^join:\s*/i, '').toUpperCase();
+            note.textContent = line.replace(/^join:\s*/i, '');
           }
         }
       }
@@ -192,17 +268,18 @@
         setStatus: function(text) {
           // The file packager reports "Downloading data... (loaded/total)".
           var note = document.getElementById('bootNote');
-          var bar = document.getElementById('bootBar');
-          if (!note || !bar) return;
+          if (!note) return;
           var progress = text.match(/\((\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)\)/);
           if (progress) {
             var percent = Math.round(
               parseFloat(progress[1]) * 100 / parseFloat(progress[2])
             );
-            bar.style.width = percent + '%';
-            note.textContent = 'SHARPENING HOOKS — ' + percent + '%';
+            var bar = document.getElementById('bootBar');
+            if (bar) bar.style.width = percent + '%';
+            if (window.pwBoot) window.pwBoot.setProgress(percent / 100);
+            note.textContent = 'Sharpening hooks — ' + percent + '%';
           } else if (text) {
-            note.textContent = text.toUpperCase();
+            note.textContent = text;
           }
         },
         totalDependencies: 0,
@@ -214,8 +291,7 @@
         },
         onRuntimeInitialized: function() {
           Module.setStatus('Preparing the arena…');
-          var bar = document.getElementById('bootBar');
-          if (bar) bar.style.width = '100%';
+          if (window.pwBoot) window.pwBoot.setProgress(1);
           // The game sizes its canvas once the window comes up; that is
           // the moment the first frame can draw. Never fade to a blank
           // page: without a sized canvas keep the overlay and its note.
@@ -227,14 +303,13 @@
               return;
             }
             if (canvas.width > 400 || canvas.height > 400) {
-              var boot = document.getElementById('boot');
-              if (boot) boot.className = 'gone';
+              bootGone();
               return;
             }
             if (note && performance.now() - began > 25000 &&
                 note.dataset.live !== '1') {
               note.textContent =
-                'STILL WORKING — IS THE HOST RUNNING? (KEEP THIS TAB IN THE FOREGROUND)';
+                'Still working — is the host running? Keep this tab in the foreground.';
             }
             requestAnimationFrame(watch);
           }

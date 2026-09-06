@@ -24,10 +24,10 @@ MAX_UPGRADE = 10
 MAX_ITEM_RANK = 5
 # Kill-point skills: 0 damage, 1 distance, 2 speed, 3 radius.
 UPGRADE_ORDER = {
-    "rusher": (0, 1, 2, 3),  # damage, distance, speed, radius — inland finishes
-    "camper": (0, 1, 2, 3),
-    "sniper": (1, 0, 3, 2),
-    "partner": (0, 1, 2, 3),  # camper: damage, distance, speed, radius
+    "rusher": (3, 1, 2, 0),  # radius, distance, speed, damage
+    "camper": (3, 1, 2, 0),
+    "sniper": (1, 3, 0, 2),  # distance first; radius next
+    "partner": (3, 1, 2, 0),  # BASIC v66: radius, distance, speed, damage
 }
 SHOP_FLASK = 0
 SHOP_BIG_HOOK = 3
@@ -1046,20 +1046,24 @@ def _partner_hold_spread(
 
 
 def _choose_partner(obs: dict[str, Any]) -> dict[str, Any]:
-    """JSON port of private partner.bas v36. Headshot/combo first,
+    """JSON port of private partner.bas v66. Headshot/combo first,
     hook-before-melee, no fight-dump ping, river-side far-ping dive only.
     Below half HP: blink and walk out of the river even if
     drown/headshot/far ping would otherwise stay.
     Cross-bank headshot aim snaps into the river.
-    Inbound threat circle is 22 tiles (hd2 484).
-    Rot only when an enemy is in close range.
+    Inbound threat: 22-tile circle, or a river-lit
+    lane poke (|dy|<=10, |dx|<=45, approaching).
+    Rot on close / head / fight / ownCatch.
     Default hold is camper-depth (standoff 16) with no lip
     collapse. Blink/walk home land at line_x, not the lip.
     May still enter the river for drown / water-head / far ping.
     After a throw, blink home to line_x so the windup is inland.
     Do not walk to the victim.
+    Intercept an inbound disk within 14 tiles before poke.
+    Visible combo searches 40 tiles ahead of an ally fly
+    (BASIC comboD2=1600). Blind combo stays half-lead.
     Idle throws use camper engage range and ghost floor 0.22.
-    Upgrade order is camper: damage, distance, speed, radius.
+    Upgrade order is radius, distance, speed, damage.
     Teammate same-Y split: ally on hold lane → lineY ±10 by homeY.
     """
     global _dodge_side, _last_fly, _last_seen
@@ -1117,7 +1121,7 @@ def _choose_partner(obs: dict[str, Any]) -> dict[str, Any]:
     reel_owner = 0
     fly = None
     threat = None
-    threat_d2 = 484.0
+    threat_d2 = 1e18
     cut = None
     for h in hooks:
         hx = float(h["x"])
@@ -1126,7 +1130,15 @@ def _choose_partner(obs: dict[str, Any]) -> dict[str, Any]:
         victim = int(h.get("victim") or 0)
         owner = int(h.get("owner_id") or 0)
         if int(h.get("team", -1)) != team:
-            if h.get("flying", True) and hd2 <= 484 and hd2 < threat_d2:
+            hdx = abs(hx - float(me["x"]))
+            hdy = abs(hy - float(me["y"]))
+            inbound = bool(h.get("flying", True)) and hd2 <= 484
+            if h.get("flying", True) and hdy <= 10 and hdx <= 45:
+                if (team == 0 and hx > float(me["x"])) or (
+                    team == 1 and hx < float(me["x"])
+                ):
+                    inbound = True
+            if inbound and hd2 < threat_d2:
                 threat_d2 = hd2
                 threat = h
             if victim not in (0, self_id):
@@ -1254,11 +1266,11 @@ def _choose_partner(obs: dict[str, Any]) -> dict[str, Any]:
         for p in enemies:
             fdx = float(p["x"]) - float(fly["x"])
             fdy = float(p["y"]) - float(fly["y"])
-            if fdx * hvx + fdy * hvy > 0:
-                fd2 = fdx * fdx + fdy * fdy
-                if fd2 < combo_d2:
-                    combo_d2 = fd2
-                    combo = p
+            fd2 = fdx * fdx + fdy * fdy
+            ahead = fdx * hvx + fdy * hvy > 0
+            if ahead and fd2 < combo_d2:
+                combo_d2 = fd2
+                combo = p
 
     line_combo = None
     if fly is not None:
@@ -1347,7 +1359,12 @@ def _choose_partner(obs: dict[str, Any]) -> dict[str, Any]:
     want_rot = (
         prey_rot
         and not in_river
-        and close is not None
+        and (
+            close is not None
+            or head is not None
+            or fight is not None
+            or bool(own_catch)
+        )
         and float(me["hp"]) * 5 >= float(me.get("max_hp", 840)) * 2
     )
     if want_rot != bool(me.get("rot")):
@@ -1412,6 +1429,9 @@ def _choose_partner(obs: dict[str, Any]) -> dict[str, Any]:
         elif cut is not None:
             action["hook_to"] = [float(cut["x"]), float(cut["y"])]
             mood = 3
+        elif threat is not None and threat_d2 <= 196:
+            action["hook_to"] = [float(threat["x"]), float(threat["y"])]
+            mood = 3
         elif save is not None:
             action["hook_to"] = [float(save["x"]), float(save["y"])]
             mood = 2
@@ -1447,10 +1467,8 @@ def _choose_partner(obs: dict[str, Any]) -> dict[str, Any]:
             elif ghost_aim is not None and ghost_chance >= 0.22:
                 action["hook_to"] = ghost_aim
                 mood = 19
-            if mood == 0 and tick > 8:
-                action["hook_to"] = _fog_poke(
-                    me, river_west, river_east, width, height
-                )
+            elif tick > 8:
+                action["hook_to"] = [poke_x, poke_y]
                 mood = 16
 
     if blink_ready and not flashed and action.get("hook_to") is not None:

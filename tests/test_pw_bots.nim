@@ -53,6 +53,30 @@ block:
   for i in 0 ..< PudgeCount:
     doAssert not game.heroVms[i].failed
 
+echo "Testing coworld player names become seat labels"
+block:
+  var game = newGame(map, 100, false, ReplayData())
+  applySeatLabels(game, [
+    "daf-pudge-wars:v1",
+    "daf-pudge-wars:v1",
+    "daf-pudge-wars:v1",
+    "pudge-wars-camper:v6",
+    "pudge-wars-camper:v6",
+    "pudge-wars-camper:v6"
+  ])
+  doAssert game.seatLabels == @[
+    "daf-pudge-wars:v1 1",
+    "daf-pudge-wars:v1 2",
+    "daf-pudge-wars:v1 3",
+    "pudge-wars-camper:v6 1",
+    "pudge-wars-camper:v6 2",
+    "pudge-wars-camper:v6 3"
+  ]
+  applySeatLabels(game, ["docxology", "Aaron's Optimizer Jr"])
+  doAssert game.seatLabels[0] == "docxology"
+  doAssert game.seatLabels[1] == "Aaron's Optimizer Jr"
+  doAssert game.seatLabels[2] == ""
+
 proc parkBots(game: Game) =
   game.world.pudges[0].placePudge(30, 64)
   game.world.pudges[1].placePudge(18, 32)
@@ -226,24 +250,24 @@ block:
   doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
   doAssert game.world.pudges[0].points == 0,
     "base bot must dump every unspent kill point the same think"
-  doAssert game.world.pudges[0].upgrades[UpgradeDamage] == 3,
-    "base bot fills Hook Damage before the other skills"
-  doAssert game.world.pudges[0].upgrades[UpgradeSpeed] == 0
+  doAssert game.world.pudges[0].upgrades[UpgradeRadius] == 3,
+    "base bot fills Hook Radius before the other skills"
   doAssert game.world.pudges[0].upgrades[UpgradeDistance] == 0
-  doAssert game.world.pudges[0].upgrades[UpgradeRadius] == 0
+  doAssert game.world.pudges[0].upgrades[UpgradeSpeed] == 0
+  doAssert game.world.pudges[0].upgrades[UpgradeDamage] == 0
 
-echo "Testing the default bot rolls into speed once damage is maxed"
+echo "Testing the default bot rolls into distance once radius is maxed"
 block:
   var game = newGame(map, 100, false, ReplayData())
   loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
   parkBots(game)
-  game.world.pudges[0].upgrades[UpgradeDamage] = MaxUpgradeLevel
+  game.world.pudges[0].upgrades[UpgradeRadius] = MaxUpgradeLevel
   game.world.pudges[0].points = 2
   tickWorld(game, proc() = runBotDecisions(game))
   doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
   doAssert game.world.pudges[0].points == 0
-  doAssert game.world.pudges[0].upgrades[UpgradeDamage] == MaxUpgradeLevel
-  doAssert game.world.pudges[0].upgrades[UpgradeSpeed] == 2
+  doAssert game.world.pudges[0].upgrades[UpgradeRadius] == MaxUpgradeLevel
+  doAssert game.world.pudges[0].upgrades[UpgradeDistance] == 2
 
 echo "Testing hook distance upgrades extend the default bot's throw"
 block:
@@ -412,5 +436,130 @@ if fileExists(playersDir / "partner.bas"):
       "partner must not start a windup while the hook is cooling"
     doAssert game.world.pudges[1].attackTargetId == game.world.pudges[3].id,
       "partner must melee the close enemy while the hook is down"
+
+  echo "Testing the partner bot dumps on an ally's close fight"
+  block:
+    var game = newGame(map, 100, false, ReplayData())
+    loadBots(game, [
+      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: playersDir / "partner.bas", count: 1),
+      BotGroup(path: playersDir / "base.bas", count: 4)
+    ])
+    parkBots(game)
+    game.world.pudges[0].placePudge(40, 64)
+    game.world.pudges[1].placePudge(36, 88)
+    game.world.pudges[3].placePudge(48, 64)
+    game.world.pudges[4].placePudge(105, 88)
+    game.world.pudges[5].placePudge(105, 96)
+    for i in 0 ..< PudgeCount:
+      game.world.pudges[i].shieldTicks = 200
+      game.world.pudges[i].hookCooldown = BlinkCooldownTicks
+      game.world.pudges[i].windupTicks = 0
+      game.world.pudges[i].blinkCooldown = BlinkCooldownTicks
+    game.world.pudges[3].shieldTicks = 0
+    game.world.pudges[1].hookCooldown = 0
+    game.world.tick = 16
+    tickWorld(game, proc() = runBotDecisions(game))
+    doAssert not game.heroVms[1].failed, game.heroVms[1].lastError
+    doAssert game.world.pudges[1].windupTicks > 0,
+      "partner must hook the enemy next to the living ally"
+    let
+      fAimX = game.world.pudges[1].windupAimX div FineAimScale
+      fAimY = game.world.pudges[1].windupAimY div FineAimScale
+    doAssert abs(fAimX - 48) <= 10,
+      "fight-dump must aim at the ally's enemy, not a fog poke"
+    doAssert abs(fAimY - 64) <= 10,
+      "fight-dump must snap to the fight Y"
+
+  echo "Testing the partner bot hooks a drowning ally when no combo is live"
+  block:
+    var game = newGame(map, 100, false, ReplayData())
+    loadBots(game, [
+      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: playersDir / "partner.bas", count: 1),
+      BotGroup(path: playersDir / "base.bas", count: 4)
+    ])
+    parkBots(game)
+    game.world.pudges[0].placePudge(RiverCenterX, 50)
+    game.world.pudges[1].placePudge(36, 50)
+    game.world.pudges[3].placePudge(105, 88)
+    game.world.pudges[4].placePudge(105, 40)
+    game.world.pudges[5].placePudge(105, 96)
+    for i in 0 ..< PudgeCount:
+      game.world.pudges[i].shieldTicks = 200
+      game.world.pudges[i].hookCooldown = BlinkCooldownTicks
+      game.world.pudges[i].windupTicks = 0
+      game.world.pudges[i].blinkCooldown = BlinkCooldownTicks
+    doAssert game.world.pudges[0].inRiver
+    game.world.pudges[1].hookCooldown = 0
+    game.world.tick = 16
+    tickWorld(game, proc() = runBotDecisions(game))
+    doAssert not game.heroVms[1].failed, game.heroVms[1].lastError
+    doAssert game.world.pudges[1].windupTicks > 0,
+      "partner must throw to save a drowning ally"
+    let
+      sAimX = game.world.pudges[1].windupAimX div FineAimScale
+    doAssert abs(sAimX - RiverCenterX) <= 10,
+      "water-save must hook the ally, not a fog poke"
+
+  echo "Testing the partner bot leads a fogged last-seen combo lane"
+  block:
+    var game = newGame(map, 100, false, ReplayData())
+    loadBots(game, [
+      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: playersDir / "partner.bas", count: 1),
+      BotGroup(path: playersDir / "base.bas", count: 4)
+    ])
+    parkBots(game)
+    game.world.pudges[0].placePudge(22, 48)
+    game.world.pudges[1].placePudge(36, 48)
+    game.world.pudges[3].placePudge(RiverCenterX, 48)
+    game.world.pudges[4].placePudge(105, 88)
+    game.world.pudges[5].placePudge(105, 96)
+    for i in 0 ..< PudgeCount:
+      game.world.pudges[i].shieldTicks = 200
+      game.world.pudges[i].hookCooldown = BlinkCooldownTicks
+      game.world.pudges[i].windupTicks = 0
+      game.world.pudges[i].blinkCooldown = BlinkCooldownTicks
+    game.world.pudges[3].shieldTicks = 0
+    game.world.pudges[1].hookCooldown = 0
+    game.world.tick = 8
+    tickWorld(game, proc() = runBotDecisions(game))
+    doAssert not game.heroVms[1].failed, game.heroVms[1].lastError
+    game.world.hooks.setLen(0)
+    game.world.pudges[3].placePudge(105, 48)
+    game.world.pudges[3].shieldTicks = 200
+    game.world.pudges[1].hookCooldown = 0
+    game.world.pudges[1].windupTicks = 0
+    game.world.pudges[1].justBlinked = false
+    game.world.hooks.add Hook(
+      id: game.world.nextHookId,
+      ownerId: game.world.pudges[0].id,
+      team: WestTeam,
+      phase: HookFlying,
+      position: worldAtTile(RiverCenterX, 50),
+      origin: worldAtTile(22, 48),
+      prior: worldAtTile(RiverCenterX, 50),
+      heading: heading(WorldScale, 0),
+      range: BaseHookRange,
+      speed: BaseHookSpeed,
+      peakSpeed: BaseHookSpeed,
+      radius: BaseHookRadius,
+      damage: BaseHookDamage
+    )
+    inc game.world.nextHookId
+    game.world.tick = 20
+    tickWorld(game, proc() = runBotDecisions(game))
+    doAssert not game.heroVms[1].failed, game.heroVms[1].lastError
+    doAssert game.world.pudges[1].windupTicks > 0,
+      "partner must combo-throw along a flying ally hook"
+    let
+      gAimX = game.world.pudges[1].windupAimX div FineAimScale
+      gAimY = game.world.pudges[1].windupAimY div FineAimScale
+    doAssert gAimX > 28, "combo must not target the ally hook head"
+    doAssert gAimX < RiverCenterX - 4,
+      "combo must intercept the reel, not the far lip or hook head"
+    doAssert abs(gAimY - 49) <= 14,
+      "combo Y should stay on the last-seen / fly lane, not the ally pad"
 
 echo "test_pw_bots: all checks passed"

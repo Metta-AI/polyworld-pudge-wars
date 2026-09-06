@@ -1,25 +1,25 @@
 ' Pudge Wars hook breaker — lives to intercept enemy hooks, stacks
-' speed and radius, then punishes exposed catches and drowners.
+' radius and distance, then punishes exposed catches and drowners.
 '
 ' Rot: blight a close or hooked butcher while HP is above 40% and we
 ' are not in the river; walk inland out of anyone else's cloud.
 '
 ' See base.bas for the full host API.
 
-' Spend every kill point: speed > radius > damage > distance.
+' Spend every kill point: radius > distance > speed > damage.
 left = selfPoints
 while left > 0
   got = 0
-  if buyUpgrade(2) = 1 then
+  if buyUpgrade(3) = 1 then
     got = 1
   else
-    if buyUpgrade(3) = 1 then
+    if buyUpgrade(1) = 1 then
       got = 1
     else
-      if buyUpgrade(0) = 1 then
+      if buyUpgrade(2) = 1 then
         got = 1
       else
-        if buyUpgrade(1) = 1 then
+        if buyUpgrade(0) = 1 then
           got = 1
         end if
       end if

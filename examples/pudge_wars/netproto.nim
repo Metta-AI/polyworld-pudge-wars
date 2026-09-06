@@ -19,7 +19,9 @@ import
   sim
 
 const
-  NetProtocolVersion* = 9'u16
+  NetProtocolVersion* = 10'u16
+    ## v10: Hello carries `simVersion` (`ReplayGameVersion`) so a live
+    ##     client cannot follow a host running different physics.
     ## v9: Lightning and Bounty river runes change the public kind cycle
     ##     and live combat hashes. Host and client must rebuild together.
     ## v8: river rune drops follow a public north/south + kind cycle
@@ -83,6 +85,9 @@ type
       ## boot). Empty for a fresh connection.
     requestSlot*: int32
       ## Seat wanted at connect time, or `SpectatorSlot`.
+    simVersion*: uint16
+      ## Must equal `ReplayGameVersion`. Independent of `protocol`:
+      ## the wire can stay while physics change, and the reverse.
 
   PickSlotMsg* = object
     slot*: int32
@@ -169,7 +174,8 @@ proc packHello*(name, token: string, requestSlot: int32): string =
     game: NetGameId,
     name: name,
     token: token,
-    requestSlot: requestSlot
+    requestSlot: requestSlot,
+    simVersion: ReplayGameVersion
   ))
 
 proc packPickSlot*(slot: int32): string =
@@ -308,7 +314,7 @@ proc decodeNetMessage*(data: string): NetMessage =
     # the nimble-installed flatty in the game image does not export the
     # FlattyError symbol, while sibling dev checkouts do.
     fail("malformed " & $kind & " message: " & error.msg)
-  except IndexDefect:
+  except IndexDefect, RangeDefect, OverflowDefect:
     fail("truncated " & $kind & " message")
 
 proc validateHello*(hello: HelloMsg) =
@@ -320,6 +326,11 @@ proc validateHello*(hello: HelloMsg) =
     fail(
       "peer protocol " & $hello.protocol & " does not match " &
       $NetProtocolVersion
+    )
+  if hello.simVersion != ReplayGameVersion:
+    fail(
+      "peer simulation version " & $hello.simVersion &
+      " does not match " & $ReplayGameVersion
     )
   if hello.name.len > 24:
     fail("player name is too long")

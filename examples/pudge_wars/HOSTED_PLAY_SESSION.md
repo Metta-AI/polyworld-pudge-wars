@@ -48,17 +48,18 @@ Website (create): `polyworld/web/pudge-wars/` **or** a sibling Vercel project. D
 | 1v1 seed | `lseed_b9dc699b-c11a-4623-a581-14a0c984ab3c` (`pudge-wars/duel`, variant `duel-1v1`) |
 | 1v1 division | `div_157803f2-6b50-49dd-ae4f-c4b2219d269c` |
 | 1v1 ladder | `team_pair` + **`team_layout: blocks`** on 2 seats (no clones). `filler_policy` until a second champion exists. Same `score` mean ranking. |
-| Canonical coworld | `pudge-wars` **0.3.10** `cow_d9f30fde-a2bf-4e14-b77f-91ab5cf415fa` (certified). League unlocked — follows canonical. `league-3v3` is first to 30 (20 min). Hook is 200 damage (~24% of 840 HP); a dump is not a one-chain kill. JSON player protocol is 1:1 with BASIC (`buy_upgrade` / `buy_power`, `rot` set, `accepted` echo, land-edge `play_west_max` / `play_east_min`). |
-| Game image | `public.ecr.aws/q5f4m8t9/cogames@sha256:d716e33934ea5ffa3af6789b4167b90549d052195cb279c00921ac2e87311baa` |
+| Canonical coworld | `pudge-wars` **0.3.11** `cow_2bae57e2-1b3f-439e-84f1-2e3c165c37ce` (certified). League unlocked — follows canonical. `league-3v3` is first to 30 (20 min). Hook is 200 damage (~24% of 840 HP); a dump is not a one-chain kill. JSON player protocol is 1:1 with BASIC (`buy_upgrade` / `buy_power`, `rot` set, `accepted` echo, land-edge `play_west_max` / `play_east_min`). |
+| Game image | `public.ecr.aws/q5f4m8t9/cogames@sha256:a5df85c7c441e7eb37b118b58690b765de9d8cd100fca32626ee73f05488e515` |
 | Game default league | `league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0` — softmax.com/pudge-wars opens this 3v3 board. |
 
 **Starter policies (Aaron), league champions after upgrade:**
 
 | Player | Policy | Notes |
 |--------|--------|--------|
-| Aaron `ply_630a768f-d623-44b2-80fa-36968d6fa75a` | `pudge-wars-rusher:v2` | `PUDGE_PERSONALITY=rusher` |
-| Aaron's Optimizer Jr `ply_2357645a-143f-41b8-ad97-610c0d73f4e6` | `pudge-wars-camper:v3` | |
-| a-aron `ply_cec02b42-a653-4253-be4b-602ba5acacc4` | `pudge-wars-idle:v3` | |
+| Aaron `ply_630a768f-d623-44b2-80fa-36968d6fa75a` | `pudge-wars-rusher:v8` | `PUDGE_PERSONALITY=rusher` — rot as set, 0.3.11 overlay |
+| Aaron `ply_630a768f-d623-44b2-80fa-36968d6fa75a` | `pudge-wars-partner:v37` | `PUDGE_PERSONALITY=partner` — same overlay |
+| Aaron's Optimizer Jr `ply_2357645a-143f-41b8-ad97-610c0d73f4e6` | `pudge-wars-camper:v8` | rot as set, 0.3.11 overlay |
+| a-aron `ply_cec02b42-a653-4253-be4b-602ba5acacc4` | `pudge-wars-idle:v6` | rot as set, 0.3.11 overlay |
 | Andre von Auto | `myasnik:v2` | Opponent to pick in the lobby |
 
 Policy image run: `python -m coworld.examples.pudgewars.player.player`

@@ -1,5 +1,5 @@
-' Pudge Wars berserker — pushes the river, stacks damage and speed,
-' and brawls in melee whenever an enemy is in reach.
+' Pudge Wars berserker — pushes the river, stacks radius and
+' distance, and brawls in melee whenever an enemy is in reach.
 '
 ' Rot: blight any unshielded butcher in the 8-tile disk while HP is
 ' above 40% and we are not in the river; walk inland out of anyone
@@ -11,16 +11,16 @@
 left = selfPoints
 while left > 0
   got = 0
-  if buyUpgrade(0) = 1 then
+  if buyUpgrade(3) = 1 then
     got = 1
   else
-    if buyUpgrade(2) = 1 then
+    if buyUpgrade(1) = 1 then
       got = 1
     else
-      if buyUpgrade(1) = 1 then
+      if buyUpgrade(2) = 1 then
         got = 1
       else
-        if buyUpgrade(3) = 1 then
+        if buyUpgrade(0) = 1 then
           got = 1
         end if
       end if

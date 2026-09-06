@@ -7,8 +7,13 @@ duels
 examples/*/emscripten
 examples/*/profiles
 examples/*/duels
+examples/*/squad
 examples/pudge_wars/macos
 examples/pudge_wars/*.app
+examples/pudge_wars/pw
+pw
+pwshot
+pwheadless
 *.pwr
 *.exe
 .env

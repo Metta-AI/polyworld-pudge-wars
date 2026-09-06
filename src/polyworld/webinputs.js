@@ -69,7 +69,8 @@
     "spawn-interval",
     "view",
     "ticks",
-    "speed"
+    "speed",
+    "label"
   ].forEach(function addValueParameter(name) {
     parameters.getAll(name).forEach(function addValue(value) {
       commandArguments.push("--" + name, value);

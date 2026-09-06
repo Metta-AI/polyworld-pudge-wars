@@ -170,7 +170,7 @@ block:
     "flush must not close the live recorder"
   doAssert fileExists(bugPath)
   let bugLoaded = loadReplay(bugPath)
-  doAssert bugLoaded.header.setup.maximumTicks == 8
+  doAssert bugLoaded.header.setup.maximumTicks == 100
   doAssert bugLoaded.hashes.len == 8
   doAssert bugLoaded.actions.len == 2
   doAssert bugLoaded.actions[0].kind == ActionWalkTo
@@ -196,10 +196,18 @@ except ReplayError as error:
   doAssert error.msg.contains("gods_of_the_arena")
 
 var invalid = decoded
-invalid.hashes.setLen(invalid.hashes.len - 1)
+invalid.hashes.setLen(18)
 try:
   discard invalid.encodeReplay()
-  doAssert false, "a replay without one hash per tick should fail"
+  doAssert false, "an action after the last recorded tick should fail"
+except ReplayError:
+  discard
+
+invalid = decoded
+invalid.hashes.setLen(int(decoded.header.setup.maximumTicks) + 1)
+try:
+  discard invalid.encodeReplay()
+  doAssert false, "hashes past the configured duration should fail"
 except ReplayError:
   discard
 
@@ -249,7 +257,7 @@ try:
 except ReplayError:
   discard
 
-echo "Testing an older file header still loads"
+echo "Testing an older file header is rejected"
 block:
   var encoded = recorder.data.encodeReplay()
   let older = ReplayGameVersion - 1
@@ -257,9 +265,11 @@ block:
   encoded[ReplayMagic.len + 3] = char((older shr 8) and 0xff)
   let oldPath = getTempDir() / "polyworld-pw-oldver.replay"
   writeFile(oldPath, encoded)
-  let oldLoaded = loadReplay(oldPath)
-  doAssert oldLoaded.header.gameVersion == ReplayGameVersion
-  doAssert oldLoaded.actions == decoded.actions
+  try:
+    discard loadReplay(oldPath)
+    doAssert false, "an older simulation version must not load"
+  except ReplayError as error:
+    doAssert error.msg.contains("game version")
   removeFile(oldPath)
 
 echo "Testing encode refuses another game version"
@@ -270,6 +280,65 @@ block:
     discard other.encodeReplay()
     doAssert false, "encoding another game version should fail"
   except ReplayError as error:
-    doAssert error.msg.contains("another game version")
+    doAssert error.msg.contains("unsupported replay game version") or
+      error.msg.contains("another game version")
+
+echo "Testing empty and partial recordings keep the original setup"
+block:
+  var liveSetup = testSetup()
+  liveSetup.maximumTicks = 100
+  let live = initReplayRecorder(liveSetup)
+  doAssert live.data.hashes.len == 0
+  let emptyEncoded = live.data.encodeReplay()
+  let empty = decodeReplay(emptyEncoded)
+  doAssert empty.header.setup == liveSetup
+  doAssert empty.hashes.len == 0
+  doAssert empty.actions.len == 0
+  live.recordWalkTo(2, 1, 52, 64)
+  live.recordStop(6, 1)
+  for tick in 1'u64 .. 8'u64:
+    live.recordHash(tick xor 0x9E3779B97F4A7C15'u64)
+  let partial = decodeReplay(live.data.encodeReplay())
+  doAssert partial.header.setup == liveSetup
+  doAssert partial.hashes.len == 8
+  doAssert partial.actions.len == 2
+
+echo "Testing coworld save strips commands past the last hash"
+block:
+  var liveSetup = testSetup()
+  liveSetup.maximumTicks = 100
+  let live = initReplayRecorder(liveSetup)
+  live.recordWalkTo(2, 1, 52, 64)
+  live.recordStop(6, 1)
+  live.recordWalkTo(12, 1, 60, 64)
+  for tick in 1'u64 .. 8'u64:
+    live.recordHash(tick xor 0x9E3779B97F4A7C15'u64)
+  doAssert live.data.actions.len == 3
+  let encoded = encodeCoworldReplay(live.data)
+  let decoded = decodeReplay(encoded)
+  doAssert decoded.header.setup.maximumTicks == 100
+  doAssert decoded.hashes.len == 8
+  doAssert decoded.actions.len == 2
+  doAssert decoded.actions[^1].kind == ActionStop
+  doAssert live.data.actions.len == 3,
+    "closing the save copy must not mutate the live recorder"
+
+echo "Testing replay completion rejects divergence and missing ticks"
+block:
+  var check: ReplayHashCheck
+  check.requireReplayComplete(0, 0)
+  check.requireReplayComplete(2, 2)
+  for tick in [1'u32, 3'u32]:
+    try:
+      check.requireReplayComplete(tick, 2)
+      doAssert false, "playback must consume exactly the recorded ticks"
+    except ReplayError:
+      discard
+  check = ReplayHashCheck(mismatches: 1, firstTick: 2)
+  try:
+    check.requireReplayComplete(2, 2)
+    doAssert false, "a hash mismatch must fail replay verification"
+  except ReplayError as error:
+    doAssert error.msg.contains("first at tick 2")
 
 echo "test_pw_replays: all checks passed"

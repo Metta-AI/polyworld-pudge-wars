@@ -39,8 +39,16 @@ examples/pudge_wars/macos/attach_app_icon.sh --no-app ./pw
 html=examples/pudge_wars/emscripten/pw.html
 web_log=examples/pudge_wars/emscripten/build.log
 overlay=examples/pudge_wars/recap-overlay.js
+boot_scene=examples/pudge_wars/boot-scene.js
+cover=examples/pudge_wars/cover.webp
 if [[ -d examples/pudge_wars/emscripten && -f "$overlay" ]]; then
   cp "$overlay" examples/pudge_wars/emscripten/recap-overlay.js
+fi
+if [[ -d examples/pudge_wars/emscripten && -f "$boot_scene" ]]; then
+  cp "$boot_scene" examples/pudge_wars/emscripten/boot-scene.js
+fi
+if [[ -d examples/pudge_wars/emscripten && -f "$cover" ]]; then
+  cp "$cover" examples/pudge_wars/emscripten/cover.webp
 fi
 web_stale=$(find examples/pudge_wars src -name '*.nim' \
   -newer "$html" 2>/dev/null |
@@ -90,7 +98,7 @@ echo "starting native host (./pw)..."
           mkdir -p examples/pudge_wars/emscripten
           echo "browser client: rebuilding in the background (PW_BUILD_WEB=0 skips) → $web_log"
           (nim c -d:emscripten --hints:off --warnings:off examples/pudge_wars/pw.nim \
-            >"$web_log" 2>&1 && cp "$overlay" examples/pudge_wars/emscripten/recap-overlay.js && echo "browser client: background rebuild finished") &
+            >"$web_log" 2>&1 && cp "$overlay" examples/pudge_wars/emscripten/recap-overlay.js && cp "$boot_scene" examples/pudge_wars/emscripten/boot-scene.js && cp "$cover" examples/pudge_wars/emscripten/cover.webp && echo "browser client: background rebuild finished") &
         fi
         ;;
     esac

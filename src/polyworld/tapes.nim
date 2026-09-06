@@ -74,8 +74,7 @@ proc payloadOffset(bytes: string, header: ReplayFileHeader): int =
 proc validateHeader(
     header: ReplayFileHeader,
     expectedGame: string,
-    expectedGameVersion: uint16,
-    requireGameVersion = true
+    expectedGameVersion: uint16
 ) =
   ## Rejects an incompatible replay before its payload is decoded.
   expectedGame.validateGame()
@@ -89,7 +88,7 @@ proc validateHeader(
       "replay belongs to '" & header.game & "', not '" &
       expectedGame & "'"
     )
-  if requireGameVersion and header.gameVersion != expectedGameVersion:
+  if header.gameVersion != expectedGameVersion:
     fail(
       "replay game version " & $header.gameVersion & " for '" &
       header.game & "' is unsupported; expected " &
@@ -120,14 +119,13 @@ proc decodeReplayFile*[T](
     gameVersion: uint16,
     bytes: string,
     replayType: typedesc[T],
-    maxBytes = DefaultMaxReplayBytes,
-    requireGameVersion = true
+    maxBytes = DefaultMaxReplayBytes
 ): T =
   ## Checks the common header before decoding one game payload.
   if bytes.len > maxBytes:
     fail("replay exceeds the file size limit")
   let header = bytes.replayFileHeader()
-  header.validateHeader(game, gameVersion, requireGameVersion)
+  header.validateHeader(game, gameVersion)
   let offset = bytes.payloadOffset(header)
   bytes[offset .. ^1].fromFlatty(replayType)
 
@@ -148,8 +146,7 @@ proc loadReplayFile*[T](
     game: string,
     gameVersion: uint16,
     replayType: typedesc[T],
-    maxBytes = DefaultMaxReplayBytes,
-    requireGameVersion = true
+    maxBytes = DefaultMaxReplayBytes
 ): T =
   ## Loads a file after checking its Polyworld and game identity.
   if path.len == 0:
@@ -159,8 +156,7 @@ proc loadReplayFile*[T](
     gameVersion,
     readFile(path),
     replayType,
-    maxBytes,
-    requireGameVersion
+    maxBytes
   )
 
 type
@@ -178,7 +174,8 @@ type
     setup*: Setup
 
   ActionTape*[Setup, Action] = object
-    ## Commands plus one hash per tick. `Setup` must have `maximumTicks`.
+    ## Hash count is the recorded duration, up to `setup.maximumTicks`.
+    ## Setup stays unchanged when a match ends early or playback rewinds.
     header*: TapeHeader[Setup]
     actions*: seq[Action]
     hashes*: seq[uint64]
@@ -282,7 +279,21 @@ proc checkReplayHash*(
   check.error =
     "replay hash mismatch at tick " & $tick & ": expected " &
     expected.toHex(16) & ", got " & actual.toHex(16)
-  echo "warning: ", check.error
+  echo "error: ", check.error
+
+proc requireReplayComplete*(
+    check: ReplayHashCheck,
+    tick: uint32,
+    recordedTicks: int
+) =
+  ## Rejects incomplete playback or any recorded hash divergence.
+  if uint64(tick) != uint64(recordedTicks):
+    fail("replay simulation ended at a different tick")
+  if check.mismatches > 0:
+    fail(
+      $check.mismatches & " replay hash mismatches, first at tick " &
+      $check.firstTick
+    )
 
 proc initActionTape*[Setup, Action](
     setup: Setup,

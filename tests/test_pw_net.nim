@@ -75,6 +75,7 @@ block:
     doAssert msg.kind == NmHello
     doAssert msg.hello.protocol == NetProtocolVersion
     doAssert msg.hello.game == NetGameId
+    doAssert msg.hello.simVersion == ReplayGameVersion
     doAssert msg.hello.name == "Ana"
     doAssert msg.hello.token == "tok123"
     doAssert msg.hello.requestSlot == 2
@@ -178,6 +179,16 @@ block:
       doAssert false, "a protocol mismatch must be rejected"
     except NetError:
       discard
+  block wrongSim:
+    var hello = decodeNetMessage(
+      packHello("Ana", "", SpectatorSlot)
+    ).hello
+    hello.simVersion = ReplayGameVersion - 1
+    try:
+      validateHello(hello)
+      doAssert false, "a simulation version mismatch must be rejected"
+    except NetError as error:
+      doAssert error.msg.contains("simulation version")
 
 echo "Testing a follower stays hash-exact over the streamed tape"
 block:

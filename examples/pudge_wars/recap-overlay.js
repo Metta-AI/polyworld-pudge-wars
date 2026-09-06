@@ -152,16 +152,16 @@
       style.id = 'pwRecapStyle'
       style.textContent =
         '#pwRecap{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:24px;pointer-events:none}' +
-        '.pw-recap-card{pointer-events:auto;width:min(560px,100%);margin-bottom:28px;padding:18px 20px 16px;background:rgba(11,14,20,.92);border:1px solid #f0da80;color:#e2e6ef;font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;text-align:center}' +
-        '.pw-recap-kicker{margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#8b94a7}' +
-        '#pwRecapHead{margin:6px 0 4px;font-size:28px;letter-spacing:.12em;text-transform:uppercase;color:#f0da80}' +
-        '#pwRecapScore{margin:0 0 14px;font-size:13px;letter-spacing:.08em;color:#c4cad6}' +
+        '.pw-recap-card{pointer-events:auto;width:min(560px,100%);margin-bottom:28px;padding:18px 20px 16px;background:rgba(7,8,11,.92);border:1px solid #c8ff3d;color:#e1e0cc;font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;text-align:center}' +
+        '.pw-recap-kicker{margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#6b7380}' +
+        '#pwRecapHead{margin:6px 0 4px;font-size:28px;letter-spacing:.12em;text-transform:uppercase;color:#e1e0cc}' +
+        '#pwRecapScore{margin:0 0 14px;font-size:13px;letter-spacing:.08em;color:#b4bac4}' +
         '.pw-recap-table{width:100%;border-collapse:collapse;margin:0 0 14px;font-size:12px;text-align:left}' +
-        '.pw-recap-table th,.pw-recap-table td{padding:4px 6px;border-bottom:1px solid #2a3345}' +
-        '.pw-recap-table th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8b94a7}' +
+        '.pw-recap-table th,.pw-recap-table td{padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.1)}' +
+        '.pw-recap-table th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b7380}' +
         '.pw-recap-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}' +
-        '.pw-recap-actions button{min-height:40px;padding:0 16px;border:1px solid #f0da80;background:#0e2758;color:#fffdf4;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}' +
-        '.pw-recap-actions button:last-child{background:transparent;color:#f0da80}'
+        '.pw-recap-actions button{min-height:40px;padding:0 16px;border:1px solid #c8ff3d;background:#c8ff3d;color:#07080b;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}' +
+        '.pw-recap-actions button:last-child{background:transparent;color:#c8ff3d}'
       document.head.appendChild(style)
     }
     var existing = document.getElementById('pwRecap')

@@ -70,24 +70,28 @@ block:
     inc steps
   doAssert live.recordingError.len == 0
   doAssert live.recorder.data.actions.len > 0, "bots recorded no actions"
-  live.recorder.data.header.setup.maximumTicks =
-    max(uint32(live.world.tick), 1'u32)
+  doAssert live.recorder.data.header.setup.maximumTicks == uint32(MatchTicks),
+    "saving must keep the original match duration"
   let dir = createTempDir("pw_duel_replay", "")
   defer: removeDir(dir)
   let path = dir / "duel.pwr"
   saveReplay(path, live.recorder.data)
   let data = loadReplay(path)
   doAssert data.header.setup.pudges.len == DuelPudgeCount
+  doAssert data.header.setup.maximumTicks == uint32(MatchTicks)
+  doAssert data.hashes.len == live.world.tick
   var replay = newGame(
     map, int32(data.header.setup.maximumTicks), true, data
   )
   replay.replayPlayer = initReplayPlayer(data)
   replay.historyPlayback = true
   doAssert replay.world.pudges.len == DuelPudgeCount
-  while uint32(replay.world.tick) < data.header.setup.maximumTicks:
+  while replay.world.tick < data.hashes.len:
     tickWorld(replay, proc() = discard)
-  doAssert replay.hashCheck.mismatches == 0,
-    "replay diverged: " & $replay.hashCheck.mismatches & " mismatches"
+  replay.hashCheck.requireReplayComplete(
+    uint32(replay.world.tick),
+    data.hashes.len
+  )
   doAssert replay.replayPlayer.finished
   doAssert replay.stateHash() == live.stateHash(),
     "replay ended in a different state"

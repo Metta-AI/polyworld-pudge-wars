@@ -1,16 +1,17 @@
-## Pudge Wars map: two bank layers split by a river layer.
+## Pudge Wars map: two bank layers split by a fire-pit layer.
 ##
 ## The 128×128 grid is generated from an explicit seed using only integers.
-## West and east are separate walkable layers that stop at the river.
-## Around the fountain both banks step in on X so the water narrows
-## the way the WC3 map does; the rocks stay an island.
-## The river is its own walkable layer (`RiverLayer`): butchers dumped or
-## blinked into the water walk there. Pathing `isWalkable` stays false on
+## West and east are separate walkable layers that stop at the pit.
+## Around the fountain both banks step in on X so the coals narrow
+## the way the WC3 river does; the rocks stay an island.
+## The pit is its own walkable layer (`RiverLayer`): butchers dumped or
+## blinked into the fire walk there. Pathing `isWalkable` stays false on
 ## the bed so banks never graph-link through it; gameplay standing uses
 ## `tileStandable`. Walking cannot cross the waterline. Blink and hooks
-## may enter and leave. Playable banks carry seeded bounce trees, mirrored
-## east and kept off spawn lanes and the shop. This module writes
-## `pathing.layers` once and returns a fingerprinted `MapData`.
+## may enter and leave. The transparent sheet is lava, not water.
+## Playable banks carry seeded bounce trees, mirrored east and kept off
+## spawn lanes and the shop. This module writes `pathing.layers` once
+## and returns a fingerprinted `MapData`.
 
 import
   polyworld/[hashes, noises, pathing, profiles, rngs],

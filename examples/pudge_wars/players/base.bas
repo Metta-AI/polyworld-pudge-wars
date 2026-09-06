@@ -284,21 +284,21 @@ else
   end if
 end if
 
-' ---- shopping: spend every point; damage > speed > distance > radius
+' ---- shopping: spend every point; radius > distance > speed > damage
 ' selfPoints is a start-of-tick snapshot, so count spends locally.
 left = selfPoints
 while left > 0
   got = 0
-  if buyUpgrade(0) = 1 then
+  if buyUpgrade(3) = 1 then
     got = 1
   else
-    if buyUpgrade(2) = 1 then
+    if buyUpgrade(1) = 1 then
       got = 1
     else
-      if buyUpgrade(1) = 1 then
+      if buyUpgrade(2) = 1 then
         got = 1
       else
-        if buyUpgrade(3) = 1 then
+        if buyUpgrade(0) = 1 then
           got = 1
         end if
       end if

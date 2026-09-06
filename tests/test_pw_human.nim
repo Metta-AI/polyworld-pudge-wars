@@ -266,9 +266,8 @@ block:
   let
     liveHash = stateHash(game)
     liveTick = game.world.tick
-  game.recorder.data.header.setup.maximumTicks =
-    max(uint32(game.world.tick), 1'u32)
   let decoded = decodeReplay(game.recorder.data.encodeReplay())
+  doAssert decoded.header.setup.maximumTicks == uint32(MatchTicks)
   let replayGame = newGame(map, MatchTicks, true, decoded)
   replayGame.replayPlayer = initReplayPlayer(decoded)
   replayGame.historyPlayback = true
@@ -305,12 +304,10 @@ block:
   let
     liveHash = stateHash(game)
     liveTick = game.world.tick
-  # Like saveRecording: the tape closes at the tick the match stopped.
-  game.recorder.data.header.setup.maximumTicks =
-    max(uint32(game.world.tick), 1'u32)
   let
     encoded = game.recorder.data.encodeReplay()
     decoded = decodeReplay(encoded)
+  doAssert decoded.header.setup.maximumTicks == uint32(MatchTicks)
   doAssert decoded.header.setup.pudges[HeroSlot].controller ==
     ControllerHuman, "the seat controller tag survives the round trip"
   doAssert decoded.header.setup.pudges[1].controller == ControllerBot
@@ -347,8 +344,8 @@ block:
     "stop must not mutate the live match tape duration"
   doAssert fileExists(bugPath)
   let loaded = loadReplay(bugPath)
-  doAssert loaded.header.setup.maximumTicks ==
-    uint32(game.recorder.data.hashes.len)
+  doAssert loaded.header.setup.maximumTicks == uint32(MatchTicks)
+  doAssert loaded.hashes.len == game.recorder.data.hashes.len
   doAssert loaded.actions.len >= 1
   doAssert loaded.header.setup.pudges[HeroSlot].controller == ControllerHuman
   doAssert readFile(dir / BugLatestName).contains("Aaron")
@@ -426,9 +423,8 @@ block:
   let
     liveHash = stateHash(game)
     liveTick = game.world.tick
-  game.recorder.data.header.setup.maximumTicks =
-    max(uint32(game.world.tick), 1'u32)
   let decoded = decodeReplay(game.recorder.data.encodeReplay())
+  doAssert decoded.header.setup.maximumTicks == uint32(MatchTicks)
   var cheatActions = 0
   for action in decoded.actions:
     if action.kind == ActionCheat:

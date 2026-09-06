@@ -360,8 +360,6 @@ type
     hashCheck*: ReplayHashCheck
     historyPlayback*: bool
     replayMode*: bool
-    replayVersionSkew*: bool
-      ## Tape `gameVersion` differs from this build; skip hash checks.
     recordingError*: string
     heroVms*: seq[HeroVm]
     maximumTicks*: int32
@@ -379,8 +377,9 @@ type
       ## Per-seat last BASIC `print` line, for logs and tests.
       ## Display-only: never hashed, never on the tape, not drawn.
     seatLabels*: seq[string]
-      ## Per-roster display names from the loaded bot script, uniquified
-      ## when several seats share a personality. Empty for human seats.
+      ## Per-roster display names: bot personality, coworld
+      ## `players[].name`, or empty (nameplates fall back to P<id>).
+      ## Uniquified when several seats share a name.
     chatLog*: seq[MatchChatLine]
       ## Typed player chat. Display-only.
 
@@ -415,25 +414,121 @@ proc heading*(x, z: int32): Heading =
   ## Creates an integer heading from a planar direction.
   Heading(x: x, z: z)
 
+proc wrapAbs32(value: int32): int32 {.inline.} =
+  ## `abs(low(int32))` is not representable and raises OverflowDefect.
+  if value == low(int32): high(int32) else: abs(value)
+
+proc wrapNeg32(value: int32): int32 {.inline.} =
+  ## Negates with two's-complement wrap. Negating `low(int32)` stays put.
+  0'i32 -% value
+
+proc satAdd32(a, b: int32): int32 {.inline.} =
+  let s = int64(a) + int64(b)
+  if s > int64(high(int32)): high(int32)
+  elif s < int64(low(int32)): low(int32)
+  else: int32(s)
+
+proc satSub32(a, b: int32): int32 {.inline.} =
+  let s = int64(a) - int64(b)
+  if s > int64(high(int32)): high(int32)
+  elif s < int64(low(int32)): low(int32)
+  else: int32(s)
+
+proc satI32(value: int64): int32 {.inline.} =
+  if value > int64(high(int32)): high(int32)
+  elif value < int64(low(int32)): low(int32)
+  else: int32(value)
+
+proc satAdd64(a, b: int64): int64 {.inline.} =
+  let s = cast[int64](cast[uint64](a) + cast[uint64](b))
+  if b > 0 and s < a: high(int64)
+  elif b < 0 and s > a: low(int64)
+  else: s
+
+proc satSub64(a, b: int64): int64 {.inline.} =
+  satAdd64(a, if b == low(int64): high(int64) else: -b)
+
+proc wrapNeg64(value: int64): int64 {.inline.} =
+  satSub64(0, value)
+
+proc mulSat(a, b: int64): int64 {.inline.} =
+  if a == 0 or b == 0:
+    return 0
+  let
+    neg = (a < 0) != (b < 0)
+    au =
+      if a == low(int64): uint64(high(int64)) + 1
+      else: uint64(abs(a))
+    bu =
+      if b == low(int64): uint64(high(int64)) + 1
+      else: uint64(abs(b))
+  if bu > 0'u64 and au > uint64(high(int64)) div bu:
+    if neg: low(int64) else: high(int64)
+  else:
+    let p = int64(au * bu)
+    if neg: -p else: p
+
+proc dotSat(ax, az, bx, bz: int64): int64 {.inline.} =
+  satAdd64(mulSat(ax, bx), mulSat(az, bz))
+
+proc planarLenSq64(x, z: int64): int64 {.inline.} =
+  ## Saturating `x² + z²`. Two int32 extremes (or a 2^32 world delta)
+  ## overflow signed int64; Nim 2.2 still checks that in `-d:release`.
+  let
+    ax = if x == low(int64): high(int64) else: abs(x)
+    az = if z == low(int64): high(int64) else: abs(z)
+  const MaxRoot = 3037000499'i64
+    ## floor(sqrt(high(int64))).
+  if ax > MaxRoot or az > MaxRoot:
+    return high(int64)
+  let
+    sx = ax * ax
+    sz = az * az
+  if sz > high(int64) - sx:
+    high(int64)
+  else:
+    sx + sz
+
+proc planarLenSq32(x, z: int32): int64 {.inline.} =
+  ## Heading-length helper. `(low, low)` is the only int32 pair whose
+  ## squares sum past int64.
+  planarLenSq64(int64(x), int64(z))
+
+proc safeMulDiv(num, mul, den: int64): int64 =
+  ## `roundDivision(num * mul, den)` shedding bits so the product fits.
+  if den <= 0 or mul == 0 or num == 0:
+    return 0
+  var
+    n = num
+    d = den
+  let axis = if mul == low(int64): high(int64) else: abs(mul)
+  if axis > 0:
+    while (if n == low(int64): high(int64) else: abs(n)) > high(int64) div axis:
+      n = n shr 1
+      d = d shr 1
+  if d <= 0:
+    return 0
+  roundDivision(n * mul, d)
+
 proc `-`(first, second: WorldPoint): WorldPoint =
   WorldPoint(
-    x: first.x - second.x,
-    y: first.y - second.y,
-    z: first.z - second.z
+    x: satSub32(first.x, second.x),
+    y: satSub32(first.y, second.y),
+    z: satSub32(first.z, second.z)
   )
 
 proc `+`(first, second: WorldPoint): WorldPoint =
   WorldPoint(
-    x: first.x + second.x,
-    y: first.y + second.y,
-    z: first.z + second.z
+    x: satAdd32(first.x, second.x),
+    y: satAdd32(first.y, second.y),
+    z: satAdd32(first.z, second.z)
   )
 
 proc distanceSquared*(first, second: WorldPoint): int64 =
   let
     x = int64(first.x) - int64(second.x)
     z = int64(first.z) - int64(second.z)
-  x * x + z * z
+  planarLenSq64(x, z)
 
 proc within(first, second: WorldPoint, distance: int32): bool =
   distanceSquared(first, second) <= int64(distance) * int64(distance)
@@ -447,10 +542,10 @@ proc segmentPointWithin*(a0, a1, p: WorldPoint, radius: int32): bool =
     az = int64(a1.z) - int64(a0.z)
     px = int64(p.x) - int64(a0.x)
     pz = int64(p.z) - int64(a0.z)
-    denom = ax * ax + az * az
+    denom = planarLenSq64(ax, az)
   if denom == 0:
     return within(a0, p, radius)
-  var tNum = px * ax + pz * az
+  var tNum = dotSat(px, pz, ax, az)
   if tNum < 0:
     tNum = 0
   elif tNum > denom:
@@ -469,11 +564,11 @@ proc segmentPointWithin*(a0, a1, p: WorldPoint, radius: int32): bool =
   if dScaled <= 0:
     return within(a0, p, radius)
   let
-    qx = int64(a0.x) + roundDivision(tScaled * ax, dScaled)
-    qz = int64(a0.z) + roundDivision(tScaled * az, dScaled)
+    qx = int64(a0.x) + safeMulDiv(tScaled, ax, dScaled)
+    qz = int64(a0.z) + safeMulDiv(tScaled, az, dScaled)
     dx = qx - int64(p.x)
     dz = qz - int64(p.z)
-  dx * dx + dz * dz <= int64(radius) * int64(radius)
+  planarLenSq64(dx, dz) <= int64(radius) * int64(radius)
 
 proc segmentPointDistSq(a0, a1, p: WorldPoint): int64 =
   ## Squared distance from `p` to the closest point on segment `a0`–`a1`.
@@ -486,10 +581,10 @@ proc segmentPointDistSq(a0, a1, p: WorldPoint): int64 =
     az = int64(a1.z) - int64(a0.z)
     px = int64(p.x) - int64(a0.x)
     pz = int64(p.z) - int64(a0.z)
-    denom = ax * ax + az * az
+    denom = planarLenSq64(ax, az)
   if denom == 0:
     return
-  var tNum = px * ax + pz * az
+  var tNum = dotSat(px, pz, ax, az)
   if tNum < 0:
     tNum = 0
   elif tNum > denom:
@@ -505,11 +600,11 @@ proc segmentPointDistSq(a0, a1, p: WorldPoint): int64 =
   if dScaled <= 0:
     return
   let
-    qx = int64(a0.x) + roundDivision(tScaled * ax, dScaled)
-    qz = int64(a0.z) + roundDivision(tScaled * az, dScaled)
+    qx = int64(a0.x) + safeMulDiv(tScaled, ax, dScaled)
+    qz = int64(a0.z) + safeMulDiv(tScaled, az, dScaled)
     dx = qx - int64(p.x)
     dz = qz - int64(p.z)
-    projected = dx * dx + dz * dz
+    projected = planarLenSq64(dx, dz)
   if projected < result:
     result = projected
 
@@ -546,12 +641,12 @@ proc segmentsWithin*(a0, a1, b0, b1: WorldPoint, radius: int32): bool =
     bz = int64(b1.z) - int64(b0.z)
     dx = int64(a0.x) - int64(b0.x)
     dz = int64(a0.z) - int64(b0.z)
-    vx = ax - bx
-    vz = az - bz
-    denom = vx * vx + vz * vz
+    vx = satSub64(ax, bx)
+    vz = satSub64(az, bz)
+    denom = planarLenSq64(vx, vz)
   if denom == 0:
     return within(a0, b0, radius)
-  var tNum = -(dx * vx + dz * vz)
+  var tNum = wrapNeg64(dotSat(dx, dz, vx, vz))
   if tNum < 0:
     tNum = 0
   elif tNum > denom:
@@ -569,24 +664,21 @@ proc segmentsWithin*(a0, a1, b0, b1: WorldPoint, radius: int32): bool =
   if dScaled <= 0:
     return within(a0, b0, radius)
   let
-    px = int64(a0.x) + roundDivision(tScaled * ax, dScaled)
-    pz = int64(a0.z) + roundDivision(tScaled * az, dScaled)
-    qx = int64(b0.x) + roundDivision(tScaled * bx, dScaled)
-    qz = int64(b0.z) + roundDivision(tScaled * bz, dScaled)
+    px = int64(a0.x) + safeMulDiv(tScaled, ax, dScaled)
+    pz = int64(a0.z) + safeMulDiv(tScaled, az, dScaled)
+    qx = int64(b0.x) + safeMulDiv(tScaled, bx, dScaled)
+    qz = int64(b0.z) + safeMulDiv(tScaled, bz, dScaled)
     cx = px - qx
     cz = pz - qz
-  cx * cx + cz * cz <= int64(radius) * int64(radius)
+  planarLenSq64(cx, cz) <= int64(radius) * int64(radius)
 
 proc scaledPlanar(direction: WorldPoint, distance: int32): WorldPoint =
-  let length = integerSqrt(
-    int64(direction.x) * int64(direction.x) +
-    int64(direction.z) * int64(direction.z)
-  )
+  let length = integerSqrt(planarLenSq32(direction.x, direction.z))
   if length == 0:
     return
   WorldPoint(
-    x: int32(roundDivision(int64(direction.x) * distance, length)),
-    z: int32(roundDivision(int64(direction.z) * distance, length))
+    x: satI32(safeMulDiv(int64(direction.x), int64(distance), length)),
+    z: satI32(safeMulDiv(int64(direction.z), int64(distance), length))
   )
 
 proc hookSweepStart(hook: Hook): WorldPoint =
@@ -610,12 +702,14 @@ proc tileOf*(position: WorldPoint): tuple[x, z: int] =
 
 proc worldAtTile*(x, z: int): WorldPoint =
   WorldPoint(
-    x: int32(x - GridTiles div 2) * WorldScale + WorldScale div 2,
-    z: int32(z - GridTiles div 2) * WorldScale + WorldScale div 2
+    x: satI32((int64(x) - int64(GridTiles div 2)) * int64(WorldScale) +
+      int64(WorldScale div 2)),
+    z: satI32((int64(z) - int64(GridTiles div 2)) * int64(WorldScale) +
+      int64(WorldScale div 2))
   )
 
 proc tileWorldMin(tile: int): int32 {.inline.} =
-  int32(tile - GridTiles div 2) * WorldScale
+  satI32((int64(tile) - int64(GridTiles div 2)) * int64(WorldScale))
 
 proc clampHookToMap(point: var WorldPoint) =
   let
@@ -955,7 +1049,7 @@ proc steerVelocity(pudge: var Pudge, wantX, wantZ: int32) =
   ## the old speed. Fixed-point and integers only for determinism.
   let
     speed = integerSqrt(
-      int64(pudge.velX) * pudge.velX + int64(pudge.velZ) * pudge.velZ
+      planarLenSq32(pudge.velX, pudge.velZ)
     )
     wantSpeed = integerSqrt(
       int64(wantX) * wantX + int64(wantZ) * wantZ
@@ -1108,7 +1202,7 @@ proc integrateWalk(world: World, index: int) =
   let
     movedX = int64(tilesToWorld(pudge.body.pos.x - before.x, WorldScale))
     movedZ = int64(tilesToWorld(pudge.body.pos.y - before.y, WorldScale))
-    wantSq = int64(pudge.velX) * pudge.velX + int64(pudge.velZ) * pudge.velZ
+    wantSq = planarLenSq32(pudge.velX, pudge.velZ)
   if movedX * movedX + movedZ * movedZ < wantSq div 4:
     # Under half the intended step. When the blocker is a BODY (not
     # terrain), skate
@@ -1147,7 +1241,7 @@ proc integrateWalk(world: World, index: int) =
         tanZ = -tanZ
       let
         speed = integerSqrt(
-          int64(pudge.velX) * pudge.velX + int64(pudge.velZ) * pudge.velZ
+          planarLenSq32(pudge.velX, pudge.velZ)
         )
         skate = scaledPlanar(
           WorldPoint(x: tanX, z: tanZ), int32(speed)
@@ -1187,7 +1281,7 @@ proc walkRested(pudge: Pudge): bool =
     vx = int64(pudge.velX)
     vz = int64(pudge.velZ)
     limit = int64(MoveBrake) * 3
-  vx * vx + vz * vz <= limit * limit
+  planarLenSq64(vx, vz) <= limit * limit
 
 proc hasBuff*(pudge: Pudge, kind: RuneKind): bool =
   ## Returns whether this butcher currently carries one rune power.
@@ -1272,7 +1366,7 @@ proc locomotion(world: World, index: int, offset: WorldPoint) =
   template pudge: untyped = world.pudges[index]
   let
     dist = integerSqrt(
-      int64(offset.x) * int64(offset.x) + int64(offset.z) * int64(offset.z)
+      planarLenSq32(offset.x, offset.z)
     )
     wantSpeed = min(
       int64(moveSpeed(world, pudge)),
@@ -1679,8 +1773,8 @@ proc snapWalkTarget(
         if not walkableTile(layer, x, y):
           continue
         let
-          offX = int64(x - mapX)
-          offY = int64(y - mapY)
+          offX = int64(x) - int64(mapX)
+          offY = int64(y) - int64(mapY)
           dist = offX * offX + offY * offY
         if dist < bestDist or (
             dist == bestDist and
@@ -2570,7 +2664,7 @@ proc blinkLanding(
   if direction.x == 0 and direction.z == 0:
     return (false, pudge.position)
   let travel = integerSqrt(
-    int64(direction.x) * direction.x + int64(direction.z) * direction.z
+    planarLenSq32(direction.x, direction.z)
   )
   if travel > BlinkRange:
     let step = scaledPlanar(direction, BlinkRange)
@@ -3566,32 +3660,26 @@ proc reboundHeading(hook: var Hook, tileX, tileZ: int) =
   let
     nx = int64(hook.position.x) - int64(center.x)
     nz = int64(hook.position.z) - int64(center.z)
-    n2 = nx * nx + nz * nz
+    n2 = planarLenSq64(nx, nz)
   if n2 == 0:
-    hook.heading.x = -hook.heading.x
-    hook.heading.z = -hook.heading.z
+    hook.heading.x = wrapNeg32(hook.heading.x)
+    hook.heading.z = wrapNeg32(hook.heading.z)
     return
   let
     hx = int64(hook.heading.x)
     hz = int64(hook.heading.z)
-    dot = hx * nx + hz * nz
+    dot = dotSat(hx, hz, nx, nz)
   if dot >= 0:
     return
   let
-    rx = hx - 2 * roundDivision(dot * nx, n2)
-    rz = hz - 2 * roundDivision(dot * nz, n2)
+    rx = satSub64(hx, satAdd64(safeMulDiv(dot, nx, n2), safeMulDiv(dot, nx, n2)))
+    rz = satSub64(hz, satAdd64(safeMulDiv(dot, nz, n2), safeMulDiv(dot, nz, n2)))
   if rx == 0 and rz == 0:
-    hook.heading.x = -hook.heading.x
-    hook.heading.z = -hook.heading.z
+    hook.heading.x = wrapNeg32(hook.heading.x)
+    hook.heading.z = wrapNeg32(hook.heading.z)
     return
-  hook.heading.x =
-    if rx > int64(high(int32)): high(int32)
-    elif rx < int64(low(int32)): low(int32)
-    else: int32(rx)
-  hook.heading.z =
-    if rz > int64(high(int32)): high(int32)
-    elif rz < int64(low(int32)): low(int32)
-    else: int32(rz)
+  hook.heading.x = satI32(rx)
+  hook.heading.z = satI32(rz)
 
 proc consumeBudget(left: var int32, amount: int32) =
   if amount >= left:
@@ -3608,8 +3696,8 @@ proc stepHookAlong(hook: var Hook, delta: WorldPoint, dist, absD: int64) =
   let
     ox = hook.position.x
     oz = hook.position.z
-  hook.position.x = ox + int32(roundDivision(int64(delta.x) * dist, absD))
-  hook.position.z = oz + int32(roundDivision(int64(delta.z) * dist, absD))
+  hook.position.x = satAdd32(ox, satI32(safeMulDiv(int64(delta.x), dist, absD)))
+  hook.position.z = satAdd32(oz, satI32(safeMulDiv(int64(delta.z), dist, absD)))
 
 proc islandHookRadius(): int32 =
   ## Outer lip of the fountain rocks: island tile radius plus the
@@ -3694,14 +3782,14 @@ proc ensureTreeGlance(hook: var Hook, tileX, tileZ: int) =
   let center = reboundCenter(tileX, tileZ)
   if abs(int64(hz)) * 3 < abs(int64(hx)):
     let tilt = glanceSign(int(hook.position.z) - int(center.z), tileZ)
-    hook.heading.z = tilt * (abs(hx) div 3)
+    hook.heading.z = tilt * (wrapAbs32(hx) div 3)
     if hook.heading.z == 0:
-      hook.heading.z = tilt * max(abs(hx) div 3, 1'i32)
+      hook.heading.z = tilt * max(wrapAbs32(hx) div 3, 1'i32)
   elif abs(int64(hx)) * 3 < abs(int64(hz)):
     let tilt = glanceSign(int(hook.position.x) - int(center.x), tileX)
-    hook.heading.x = tilt * (abs(hz) div 3)
+    hook.heading.x = tilt * (wrapAbs32(hz) div 3)
     if hook.heading.x == 0:
-      hook.heading.x = tilt * max(abs(hz) div 3, 1'i32)
+      hook.heading.x = tilt * max(wrapAbs32(hz) div 3, 1'i32)
 
 proc ejectFromCurve(hook: var Hook, tileX, tileZ: int, left: var int32) =
   ## Reflect about a cylinder axis and step the head off the solid.
@@ -3812,14 +3900,14 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
         continue
       else:
         let
-          ax = abs(hook.heading.x)
-          az = abs(hook.heading.z)
+          ax = wrapAbs32(hook.heading.x)
+          az = wrapAbs32(hook.heading.z)
         if ax >= az and hook.heading.x != 0:
-          hook.heading.x = -hook.heading.x
+          hook.heading.x = wrapNeg32(hook.heading.x)
         elif hook.heading.z != 0:
-          hook.heading.z = -hook.heading.z
+          hook.heading.z = wrapNeg32(hook.heading.z)
         elif hook.heading.x != 0:
-          hook.heading.x = -hook.heading.x
+          hook.heading.x = wrapNeg32(hook.heading.x)
         else:
           break
       hook.recordBounce()
@@ -3978,9 +4066,9 @@ proc flyHook(hook: var Hook, budget: int32): int32 =
       hook.reboundHeading(bounceX, bounceZ)
     else:
       if reflectX:
-        hook.heading.x = -hook.heading.x
+        hook.heading.x = wrapNeg32(hook.heading.x)
       if reflectZ:
-        hook.heading.z = -hook.heading.z
+        hook.heading.z = wrapNeg32(hook.heading.z)
     hook.recordBounce()
     if activeHookWorld != nil:
       if destSolid:
@@ -4101,7 +4189,7 @@ proc latchHook(world: World, hook: var Hook): bool =
     mineReach = hook.radius + MineRadius
     ax = int64(sweep1.x) - int64(sweep0.x)
     az = int64(sweep1.z) - int64(sweep0.z)
-    denom = ax * ax + az * az
+    denom = planarLenSq64(ax, az)
   var
     bestPudge = -1
     bestMine = -1
@@ -4114,7 +4202,7 @@ proc latchHook(world: World, hook: var Hook): bool =
         let
           px = int64(at.x) - int64(sweep0.x)
           pz = int64(at.z) - int64(sweep0.z)
-        tNum = px * ax + pz * az
+        tNum = dotSat(px, pz, ax, az)
         if tNum < 0:
           tNum = 0
         elif tNum > denom:
@@ -4684,9 +4772,9 @@ proc stateHash*(game: Game): uint64 {.measure.} =
   hash.addHashy(game.map.hash)
   hash.addHashy(world.tick)
   # maximumTicks stays out of the hash: it is static config the sim
-  # never reads (the runner enforces the time limit), and recordings
-  # truncate it to the played length on save, so a live match and its
-  # replay legitimately disagree while every evolving bit matches.
+  # never reads (the runner enforces the time limit). Recordings keep
+  # the original cap and use hash count as the played length, so a
+  # live match and its replay agree on every evolving bit.
   hash.addHashy(world.killGoal)
   hash.addHashy(world.gameOver)
   hash.addHashy(world.winner.ord)
@@ -4834,8 +4922,6 @@ proc stateHash*(game: Game): uint64 {.measure.} =
 proc checkReplayHash(game: Game, hash: uint64) =
   if not game.historyPlayback or game.world.tick <= 0:
     return
-  if game.replayVersionSkew:
-    return
   let hashes =
     if game.recorder != nil: game.recorder.data.hashes
     else: game.replayPlayer.data.hashes
@@ -4846,7 +4932,7 @@ proc tickWorld*(game: Game, onHeroTurn: proc() {.closure.}) {.measure.} =
   if world.gameOver:
     return
   if game.replayMode and
-      uint32(world.tick) >= game.replayData.header.setup.maximumTicks:
+      world.tick >= game.replayData.hashes.len:
     return
   world.tick = world.tick +% 1
   for pudge in world.pudges.mitems:
@@ -4964,8 +5050,6 @@ proc newGame*(
     world: newWorld(map, maximumTicks, setup, goal, runes),
     map: map,
     replayMode: replayMode,
-    replayVersionSkew:
-      replayMode and replayData.header.gameVersion != ReplayGameVersion,
     replayData: replayData,
     maximumTicks: maximumTicks,
     botEvery: 1,

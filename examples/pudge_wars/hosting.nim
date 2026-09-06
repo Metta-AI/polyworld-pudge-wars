@@ -170,6 +170,8 @@ proc contentTypeFor(name: string): string =
   elif name.endsWith(".js"): "application/javascript"
   elif name.endsWith(".wasm"): "application/wasm"
   elif name.endsWith(".png"): "image/png"
+  elif name.endsWith(".jpg") or name.endsWith(".jpeg"): "image/jpeg"
+  elif name.endsWith(".webp"): "image/webp"
   elif name.endsWith(".json"): "application/json"
   else: "application/octet-stream"
 

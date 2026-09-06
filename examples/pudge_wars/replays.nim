@@ -19,11 +19,12 @@ const
   ReplayFormatVersion* = 4'u16
   ReplayGameVersion* = 31'u16
     ## Physics the *viewer* runs. Observatory's static wasm must ship at
-    ## this same number as the recording image (`pwcoworld`). Older tapes
-    ## still load; playback skips hash checks so a rebuilt wasm does not
-    ## freeze Featured Match. Bump when physics change, and bump the
-    ## coworld version in lockstep. Live follow uses `NetProtocolVersion`
-    ## in netproto.nim — that is not the observatory replay path.
+    ## this same number as the recording image (`pwcoworld`). Load and
+    ## live handshake reject any other version; a rebuilt wasm cannot
+    ## play an older tape. Bump when physics change, and bump the
+    ## coworld version in lockstep. Live follow also sends this as
+    ## `HelloMsg.simVersion` so host and client agree before the first
+    ## tick. `NetProtocolVersion` is the wire framing, not this number.
     ## v31: Farwatch Ward shop family. Wards last 45 s and stamp team
     ##      sight; `itemRank` and `wardCooldown` hash.
     ## v30: Allied Hooktrap latch/reel; dump snaps to a legal own-bank
@@ -144,6 +145,10 @@ const
   ControllerBot* = 0'u8
   ControllerHuman* = 1'u8
   MaxReplayBytes* = 64 * 1024 * 1024
+  MaxCoworldReplayBytes* = 128 * 1024 * 1024
+    ## Hosted episode tapes can run twenty minutes at 32 Hz with six
+    ## chatty JSON seats. The LAN/net cap stays 64 MiB; the platform
+    ## artifact may be larger so a long match still writes `/coworld/replay`.
   MaxReplayActions* = 10_000_000
   MaxReplayHashes* = 100_000_000
   MaxReplayPudges* = 32
@@ -508,11 +513,12 @@ proc recordHash*(recorder: ReplayRecorder, hash: uint64) =
 proc validate*(data: ReplayData) =
   ## Validates format, setup bounds, actor IDs, and action ordering.
   ##
-  ## Game version is the physics that *hashed* the tape, not a load
-  ## gate. Observatory wasm is often rebuilt ahead of the league image;
-  ## rejecting older tapes froze Featured Match on the boot overlay.
-  if data.header.formatVersion != ReplayFormatVersion:
-    fail("unsupported replay format version")
+  ## Hash count is the recorded duration. `setup.maximumTicks` is the
+  ## original match cap and stays put when a game ends early.
+  data.header.requireTapeVersion(
+    ReplayFormatVersion,
+    ReplayGameVersion
+  )
   let setup = data.header.setup
   if setup.tickRate != uint16(TickRate):
     fail("replay setup has an unsupported tick rate")
@@ -538,8 +544,8 @@ proc validate*(data: ReplayData) =
     fail("replay action limit exceeded")
   if data.hashes.len > MaxReplayHashes:
     fail("replay hash limit exceeded")
-  if data.hashes.len != int(setup.maximumTicks):
-    fail("replay must contain exactly one hash per simulation tick")
+  if data.hashes.len > int(setup.maximumTicks):
+    fail("replay hashes exceed the configured duration")
   for i, pudge in setup.pudges:
     if pudge.team > 1 or pudge.slot >= uint8(MaxTeamSize):
       fail("replay setup has invalid pudge metadata")
@@ -555,6 +561,8 @@ proc validate*(data: ReplayData) =
         fail("replay setup contains a duplicate pudge ID")
   var lastTick = 0'u32
   for i, action in data.actions:
+    if action.tick > uint32(data.hashes.len):
+      fail("replay action exceeds the recorded duration")
     if i > 0 and action.tick < lastTick:
       fail("replay actions move backward in time")
     if setup.maximumTicks > 0 and action.tick > setup.maximumTicks:
@@ -614,11 +622,10 @@ proc saveReplaySynced*(path: string, data: ReplayData) =
   writeFileSynced(path, data.encodeReplay())
 
 proc closedReplay*(data: ReplayData): ReplayData =
-  ## Copy of a live tape closed at the last recorded hash so `validate`
-  ## accepts a mid-match flush. Does not mutate the live recorder.
+  ## Copy of a live tape with commands past the last hash dropped.
+  ## Keeps the original match setup. Does not mutate the live recorder.
   result = data
-  let ticks = max(uint32(result.hashes.len), 1'u32)
-  result.header.setup.maximumTicks = ticks
+  let ticks = uint32(result.hashes.len)
   if result.actions.len == 0:
     return
   var last = 0
@@ -628,6 +635,20 @@ proc closedReplay*(data: ReplayData): ReplayData =
     last = i + 1
   if last < result.actions.len:
     result.actions.setLen(last)
+
+proc encodeCoworldReplay*(data: ReplayData): string =
+  ## Encodes a live tape for `COGAME_SAVE_REPLAY_URI`. Drops commands
+  ## past the last hash and keeps the original match cap.
+  let tape = closedReplay(data)
+  tape.validate()
+  if tape.header.gameVersion != ReplayGameVersion:
+    fail("cannot encode a tape from another game version")
+  encodeReplayFile(
+    ReplayGame,
+    ReplayGameVersion,
+    tape,
+    MaxCoworldReplayBytes
+  )
 
 proc nextBugTapePath*(dir = BugTapeDir): string =
   ## `dir/bug_YYYYMMDD_HHMMSS.pwr`, with a numeric suffix on collision.
@@ -665,7 +686,7 @@ proc writeBugReplay*(
   var pointer = ""
   pointer.add "path: " & result & "\n"
   pointer.add "fromTick: " & $fromTick & "\n"
-  pointer.add "toTick: " & $tape.header.setup.maximumTicks & "\n"
+  pointer.add "toTick: " & $tape.hashes.len & "\n"
   pointer.add "seat: " & $seat & "\n"
   pointer.add "name: " & name & "\n"
   pointer.add "pudgeId: " & $pudgeId & "\n"
@@ -675,16 +696,12 @@ proc writeBugReplay*(
 
 proc loadReplay*(path: string): ReplayData =
   ## Loads one complete Pudge Wars replay file.
-  ##
-  ## File-header `gameVersion` may differ from this build; the inner
-  ## tape version still drives hash skipping on playback.
   result = loadReplayFile(
     path,
     ReplayGame,
     ReplayGameVersion,
     ReplayData,
-    MaxReplayBytes,
-    requireGameVersion = false
+    MaxReplayBytes
   )
   result.validate()
 

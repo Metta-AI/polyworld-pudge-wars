@@ -63,13 +63,16 @@ const
   HookDiskColor = rgbx(236, 92, 70, 140)
   SpawnPadColor = rgbx(96, 220, 110, 160)
   PlayBoundsColor = rgbx(255, 214, 120, 230)
-  MidlineColor = rgbx(72, 214, 255, 230)
+  MidlineColor = rgbx(255, 140, 48, 230)
   BankEdgeColor = rgbx(236, 236, 232, 210)
+  BroilerBar = rgbx(42, 32, 28, 230)
+  BroilerGlow = rgbx(255, 110, 36, 70)
+    ## Iron slats over the fire pit; a broiler, not a river.
   ButcherBarLift = 6.8'f32
   ButcherBarWidth = 3.0'f32
   NamePlateLift = 7.55'f32
     ## Just over the HP bar. No backing plate — small type only.
-  NamePlateW = 148.0'f32
+  NamePlateW = 200.0'f32
   NamePlateH = 16.0'f32
   NamePlateShadow = rgbx(8, 10, 14, 180)
   NamePlateText = rgbx(236, 228, 204, 210)
@@ -479,6 +482,43 @@ proc addDebugMapOverlays(renderer: var ShapeRenderer) =
       0.12'f32
     )
 
+proc addLavaBoil(renderer: var ShapeRenderer, seconds: float32) =
+  ## Thin pit lips plus glossy bubble pops on the Voronoi sheet.
+  let pitY = float32(WaterLevelSteps) / HeightSteps + 0.12'f32
+  var
+    westLip: seq[Vec3]
+    eastLip: seq[Vec3]
+  for z in PlayZMin .. PlayZMax:
+    let
+      hw = riverHalfWidthAt(z)
+      zz = float32(z) - HalfGrid + 0.5'f32
+    westLip.add vec3(float32(RiverCenterX - hw) - HalfGrid, pitY, zz)
+    eastLip.add vec3(float32(RiverCenterX + hw + 1) - HalfGrid, pitY, zz)
+  renderer.addPolyline(westLip, BroilerBar, 0.08'f32)
+  renderer.addPolyline(eastLip, BroilerBar, 0.08'f32)
+  const BoilCount = 12
+  for i in 0 ..< BoilCount:
+    let
+      seed = float32(i) * 17.13'f32 + seconds * 0.12'f32
+      along = abs(sin(seed * 1.31'f32))
+      across = 0.5'f32 + 0.5'f32 * sin(seed * 2.17'f32 + 1.7'f32)
+      pop = 0.5'f32 + 0.5'f32 * sin(seed * 0.73'f32)
+      z = PlayZMin + int(along * float32(PlayZMax - PlayZMin))
+      hw = riverHalfWidthAt(z)
+      x = RiverCenterX - hw + int(across * float32(max(hw * 2, 1)))
+    if not riverTile(x, z) or islandTile(x, z):
+      continue
+    let
+      life = abs(sin(seconds * (0.55'f32 + pop * 0.7'f32) + float32(i) * 0.41'f32))
+      grow = life * life
+      center = vec3(
+        float32(x) - HalfGrid + 0.5'f32 + sin(seed) * 0.28'f32,
+        pitY + 0.04'f32 + grow * 0.06'f32,
+        float32(z) - HalfGrid + 0.5'f32 + cos(seed * 1.4'f32) * 0.28'f32
+      )
+      rim = fadeRgbx(rgbx(220, 78, 18, 255), 36.0'f32 + grow * 40.0'f32)
+    renderer.addCircle(center, 0.22'f32 + grow * 0.20'f32, rim, 10)
+
 proc addDebugCollisionOverlays(renderer: var ShapeRenderer) =
   ## Unit collision disks, hook latch radius, and fountain pads.
   if not showCollision:
@@ -868,7 +908,7 @@ proc addRiverRune(
     kind: RuneKind
 ) =
   ## WC3 river rune: a hewn stone octagon with a glowing carved glyph
-  ## hovering over a colored caustic on the water.
+  ## hovering over a colored caustic on the coals.
   let
     glow = RuneColors[kind]
     radius = RuneCoreRadius * 1.32'f32
@@ -1169,6 +1209,19 @@ proc runGraphics*() =
     treeHeight = 7.2'f32
     seed = run.map.seed
     initTerrain()
+    setTileMaterial(
+      int(MarshTile),
+      VolcanicMaterial,
+      CliffMaterial,
+      vec3(0.38, 0.12, 0.06),
+      vec3(0.14, 0.07, 0.05),
+      3
+    )
+    setTileColor(
+      int(StoneTile),
+      vec3(0.36, 0.30, 0.26),
+      vec3(0.20, 0.16, 0.14)
+    )
     scatterGrass(500, run.map.seed)
     scatterRocks(40, run.map.seed)
 
@@ -1198,7 +1251,11 @@ proc runGraphics*() =
     shapeRenderer = initShapeRenderer()
     transport = initPlayer(
       live = not run.replayMode,
-      durationTicks = run.maximumTicks,
+      durationTicks =
+        if run.replayMode:
+          int32(run.replayData.hashes.len)
+        else:
+          run.maximumTicks,
       # A host idles in the lobby until Enter starts the match.
       playing = not options.pauseOnStart and netRole != NetHost,
       speed = options.speed
@@ -1705,7 +1762,8 @@ proc runGraphics*() =
       if pudge.enteredRiver:
         var splash = pos
         splash.y = surfaceHeightNear(pos.x, pos.z, pos.y) + 0.3'f32
-        particles.emitParticleBurst(MagicBurst, splash)
+        particles.emitParticleBurst(FireBurst, splash)
+        particles.emitParticleBurst(CombatSparks, splash, 0.08'f32)
       if pudge.state == Alive and pudge.rotOn and fogShownPudge(pudge) and
           (pudge.rotTicks == 0 or pudge.rotTicks == RotPeriodTicks div 2):
         var cloud = pos
@@ -1713,6 +1771,20 @@ proc runGraphics*() =
         particles.emitParticleBurst(DecayAura, cloud)
         if pudge.rotTicks == 0:
           particles.emitParticleBurst(DecayAura, cloud, 0.16'f32)
+    if run.world.tick mod 20 == 0:
+      const PitSpots = 3
+      let stride = PlayZMax - PlayZMin + 1
+      for i in 0 ..< PitSpots:
+        let
+          z = PlayZMin + ((int(run.world.tick) div 20 * 17 + i * 31) mod stride)
+          xOff = ((int(run.world.tick) div 20 + i * 7) mod 7) - 3
+          x = RiverCenterX + xOff
+        if not riverTile(x, z) or islandTile(x, z):
+          continue
+        var ember = tileCenterRender(x, z)
+        ember.y = surfaceHeightNear(ember.x, ember.z, ember.y) + 0.22'f32
+        if fogCanSee(worldFromRender(ember)):
+          particles.emitParticleBurst(FireBurst, ember)
     if run.world.tick mod IslandFountainHealPeriodTicks == 0:
       let fountain = liftPoint(
         tileCenterRender(IslandCenterX, IslandCenterZ), 1.15'f32
@@ -1887,7 +1959,7 @@ proc runGraphics*() =
           )
         else:
           if pudge.inRiver:
-            pushKillFeed(pudgeLabel(pudge.id) & " drowned", pudge.team)
+            pushKillFeed(pudgeLabel(pudge.id) & " broiled", pudge.team)
           else:
             pushKillFeed(pudgeLabel(pudge.id) & " rotted", pudge.team)
         if audible:
@@ -2528,9 +2600,14 @@ proc runGraphics*() =
       applyPlayViewport()
       drawButchers()
       finishCharacters(scene)
-      drawWater(viewProjection, cameraEye)
+      drawWater(
+        viewProjection,
+        cameraEye,
+        unitTime(int32(run.world.tick))
+      )
 
       shapeRenderer.clear()
+      shapeRenderer.addLavaBoil(unitTime(int32(run.world.tick)))
       shapeRenderer.addDebugMapOverlays()
       for pudge in run.world.pudges:
         if pudge.hookedBy == 0 or pudge.state == Dying:

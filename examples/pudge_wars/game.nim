@@ -77,6 +77,8 @@ proc usage() =
   echo "  --slot NUMBER           Seat to request when joining (1-10;"
   echo "                          default spectate)."
   echo "  --name TEXT             Your player name for networked play."
+  echo "  --label TEXT            Nameplate for the next seat (repeat"
+  echo "                          once per butcher; coworld / replay)."
   echo "  --token TEXT            Seat token from the lobby page (the"
   echo "                          browser client passes this itself)."
   echo "  --netsim SPEC           Dev network sim on the follower:"
@@ -302,6 +304,10 @@ proc parseGameOptions(): GameOptions =
       result.playerName = arguments.argumentValue(index, "--name")
     elif argument.startsWith("--name="):
       result.playerName = argument[7 .. ^1]
+    elif argument == "--label":
+      result.seatLabels.add arguments.argumentValue(index, "--label")
+    elif argument.startsWith("--label="):
+      result.seatLabels.add argument[8 .. ^1]
     elif argument == "--token":
       result.joinToken = arguments.argumentValue(index, "--token")
     elif argument.startsWith("--token="):
@@ -641,14 +647,15 @@ block:
         gameMap = generateMap(mapSeed, TeamSize)
       else:
         gameMap = generateMap(mapSeed, int(options.teamSize))
-    let maximumTicks =
+    let configuredTicks =
       if replayMode: int32(replayData.header.setup.maximumTicks)
       else: options.maximumTicks
     run = newGame(
-      gameMap, maximumTicks, replayMode, replayData, options.killGoal,
+      gameMap, configuredTicks, replayMode, replayData, options.killGoal,
       optionRunePeriod(), options.duel
     )
     if replayMode:
+      run.maximumTicks = int32(replayData.hashes.len)
       run.replayPlayer = initReplayPlayer(replayData)
       run.historyPlayback = true
       # Controller provenance from the tape, so analysis logs label
@@ -664,6 +671,8 @@ block:
       run.botEvery = max(options.botEvery, 1'i32)
       run.botAimNoise = max(options.botAimNoise, 0'i32)
       loadBots(run, options.botGroups)
+    if options.seatLabels.len > 0:
+      applySeatLabels(run, options.seatLabels)
     when not defined(emscripten):
       startDuelLogging()
 
@@ -690,6 +699,7 @@ proc startReplayRecording*(maximumTicks: uint32) =
 proc saveRecording*() =
   ## Persists the finished tape: to --record when given, and beside
   ## the analysis log so every logged match keeps its exact replay.
+  ## Keeps the original match setup; hash count is the played length.
   if run.recorder == nil:
     return
   var paths: seq[string]
@@ -702,8 +712,6 @@ proc saveRecording*() =
         paths.add logCopy
   if paths.len == 0:
     return
-  run.recorder.data.header.setup.maximumTicks =
-    max(uint32(run.world.tick), 1'u32)
   for path in paths:
     saveReplay(path, run.recorder.data)
     echo &"replay saved: {path} " &
@@ -855,8 +863,6 @@ when defined(headless):
       &"{run.map.hash.toHex(16)}"
     if run.replayMode:
       echo &"replay: {status.decisions}/{run.replayData.actions.len} actions"
-      if run.hashCheck.mismatches > 0:
-        echo &"replay hashes: {run.hashCheck.mismatches} mismatches"
     else:
       echo &"scripts: {status.active}/{run.world.pudges.len} active, " &
         &"{status.decisions} decisions"
@@ -868,7 +874,7 @@ when defined(headless):
     let
       stepLimit =
         if run.replayMode:
-          int(run.replayData.header.setup.maximumTicks)
+          run.replayData.hashes.len
         else:
           int(options.maximumTicks)
       started = epochTime()
@@ -889,16 +895,16 @@ when defined(headless):
       raise newException(ReplayError, run.recordingError)
     closeDuelLogging()
     if run.replayMode:
-      if uint32(run.world.tick) != run.replayData.header.setup.maximumTicks:
-        raise newException(
-          ReplayError,
-          "replay simulation ended at a different tick"
-        )
+      run.hashCheck.requireReplayComplete(
+        uint32(run.world.tick),
+        run.replayData.hashes.len
+      )
       if not run.replayPlayer.finished:
         raise newException(
           ReplayError,
           "replay simulation did not consume every action"
         )
+      echo "replay verified: every tick matched"
     else:
       saveRecording()
     printHeadlessSummary(steps, started)

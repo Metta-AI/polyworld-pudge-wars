@@ -918,6 +918,21 @@ proc connectedPlayerCount(): int =
           (i < gameConnected.len and gameConnected[i]):
         inc result
 
+proc artifactPath*(uri: string): string =
+  ## Resolves a `file://` artifact URI to a local path. `file:///coworld/replay`
+  ## and the host-form `file://coworld/replay` both land on `/coworld/replay`.
+  let parsed = parseUri(uri)
+  if parsed.scheme != "file":
+    return uri
+  result = decodeUrl(parsed.path)
+  if parsed.hostname.len > 0:
+    if result.len == 0 or result == "/":
+      result = "/" & parsed.hostname
+    elif not result.startsWith("/"):
+      result = "/" & parsed.hostname & "/" & result
+    else:
+      result = "/" & parsed.hostname & result
+
 proc readBytes(uri: string): string =
   let parsed = parseUri(uri)
   if parsed.scheme in ["http", "https"]:
@@ -927,10 +942,7 @@ proc readBytes(uri: string): string =
       return client.getContent(uri)
     finally:
       client.close()
-  let path =
-    if parsed.scheme == "file": decodeUrl(parsed.path)
-    else: uri
-  readFile(path)
+  readFile(artifactPath(uri))
 
 proc writeBytes(uri, data, contentType, httpMethod: string) =
   let parsed = parseUri(uri)
@@ -946,13 +958,46 @@ proc writeBytes(uri, data, contentType, httpMethod: string) =
     finally:
       client.close()
     return
-  let path =
-    if parsed.scheme == "file": decodeUrl(parsed.path)
-    else: uri
+  let path = artifactPath(uri)
   let dir = path.parentDir
   if dir.len > 0:
     createDir(dir)
   writeFile(path, data)
+
+proc writeReplayArtifact() =
+  ## The runner treats a missing `/coworld/replay` after a zero exit as
+  ## `replay_missing`, even when results.json landed. Always write bytes.
+  if replayUri.len == 0:
+    return
+  if game.recordingError.len > 0:
+    echo "replay recording error: ", game.recordingError
+  var bytes = ""
+  if game.recorder != nil:
+    try:
+      bytes = encodeCoworldReplay(game.recorder.data)
+    except CatchableError as error:
+      echo "replay encode failed: ", error.msg
+      try:
+        var fallback = game.recorder.data
+        fallback.actions.setLen(0)
+        fallback.hashes.setLen(0)
+        bytes = encodeCoworldReplay(fallback)
+        echo "replay wrote setup-only fallback"
+      except CatchableError as error2:
+        echo "replay fallback encode failed: ", error2.msg
+  try:
+    writeBytes(
+      replayUri,
+      bytes,
+      "application/octet-stream",
+      replayMethod
+    )
+    if bytes.len == 0:
+      echo "replay saved empty placeholder"
+    else:
+      echo "replay saved ", bytes.len, " bytes"
+  except CatchableError as error:
+    echo "replay write failed: ", error.msg
 
 proc envMethod(name, fallback: string): string =
   let value = getEnv(name, fallback).toUpperAscii()
@@ -1007,19 +1052,7 @@ proc finishMatch() =
   if done:
     return
   done = true
-  if game.recorder != nil and game.recordingError.len == 0:
-    try:
-      writeBytes(
-        replayUri,
-        encodeReplay(game.recorder.data),
-        "application/octet-stream",
-        replayMethod
-      )
-      echo "replay saved ", game.recorder.data.actions.len, " actions"
-    except CatchableError as error:
-      echo "replay write failed: ", error.msg
-  elif game.recordingError.len > 0:
-    echo "replay recording error: ", game.recordingError
+  writeReplayArtifact()
   try:
     writeBytes(
       resultsUri,
