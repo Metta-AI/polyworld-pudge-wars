@@ -3,7 +3,7 @@
   "tags": ["strategy", "real-time", "multiplayer", "team"],
   "game": {
     "name": "pudge-wars",
-    "description": "Two banks split by a river, six butchers, one hook. First team to the kill goal wins. Fog on the enemy bank. Platform ladder: 3v3 distinct players per team, plus a sibling 1v1 duel league.",
+    "description": "Two banks split by a river, six butchers, one hook. First team to 30 wins. Fog on the enemy bank. Platform-ladder 3v3 clone teams, plus a sibling 1v1 duel league.",
     "owner": "coworld@softmax.com",
     "runnable": {
       "type": "game",
@@ -88,7 +88,7 @@
     "protocols": {
       "player": {
         "type": "text",
-        "value": "Connect to COWORLD_PLAYER_WS_URL. One observation per tick after the sim step; the reply is applied on the next tick (1-tick latency) before that tick's observation is built. Reply with {walk_to, hook_to, blink_to, attack_target, rot, place_wall, place_mine, halt, ping, buy_upgrade, buy_power, print}. rot is a set (true|false), not a toggle; rot_toggle still works. buy_upgrade is 0 damage / 1 distance / 2 speed / 3 radius (int or array). buy_power is the shop catalog 0-8 (own pad). self.upgrades, self.items / self.item_ranks, self.rot, self.shield (ticks), self.buff (kind+1), and self.blink_ready (cooldown, windup, hooked, and rot) match the in-engine checks. accepted echoes the previous reply ({hook_to: true, blink_to: \"cooldown\"}). print is the intent bubble. river_west/river_east are inclusive water columns; play_west_max/play_east_min are the land lips BASIC riverWest/riverEast use. Coordinates are tiles on the 128 map. Empty action is sticky. visible.pudges/hooks/runes/props are fog-clipped (home bank + river always; enemy bank needs a living teammate within 20 tiles) in roster/object order. Seats 0-2 West, 3-5 East (team_pair blocks). Final message type=final."
+        "value": "Connect to COWORLD_PLAYER_WS_URL. One observation per tick after the sim step; the reply is applied on the next tick (fixed 1-tick latency) before that tick's observation is built. Reply with {walk_to, hook_to, blink_to, attack_target, rot, place_wall, place_mine, place_ward, halt, ping, buy_upgrade, buy_power, print}. rot is a set (true|false), not a toggle; rot_toggle still works. buy_upgrade is 0 damage / 1 distance / 2 speed / 3 radius (int or array). buy_power is the shop catalog 0-9 (own pad); self.items / self.item_ranks are the five permanent ranks (treads, longflight, palisade, hooktrap, ward). self.upgrades, self.rot, self.shield (ticks), self.buff (kind+1), and self.blink_ready (cooldown, windup, hooked, and rot) match the in-engine checks. accepted echoes only what the previous reply asked ({hook_to: true, blink_to: \"cooldown\", buy_upgrade: [true, \"points\"]}; arrays echo as arrays). print is the intent bubble, echoed on self.say/say_tick. river_west/river_east are inclusive water columns; play_west_max/play_east_min are the land lips BASIC riverWest/riverEast use. objects is the flat fog-clipped BASIC list (roster pudges then props; kind 1 butcher, 2 wall, 3 mine, 4 ward). ally_ping carries age in ticks. Coordinates are tiles on the 128 map. Empty action is sticky. visible.pudges/hooks/runes/props are fog-clipped (home bank + river always; enemy bank needs a living teammate within 20 tiles). Seats 0-2 West, 3-5 East (team_pair blocks). Final message type=final."
       },
       "global": {
         "type": "text",

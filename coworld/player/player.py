@@ -366,7 +366,9 @@ def choose_action(obs: dict[str, Any]) -> dict[str, Any]:
         and not sniper
     )
     if want_rot != bool(me.get("rot")):
-        action["rot_toggle"] = True
+        # Set, not toggle: idempotent under the 1-tick apply latency, so
+        # a repeated ask cannot flicker Rot off and on.
+        action["rot"] = want_rot
 
     blink = _pick_blink(
         me,
@@ -1349,7 +1351,8 @@ def _choose_partner(obs: dict[str, Any]) -> dict[str, Any]:
         and float(me["hp"]) * 5 >= float(me.get("max_hp", 840)) * 2
     )
     if want_rot != bool(me.get("rot")):
-        action["rot_toggle"] = True
+        # Set, not toggle: idempotent under the 1-tick apply latency.
+        action["rot"] = want_rot
     flee_rot = foreign_rot and not want_rot
 
     flashed = False

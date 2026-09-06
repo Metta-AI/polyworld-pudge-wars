@@ -30,9 +30,9 @@ function drawArena(canvas, message, options) {
   const ox = (canvas.width - geo.width * scale) / 2
   const oy = (canvas.height - geo.height * scale) / 2
   ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.fillStyle = '#1a3a28'
+  ctx.fillStyle = '#2a1810'
   ctx.fillRect(ox, oy, geo.width * scale, geo.height * scale)
-  ctx.fillStyle = '#2a5a9a'
+  ctx.fillStyle = '#c43c14'
   ctx.fillRect(
     ox + geo.riverWest * scale,
     oy,
@@ -106,6 +106,14 @@ function drawArena(canvas, message, options) {
     if (options && options.showNames && names[pudge.slot]) {
       ctx.fillStyle = '#e2e8f0'
       ctx.fillText(names[pudge.slot], toX(pudge.x), toY(pudge.y) - 12)
+    }
+    // Intent bubble: the seat's last print line, faded out after ~4s.
+    const sayAge = message.tick - (pudge.say_tick || 0)
+    if (pudge.say && pudge.say_tick >= 0 && sayAge < 128) {
+      ctx.globalAlpha = sayAge < 96 ? 1 : 1 - (sayAge - 96) / 32
+      ctx.fillStyle = '#fef08a'
+      ctx.fillText(pudge.say, toX(pudge.x), toY(pudge.y) - 22)
+      ctx.globalAlpha = 1
     }
   }
   return { ox, oy, scale, geo }

@@ -62,13 +62,15 @@ var
     ## Whether a WASM human currently drives each seat over netproto.
   globalSockets: seq[WebSocket]
   hostServer: Server
-  game: Game
+  game*: Game
+    ## Exported with observation/applyAction so the protocol test can
+    ## drive the JSON surface without a socket.
   tokens: seq[string]
   playerNames: seq[string]
-  maxTicks: int32
+  maxTicks*: int32
   killGoal: int32
   seed: int32
-  fogOn = true
+  fogOn* = true
   connectTimeoutSec = 180.0
   resultsUri = ""
   replayUri = ""
@@ -80,6 +82,14 @@ var
   lastAccepted: seq[JsonNode]
     ## Per-seat echo of the intents just applied. Sent on the next
     ## observation so a JSON policy can trust hookTo/blinkTo.
+  sentKeys: seq[Table[string, bool]]
+    ## Per seat: action keys the reply carried since the last snapshot;
+    ## true when that key held a JSON array. Filters the accepted echo
+    ## to what the seat actually sent (idle auto-acquire stays silent)
+    ## and shapes array purchases as arrays.
+  rotMatched: seq[bool]
+    ## The seat sent rot:<bool> that already matched the sim state, so
+    ## no toggle was queued; the echo still answers accepted.rot=true.
 
 proc jsonHeaders(): mummy.HttpHeaders =
   result["Content-Type"] = "application/json"
@@ -122,6 +132,14 @@ proc pudgeJson(world: World, pudge: Pudge, slot: int): JsonNode =
   var itemRanks = newJArray()
   for item in ShopBoots .. ShopWard:
     itemRanks.add %pudge.itemRank[item]
+  # The seat's last print line: the intent bubble the arena overlay
+  # draws. say_tick lets a client fade stale lines.
+  var sayNode = newJNull()
+  var sayTick = -1'i32
+  if game != nil and slot >= 0 and slot < game.botSpeech.len and
+      game.botSpeech[slot].text.len > 0:
+    sayNode = %game.botSpeech[slot].text
+    sayTick = game.botSpeech[slot].tick
   result = %*{
     "id": pudge.id,
     "slot": slot,
@@ -147,7 +165,9 @@ proc pudgeJson(world: World, pudge: Pudge, slot: int): JsonNode =
     "upgrades": upgrades,
     "item_ranks": itemRanks,
     "items": itemRanks,
-    "buff": buffOrd
+    "buff": buffOrd,
+    "say": sayNode,
+    "say_tick": sayTick
   }
 
 proc hookJson(world: World, hook: Hook): JsonNode =
@@ -275,22 +295,54 @@ proc intentRejectReason(slot: int, kind: IntentKind): string =
   else:
     "rejected"
 
-proc snapshotAccepted() =
+proc sizeEchoState(seats: int) =
+  if lastAccepted.len != seats:
+    lastAccepted.setLen(seats)
+  if sentKeys.len != seats:
+    sentKeys.setLen(seats)
+  if rotMatched.len != seats:
+    rotMatched.setLen(seats)
+
+proc markSent(slot: int, key: string, isArray: bool) =
+  ## Remembers one action key from this seat's reply so the accepted
+  ## echo answers exactly what the seat asked. Arrays echo as arrays.
+  sizeEchoState(game.world.pudges.len)
+  if slot >= 0 and slot < sentKeys.len:
+    sentKeys[slot][key] = isArray
+
+proc snapshotAccepted*() =
   ## Capture this tick's intentResults before WASM acks clear them.
-  if lastAccepted.len != game.world.pudges.len:
-    lastAccepted.setLen(game.world.pudges.len)
-  for i in 0 ..< lastAccepted.len:
+  ## Only keys the seat sent are echoed (the sim's idle auto-acquire
+  ## stays silent); a walk/attack/halt replaced by a later order in
+  ## the same reply window echoes only the surviving order.
+  let seats = game.world.pudges.len
+  sizeEchoState(seats)
+  for i in 0 ..< seats:
     lastAccepted[i] = newJObject()
   for res in game.intentResults:
     let
       key = intentActionKey(res.kind)
       slot = int(res.slot)
-    if key.len == 0 or slot < 0 or slot >= lastAccepted.len:
+    if key.len == 0 or slot < 0 or slot >= seats:
       continue
-    if res.accepted:
-      lastAccepted[slot][key] = %true
+    if key notin sentKeys[slot]:
+      continue
+    let answer =
+      if res.accepted: %true
+      else: %intentRejectReason(slot, res.kind)
+    if sentKeys[slot][key]:
+      if not lastAccepted[slot].hasKey(key):
+        lastAccepted[slot][key] = newJArray()
+      lastAccepted[slot][key].add answer
     else:
-      lastAccepted[slot][key] = %intentRejectReason(slot, res.kind)
+      lastAccepted[slot][key] = answer
+  for slot in 0 ..< seats:
+    if rotMatched[slot] and not lastAccepted[slot].hasKey("rot"):
+      # rot:<bool> already matched the sim state; nothing was queued,
+      # but the ask is satisfied.
+      lastAccepted[slot]["rot"] = %true
+    rotMatched[slot] = false
+    sentKeys[slot].clear()
 
 proc acceptedEcho(slot: int): JsonNode =
   if slot >= 0 and slot < lastAccepted.len and lastAccepted[slot] != nil:
@@ -305,7 +357,7 @@ proc printEcho(slot: int): JsonNode =
   else:
     newJNull()
 
-proc observation(slot: int, final = false): JsonNode =
+proc observation*(slot: int, final = false): JsonNode =
   ## Fog-clipped like BASIC `objectCount` / the renderer. `fogOn` off
   ## is the omniscient spectator (`team < 0`).
   let
@@ -338,10 +390,38 @@ proc observation(slot: int, final = false): JsonNode =
         not fogCanSee(world, viewer.team, prop.propCenter):
       continue
     visibleProps.add propJson(prop)
+  # The same flat, fog-clipped list BASIC objectCount/objectAt walks:
+  # own team in roster order, then visible props. kind matches BASIC
+  # objectKind (1 butcher, 2 wall, 3 mine, 4 ward).
+  var objectsNode = newJArray()
+  var worldObject: WorldObject
+  for i in 0 ..< worldObjectCount(world, viewer.id):
+    if not worldObjectAt(world, viewer.id, i, worldObject):
+      continue
+    let objPos = tileCoord(worldObject.position)
+    objectsNode.add %*{
+      "id": worldObject.id,
+      "kind": worldObject.kind,
+      "team": worldObject.team.ord,
+      "x": round(objPos.x, 3),
+      "y": round(objPos.y, 3),
+      "hp": max(worldObject.hp, 0),
+      "alive": worldObject.alive,
+      "layer": worldObject.layer,
+      "hooked": worldObject.hooked,
+      "shielded": worldObject.shielded,
+      "rot": worldObject.rotting
+    }
   var pingNode = newJNull()
   var ping: Ping
   if world.latestTeamPing(viewer.team, ping):
-    pingNode = %*{"x": ping.x, "y": ping.y, "by": ping.byId, "tick": ping.tick}
+    pingNode = %*{
+      "x": ping.x,
+      "y": ping.y,
+      "by": ping.byId,
+      "tick": ping.tick,
+      "age": max(world.tick - ping.tick, 0)
+    }
   result = %*{
     "type": if final: "final" else: "observation",
     "slot": slot,
@@ -364,6 +444,7 @@ proc observation(slot: int, final = false): JsonNode =
       "runes": visibleRunes,
       "props": visibleProps
     },
+    "objects": objectsNode,
     "ally_ping": pingNode,
     "rune_next": runeNextJson(world),
     "score": scoreNode(world),
@@ -439,6 +520,7 @@ proc queueIntents(slot: int, kind: IntentKind, node: JsonNode, key: string) =
   if not node.hasKey(key):
     return
   let value = node[key]
+  markSent(slot, key, value.kind == JArray)
   proc one(item: JsonNode) =
     queueIntent(
       game,
@@ -450,18 +532,20 @@ proc queueIntents(slot: int, kind: IntentKind, node: JsonNode, key: string) =
   else:
     one(value)
 
-proc applyAction(slot: int, node: JsonNode) =
+proc applyAction*(slot: int, node: JsonNode) =
   if slot < 0 or slot >= game.world.pudges.len:
     return
   if node.kind != JObject:
     return
   if node.hasKey("halt") and node["halt"].getBool:
+    markSent(slot, "halt", false)
     queueIntent(game, HumanIntent(slot: int32(slot), kind: IntentStop))
     return
   queueIntents(slot, IntentBuy, node, "buy_upgrade")
   queueIntents(slot, IntentBuyPower, node, "buy_power")
   if node.hasKey("blink_to") and node["blink_to"].kind == JArray and
       node["blink_to"].len >= 2:
+    markSent(slot, "blink_to", false)
     queueIntent(
       game,
       HumanIntent(
@@ -473,6 +557,7 @@ proc applyAction(slot: int, node: JsonNode) =
     )
   if node.hasKey("walk_to") and node["walk_to"].kind == JArray and
       node["walk_to"].len >= 2:
+    markSent(slot, "walk_to", false)
     queueIntent(
       game,
       HumanIntent(
@@ -484,6 +569,7 @@ proc applyAction(slot: int, node: JsonNode) =
     )
   if node.hasKey("hook_to") and node["hook_to"].kind == JArray and
       node["hook_to"].len >= 2:
+    markSent(slot, "hook_to", false)
     queueIntent(
       game,
       HumanIntent(
@@ -494,6 +580,7 @@ proc applyAction(slot: int, node: JsonNode) =
       )
     )
   if node.hasKey("attack_target"):
+    markSent(slot, "attack_target", false)
     queueIntent(
       game,
       HumanIntent(
@@ -504,8 +591,15 @@ proc applyAction(slot: int, node: JsonNode) =
     )
   if node.hasKey("rot"):
     if node["rot"].getBool != game.world.pudges[slot].rotOn:
+      markSent(slot, "rot", false)
       queueIntent(game, HumanIntent(slot: int32(slot), kind: IntentRot))
+    else:
+      # Already in the asked state: nothing to queue, nothing to
+      # flicker. The next accepted echo still answers rot=true.
+      sizeEchoState(game.world.pudges.len)
+      rotMatched[slot] = true
   elif node.hasKey("rot_toggle") and node["rot_toggle"].getBool:
+    markSent(slot, "rot", false)
     queueIntent(game, HumanIntent(slot: int32(slot), kind: IntentRot))
   if node.hasKey("print") and node["print"].kind == JString:
     let line = node["print"].getStr
@@ -515,6 +609,7 @@ proc applyAction(slot: int, node: JsonNode) =
       game.botSpeech[slot] = BotSpeech(text: line, tick: game.world.tick)
   if node.hasKey("place_wall") and node["place_wall"].kind == JArray and
       node["place_wall"].len >= 2:
+    markSent(slot, "place_wall", false)
     queueIntent(
       game,
       HumanIntent(
@@ -526,6 +621,7 @@ proc applyAction(slot: int, node: JsonNode) =
     )
   if node.hasKey("place_mine") and node["place_mine"].kind == JArray and
       node["place_mine"].len >= 2:
+    markSent(slot, "place_mine", false)
     queueIntent(
       game,
       HumanIntent(
@@ -537,6 +633,7 @@ proc applyAction(slot: int, node: JsonNode) =
     )
   if node.hasKey("place_ward") and node["place_ward"].kind == JArray and
       node["place_ward"].len >= 2:
+    markSent(slot, "place_ward", false)
     queueIntent(
       game,
       HumanIntent(
@@ -548,6 +645,7 @@ proc applyAction(slot: int, node: JsonNode) =
     )
   if node.hasKey("ping") and node["ping"].kind == JArray and
       node["ping"].len >= 2:
+    markSent(slot, "ping", false)
     queueIntent(
       game,
       HumanIntent(
@@ -655,6 +753,7 @@ proc handleGameFrame(ws: WebSocket, session: var Session, data: string) =
       bindGameSeat(ws, session, slot)
       if session.name.len > 0 and slot < playerNames.len:
         playerNames[slot] = session.name
+        applySeatLabels(game, playerNames)
       sendBinary(ws, packSlotGrant(int32(slot), message.hello.token, ""))
       echo "coworld ws seat ", slot, " joined: ", session.name
     else:
@@ -909,8 +1008,6 @@ proc finishMatch() =
     return
   done = true
   if game.recorder != nil and game.recordingError.len == 0:
-    game.recorder.data.header.setup.maximumTicks =
-      max(uint32(game.world.tick), 1'u32)
     try:
       writeBytes(
         replayUri,
@@ -1076,6 +1173,7 @@ proc bootGame() =
   game.humanSlots.setLen(0)
   for i in 0 ..< game.world.pudges.len:
     game.humanSlots.add i
+  applySeatLabels(game, playerNames)
   playerSockets.setLen(tokens.len)
   playerConnected.setLen(tokens.len)
   gameSockets.setLen(tokens.len)
@@ -1131,6 +1229,7 @@ proc main() =
     sleep(50)
   started = true
   echo "starting with ", connectedPlayerCount(), "/", tokens.len, " players"
+  applySeatLabels(game, playerNames)
   game.recorder = initReplayRecorder(currentSetup(game, uint32(maxTicks)))
   game.replayPlayer = ReplayPlayer(data: game.recorder.data)
   announceGameStart()
@@ -1156,11 +1255,17 @@ proc main() =
     nextAt = nextAt + step
     let now = getMonoTime()
     if now < nextAt:
-      let wait = inMilliseconds(nextAt - now)
-      if wait > 0:
-        sleep(int(wait))
+      # Spend the rest of the 32 Hz slice draining JSON replies, so an
+      # answer to this tick's observation is queued before the next
+      # tick runs: the documented fixed 1-tick apply latency. A late
+      # reply just misses the window (sticky last order); the clock
+      # never moves for it.
+      while getMonoTime() < nextAt:
+        drainInbound()
+        sleep(1)
     else:
       nextAt = now
   finishMatch()
 
-main()
+when isMainModule:
+  main()

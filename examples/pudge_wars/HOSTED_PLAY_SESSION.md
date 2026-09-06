@@ -43,13 +43,14 @@ Website (create): `polyworld/web/pudge-wars/` **or** a sibling Vercel project. D
 | 3v3 league | [Pudge Wars](https://softmax.com/observatory/v2?detail=league:league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0) `league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0` |
 | 3v3 seed | `lseed_44f5072a-3066-4542-9fbd-b52cfa2e225c` (`pudge-wars/ladder`, variant `league-3v3`) |
 | 3v3 division | `div_471aedc1-00f7-41dd-971d-f0beff95a439` |
-| 3v3 ladder | `team_n` + `team_count: 6` + `allied_teams: [[0,1,2],[3,4,5]]` + **`team_layout: blocks`** + `distinct_teammates`. Six distinct champions, seats 0–2 West / 3–5 East. `do_not_run` below 6. Ranking is `score` mean (1 win / 0 fail per seat once the game image emits binary scores). |
+| 3v3 ladder | `team_pair` + **`team_layout: blocks`** (two captains, each cloned onto a bank). `min_episodes_per_entrant: 1`, `filler_policy` below two champions. First to 30. Ranking is `score` mean (1 win / 0 fail per seated captain). Canonical main Softmax league. |
 | 1v1 league | [Pudge Wars 1v1](https://softmax.com/observatory/v2?detail=league:league_f81c4e63-ad7b-4f32-a837-b7931929545b) `league_f81c4e63-ad7b-4f32-a837-b7931929545b` |
 | 1v1 seed | `lseed_b9dc699b-c11a-4623-a581-14a0c984ab3c` (`pudge-wars/duel`, variant `duel-1v1`) |
 | 1v1 division | `div_157803f2-6b50-49dd-ae4f-c4b2219d269c` |
 | 1v1 ladder | `team_pair` + **`team_layout: blocks`** on 2 seats (no clones). `filler_policy` until a second champion exists. Same `score` mean ranking. |
-| Canonical coworld | `pudge-wars` **0.3.8** `cow_81fbce34-d950-49bb-af45-fdfa1468d202` (certified). League unlocked — follows canonical. Hook is 200 damage (~24% of 840 HP); a dump is not a one-chain kill. JSON player protocol is 1:1 with BASIC (`buy_upgrade` / `buy_power`, `rot` set, `accepted` echo, land-edge `play_west_max` / `play_east_min`). |
+| Canonical coworld | `pudge-wars` **0.3.10** `cow_d9f30fde-a2bf-4e14-b77f-91ab5cf415fa` (certified). League unlocked — follows canonical. `league-3v3` is first to 30 (20 min). Hook is 200 damage (~24% of 840 HP); a dump is not a one-chain kill. JSON player protocol is 1:1 with BASIC (`buy_upgrade` / `buy_power`, `rot` set, `accepted` echo, land-edge `play_west_max` / `play_east_min`). |
 | Game image | `public.ecr.aws/q5f4m8t9/cogames@sha256:d716e33934ea5ffa3af6789b4167b90549d052195cb279c00921ac2e87311baa` |
+| Game default league | `league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0` — softmax.com/pudge-wars opens this 3v3 board. |
 
 **Starter policies (Aaron), league champions after upgrade:**
 
@@ -86,7 +87,7 @@ examples/pudge_wars/host_party.sh --human --name Aaron
 ### B. Coworld k8s (policies + JSON)
 
 - Game: [`coworld_host.nim`](coworld_host.nim) (`pwcoworld`). JSON `/player`, `/global`, 2D `/client/player` (click-to-walk — **not** the product client).
-- All seats `humanSlots` (no BASIC). Policies send `{walk_to, hook_to, halt, ping}`. Sticky `{}`.
+- All seats `humanSlots` (no BASIC). Policies send `{walk_to, hook_to, blink_to, attack_target, rot, place_wall, place_mine, place_ward, halt, ping, buy_upgrade, buy_power, print}`. Sticky `{}`. The next observation's `accepted` echoes what was asked.
 - Fog: home bank always visible; enemy bank needs ally sight. Coords = **tiles**. Hook range ~60. Walking cannot cross the river.
 - Replay: `.pwr` via `COGAME_SAVE_REPLAY_URI`. Observatory viewer is **replay-only** webshell (`?replay=`), gzip public copies without `Content-Encoding`.
 - Tick rate **32**. Map 128×128. River west/east ~53/75. Spawn pads are seeded: lane shuffle + inland jitter, east mirrored (west X 18–36, east = 128−X). Shop stays at (22, 64) / (106, 64).
@@ -281,7 +282,7 @@ Nim Docker nightlies tarball (existing Dockerfile):
 
 ## Protocol cheat sheet
 
-**JSON policy** (`player_protocol_spec.md`): obs every tick; action `{ walk_to:[x,y], hook_to:[x,y], halt, ping }`. Empty = sticky.
+**JSON policy** (`player_protocol_spec.md`): one obs per tick; the reply applies on the next tick (fixed 1-tick latency). Action `{ walk_to, hook_to, blink_to, attack_target, rot: true|false, place_wall, place_mine, place_ward, halt, ping, buy_upgrade, buy_power, print }`. Empty = sticky. Obs carries `accepted` (per-key `true` or a reject token like `"cooldown"`; arrays for array buys), flat BASIC-order `objects`, `self.items`/`item_ranks` (5 ranks), `self.shield` in ticks, `self.say`, `ally_ping.age`, and `play_west_max`/`play_east_min` land lips beside the `river_west`/`river_east` water columns.
 
 **Netproto:** `NmHello`, `NmPickSlot`, `NmIntent`, `NmLobby`, `NmSlotGrant`, `NmStart`, `NmTicks` (tape + hashes), `NmIntentResult`, `NmBye`, `NmPing`/`NmPong`. Binary Flatty, wasm `flatty64`.
 
