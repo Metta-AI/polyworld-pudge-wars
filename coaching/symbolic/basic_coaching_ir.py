@@ -18,6 +18,10 @@ class Lesson:
     hook_during_melee: bool = True
     idle: str = "hold"
     bank_margin: int = 2
+    ranged_movement: str = "hold"
+    patrol_radius: int = 10
+    waypoint_timeout_ticks: int = 128
+    preserve_pull: bool = False
 
     def validate(self):
         if not (6 <= self.melee_radius <= 12 and 1 <= self.hook_range <= 60):
@@ -26,6 +30,18 @@ class Lesson:
             raise ValueError("Unsupported idle behavior / bank margin")
         if type(self.hook_during_melee) is not bool:
             raise ValueError("hook_during_melee must be a boolean")
+        if self.ranged_movement not in ("hold", "patrol"):
+            raise ValueError("Unsupported ranged movement")
+        if not 4 <= self.patrol_radius <= 14 or not 32 <= self.waypoint_timeout_ticks <= 256:
+            raise ValueError("Invalid patrol bounds")
+        if self.ranged_movement == "patrol" and self.idle != "probe_lane":
+            raise ValueError("Patrol requires lane exploration")
+        if self.ranged_movement == "patrol" and self.hook_range < self.melee_radius:
+            raise ValueError("Patrol's committed melee hooks require hook range to cover acquisition")
+        if self.ranged_movement == "hold" and (self.patrol_radius != 10 or self.waypoint_timeout_ticks != 128):
+            raise ValueError("Inactive patrol settings must retain defaults")
+        if type(self.preserve_pull) is not bool or (self.ranged_movement == "hold" and self.preserve_pull):
+            raise ValueError("Pull commitment requires patrol")
         return self
 
 
@@ -37,13 +53,20 @@ def parse(text: str) -> Lesson:
     if any(len(e) != 2 for e in entries):
         raise ValueError("Expected key = value")
     values = dict(entries)
-    if len(values) != len(entries) or set(values) != set(Lesson.__dataclass_fields__):
+    legacy = {"melee_radius", "hook_range", "hook_during_melee", "idle", "bank_margin"}
+    mobility_v1 = set(Lesson.__dataclass_fields__) - {"preserve_pull"}
+    if len(values) != len(entries) or set(values) not in (legacy, mobility_v1, set(Lesson.__dataclass_fields__)):
         raise ValueError("Missing, repeated, or unknown semantic field")
     if values["hook_during_melee"] not in ("true", "false"):
         raise ValueError("Expected true / false")
+    if values.get("preserve_pull", "false") not in ("true", "false"):
+        raise ValueError("Expected true / false for preserve_pull")
     return Lesson(int(values["melee_radius"]), int(values["hook_range"]),
                   values["hook_during_melee"] == "true", values["idle"],
-                  int(values["bank_margin"])).validate()
+                  int(values["bank_margin"]), values.get("ranged_movement", "hold"),
+                  int(values.get("patrol_radius", 10)),
+                  int(values.get("waypoint_timeout_ticks", 128)),
+                  values.get("preserve_pull", "false") == "true").validate()
 
 
 def block(lesson: Lesson) -> str:
@@ -55,7 +78,7 @@ def block(lesson: Lesson) -> str:
 
 def generate(lesson: Lesson) -> str:
     lesson.validate()
-    return f"""' Generated from the coaching IR. Engine performs sustained melee after attackTarget.
+    code = f"""' Generated from the coaching IR. Engine performs sustained melee after attackTarget.
 ' Holding and hooking are independent of melee selection; no economy or learned opponent model.
 meleeRadius = {lesson.melee_radius}
 hookRange = {lesson.hook_range}
@@ -124,6 +147,92 @@ if probeLane = 1 and selfLayer = selfTeam then
   end if
 end if
 """
+    if lesson.ranged_movement == "hold":
+        return code  # Preserve the first lesson's executable artifacts byte-for-byte.
+    selection = code[:code.index("if melee = 0 then\n")]
+    pull = """' Preserve a nearby pull until attackTarget can take over.
+preservePull = 1
+if best >= 0 then
+  if objectLayer(best) = selfLayer and selfLayer <> 2 then
+    if bestD2 <= meleeRadius * meleeRadius and objectHooked(best) = 1 then
+      halt()
+      patrolActive = 0
+      end
+    end if
+  end if
+end if
+""" if lesson.preserve_pull else ""
+    return selection + f"""' Mobility contract: melee commits; otherwise seek another firing angle.
+patrolRadius = {lesson.patrol_radius}
+waypointTimeoutTicks = {lesson.waypoint_timeout_ticks}
+if melee = 1 then
+  if hookReady = 1 and hookDuringMelee = 1 then
+    safeHookTo(objectX(best), objectY(best))
+  end if
+  patrolActive = 0
+  end
+end if
+
+{pull}' The engine preserves BASIC globals between decisions. This is option state,
+' not an opponent belief. Four waypoints stay in the home lane and on our bank.
+if selfLayer = selfTeam then
+  px = patrolX - selfX
+  py = patrolY - selfY
+  if patrolActive = 0 or px * px + py * py <= 4 or worldTick >= patrolUntil then
+    if patrolActive = 0 then
+      patrolLeg = selfId mod 4
+    else
+      patrolLeg = (patrolLeg + 1) mod 4
+    end if
+    inset = bankMargin
+    if patrolLeg = 1 or patrolLeg = 2 then
+      inset = inset + 4
+    end if
+    patrolX = riverWest - inset
+    if selfTeam = 1 then
+      patrolX = riverEast + inset
+    end if
+    patrolY = homeY - patrolRadius
+    if patrolLeg >= 2 then
+      patrolY = homeY + patrolRadius
+    end if
+    if patrolY < 20 then
+      patrolY = 20
+    end if
+    if patrolY > 107 then
+      patrolY = 107
+    end if
+    patrolUntil = worldTick + waypointTimeoutTicks
+    patrolActive = 1
+  end if
+  walkTo(patrolX, patrolY)
+else
+  patrolActive = 0
+  halt()
+end if
+
+' Hook selection is independent of navigation. A failed safe shot never stops
+' movement. Native hook windup briefly stops motion without clearing its goal.
+if hookReady = 1 then
+  if best >= 0 and bestD2 <= hookRange * hookRange then
+    safeHookTo(objectX(best), objectY(best))
+  else
+    if selfLayer = selfTeam then
+      aimX = selfX + hookRange
+      if selfTeam = 1 then
+        aimX = selfX - hookRange
+      end if
+      if aimX < 0 then
+        aimX = 0
+      end if
+      if aimX > 127 then
+        aimX = 127
+      end if
+      safeHookTo(aimX, selfY)
+    end if
+  end if
+end if
+"""
 
 
 def executable(text: str) -> list[str]:
@@ -145,12 +254,51 @@ def extract(code: str) -> Lesson:
         raise ValueError("Incomplete / invalid BASIC projection")
     lesson = Lesson(values[0], values[1], bool(values[2]),
                     "probe_lane" if values[3] else "hold", values[4]).validate()
+    radius = [re.fullmatch(r"patrolradius = (\d+)", line) for line in lines]
+    timeout = [re.fullmatch(r"waypointtimeoutticks = (\d+)", line) for line in lines]
+    radius = [int(m[1]) for m in radius if m]
+    timeout = [int(m[1]) for m in timeout if m]
+    if radius or timeout:
+        if len(radius) != 1 or len(timeout) != 1:
+            raise ValueError("Incomplete / ambiguous movement contract")
+        lesson = Lesson(*values[:2], bool(values[2]), "probe_lane" if values[3] else "hold",
+                        values[4], "patrol", radius[0], timeout[0],
+                        "preservepull = 1" in lines).validate()
     if lines != executable(generate(lesson)):
         raise ValueError("Unrecognized executable change; cannot claim semantic equivalence")
     return lesson
 
 
 def describe(lesson: Lesson) -> str:
+    if lesson.ranged_movement == "patrol":
+        return f"""# Code-derived behavioral IR — movement and hooking
+
+1. Situation: nearest visible living unshielded enemy; same non-water layer and
+   within {lesson.melee_radius} tiles affords melee acquisition. Dead/hooked self yields.
+2. Belief: hidden enemies remain unknown. Blind casts test the current horizontal
+   lane. patrolLeg, patrolX/Y, patrolUntil and patrolActive retain option progress,
+   not learned beliefs. No enemy position is inferred from this memory.
+3. Goal: executable precedence commits to nearby melee over patrol. The coaching
+   rationale cannot be recovered from executable code alone.
+4. Skills: sustain melee with attackTarget; safeHookTo within {lesson.hook_range};
+   otherwise traverse four own-bank waypoints, homeY ± {lesson.patrol_radius}, clamped
+   to Y 20–107. Bank inset alternates {lesson.bank_margin} and {lesson.bank_margin + 4}.
+   Advance within two tiles or after {lesson.waypoint_timeout_ticks} ticks. Initial
+   leg is selfId mod 4; acquiring melee resets option activation.
+   Nearby-pull commitment is {str(lesson.preserve_pull).lower()}: when enabled,
+   hold for a hooked enemy within the same melee acquisition envelope, then
+   acquire melee when the pull releases. This does not identify the hook owner.
+5. Strategy: melee acquisition suppresses patrol. Hook during melee is
+   {str(lesson.hook_during_melee).lower()}. Outside melee, walk and independently
+   hook the nearest visible in-range target; otherwise probe horizontally from
+   the current position. A rejected hook does not suppress movement.
+6. Execution: BASIC globals retain patrol progress. Engine owns pathfinding,
+   collision and windup. Off home bank without melee, halt; still try visible
+   targets. No economy, dodging, leading, obstacle perception or opponent model.
+7. Update: revise text IR offline, regenerate, reverse-check, evaluate. Patrol
+   is a bounded search heuristic, not a guarantee of a clear shot or continuous motion.
+
+{block(lesson)}"""
     return f"""# Code-derived behavioral IR
 
 1. Situation: nearest fog-visible living unshielded enemy butcher; integer tile

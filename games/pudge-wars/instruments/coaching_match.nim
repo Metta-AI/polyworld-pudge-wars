@@ -29,11 +29,33 @@ game.recorder = initReplayRecorder(currentSetup(game, uint32(ticks)))
 var scripts: seq[string]
 for i in 0 ..< 2*n: scripts.add(if i < n: candidate else: opponent)
 let logger = newDuelLogger(game, output, scripts, "coaching local evaluation")
+let motion = open(output / "motion.jsonl", fmWrite)
 while not game.world.gameOver and game.world.tick < ticks:
   tickWorld(game, proc() = runBotDecisions(game))
   for i in 0 ..< 2*n:
     doAssert not game.heroVms[i].failed, game.heroVms[i].lastError
   logger.logDuelTick(game)
+  if game.world.tick mod 8 == 0:
+    var sample = newJArray()
+    for hero in game.world.pudges:
+      var nearbyMelee = false
+      for other in game.world.pudges:
+        if other.team != hero.team and other.state == Alive and
+            other.shieldTicks == 0 and other.hookedBy == 0 and other.layer == hero.layer:
+          let dx = int64(other.position.x) - int64(hero.position.x)
+          let dy = int64(other.position.z) - int64(hero.position.z)
+          if dx*dx + dy*dy <= int64(8*WorldScale)*int64(8*WorldScale):
+            nearbyMelee = true
+      let eligible = game.world.tick >= 320 and hero.state == Alive and
+        hero.layer == hero.team.ord and hero.hookedBy == 0 and
+        hero.windupTicks == 0 and not nearbyMelee
+      let speed2 = int64(hero.velX)*hero.velX + int64(hero.velZ)*hero.velZ
+      let moving = speed2 > int64(WorldScale div TickRate)*int64(WorldScale div TickRate)
+      sample.add %*{"id": hero.id, "eligible": eligible, "moving": moving,
+        "melee_nearby": nearbyMelee, "hooked": hero.hookedBy != 0,
+        "windup": hero.windupTicks, "attack_target": hero.attackTargetId}
+    motion.writeLine $(%*{"t": game.world.tick, "p": sample})
+motion.close()
 logger.finishDuelLog(game)
 saveReplay(output / "replay.pwr", game.recorder.data)
 var seats = newJArray()

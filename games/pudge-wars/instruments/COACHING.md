@@ -35,6 +35,35 @@ tapes are labelled `replay_resimulatable:false`. Reproduce them with the harness
 and fixture. The replay checker is for stock-start tapes from the SAME source.
 Never claim a live human's performance from these all-bot runs.
 
+## Moving while coaching
+
+`basic_coaching_ir` also supports the orthogonal `ranged_movement = patrol`
+strategy, bounded `patrol_radius`, `waypoint_timeout_ticks`, and `preserve_pull`.
+The original five-field contracts and v1/v2 BASIC remain supported unchanged.
+Patrol progress is persistent option state, not an inferred opponent belief.
+`preserve_pull` commits to a close hooked enemy before returning to patrol;
+it does not identify the owner of that hook.
+
+`coaching_match` writes `motion.jsonl` at 4 Hz using engine state. Eligibility
+excludes the first ten seconds, death, being pulled, hook windup, leaving the
+home bank, and an unshielded unpulled same-layer enemy within eight tiles.
+Movement means actual speed over one tile/second, not a successful walk request.
+The metric intentionally reports a conditional motion rate; it is not win rate.
+
+```sh
+python3 games/pudge-wars/instruments/coaching_mobility_eval.py \
+  --binary tmp/coaching-match --previous previous.bas --candidate candidate.bas \
+  --blank empty.bas --base frozen-base.bas --seeds 91041 91042 \
+  --output /tmp/new-mobility-evaluation
+```
+
+This runs candidate/previous against both fixed opponents and directly against
+each other, on both banks of every seed. Freeze the candidate before fresh
+confirmation. Each pair shares a seed; do not count it as two independent seeds.
+The tool saves executable/input hashes, commands, protocol, per-game motion and
+outcomes. Check complete stock-start replays afterward with the native checker.
+Custom-position scenes are separate mechanism checks. Keep missed/failed scenes.
+
 `coaching_session.py` joins a preserved native event-log snapshot to a video
 interval using an externally verified zero-tick anchor. Read its CLI docstring;
 the helper does not guess intent, damage attribution or clock alignment.
