@@ -64,6 +64,12 @@ The tool saves executable/input hashes, commands, protocol, per-game motion and
 outcomes. Check complete stock-start replays afterward with the native checker.
 Custom-position scenes are separate mechanism checks. Keep missed/failed scenes.
 
+Each future iteration also runs autonomous candidate-versus-itself games, with
+the same policy in every seat. Human coaching launches default to the current
+candidate on both teams, with slot 0 reserved for the human. Preserve comparisons
+against the previous version and fixed opponents: self-play is a diagnostic for
+behavior under resistance, not evidence of improved strength by itself.
+
 `coaching_session.py` joins a preserved native event-log snapshot to a video
 interval using an externally verified zero-tick anchor. Read its CLI docstring;
 the helper does not guess intent, damage attribution or clock alignment.
