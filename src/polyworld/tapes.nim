@@ -114,6 +114,20 @@ proc encodeReplayFile*[T](
   if result.len > maxBytes:
     fail("encoded replay exceeds the file size limit")
 
+proc replayFilePayload*(
+    bytes,
+    game: string,
+    gameVersion: uint16,
+    maxBytes = DefaultMaxReplayBytes
+): string =
+  ## Checks the common header and returns the game-specific Flatty payload.
+  if bytes.len > maxBytes:
+    fail("replay exceeds the file size limit")
+  let header = bytes.replayFileHeader()
+  header.validateHeader(game, gameVersion)
+  let offset = bytes.payloadOffset(header)
+  bytes[offset .. ^1]
+
 proc decodeReplayFile*[T](
     game: string,
     gameVersion: uint16,
@@ -122,12 +136,7 @@ proc decodeReplayFile*[T](
     maxBytes = DefaultMaxReplayBytes
 ): T =
   ## Checks the common header before decoding one game payload.
-  if bytes.len > maxBytes:
-    fail("replay exceeds the file size limit")
-  let header = bytes.replayFileHeader()
-  header.validateHeader(game, gameVersion)
-  let offset = bytes.payloadOffset(header)
-  bytes[offset .. ^1].fromFlatty(replayType)
+  replayFilePayload(bytes, game, gameVersion, maxBytes).fromFlatty(replayType)
 
 proc saveReplayFile*[T](
     path,

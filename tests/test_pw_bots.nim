@@ -81,6 +81,10 @@ block:
   doAssert game.seatLabels[0] == "docxology"
   doAssert game.seatLabels[1] == "Aaron's Optimizer Jr"
   doAssert game.seatLabels[2] == ""
+  let recorded = currentSetup(game, 10)
+  doAssert recorded.seatLabels[0] == "docxology"
+  doAssert recorded.seatLabels[1] == "Aaron's Optimizer Jr"
+  doAssert recorded.seatLabels[2] == ""
 
 proc parkBots(game: Game) =
   game.world.pudges[0].placePudge(30, 64)

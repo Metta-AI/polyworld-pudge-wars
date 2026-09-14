@@ -1679,6 +1679,9 @@ proc currentSetup*(game: Game, maximumTicks: uint32): Setup =
       spawnX: int32(home.x),
       spawnZ: int32(home.z)
     )
+  var labels = newSeq[string](pudges.len)
+  for i in 0 ..< min(labels.len, game.seatLabels.len):
+    labels[i] = game.seatLabels[i]
   Setup(
     mapSeed: game.map.seed,
     mapHash: game.map.hash,
@@ -1689,7 +1692,8 @@ proc currentSetup*(game: Game, maximumTicks: uint32): Setup =
     botEvery: max(game.botEvery, 1'i32),
     botAimNoise: max(game.botAimNoise, 0'i32),
     runePeriod: game.world.runePeriod,
-    pudges: pudges
+    pudges: pudges,
+    seatLabels: labels
   )
 
 proc refreshPudgeStats(pudge: var Pudge) =

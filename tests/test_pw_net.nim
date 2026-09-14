@@ -115,6 +115,7 @@ block:
     doAssert msg.start.setup.pudges.len == PudgeCount
     doAssert msg.start.setup.pudges[HostSeat].controller ==
       ControllerHuman
+    doAssert msg.start.setup.seatLabels.len == PudgeCount
   block ticks:
     let msg = decodeNetMessage(packTicks(
       7'u32,

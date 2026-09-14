@@ -19,7 +19,9 @@ import
   sim
 
 const
-  NetProtocolVersion* = 10'u16
+  NetProtocolVersion* = 11'u16
+    ## v11: Start Setup gained `seatLabels` (replay format v5). Host
+    ##     and client must rebuild together; names ride the tape.
     ## v10: Hello carries `simVersion` (`ReplayGameVersion`) so a live
     ##     client cannot follow a host running different physics.
     ## v9: Lightning and Bounty river runes change the public kind cycle

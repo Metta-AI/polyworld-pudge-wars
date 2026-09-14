@@ -57,8 +57,8 @@ doAssert fileHeader.formatVersion == ReplayFileVersion
 doAssert fileHeader.game == ReplayGame
 doAssert fileHeader.gameVersion == ReplayGameVersion
 doAssert decoded.header.formatVersion == ReplayFormatVersion
-doAssert decoded.header.formatVersion == 4'u16,
-  "spawn pads ship in replay format v4"
+doAssert decoded.header.formatVersion == 5'u16,
+  "seat labels ship in replay format v5"
 doAssert decoded.header.gameVersion == ReplayGameVersion
 doAssert decoded.header.setup.mapSeed == 2026
 doAssert decoded.header.setup.killGoal == KillGoal
@@ -66,6 +66,7 @@ doAssert decoded.header.setup.botEvery == 8
 doAssert decoded.header.setup.botAimNoise == 1
 doAssert decoded.header.setup.runePeriod == RunePeriodTicks
 doAssert decoded.header.setup.pudges.len == PudgeCount
+doAssert decoded.header.setup.seatLabels.len == 0
 doAssert decoded.header.setup.pudges[0].controller == ControllerHuman
 doAssert decoded.header.setup.pudges[1].controller == ControllerBot
 doAssert decoded.header.setup.pudges[0].spawnX == 22
@@ -340,5 +341,51 @@ block:
     doAssert false, "a hash mismatch must fail replay verification"
   except ReplayError as error:
     doAssert error.msg.contains("first at tick 2")
+
+echo "Testing seat labels round-trip on format v5"
+block:
+  var named = testSetup()
+  named.seatLabels = @[
+    "myasnik-bas:v5 1", "myasnik-bas:v5 2", "myasnik-bas:v5 3",
+    "pudge-wars-rusher:v14 1", "pudge-wars-rusher:v14 2",
+    "pudge-wars-rusher:v14 3"
+  ]
+  let
+    namedRecorder = initReplayRecorder(named)
+    namedDecoded = decodeReplay(namedRecorder.data.encodeReplay())
+  doAssert namedDecoded.header.formatVersion == ReplayFormatVersion
+  doAssert namedDecoded.header.setup.seatLabels == named.seatLabels
+
+echo "Testing a format v4 tape still loads without names"
+block:
+  let
+    v4setup = SetupV4(
+      mapSeed: setup.mapSeed,
+      mapHash: setup.mapHash,
+      tickRate: setup.tickRate,
+      gridTiles: setup.gridTiles,
+      maximumTicks: setup.maximumTicks,
+      killGoal: setup.killGoal,
+      botEvery: setup.botEvery,
+      botAimNoise: setup.botAimNoise,
+      runePeriod: setup.runePeriod,
+      pudges: setup.pudges
+    )
+  var legacy = initActionTape[SetupV4, ReplayAction](
+    v4setup,
+    ReplayFormatVersionV4,
+    ReplayGameVersion
+  )
+  legacy.actions = decoded.actions
+  legacy.hashes = decoded.hashes
+  let
+    legacyBytes = encodeReplayFile(
+      ReplayGame, ReplayGameVersion, legacy, MaxReplayBytes
+    )
+    upgraded = decodeReplay(legacyBytes)
+  doAssert upgraded.header.formatVersion == ReplayFormatVersion
+  doAssert upgraded.header.setup.seatLabels.len == 0
+  doAssert upgraded.header.setup.pudges.len == PudgeCount
+  doAssert upgraded.actions.len == decoded.actions.len
 
 echo "test_pw_replays: all checks passed"

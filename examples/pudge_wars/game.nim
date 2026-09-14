@@ -611,6 +611,8 @@ proc newFollowerGame*(setup: Setup): Game =
   for i, pudge in setup.pudges:
     if pudge.controller == ControllerHuman:
       result.humanSlots.add i
+  if setup.seatLabels.len > 0:
+    applySeatLabels(result, setup.seatLabels)
 
 block:
   startProfileTrace()
@@ -673,6 +675,8 @@ block:
       loadBots(run, options.botGroups)
     if options.seatLabels.len > 0:
       applySeatLabels(run, options.seatLabels)
+    elif replayMode and replayData.header.setup.seatLabels.len > 0:
+      applySeatLabels(run, replayData.header.setup.seatLabels)
     when not defined(emscripten):
       startDuelLogging()
 

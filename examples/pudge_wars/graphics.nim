@@ -69,7 +69,7 @@ const
   ButcherBarWidth = 3.0'f32
   NamePlateLift = 7.55'f32
     ## Just over the HP bar. No backing plate — small type only.
-  NamePlateW = 200.0'f32
+  NamePlateW = 280.0'f32
   NamePlateH = 16.0'f32
   NamePlateShadow = rgbx(8, 10, 14, 180)
   NamePlateText = rgbx(236, 228, 204, 210)
@@ -2885,7 +2885,9 @@ proc runGraphics*() =
         let spectateSlot = spectateIndex()
         for slot in 0 ..< run.world.pudges.len:
           let pudge = predictedPudge(slot)
-          if pudge.state == Dying or pudge.justBlinked or not fogShownPudge(pudge):
+          if pudge.state == Dying or pudge.justBlinked:
+            continue
+          if not run.replayMode and not fogShownPudge(pudge):
             continue
           var label = butcherDisplayName(slot)
           if label.len == 0:

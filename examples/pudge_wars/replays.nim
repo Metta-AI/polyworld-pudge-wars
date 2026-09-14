@@ -8,6 +8,7 @@
 
 import
   std/[os, times],
+  flatty,
   polyworld/tapes,
   content
 
@@ -16,7 +17,12 @@ when defined(posix):
 
 const
   ReplayGame* = "pudge_wars"
-  ReplayFormatVersion* = 4'u16
+  ReplayFormatVersionV4* = 4'u16
+    ## Format before seat labels: Setup ended at `pudges`.
+  ReplayFormatVersion* = 5'u16
+    ## v5: Setup.seatLabels — policy / lobby names for Observatory WASM
+    ##     nameplates. Physics are unchanged; game version stays 37.
+    ##     Load still accepts v4 tapes (empty labels → P1..Pn).
   ReplayGameVersion* = 37'u16
     ## Physics the *viewer* runs. Observatory's static wasm must ship at
     ## this same number as the recording image (`pwcoworld`). Load and
@@ -205,6 +211,23 @@ type
     runePeriod*: int32
       ## Ticks between river rune spawns; 0 disables runes.
     pudges*: seq[ReplayPudge]
+    seatLabels*: seq[string]
+      ## Format v5. One display name per roster seat (policy:vN, lobby
+      ## name). Empty means the viewer falls back to P<id>. Length 0 is
+      ## a v4 tape or an unnamed local match.
+
+  SetupV4* = object
+    ## Format v4 Setup: same fields as Setup without seatLabels.
+    mapSeed*: int32
+    mapHash*: uint64
+    tickRate*: uint16
+    gridTiles*: uint16
+    maximumTicks*: uint32
+    killGoal*: int32
+    botEvery*: int32
+    botAimNoise*: int32
+    runePeriod*: int32
+    pudges*: seq[ReplayPudge]
 
   ReplayAction* = object
     tick*: uint32
@@ -215,6 +238,7 @@ type
 
   ReplayHeader* = TapeHeader[Setup]
   ReplayData* = ActionTape[Setup, ReplayAction]
+  ReplayDataV4* = ActionTape[SetupV4, ReplayAction]
   ReplayRecorder* = TapeRecorder[Setup, ReplayAction]
   ReplayPlayer* = TapePlayer[Setup, ReplayAction]
 
@@ -555,6 +579,8 @@ proc validate*(data: ReplayData) =
     fail("replay setup has an invalid rune period")
   if setup.pudges.len < DuelPudgeCount or setup.pudges.len > MaxPudgeCount:
     fail("replay setup must list a 1v1 to 5v5 roster")
+  if setup.seatLabels.len != 0 and setup.seatLabels.len != setup.pudges.len:
+    fail("replay setup seat labels must match the roster")
   if data.actions.len > MaxReplayActions:
     fail("replay action limit exceeded")
   if data.hashes.len > MaxReplayHashes:
@@ -605,15 +631,47 @@ proc encodeReplay*(data: ReplayData): string =
     MaxReplayBytes
   )
 
+proc upgradeReplayV4(old: ReplayDataV4): ReplayData =
+  ## Format v4 → v5 with empty seat labels (P1..Pn fallback).
+  result.header.formatVersion = ReplayFormatVersion
+  result.header.gameVersion = old.header.gameVersion
+  result.header.createdUnixMs = old.header.createdUnixMs
+  result.header.setup = Setup(
+    mapSeed: old.header.setup.mapSeed,
+    mapHash: old.header.setup.mapHash,
+    tickRate: old.header.setup.tickRate,
+    gridTiles: old.header.setup.gridTiles,
+    maximumTicks: old.header.setup.maximumTicks,
+    killGoal: old.header.setup.killGoal,
+    botEvery: old.header.setup.botEvery,
+    botAimNoise: old.header.setup.botAimNoise,
+    runePeriod: old.header.setup.runePeriod,
+    pudges: old.header.setup.pudges,
+    seatLabels: @[]
+  )
+  result.actions = old.actions
+  result.hashes = old.hashes
+
 proc decodeReplay*(bytes: string): ReplayData =
   ## Decodes and validates one Pudge Wars replay buffer.
-  result = decodeReplayFile(
+  ## Format v4 tapes load with empty seat labels.
+  let payload = replayFilePayload(
+    bytes,
     ReplayGame,
     ReplayGameVersion,
-    bytes,
-    ReplayData,
     MaxReplayBytes
   )
+  if payload.len < 2:
+    fail("replay payload is truncated")
+  let formatVersion =
+    uint16(payload[0].ord) or (uint16(payload[1].ord) shl 8)
+  case formatVersion
+  of ReplayFormatVersionV4:
+    result = upgradeReplayV4(payload.fromFlatty(ReplayDataV4))
+  of ReplayFormatVersion:
+    result = payload.fromFlatty(ReplayData)
+  else:
+    fail("unsupported replay format version")
   result.validate()
 
 proc saveReplay*(path: string, data: ReplayData) =
@@ -711,14 +769,9 @@ proc writeBugReplay*(
 
 proc loadReplay*(path: string): ReplayData =
   ## Loads one complete Pudge Wars replay file.
-  result = loadReplayFile(
-    path,
-    ReplayGame,
-    ReplayGameVersion,
-    ReplayData,
-    MaxReplayBytes
-  )
-  result.validate()
+  if path.len == 0:
+    fail("replay input path is empty")
+  decodeReplay(readFile(path))
 
 proc initReplayPlayer*(data: ReplayData): ReplayPlayer =
   ## Creates a playback cursor over validated action data.
