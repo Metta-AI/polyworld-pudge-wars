@@ -203,7 +203,12 @@ var toonDepthLightMvp: Uniform[Mat4]
 
 proc toonDepthVert(
   vertexPosition: Vec3,
+  # Keep the glTF vertex-array locations, including unused attributes:
+  # UV is slot 3, integer joint IDs are slot 5, and weights are slot 6.
+  vertexColor: Vec4,
+  vertexNormal: Vec3,
   vertexUV: Vec2,
+  vertexTangent: Vec4,
   vertexJoints: UVec4,
   vertexWeights: Vec4,
   gl_Position: var Vec4,

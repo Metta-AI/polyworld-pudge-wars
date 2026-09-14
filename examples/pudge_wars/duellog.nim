@@ -634,6 +634,14 @@ proc damageCause(
       return ("rot", pudge.lastHurtBy)
   if pudge.lastHurtBy == pudge.id:
     return ("rot", pudge.lastHurtBy)
+  for patch in world.firePatches:
+    if patch.ownerId != pudge.lastHurtBy:
+      continue
+    if distanceSquared(pudge.position, patch.position) <=
+        int64(RuneLightningTrailRadius) * int64(RuneLightningTrailRadius):
+      return ("fire", pudge.lastHurtBy)
+  if world.lightningTick == world.tick:
+    return ("lightning", pudge.lastHurtBy)
   if pudge.layer == int32(RiverLayer) or
       logger.prevLayer[index] == int32(RiverLayer):
     return ("drown", pudge.lastHurtBy)

@@ -1,0 +1,23 @@
+--- a/examples/pudge_wars/sim.nim
++++ b/examples/pudge_wars/sim.nim
+@@ -4279,10 +4279,13 @@
+   else:
+     # A landed ally hook is a field medic's throw: same aim skill as
+     # the kill shot, spent on patching your friend up.
++    let healBefore = world.pudges[bestPudge].hp
+     world.pudges[bestPudge].hp = min(
+       world.pudges[bestPudge].hp + AllyHookHeal,
+       world.pudges[bestPudge].maxHp
+     )
++    when defined(healingTrace):
++      stderr.writeLine("HEAL " & $world.tick & " " & $hook.ownerId & " " & $victim.id & " " & $healBefore & " " & $world.pudges[bestPudge].hp & " " & $hook.id)
+   true
+ 
+ proc dropVictim(world: World, hook: var Hook) =
+@@ -5055,3 +5058,6 @@
+     botEvery: 1,
+     botSpeech: newSeq[BotSpeech](setup.len)
+   )
++
++when defined(healingTrace):
++  stderr.writeLine("HEAL_TRACE_V1")

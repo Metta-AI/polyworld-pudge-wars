@@ -269,6 +269,29 @@ proc isWalkable*(layerIndex, x, z: int): bool =
   inLayer(layerIndex, x, z) and
     layerWalkable[layerIndex][z * layers[layerIndex].width + x]
 
+proc rayTriangle*(origin, dir, a, b, c: Vec3): float32 =
+  ## Ray-triangle intersection distance, or -1 when there is no hit.
+  let
+    edge1 = b - a
+    edge2 = c - a
+    p = cross(dir, edge2)
+    det = dot(edge1, p)
+  if abs(det) < 1e-6:
+    return -1
+  let
+    invDet = 1.0'f32 / det
+    tv = origin - a
+    u = dot(tv, p) * invDet
+  if u < 0 or u > 1:
+    return -1
+  let
+    q = cross(tv, edge1)
+    v = dot(dir, q) * invDet
+  if v < 0 or u + v > 1:
+    return -1
+  let distance = dot(edge2, q) * invDet
+  if distance > 0: distance else: -1
+
 proc worldWalkable*(layerIndex, worldX, worldZ: int): bool =
   ## Walkability at a world tile, converted into that layer's local grid.
   if layerIndex < 0 or layerIndex >= layers.len:
@@ -375,6 +398,28 @@ proc edgeLink*(layerIndex, x, z, direction: int): EdgeLink =
   result = computeEdgeLink(layerIndex, x, z, direction)
   edgeLinks[index][direction] = result
   edgeKnown[index][direction] = true
+
+proc edgeMask*(
+    layerIndex, x, z: int,
+    blockers: openArray[seq[int32]] = []
+): uint8 =
+  ## Returns open edge bits, east to north, including optional layer blockers.
+  ## Nonzero blockers close both sides without changing cached terrain links.
+  if not isWalkable(layerIndex, x, z):
+    return
+  if layerIndex < blockers.len and blockers[layerIndex].len > 0:
+    doAssert blockers[layerIndex].len == layers[layerIndex].tiles.len
+    if blockers[layerIndex][z * layers[layerIndex].width + x] != 0:
+      return
+  for direction in 0 .. 3:
+    let link = edgeLink(layerIndex, x, z, direction)
+    if not link.open:
+      continue
+    if link.layer < blockers.len and blockers[link.layer].len > 0:
+      doAssert blockers[link.layer].len == layers[link.layer].tiles.len
+      if blockers[link.layer][link.z * layers[link.layer].width + link.x] != 0:
+        continue
+    result = result or uint8(1 shl direction)
 
 ## Queries
 

@@ -81,6 +81,12 @@ ls ../polyworld_data   # characters, terrain, themes, sounds, ...
 
 Always from the repo root. First run compiles; later runs are faster.
 
+To play alongside the Coworld Python policy with deliberate healing and
+fishing spacing, run `uv run scripts/play_policy.py`. You control P1, with
+Base v13 teammates on P2–P3 and Base v10 opponents on P4–P6. This runs the
+current local game rules; [details and controls](coworld/player/README.md#play-alongside-this-policy-locally).
+The commands below use the native BASIC bots.
+
 ```bash
 # You vs a 5-bot field
 nim r examples/pudge_wars/pw.nim --human
@@ -102,6 +108,10 @@ nim r examples/pudge_wars/pw.nim --replay /tmp/demo.pwr
 ```
 
 ## Controls
+
+The default players use the customized red and blue butcher. Preview and
+compare all nine motion clips independently with `./char_viewer`; build and
+controls are in [Butcher workshop](examples/pudge_wars/BUTCHER_WORKSHOP.md).
 
 | Input | Action |
 |---|---|

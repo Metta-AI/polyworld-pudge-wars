@@ -213,7 +213,9 @@ block:
     "missing hooktrap item icon"
   doAssert fileExists(iconPath("warding_chalk", "items")),
     "missing farwatch ward item icon"
-  doAssert InventorySlots == 5
+  doAssert InventorySlots == 6
+  doAssert PermanentBagOrder.len == 5
+  doAssert ShopWard in PermanentBagOrder
   doAssert ItemMaxRank == 5
   doAssert isPermanent(ShopBoots)
   doAssert isPermanent(ShopLongshot)
@@ -225,7 +227,17 @@ block:
   doAssert shopPrice(ShopWall) == ShopWallGold
   doAssert shopPrice(ShopMine) == ShopMineGold
   doAssert shopPrice(ShopWard) == ShopWardGold
+  doAssert ShopWardGold == 0
+  doAssert shopGoldLabel(ShopWard) == "FREE"
+  doAssert shopItemMaxRank(ShopWard) == WardChargeMax
+  doAssert shopItemMaxRank(ShopBoots) == ItemMaxRank
+  doAssert dropReach(ShopWard) == WardPlaceRangeTiles
+  doAssert dropReach(ShopWall) == PlaceRangeTiles
+  doAssert WardPlaceRangeTiles >= 24
+  doAssert WardRestockTicks == TickRate * 60
   doAssert WardDurationTicks == TickRate * 45
+  doAssert WardChargeMax == 1
+  doAssert MaxWardsPerPlayer == 1
   doAssert longshotDamage(100, 0, 10 * WorldScale) == 100
   doAssert longshotDamage(100, 1, 10 * WorldScale) == 110
   doAssert longshotDamage(100, 1, 20 * WorldScale) == 120
@@ -255,6 +267,7 @@ block:
     )
     doAssert "2x" in buffed[0]
     doAssert $RuneLightningDamage in buffed[3]
+    doAssert $RuneLightningSpeedMul & "x speed" in buffed[3]
   doAssert $RotDamage in rotTooltipLines(false)[2]
   doAssert "ON" in rotTooltipLines(true)[0]
   doAssert $BlinkRangeTiles in blinkTooltipLines()[2]
@@ -263,6 +276,8 @@ block:
   doAssert $wallMaxHp(2) in shopItemTooltipLines(ShopWall, 2)[2]
   doAssert "45" in shopItemTooltipLines(ShopWard, 1)[2]
   doAssert "sight" in shopItemTooltipLines(ShopWard, 1)[2]
+  doAssert "60" in shopItemTooltipLines(ShopWard, 1)[2]
+  doAssert "FREE" in shopItemBlurb(ShopWard) or "Free" in shopItemBlurb(ShopWard)
   doAssert "0 damage" in grappleTooltipLines()[2]
   doAssert formatTiles(GrappleRange) in grappleTooltipLines()[2]
   doAssert $hookDamage(0) in upgradeTooltipLines(UpgradeDamage, 0)[2]
@@ -274,6 +289,14 @@ block:
   doAssert RuneLightningRadius == RotRadius
   doAssert RuneLightningRadius > MinSeparation,
     "lightning must reach a butcher standing at melee standoff"
+  doAssert RuneLightningTrailDamage == 8
+  doAssert RuneLightningTrailRadius < MinSeparation,
+    "the fire trail is a painted line, not a melee aura"
+  doAssert RuneLightningClashDamage < RuneLightningDamage
+  doAssert RuneLightningClashDamage > 0
+  doAssert RuneLightningSpeedMul == 2
+  doAssert thrownHookSpeed(0, false) == hookSpeed(0)
+  doAssert thrownHookSpeed(0, true) == hookSpeed(0) * RuneLightningSpeedMul
   doAssert RuneBountyGold == 4
   doAssert RuneNames[RuneLightning] == "Lightning"
   doAssert RuneNames[RuneBounty] == "Bounty"

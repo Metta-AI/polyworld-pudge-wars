@@ -1,0 +1,2995 @@
+{
+  "selected_policy": "support_spatial_12",
+  "binding_hash": "b8321385c799af309e2163793d8fea3d3108b762446f49ffdeed748cdbce5fed",
+  "decision": "Use for spatial coaching demonstration. Behavioral intent confirmed; the score-based research incumbent is not automatically promoted because the kill-margin interval includes zero.",
+  "reports": {
+    "wide_development": {
+      "contract": {
+        "phase": "development",
+        "seeds": [
+          9231701,
+          9231702
+        ],
+        "n": 3,
+        "ticks": 38400,
+        "goal": 30,
+        "arms": {
+          "parent": {
+            "binding": "f7cea6a0203afec157813d7a385f95af862e8240113dfcf1445b851402dd96ae",
+            "policy": "1c602814a35aef06503960dc70f239840dad73203e75e4914101cce31a7d170f"
+          },
+          "candidate": {
+            "binding": "c95ad74587b33ad8a8fe4b9f203ac7a09db91c3c72e238631ec63730f182dfb3",
+            "policy": "40ee00c8886cbf0e2dac155fc1f0aea3167f5089e8db282da5e3dbfdf690a706"
+          },
+          "formation_only": {
+            "binding": "c95ad74587b33ad8a8fe4b9f203ac7a09db91c3c72e238631ec63730f182dfb3",
+            "policy": "f52b09a491a9d238cb16d62d3521c771531eb7a605e51df98a88f96bfe0bae9f"
+          }
+        },
+        "runner": "abe55810edc79f89560a2b3e1f1504956e1cfd60a863879a1589fedbd88fbefe",
+        "opponent": "07db67fa0336450a9b8e6ffd4685d0ac119b0ac83bd0d4f5ff350e0ae2c022cb",
+        "hypothesis": "One rune owner plus occupied-route detours reduce contact and futile movement without sacrificing game score.",
+        "primary": [
+          "clustered_fraction",
+          "occupied_route_fraction"
+        ],
+        "score_guardrail": "Report paired kill margin and win rate; do not claim stronger play without interval excluding zero.",
+        "seed_unit": "Average paired bank differences within each seed, then bootstrap independent seeds.",
+        "metrics": "Spatial samples every 8 ticks; body distance and low progress are proxies, not engine collision events."
+      },
+      "arms": {
+        "parent": {
+          "games": 4,
+          "wins": 2,
+          "losses": 2,
+          "draws": 0,
+          "timeouts": 0,
+          "mean_margin": -2.0,
+          "mean_kills": 24.75,
+          "mean_opponent_kills": 26.75,
+          "roundtrip_actions": 174324,
+          "roundtrip_mismatches": 0,
+          "spatial": {
+            "clustered_fraction": 0.33216536202147007,
+            "contact_fraction": 0.20605268297050328,
+            "occupied_route_fraction": 0.18707446632513272,
+            "stalled_fraction": 0.11312278918932117,
+            "wall_contact_fraction": 0.4968413692478607,
+            "wall_stalled_fraction": 0.12902196377361916,
+            "mean_nearest_ally_distance": 19.080880389618123
+          },
+          "median_throughput_ratio": 0.618054230544527,
+          "runtime_failure_games": 0,
+          "paired": {
+            "margin": {
+              "mean": 0,
+              "ci95": [
+                0,
+                0
+              ],
+              "independent_seeds": 2
+            },
+            "clustered_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "contact_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "occupied_route_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "stalled_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "wall_contact_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "wall_stalled_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "mean_nearest_ally_distance": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            }
+          }
+        },
+        "candidate": {
+          "games": 4,
+          "wins": 3,
+          "losses": 1,
+          "draws": 0,
+          "timeouts": 0,
+          "mean_margin": 3.25,
+          "mean_kills": 27.25,
+          "mean_opponent_kills": 24.0,
+          "roundtrip_actions": 161433,
+          "roundtrip_mismatches": 0,
+          "spatial": {
+            "clustered_fraction": 0.06985864912433802,
+            "contact_fraction": 0.017686677628128193,
+            "occupied_route_fraction": 0.012176775266743864,
+            "stalled_fraction": 0.042225193632756404,
+            "wall_contact_fraction": 0.02160186109259866,
+            "wall_stalled_fraction": 0.02450517615926188,
+            "mean_nearest_ally_distance": 28.797742929485537
+          },
+          "median_throughput_ratio": 0.5248944502049457,
+          "runtime_failure_games": 2,
+          "paired": {
+            "margin": {
+              "mean": 5.25,
+              "ci95": [
+                2,
+                8.5
+              ],
+              "independent_seeds": 2
+            },
+            "clustered_fraction": {
+              "mean": -0.26230671289713203,
+              "ci95": [
+                -0.2739654615282668,
+                -0.25064796426599734
+              ],
+              "independent_seeds": 2
+            },
+            "contact_fraction": {
+              "mean": -0.18836600534237508,
+              "ci95": [
+                -0.20637349287029533,
+                -0.17035851781445482
+              ],
+              "independent_seeds": 2
+            },
+            "occupied_route_fraction": {
+              "mean": -0.17489769105838887,
+              "ci95": [
+                -0.19372386358158294,
+                -0.15607151853519477
+              ],
+              "independent_seeds": 2
+            },
+            "stalled_fraction": {
+              "mean": -0.07089759555656477,
+              "ci95": [
+                -0.10813694250702074,
+                -0.03365824860610879
+              ],
+              "independent_seeds": 2
+            },
+            "wall_contact_fraction": {
+              "mean": -0.47523950815526206,
+              "ci95": [
+                -0.5062204653023041,
+                -0.44425855100822
+              ],
+              "independent_seeds": 2
+            },
+            "wall_stalled_fraction": {
+              "mean": -0.10451678761435726,
+              "ci95": [
+                -0.10562984943990233,
+                -0.10340372578881218
+              ],
+              "independent_seeds": 2
+            },
+            "mean_nearest_ally_distance": {
+              "mean": 9.716862539867417,
+              "ci95": [
+                9.10674676462509,
+                10.326978315109745
+              ],
+              "independent_seeds": 2
+            }
+          }
+        },
+        "formation_only": {
+          "games": 4,
+          "wins": 2,
+          "losses": 2,
+          "draws": 0,
+          "timeouts": 0,
+          "mean_margin": -0.5,
+          "mean_kills": 27.0,
+          "mean_opponent_kills": 27.5,
+          "roundtrip_actions": 160134,
+          "roundtrip_mismatches": 0,
+          "spatial": {
+            "clustered_fraction": 0.08406606758507534,
+            "contact_fraction": 0.029256372681271403,
+            "occupied_route_fraction": 0.0382812854453941,
+            "stalled_fraction": 0.04271293976693656,
+            "wall_contact_fraction": 0.036352685048357904,
+            "wall_stalled_fraction": 0.026834362730309844,
+            "mean_nearest_ally_distance": 28.667406266936585
+          },
+          "median_throughput_ratio": 0.5854862887998343,
+          "runtime_failure_games": 0,
+          "paired": {
+            "margin": {
+              "mean": 1.5,
+              "ci95": [
+                1,
+                2
+              ],
+              "independent_seeds": 2
+            },
+            "clustered_fraction": {
+              "mean": -0.2480992944363947,
+              "ci95": [
+                -0.2559935317246727,
+                -0.24020505714811669
+              ],
+              "independent_seeds": 2
+            },
+            "contact_fraction": {
+              "mean": -0.17679631028923187,
+              "ci95": [
+                -0.1907356404948179,
+                -0.16285698008364585
+              ],
+              "independent_seeds": 2
+            },
+            "occupied_route_fraction": {
+              "mean": -0.1487931808797386,
+              "ci95": [
+                -0.16248798743467135,
+                -0.13509837432480587
+              ],
+              "independent_seeds": 2
+            },
+            "stalled_fraction": {
+              "mean": -0.07040984942238461,
+              "ci95": [
+                -0.10940390983490092,
+                -0.03141578900986831
+              ],
+              "independent_seeds": 2
+            },
+            "wall_contact_fraction": {
+              "mean": -0.46048868419950284,
+              "ci95": [
+                -0.470468324759725,
+                -0.4505090436392807
+              ],
+              "independent_seeds": 2
+            },
+            "wall_stalled_fraction": {
+              "mean": -0.1021876010433093,
+              "ci95": [
+                -0.11294858908968977,
+                -0.09142661299692884
+              ],
+              "independent_seeds": 2
+            },
+            "mean_nearest_ally_distance": {
+              "mean": 9.586525877318465,
+              "ci95": [
+                9.204774891539664,
+                9.968276863097264
+              ],
+              "independent_seeds": 2
+            }
+          }
+        }
+      }
+    },
+    "wide_confirmation": {
+      "contract": {
+        "phase": "confirmation",
+        "seeds": [
+          9231801,
+          9231802,
+          9231803,
+          9231804,
+          9231805,
+          9231806
+        ],
+        "n": 3,
+        "ticks": 38400,
+        "goal": 30,
+        "arms": {
+          "parent": {
+            "binding": "f7cea6a0203afec157813d7a385f95af862e8240113dfcf1445b851402dd96ae",
+            "policy": "1c602814a35aef06503960dc70f239840dad73203e75e4914101cce31a7d170f"
+          },
+          "candidate": {
+            "binding": "c95ad74587b33ad8a8fe4b9f203ac7a09db91c3c72e238631ec63730f182dfb3",
+            "policy": "40ee00c8886cbf0e2dac155fc1f0aea3167f5089e8db282da5e3dbfdf690a706"
+          }
+        },
+        "runner": "abe55810edc79f89560a2b3e1f1504956e1cfd60a863879a1589fedbd88fbefe",
+        "opponent": "07db67fa0336450a9b8e6ffd4685d0ac119b0ac83bd0d4f5ff350e0ae2c022cb",
+        "hypothesis": "One rune owner plus occupied-route detours reduce contact and futile movement without sacrificing game score.",
+        "primary": [
+          "clustered_fraction",
+          "occupied_route_fraction"
+        ],
+        "score_guardrail": "Report paired kill margin and win rate; do not claim stronger play without interval excluding zero.",
+        "seed_unit": "Average paired bank differences within each seed, then bootstrap independent seeds.",
+        "metrics": "Spatial samples every 8 ticks; body distance and low progress are proxies, not engine collision events."
+      },
+      "arms": {
+        "parent": {
+          "games": 12,
+          "wins": 8,
+          "losses": 4,
+          "draws": 0,
+          "timeouts": 0,
+          "mean_margin": 2.8333333333333335,
+          "mean_kills": 26.916666666666668,
+          "mean_opponent_kills": 24.083333333333332,
+          "roundtrip_actions": 511356,
+          "roundtrip_mismatches": 0,
+          "spatial": {
+            "clustered_fraction": 0.35381223435369985,
+            "contact_fraction": 0.21055509133324735,
+            "occupied_route_fraction": 0.19010022598251633,
+            "stalled_fraction": 0.07408497607071736,
+            "wall_contact_fraction": 0.4892966230244352,
+            "wall_stalled_fraction": 0.12956121986623353,
+            "mean_nearest_ally_distance": 18.478798979032426
+          },
+          "median_throughput_ratio": 0.6199525719942569,
+          "runtime_failure_games": 0,
+          "paired": {
+            "margin": {
+              "mean": 0,
+              "ci95": [
+                0,
+                0
+              ],
+              "independent_seeds": 6
+            },
+            "clustered_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "contact_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "occupied_route_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "stalled_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "wall_contact_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "wall_stalled_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "mean_nearest_ally_distance": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            }
+          }
+        },
+        "candidate": {
+          "games": 12,
+          "wins": 5,
+          "losses": 7,
+          "draws": 0,
+          "timeouts": 0,
+          "mean_margin": -2.0833333333333335,
+          "mean_kills": 25.083333333333332,
+          "mean_opponent_kills": 27.166666666666668,
+          "roundtrip_actions": 455847,
+          "roundtrip_mismatches": 0,
+          "spatial": {
+            "clustered_fraction": 0.07042032188272168,
+            "contact_fraction": 0.017849051676848724,
+            "occupied_route_fraction": 0.012328752931046608,
+            "stalled_fraction": 0.04206444434098467,
+            "wall_contact_fraction": 0.018272521835530797,
+            "wall_stalled_fraction": 0.030199126396950063,
+            "mean_nearest_ally_distance": 29.017804640852567
+          },
+          "median_throughput_ratio": 0.566733746716515,
+          "runtime_failure_games": 2,
+          "paired": {
+            "margin": {
+              "mean": -4.916666666666667,
+              "ci95": [
+                -11.5,
+                1.25
+              ],
+              "independent_seeds": 6
+            },
+            "clustered_fraction": {
+              "mean": -0.28339191247097817,
+              "ci95": [
+                -0.30127980426321616,
+                -0.26466349701881975
+              ],
+              "independent_seeds": 6
+            },
+            "contact_fraction": {
+              "mean": -0.1927060396563986,
+              "ci95": [
+                -0.20035010544327658,
+                -0.1852430064681411
+              ],
+              "independent_seeds": 6
+            },
+            "occupied_route_fraction": {
+              "mean": -0.17777147305146973,
+              "ci95": [
+                -0.18896173428805696,
+                -0.16708855138728979
+              ],
+              "independent_seeds": 6
+            },
+            "stalled_fraction": {
+              "mean": -0.032020531729732696,
+              "ci95": [
+                -0.035824907187877335,
+                -0.027943005282380553
+              ],
+              "independent_seeds": 6
+            },
+            "wall_contact_fraction": {
+              "mean": -0.4710241011889044,
+              "ci95": [
+                -0.5021436086011799,
+                -0.43264376631314677
+              ],
+              "independent_seeds": 6
+            },
+            "wall_stalled_fraction": {
+              "mean": -0.09936209346928346,
+              "ci95": [
+                -0.11368343292834496,
+                -0.0819621765739407
+              ],
+              "independent_seeds": 6
+            },
+            "mean_nearest_ally_distance": {
+              "mean": 10.53900566182014,
+              "ci95": [
+                9.666541199852198,
+                11.463269666851152
+              ],
+              "independent_seeds": 6
+            }
+          }
+        }
+      }
+    },
+    "compact_development": {
+      "contract": {
+        "phase": "development",
+        "seeds": [
+          9231901,
+          9231902
+        ],
+        "n": 3,
+        "ticks": 38400,
+        "goal": 30,
+        "arms": {
+          "parent": {
+            "binding": "f7cea6a0203afec157813d7a385f95af862e8240113dfcf1445b851402dd96ae",
+            "policy": "1c602814a35aef06503960dc70f239840dad73203e75e4914101cce31a7d170f"
+          },
+          "candidate": {
+            "binding": "c95ad74587b33ad8a8fe4b9f203ac7a09db91c3c72e238631ec63730f182dfb3",
+            "policy": "c86927b79d4b05eb4c9c505330d51e285d45469030b4d3d81089f7f9d582049b"
+          },
+          "alternative": {
+            "binding": "c95ad74587b33ad8a8fe4b9f203ac7a09db91c3c72e238631ec63730f182dfb3",
+            "policy": "a3d75091ba18c804f8cf75bf65d2960af599281e970d7f594be057d192b100ab"
+          }
+        },
+        "runner": "abe55810edc79f89560a2b3e1f1504956e1cfd60a863879a1589fedbd88fbefe",
+        "opponent": "07db67fa0336450a9b8e6ffd4685d0ac119b0ac83bd0d4f5ff350e0ae2c022cb",
+        "hypothesis": "One rune owner plus occupied-route detours reduce contact and futile movement without sacrificing game score.",
+        "primary": [
+          "clustered_fraction",
+          "occupied_route_fraction"
+        ],
+        "score_guardrail": "Report paired kill margin and win rate; do not claim stronger play without interval excluding zero.",
+        "seed_unit": "Average paired bank differences within each seed, then bootstrap independent seeds.",
+        "metrics": "Spatial samples every 8 ticks; body distance and low progress are proxies, not engine collision events."
+      },
+      "arms": {
+        "parent": {
+          "games": 4,
+          "wins": 2,
+          "losses": 2,
+          "draws": 0,
+          "timeouts": 0,
+          "mean_margin": 0.25,
+          "mean_kills": 27.75,
+          "mean_opponent_kills": 27.5,
+          "roundtrip_actions": 158445,
+          "roundtrip_mismatches": 0,
+          "spatial": {
+            "clustered_fraction": 0.32576049364611864,
+            "contact_fraction": 0.1826307711930409,
+            "occupied_route_fraction": 0.1701757149244292,
+            "stalled_fraction": 0.0679587888776248,
+            "wall_contact_fraction": 0.4106858698896567,
+            "wall_stalled_fraction": 0.08598754363522794,
+            "mean_nearest_ally_distance": 19.296648839603847
+          },
+          "median_throughput_ratio": 0.6272525892328193,
+          "runtime_failure_games": 0,
+          "paired": {
+            "margin": {
+              "mean": 0,
+              "ci95": [
+                0,
+                0
+              ],
+              "independent_seeds": 2
+            },
+            "clustered_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "contact_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "occupied_route_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "stalled_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "wall_contact_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "wall_stalled_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            },
+            "mean_nearest_ally_distance": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 2
+            }
+          }
+        },
+        "candidate": {
+          "games": 4,
+          "wins": 4,
+          "losses": 0,
+          "draws": 0,
+          "timeouts": 0,
+          "mean_margin": 14.5,
+          "mean_kills": 30.0,
+          "mean_opponent_kills": 15.5,
+          "roundtrip_actions": 140340,
+          "roundtrip_mismatches": 0,
+          "spatial": {
+            "clustered_fraction": 0.18844279592215096,
+            "contact_fraction": 0.03373268045583341,
+            "occupied_route_fraction": 0.029625430448487783,
+            "stalled_fraction": 0.03713814432290533,
+            "wall_contact_fraction": 0.02981799421405168,
+            "wall_stalled_fraction": 0.0237808980654468,
+            "mean_nearest_ally_distance": 19.612205764548833
+          },
+          "median_throughput_ratio": 0.4983754471640482,
+          "runtime_failure_games": 2,
+          "paired": {
+            "margin": {
+              "mean": 14.25,
+              "ci95": [
+                12,
+                16.5
+              ],
+              "independent_seeds": 2
+            },
+            "clustered_fraction": {
+              "mean": -0.13731769772396768,
+              "ci95": [
+                -0.19020779898651388,
+                -0.08442759646142146
+              ],
+              "independent_seeds": 2
+            },
+            "contact_fraction": {
+              "mean": -0.1488980907372075,
+              "ci95": [
+                -0.1747832338770588,
+                -0.1230129475973562
+              ],
+              "independent_seeds": 2
+            },
+            "occupied_route_fraction": {
+              "mean": -0.14055028447594142,
+              "ci95": [
+                -0.15209460252704568,
+                -0.12900596642483717
+              ],
+              "independent_seeds": 2
+            },
+            "stalled_fraction": {
+              "mean": -0.030820644554719466,
+              "ci95": [
+                -0.03211150975327645,
+                -0.029529779356162484
+              ],
+              "independent_seeds": 2
+            },
+            "wall_contact_fraction": {
+              "mean": -0.38086787567560504,
+              "ci95": [
+                -0.3824876847879909,
+                -0.3792480665632192
+              ],
+              "independent_seeds": 2
+            },
+            "wall_stalled_fraction": {
+              "mean": -0.062206645569781144,
+              "ci95": [
+                -0.07339665610439133,
+                -0.05101663503517096
+              ],
+              "independent_seeds": 2
+            },
+            "mean_nearest_ally_distance": {
+              "mean": 0.31555692494498633,
+              "ci95": [
+                -1.2334101808382112,
+                1.8645240307281838
+              ],
+              "independent_seeds": 2
+            }
+          }
+        },
+        "alternative": {
+          "games": 4,
+          "wins": 1,
+          "losses": 3,
+          "draws": 0,
+          "timeouts": 0,
+          "mean_margin": -1.5,
+          "mean_kills": 24.5,
+          "mean_opponent_kills": 26.0,
+          "roundtrip_actions": 142614,
+          "roundtrip_mismatches": 0,
+          "spatial": {
+            "clustered_fraction": 0.11847641999833886,
+            "contact_fraction": 0.026427875888039576,
+            "occupied_route_fraction": 0.01778980501970675,
+            "stalled_fraction": 0.04389265985176771,
+            "wall_contact_fraction": 0.030447432014144557,
+            "wall_stalled_fraction": 0.03129513516996785,
+            "mean_nearest_ally_distance": 23.743051989503837
+          },
+          "median_throughput_ratio": 0.539381101781596,
+          "runtime_failure_games": 1,
+          "paired": {
+            "margin": {
+              "mean": -1.75,
+              "ci95": [
+                -15.5,
+                12
+              ],
+              "independent_seeds": 2
+            },
+            "clustered_fraction": {
+              "mean": -0.2072840736477798,
+              "ci95": [
+                -0.2489102812439773,
+                -0.16565786605158225
+              ],
+              "independent_seeds": 2
+            },
+            "contact_fraction": {
+              "mean": -0.1562028953050013,
+              "ci95": [
+                -0.1759531925320462,
+                -0.13645259807795646
+              ],
+              "independent_seeds": 2
+            },
+            "occupied_route_fraction": {
+              "mean": -0.15238590990472245,
+              "ci95": [
+                -0.15568081636281947,
+                -0.14909100344662543
+              ],
+              "independent_seeds": 2
+            },
+            "stalled_fraction": {
+              "mean": -0.024066129025857086,
+              "ci95": [
+                -0.025567962714247924,
+                -0.022564295337466244
+              ],
+              "independent_seeds": 2
+            },
+            "wall_contact_fraction": {
+              "mean": -0.38023843787551215,
+              "ci95": [
+                -0.3947499746327182,
+                -0.3657269011183061
+              ],
+              "independent_seeds": 2
+            },
+            "wall_stalled_fraction": {
+              "mean": -0.0546924084652601,
+              "ci95": [
+                -0.06441361689715366,
+                -0.044971200033366535
+              ],
+              "independent_seeds": 2
+            },
+            "mean_nearest_ally_distance": {
+              "mean": 4.44640314989999,
+              "ci95": [
+                2.928788127673384,
+                5.964018172126597
+              ],
+              "independent_seeds": 2
+            }
+          }
+        }
+      }
+    },
+    "compact_confirmation": {
+      "contract": {
+        "phase": "confirmation",
+        "seeds": [
+          9232001,
+          9232002,
+          9232003,
+          9232004,
+          9232005,
+          9232006
+        ],
+        "n": 3,
+        "ticks": 38400,
+        "goal": 30,
+        "arms": {
+          "parent": {
+            "binding": "f7cea6a0203afec157813d7a385f95af862e8240113dfcf1445b851402dd96ae",
+            "policy": "1c602814a35aef06503960dc70f239840dad73203e75e4914101cce31a7d170f"
+          },
+          "candidate": {
+            "binding": "b8321385c799af309e2163793d8fea3d3108b762446f49ffdeed748cdbce5fed",
+            "policy": "ef452c4c83fe5f245012217bb64171d7d2f230f07202d37a85109df5e4608408"
+          }
+        },
+        "runner": "abe55810edc79f89560a2b3e1f1504956e1cfd60a863879a1589fedbd88fbefe",
+        "opponent": "07db67fa0336450a9b8e6ffd4685d0ac119b0ac83bd0d4f5ff350e0ae2c022cb",
+        "hypothesis": "One rune owner plus occupied-route detours reduce contact and futile movement without sacrificing game score.",
+        "primary": [
+          "clustered_fraction",
+          "occupied_route_fraction"
+        ],
+        "score_guardrail": "Report paired kill margin and win rate; do not claim stronger play without interval excluding zero.",
+        "seed_unit": "Average paired bank differences within each seed, then bootstrap independent seeds.",
+        "metrics": "Spatial samples every 8 ticks; body distance and low progress are proxies, not engine collision events."
+      },
+      "arms": {
+        "parent": {
+          "games": 12,
+          "wins": 5,
+          "losses": 7,
+          "draws": 0,
+          "timeouts": 0,
+          "mean_margin": -0.75,
+          "mean_kills": 26.166666666666668,
+          "mean_opponent_kills": 26.916666666666668,
+          "roundtrip_actions": 483153,
+          "roundtrip_mismatches": 0,
+          "spatial": {
+            "clustered_fraction": 0.325677780723572,
+            "contact_fraction": 0.18511110585945958,
+            "occupied_route_fraction": 0.1685557418646933,
+            "stalled_fraction": 0.08470015053349822,
+            "wall_contact_fraction": 0.4436454575555724,
+            "wall_stalled_fraction": 0.10348252385124192,
+            "mean_nearest_ally_distance": 19.06299652652437
+          },
+          "median_throughput_ratio": 0.6154515760157301,
+          "runtime_failure_games": 0,
+          "paired": {
+            "margin": {
+              "mean": 0,
+              "ci95": [
+                0,
+                0
+              ],
+              "independent_seeds": 6
+            },
+            "clustered_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "contact_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "occupied_route_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "stalled_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "wall_contact_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "wall_stalled_fraction": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            },
+            "mean_nearest_ally_distance": {
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "independent_seeds": 6
+            }
+          }
+        },
+        "candidate": {
+          "games": 12,
+          "wins": 7,
+          "losses": 5,
+          "draws": 0,
+          "timeouts": 0,
+          "mean_margin": 5.25,
+          "mean_kills": 28.166666666666668,
+          "mean_opponent_kills": 22.916666666666668,
+          "roundtrip_actions": 433080,
+          "roundtrip_mismatches": 0,
+          "spatial": {
+            "clustered_fraction": 0.18317551823428854,
+            "contact_fraction": 0.03200274720294433,
+            "occupied_route_fraction": 0.028650424062721745,
+            "stalled_fraction": 0.0446728861658921,
+            "wall_contact_fraction": 0.02830868611476456,
+            "wall_stalled_fraction": 0.030970644214292905,
+            "mean_nearest_ally_distance": 20.75647425418756
+          },
+          "median_throughput_ratio": 0.5168522265834692,
+          "runtime_failure_games": 4,
+          "paired": {
+            "margin": {
+              "mean": 6.0,
+              "ci95": [
+                -0.08333333333333333,
+                12.25
+              ],
+              "independent_seeds": 6
+            },
+            "clustered_fraction": {
+              "mean": -0.14250226248928347,
+              "ci95": [
+                -0.1726980867794448,
+                -0.11354249164687512
+              ],
+              "independent_seeds": 6
+            },
+            "contact_fraction": {
+              "mean": -0.15310835865651523,
+              "ci95": [
+                -0.1700996513224618,
+                -0.13611706599056866
+              ],
+              "independent_seeds": 6
+            },
+            "occupied_route_fraction": {
+              "mean": -0.13990531780197157,
+              "ci95": [
+                -0.15144206532580565,
+                -0.12839026612238125
+              ],
+              "independent_seeds": 6
+            },
+            "stalled_fraction": {
+              "mean": -0.040027264367606126,
+              "ci95": [
+                -0.05783747928491731,
+                -0.024257757944094446
+              ],
+              "independent_seeds": 6
+            },
+            "wall_contact_fraction": {
+              "mean": -0.41533677144080783,
+              "ci95": [
+                -0.43280858220716373,
+                -0.39932756079543474
+              ],
+              "independent_seeds": 6
+            },
+            "wall_stalled_fraction": {
+              "mean": -0.07251187963694902,
+              "ci95": [
+                -0.09235447959586296,
+                -0.05815208975745285
+              ],
+              "independent_seeds": 6
+            },
+            "mean_nearest_ally_distance": {
+              "mean": 1.6934777276631898,
+              "ci95": [
+                0.7010520008627953,
+                2.8101134693186585
+              ],
+              "independent_seeds": 6
+            }
+          }
+        }
+      }
+    }
+  },
+  "matched_runtime": {
+    "protocol": "Matched archived observations, same instrumented generated-policy interface, alternating order, seven trials, process CPU time; development observations only.",
+    "decisions_per_trial": 8808,
+    "median_cpu_seconds": {
+      "parent": 0.171759,
+      "candidate": 0.28781500000000015
+    },
+    "candidate_to_generated_parent_throughput": 0.5967687577089447
+  },
+  "selection": {
+    "selected": "support_spatial_12",
+    "candidate": "tmp/coaching/spatial-compact-proposals-20260910/compact-12.policy.md",
+    "sha256": "6128455825306be83add48acfdee36634f52707f96f380e133f2e25f97fe54e8",
+    "development": "tmp/coaching/spatial-compact-development-20260910/report.json",
+    "reason": "Best development mean kill margin (+14.5 versus +0.25 control and -1.5 for spacing16), with lower crowding, contact and occupied-route orders. Freeze choice before fresh confirmation.",
+    "runtime_change": "Only redundant trace-kwargs copying removed after development; 1101 archived observations matched actions, memory and traces. Full native equivalence repeat logged separately.",
+    "confirmation_seeds": [
+      9232001,
+      9232002,
+      9232003,
+      9232004,
+      9232005,
+      9232006
+    ],
+    "consumed_seeds": [
+      9231701,
+      9231702,
+      9231801,
+      9231802,
+      9231803,
+      9231804,
+      9231805,
+      9231806,
+      9231901,
+      9231902
+    ]
+  },
+  "trace_optimization": {
+    "archived_observations": 1101,
+    "action_mismatches": 0,
+    "state_mismatches": 0,
+    "trace_mismatches": 0,
+    "change": "Remove redundant kwargs dict copy; each invocation already owns a new kwargs dictionary."
+  },
+  "tests": {
+    "symbolic": 35,
+    "coaching": 45
+  },
+  "source_paths": {
+    "ir": "coaching/policies/executable/spatial.policy.md",
+    "generated": "coaching/policies/spatial_generated.py",
+    "skills": "coaching/symbolic/skills_v2.py"
+  },
+  "excluded_attempts": [
+    "tmp/coaching/spatial-development-20260910/EXCLUDED.json",
+    "tmp/coaching/spatial-development-cached-20260910/EXCLUDED.json",
+    "tmp/coaching/spatial-development-final-20260910/EXCLUDED.json",
+    "tmp/coaching/spatial-development-fused-20260910/EXCLUDED.json"
+  ],
+  "seed_ledger": {
+    "9231701": "wide_development",
+    "9231702": "wide_development",
+    "9231801": "wide_confirmation",
+    "9231802": "wide_confirmation",
+    "9231803": "wide_confirmation",
+    "9231804": "wide_confirmation",
+    "9231805": "wide_confirmation",
+    "9231806": "wide_confirmation",
+    "9231901": "compact_development",
+    "9231902": "compact_development",
+    "9232001": "compact_confirmation",
+    "9232002": "compact_confirmation",
+    "9232003": "compact_confirmation",
+    "9232004": "compact_confirmation",
+    "9232005": "compact_confirmation",
+    "9232006": "compact_confirmation"
+  },
+  "wall_scenes": [
+    {
+      "arm": "parent",
+      "side": 0,
+      "first_arrival_tick": 72,
+      "distance_to_goal": 1.7620229850941196,
+      "roundtrip_decisions": 384,
+      "spatial": {
+        "counts": {
+          "samples": 48,
+          "nearest_ally_distance_sum": 1044.4134427609567,
+          "clustered_samples": 6,
+          "contact_samples": 4,
+          "wall_samples": 2,
+          "wall_contact_samples": 1,
+          "walking_samples": 10,
+          "occupied_route_samples": 4,
+          "stalled_samples": 0,
+          "wall_stalled_samples": 0
+        },
+        "clustered_fraction": 0.125,
+        "contact_fraction": 0.08333333333333333,
+        "mean_nearest_ally_distance": 21.758613390853267,
+        "occupied_route_fraction": 0.4,
+        "stalled_fraction": 0.0,
+        "wall_contact_fraction": 0.5,
+        "wall_stalled_fraction": 0.0
+      },
+      "trajectory": [
+        [
+          0,
+          18.5,
+          40.5,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          8,
+          20.16,
+          40.585,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          16,
+          22.88,
+          38.531,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          24,
+          26.193,
+          38.443,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          32,
+          29.222,
+          40.337,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          40,
+          32.219,
+          42.332,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          48,
+          35.216,
+          44.326,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          56,
+          38.213,
+          46.32,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          64,
+          41.21,
+          48.315,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          72,
+          44.207,
+          50.309,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          80,
+          47.115,
+          52.244,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          88,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          96,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          104,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          112,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          120,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          128,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          136,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          144,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          152,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          160,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          168,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          176,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          184,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          192,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          200,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          208,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          216,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          224,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          232,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          240,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          248,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          256,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          264,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          272,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          280,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          288,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          296,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          304,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          312,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          320,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          328,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          336,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          344,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          352,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          360,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          368,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          376,
+          47.686,
+          52.623,
+          [
+            47,
+            51.5
+          ]
+        ]
+      ]
+    },
+    {
+      "arm": "candidate",
+      "side": 0,
+      "first_arrival_tick": 81,
+      "distance_to_goal": 1.7628060018050784,
+      "roundtrip_decisions": 384,
+      "spatial": {
+        "counts": {
+          "samples": 48,
+          "nearest_ally_distance_sum": 1040.6456873114003,
+          "clustered_samples": 7,
+          "contact_samples": 0,
+          "wall_samples": 3,
+          "wall_contact_samples": 0,
+          "walking_samples": 11,
+          "occupied_route_samples": 0,
+          "stalled_samples": 0,
+          "wall_stalled_samples": 0
+        },
+        "clustered_fraction": 0.14583333333333334,
+        "contact_fraction": 0.0,
+        "mean_nearest_ally_distance": 21.680118485654173,
+        "occupied_route_fraction": 0.0,
+        "stalled_fraction": 0.0,
+        "wall_contact_fraction": 0.0,
+        "wall_stalled_fraction": 0.0
+      },
+      "trajectory": [
+        [
+          0,
+          18.5,
+          40.5,
+          [
+            21.56146745892072,
+            33.108963739909704
+          ]
+        ],
+        [
+          8,
+          19.504,
+          38.742,
+          [
+            21.56146745892072,
+            33.108963739909704
+          ]
+        ],
+        [
+          16,
+          21.29,
+          35.617,
+          [
+            21.56146745892072,
+            33.108963739909704
+          ]
+        ],
+        [
+          24,
+          24.288,
+          34.586,
+          [
+            29.737,
+            34.836
+          ]
+        ],
+        [
+          32,
+          27.85,
+          35.11,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          40,
+          30.596,
+          37.421,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          48,
+          33.282,
+          39.817,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          56,
+          35.969,
+          42.213,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          64,
+          38.655,
+          44.61,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          72,
+          41.341,
+          47.006,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          80,
+          44.027,
+          49.402,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          88,
+          46.714,
+          51.798,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          96,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          104,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          112,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          120,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          128,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          136,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          144,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          152,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          160,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          168,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          176,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          184,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          192,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          200,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          208,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          216,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          224,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          232,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          240,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          248,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          256,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          264,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          272,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          280,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          288,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          296,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          304,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          312,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          320,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          328,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          336,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          344,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          352,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          360,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          368,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ],
+        [
+          376,
+          47.654,
+          52.637,
+          [
+            47,
+            51.5
+          ]
+        ]
+      ]
+    },
+    {
+      "arm": "parent",
+      "side": 1,
+      "first_arrival_tick": 75,
+      "distance_to_goal": 1.6530955810236707,
+      "roundtrip_decisions": 384,
+      "spatial": {
+        "counts": {
+          "samples": 48,
+          "nearest_ally_distance_sum": 1044.4131659025113,
+          "clustered_samples": 6,
+          "contact_samples": 4,
+          "wall_samples": 3,
+          "wall_contact_samples": 2,
+          "walking_samples": 10,
+          "occupied_route_samples": 3,
+          "stalled_samples": 0,
+          "wall_stalled_samples": 0
+        },
+        "clustered_fraction": 0.125,
+        "contact_fraction": 0.08333333333333333,
+        "mean_nearest_ally_distance": 21.758607622968984,
+        "occupied_route_fraction": 0.3,
+        "stalled_fraction": 0.0,
+        "wall_contact_fraction": 0.6666666666666666,
+        "wall_stalled_fraction": 0.0
+      },
+      "trajectory": [
+        [
+          0,
+          110.5,
+          40.5,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          8,
+          108.84,
+          40.585,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          16,
+          106.12,
+          38.531,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          24,
+          102.807,
+          38.443,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          32,
+          99.778,
+          40.337,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          40,
+          96.781,
+          42.332,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          48,
+          93.784,
+          44.326,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          56,
+          90.787,
+          46.32,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          64,
+          87.79,
+          48.314,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          72,
+          84.793,
+          50.309,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          80,
+          81.885,
+          52.244,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          88,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          96,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          104,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          112,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          120,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          128,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          136,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          144,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          152,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          160,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          168,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          176,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          184,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          192,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          200,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          208,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          216,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          224,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          232,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          240,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          248,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          256,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          264,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          272,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          280,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          288,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          296,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          304,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          312,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          320,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          328,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          336,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          344,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          352,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          360,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          368,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          376,
+          81.314,
+          52.623,
+          [
+            81,
+            51.5
+          ]
+        ]
+      ]
+    },
+    {
+      "arm": "candidate",
+      "side": 1,
+      "first_arrival_tick": 84,
+      "distance_to_goal": 1.6758129370547301,
+      "roundtrip_decisions": 384,
+      "spatial": {
+        "counts": {
+          "samples": 48,
+          "nearest_ally_distance_sum": 1038.8375362694708,
+          "clustered_samples": 7,
+          "contact_samples": 0,
+          "wall_samples": 3,
+          "wall_contact_samples": 0,
+          "walking_samples": 11,
+          "occupied_route_samples": 0,
+          "stalled_samples": 0,
+          "wall_stalled_samples": 0
+        },
+        "clustered_fraction": 0.14583333333333334,
+        "contact_fraction": 0.0,
+        "mean_nearest_ally_distance": 21.64244867228064,
+        "occupied_route_fraction": 0.0,
+        "stalled_fraction": 0.0,
+        "wall_contact_fraction": 0.0,
+        "wall_stalled_fraction": 0.0
+      },
+      "trajectory": [
+        [
+          0,
+          110.5,
+          40.5,
+          [
+            107.43853254107928,
+            33.10896373990971
+          ]
+        ],
+        [
+          8,
+          109.703,
+          38.639,
+          [
+            107.43853254107928,
+            33.10896373990971
+          ]
+        ],
+        [
+          16,
+          108.285,
+          35.331,
+          [
+            107.43853254107928,
+            33.10896373990971
+          ]
+        ],
+        [
+          24,
+          105.179,
+          34.655,
+          [
+            100.107,
+            34.917
+          ]
+        ],
+        [
+          32,
+          101.691,
+          35.442,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          40,
+          98.941,
+          37.765,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          48,
+          96.191,
+          40.088,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          56,
+          93.442,
+          42.411,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          64,
+          90.692,
+          44.734,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          72,
+          87.942,
+          47.057,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          80,
+          85.192,
+          49.38,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          88,
+          82.443,
+          51.703,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          96,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          104,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          112,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          120,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          128,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          136,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          144,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          152,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          160,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          168,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          176,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          184,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          192,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          200,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          208,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          216,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          224,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          232,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          240,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          248,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          256,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          264,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          272,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          280,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          288,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          296,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          304,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          312,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          320,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          328,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          336,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          344,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          352,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          360,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          368,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ],
+        [
+          376,
+          81.33,
+          52.643,
+          [
+            81,
+            51.5
+          ]
+        ]
+      ]
+    }
+  ],
+  "runtime_equivalence_native": {
+    "ours": 30,
+    "theirs": 8,
+    "terminal_tick": 9872,
+    "trajectory_sha256": "c46f9c9e39dd87ba9a6589df409383e3e1652ca5a792606c45297aeb59f1a32c",
+    "roundtrip_actions": 29616,
+    "roundtrip_mismatches": 0
+  },
+  "live_smoke": {
+    "phase": "finished",
+    "tick": 256,
+    "score": {
+      "west": 0,
+      "east": 0
+    },
+    "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/executable/spatial.policy.md",
+    "evidence": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/coaching/spatial-live-818126bb16",
+    "errors": []
+  }
+}

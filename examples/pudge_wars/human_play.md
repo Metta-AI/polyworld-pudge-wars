@@ -113,18 +113,20 @@ so tile-grain aim is acceptable for v1. If high-level play ever wants sub-tile
 aim, that is a replay format bump adding a fixed-point fraction to
 `ActionHookTo` — noted, not planned.
 
-Blink (F) is an instant 48-tile hop along the aim ray. It always lands on the
+Blink (F) is an instant 20-tile hop along the aim ray. It always lands on the
 **farthest legal tile** toward the click (walkable on the destination layer,
 unoccupied, not a palisade): a cliff or wall truncates to the grass in front
 of it instead of eating the order. River water is a legal landing — blink
 into the drink to swim, blink out onto a bank to leave. A click on the
-enemy bank still hops the river. Fog does not gate the dest. You cannot
+enemy bank crosses near the fountain when the landing is within range;
+the wider side lanes exceed the range and land you in the water.
+Fog does not gate the dest. You cannot
 blink while hooked (you are the victim being reeled), dying, or winding up a
 hook (the head has not left the hand). Once a Meat Hook is in the air —
 outbound or still on the rebound/return while the chain is out — blink is
 allowed and **adds the hop's actual distance** to that hook's remaining
-range. The head keeps its world position and heading; a 48-tile blink buys
-about 48 tiles of extra outbound. A zero-length hop adds nothing. Cooldown
+range. The head keeps its world position and heading; a 20-tile blink buys
+about 20 tiles of extra outbound. A zero-length hop adds nothing. Cooldown
 still applies.
 
 ### 3. Feedback: every input answered the same frame

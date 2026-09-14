@@ -37,6 +37,7 @@ block:
   applyAction(0, %*{"hook_to": [64.0, 64.0]})
   step()
   var obs = observation(0)
+  doAssert obs["game_version"].getInt == int(ReplayGameVersion)
   doAssert obs["accepted"]["hook_to"] == %true,
     "a legal hook echoes true, got " & $obs["accepted"]
   # Only the sent key appears; nothing else leaks into the echo.

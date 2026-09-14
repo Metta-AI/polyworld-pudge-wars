@@ -98,6 +98,24 @@ proc clipDuration*(model: CharacterModel, clip: int): float32 =
   ## Returns the duration in seconds of an animation clip.
   model.file.root.animations[clip].duration
 
+proc characterJointTransform*(
+    model: CharacterModel, name: string, position: Vec3, facing: float32
+): Mat4 =
+  ## Query immediately after drawing/posing an instance: the skin tree is
+  ## shared. Used to attach equipment and chains to the animated hands.
+  let base = translate(position) * rotateY(facing) * model.baseTransform
+  for node in model.file.root.walkNodes:
+    if node.name == name:
+      var transform: Mat4
+      if findTransform(model.file.root,node,base,transform):
+        return transform
+  translate(position + vec3(0,2,0))
+
+proc characterJointPosition*(
+    model: CharacterModel, name: string, position: Vec3, facing: float32
+): Vec3 =
+  model.characterJointTransform(name,position,facing) * vec3(0,0,0)
+
 proc newCharacterScene*(window: Window): CharacterScene =
   ## Creates the shared PBR renderer and attaches its environment map, plus
   ## the toon renderer; `shading` picks which one draws.
@@ -183,7 +201,8 @@ proc drawCharacter*(
   ## Poses the shared model at the given clip time and draws one instance.
   ## Looping clips may pass any time (playback wraps); one-shot clips like
   ## Death should clamp animTime to clipDuration to hold the last frame.
-  ## Keep tint.a at 1.0 — lower alpha reroutes into the blended pass.
+  ## A negative clip leaves the bind pose. Keep tint.a at 1.0 — lower
+  ## alpha reroutes into the blended pass.
   let root = model.file.root
   if model.partNodes.len > 0:
     # Modular: the shared tree shows exactly this model's outfit.
@@ -193,10 +212,14 @@ proc drawCharacter*(
     for node in model.shownParts:
       node.baseVisible = true
       node.visible = true
-  if root.activeClips.len != 1:
-    root.activeClips.setLen(1)
-  root.activeClips[0] = clip
-  root.animTime = animTime
+  if clip < 0:
+    root.activeClips.setLen(0)
+    root.animTime = 0
+  else:
+    if root.activeClips.len != 1:
+      root.activeClips.setLen(1)
+    root.activeClips[0] = clip
+    root.animTime = animTime
   root.updateAnimation(0)
   let transform =
     translate(position) * rotateY(facing) *

@@ -275,12 +275,68 @@ block:
   doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(105, 64)),
     "a chain already in the air must keep scouting after the thrower dies"
 
+echo "Testing a lightning fire trail lights the owning team"
+block:
+  let game = freshGame()
+  let
+    west = game.world.pudges[0].id
+    westTeam = fogTeamOf(game.world, west)
+    eastTeam = fogTeamOf(game.world, game.world.pudges[3].id)
+    far = worldAtTile(90, 64)
+    home = worldAtTile(40, 64)
+  game.world.pudges[0].placePudge(22, 64)
+  game.world.pudges[1].placePudge(22, 40)
+  game.world.pudges[2].placePudge(22, 88)
+  game.world.pudges[3].placePudge(90, 64)
+  game.world.pudges[4].placePudge(105, 40)
+  game.world.pudges[5].placePudge(105, 88)
+  doAssert not fogCanSeeTeam(game.world, westTeam, far),
+    "the far bank stays dark until the trail is painted"
+  doAssert not fogShownPudgeTeam(game.world, westTeam, game.world.pudges[3])
+  game.world.firePatches.add FirePatch(
+    ownerId: west,
+    team: WestTeam,
+    position: far,
+    ticksLeft: RuneLightningTrailDurationTicks
+  )
+  game.world.firePatches.add FirePatch(
+    ownerId: west,
+    team: WestTeam,
+    position: home,
+    ticksLeft: RuneLightningTrailDurationTicks
+  )
+  doAssert fogCanSeeTeam(game.world, westTeam, far),
+    "the painting team must see along its fire trail"
+  doAssert fogCanSeeTeam(game.world, westTeam, worldAtTile(90, 66)),
+    "the trail lights neighboring tiles inside the burn radius"
+  doAssert not fogCanSeeTeam(game.world, westTeam, worldAtTile(90, 67)),
+    "tiles outside the burn radius stay dark"
+  doAssert fogShownPudgeTeam(game.world, westTeam, game.world.pudges[3]),
+    "an enemy standing on the trail must show"
+  doAssert hasScriptObject(game.world, west, game.world.pudges[3].id),
+    "BASIC observations must see an enemy on the trail"
+  doAssert not fogCanSeeTeam(game.world, eastTeam, home),
+    "the other team must not see through an enemy fire trail"
+  var mask: seq[uint8]
+  fillTeamVision(game.world, westTeam, mask)
+  doAssert mask[64 * GridTiles + 90] == 255
+  doAssert mask[67 * GridTiles + 90] == 0
+  fillTeamVision(game.world, eastTeam, mask)
+  doAssert mask[64 * GridTiles + 40] == 0,
+    "stamp must not light the other team through an enemy trail"
+
 echo "Testing fillTeamVision matches per-tile fogCanSeeTeam"
 block:
   let game = freshGame()
   game.world.pudges[0].placePudge(90, 64)
   addTestHook(game.world, game.world.pudges[0], 105, 40)
   game.world.hooks[^1].bounces.add worldAtTile(100, 40)
+  game.world.firePatches.add FirePatch(
+    ownerId: game.world.pudges[0].id,
+    team: WestTeam,
+    position: worldAtTile(90, 80),
+    ticksLeft: RuneLightningTrailDurationTicks
+  )
   var mask: seq[uint8]
   fillTeamVision(game.world, WestTeam.ord, mask)
   doAssert mask.len == GridTiles * GridTiles

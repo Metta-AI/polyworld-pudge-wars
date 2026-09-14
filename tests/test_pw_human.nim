@@ -375,7 +375,8 @@ block:
   doAssert game.intentResults[0].accepted
   doAssert game.world.pudges[HeroSlot].gold == CheatGoldAmount
   for item in ShopBoots..ShopWard:
-    doAssert game.world.pudges[HeroSlot].itemRank[item] == ItemMaxRank,
+    doAssert game.world.pudges[HeroSlot].itemRank[item] ==
+      shopItemMaxRank(item),
       $item & " should be maxed as the lumber analog"
 
 echo "Testing fair matches keep the pre-cheat state hash"

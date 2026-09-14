@@ -788,7 +788,7 @@ proc placeBlockReason(hero: Pudge, item: ShopItem): string =
   ## Same-frame denial text for a wall, mine, or ward drop.
   if hero.itemRank[item] <= 0:
     return "BUY IT AT YOUR SHOP PAD FIRST"
-  if hero.inRiver:
+  if item != ShopWard and hero.inRiver:
     return "CANNOT PLACE IN THE FIRE PIT"
   if hero.hookedBy != 0:
     return "HOOKED"
@@ -796,8 +796,6 @@ proc placeBlockReason(hero: Pudge, item: ShopItem): string =
     return hudCooldown("WALL", hero.wallCooldown)
   if item == ShopMine and hero.mineCooldown > 0:
     return hudCooldown("MINE", hero.mineCooldown)
-  if item == ShopWard and hero.wardCooldown > 0:
-    return hudCooldown("WARD", hero.wardCooldown)
   if item == ShopMine and
       run.world.countProps(hero.id, PropMine) >=
         maxMinesForRank(hero.itemRank[ShopMine]):
@@ -807,8 +805,7 @@ proc placeBlockReason(hero: Pudge, item: ShopItem): string =
         maxWallsForRank(hero.itemRank[ShopWall]):
     return "MAX WALLS PLANTED"
   if item == ShopWard and
-      run.world.countProps(hero.id, PropWard) >=
-        maxWardsForRank(hero.itemRank[ShopWard]):
+      run.world.countProps(hero.id, PropWard) >= MaxWardsPerPlayer:
     return "MAX WARDS PLANTED"
   ""
 
@@ -901,7 +898,7 @@ proc flushPendingMine(hero: Pudge) =
   cancelPendingMine()
 
 proc issueWardAt(hero: Pudge, tileX, tileZ: int32): bool =
-  ## Plants underfoot, or walks to the tile and plants on arrival.
+  ## Plants at the clicked tile when in range, otherwise walks in.
   let reason = placeBlockReason(hero, ShopWard)
   if reason.len > 0:
     setHumanError(reason)
@@ -911,7 +908,7 @@ proc issueWardAt(hero: Pudge, tileX, tileZ: int32): bool =
     setHumanError(site)
     return false
   aimingWard = false
-  if standingOn(hero, tileX, tileZ):
+  if hero.inDropRange(int(tileX), int(tileZ), WardPlaceRangeTiles):
     cancelPendingWard()
     queueHero(IntentPlaceWard, tileX, tileZ)
     return true
@@ -924,19 +921,18 @@ proc issueWardAt(hero: Pudge, tileX, tileZ: int32): bool =
   true
 
 proc flushPendingWard(hero: Pudge) =
-  ## Drops the queued Farwatch Ward once the butcher is standing on it.
+  ## Drops the queued Farwatch Ward once the butcher is in plant range.
   if not pendingWard:
     return
   if hero.state == Dying or hero.hookedBy != 0:
     cancelPendingWard()
     return
-  if not standingOn(hero, pendingWardX, pendingWardZ):
+  if not hero.inDropRange(
+      int(pendingWardX), int(pendingWardZ), WardPlaceRangeTiles
+  ):
     return
   let reason = placeBlockReason(hero, ShopWard)
   if reason.len > 0:
-    if hero.wardCooldown > 0 and hero.itemRank[ShopWard] > 0 and
-        not hero.inRiver:
-      return
     setHumanError(reason)
     cancelPendingWard()
     return
@@ -1083,6 +1079,10 @@ proc rejectReason(res: IntentResult): string =
     else: "UPGRADE MAXED"
   of IntentBuyPower:
     if not hero.inOwnShop: "STAND ON YOUR SHOP PAD"
+    elif res.a == int32(ShopWard.ord):
+      if hero.wardCooldown > 0: hudCooldown("WARD SHOP", hero.wardCooldown)
+      elif hero.itemRank[ShopWard] >= WardChargeMax: "ALREADY CARRYING A WARD"
+      else: "INVENTORY FULL"
     elif hero.gold <= 0: "NEED GOLD - KILLS AND DENIES PAY"
     else: "NOT ENOUGH GOLD, MAXED, OR INVENTORY FULL"
   of IntentStop, IntentPing:
@@ -1091,7 +1091,8 @@ proc rejectReason(res: IntentResult): string =
     if hero.itemRank[ShopWall] <= 0 and hero.itemRank[ShopMine] <= 0 and
         hero.itemRank[ShopWard] <= 0:
       "BUY IT AT YOUR SHOP PAD FIRST"
-    elif hero.inRiver: "CANNOT PLACE IN THE FIRE PIT"
+    elif res.kind != IntentPlaceWard and hero.inRiver:
+      "CANNOT PLACE IN THE FIRE PIT"
     else: "CANNOT PLACE THERE"
   of IntentCheat:
     "CHEAT REJECTED"
@@ -1383,8 +1384,8 @@ proc handleHumanInput*(
   if window.buttonPressed[bindKey(BindWard)]:
     cancelPendingMine()
     if options.quickcast:
-      discard castPlaceAhead(hero, ShopWard)
-      aimingWard = false
+      if castPlaceAtCursor(window, viewProjection, hero, ShopWard):
+        aimingWard = false
     else:
       beginPlaceCommand(ShopWard)
 
@@ -1640,7 +1641,7 @@ proc addObserverWard*(
   ## Sight stake: stacked disks for a pole and a glowing orb. Ghosts
   ## are oversized so the plant preview reads at RTS zoom.
   let
-    scale = if ghost: 1.70'f32 else: 1.0'f32
+    scale = if ghost: 1.85'f32 else: 1.35'f32
     shaft =
       if not ghost: rgbx(72, 86, 78, 250)
       elif legal: rgbx(88, 168, 148, 235)
@@ -1672,7 +1673,13 @@ proc addWardPreview(
     tileX, tileZ: int32,
     legal: bool
 ) =
-  renderer.addObserverWard(groundAtTile(tileX, tileZ), ghost = true, legal = legal)
+  let at = groundAtTile(tileX, tileZ)
+  renderer.addObserverWard(at, ghost = true, legal = legal)
+  let halo =
+    if legal: rgbx(90, 230, 170, 70) else: rgbx(232, 86, 68, 70)
+  renderer.addGroundRing(
+    at, SightRadiusTiles.float32, halo, 0.08'f32
+  )
 
 proc addBillboardRect(
     renderer: var ShapeRenderer,
@@ -1820,6 +1827,9 @@ proc drawHumanOverlays*(
             mineSiteError(hero, tileX, tileZ).len == 0
           )
       elif aimingWard:
+        renderer.addGroundRing(
+          center, WardPlaceRangeTiles.float32 + 0.5'f32, RingGold, 0.10'f32
+        )
         let pick = groundUnderMouse(window, viewProjection)
         if pick.found:
           let (tileX, tileZ) = tileOfGround(pick.point)
@@ -1853,6 +1863,19 @@ proc drawHumanOverlays*(
       renderer.addGroundRing(
         renderPoint(subject.position), 1.35'f32, ringColor, 0.07'f32
       )
+
+  let viewTeam = fogTeam()
+  for prop in run.world.props:
+    if not prop.alive or prop.kind != PropWard:
+      continue
+    if viewTeam >= 0 and prop.team.ord != viewTeam:
+      continue
+    renderer.addGroundRing(
+      groundAtTile(prop.tileX, prop.tileZ),
+      SightRadiusTiles.float32,
+      rgbx(120, 255, 196, 50),
+      0.07'f32
+    )
 
   let pulseAge = now - walkPulseTime
   if pulseAge < WalkPulseSeconds:

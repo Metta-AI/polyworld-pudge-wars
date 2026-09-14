@@ -17,7 +17,7 @@ when defined(posix):
 const
   ReplayGame* = "pudge_wars"
   ReplayFormatVersion* = 4'u16
-  ReplayGameVersion* = 31'u16
+  ReplayGameVersion* = 37'u16
     ## Physics the *viewer* runs. Observatory's static wasm must ship at
     ## this same number as the recording image (`pwcoworld`). Load and
     ## live handshake reject any other version; a rebuilt wasm cannot
@@ -25,6 +25,21 @@ const
     ## coworld version in lockstep. Live follow also sends this as
     ## `HelloMsg.simVersion` so host and client agree before the first
     ## tick. `NetProtocolVersion` is the wire framing, not this number.
+    ## v37: Lightning throws fly and reel at double hook speed. Fire
+    ##      trails come from the charged hook only (not walking/blink)
+    ##      and light the thrower's team through fog.
+    ## v36: Every butcher starts at 1200 HP (was 840); kill-earned
+    ##      max HP growth and percentage-based healing use that base.
+    ## v35: Blink can land on either bank within its 20-tile range,
+    ##      including across the fountain pinch; no opposite-bank veto.
+    ## v34: Lightning paints a burning trail (walk, blink, charged hook)
+    ##      that pulses enemy damage and draws through fog. A lightning
+    ##      hook that clashes shocks the other thrower. `firePatches` hash.
+    ## v33: Inventory is six wells. A bought Farwatch Ward occupies one
+    ##      bag slot; planting spends the charge and clears the well.
+    ## v32: Farwatch Ward is a free shop charge. Pickup starts a 60 s
+    ##      restock (`wardCooldown`); planting spends the charge and can
+    ##      reach `WardPlaceRangeTiles` including from the river.
     ## v31: Farwatch Ward shop family. Wards last 45 s and stamp team
     ##      sight; `itemRank` and `wardCooldown` hash.
     ## v30: Allied Hooktrap latch/reel; dump snaps to a legal own-bank

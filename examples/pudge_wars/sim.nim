@@ -12,7 +12,9 @@
 ## off blocked land, bounce trees, the fountain, and the map edge with
 ## a curved heading, without resetting leftover range. An empty retract
 ## retraces the chain and can still latch. Opposing shuriken disks
-## cancel both hooks without damage.
+## cancel both hooks without damage unless a Lightning hook shocks the
+## other thrower. A charged Lightning hook paints burning ground that
+## hurts enemies and lights the thrower's team through fog.
 ## This module must not import anything that returns a float.
 
 import
@@ -114,7 +116,8 @@ type
     mineCooldown*: int32
       ## Ticks until the next mine drop.
     wardCooldown*: int32
-      ## Ticks until the next sight ward.
+      ## Ticks until the shop restocks this butcher's next free ward.
+      ## Set on pickup, not on plant.
     windupAimX*: int32
       ## Pending hook aim in `FineAimScale` units from the map origin.
     windupAimY*: int32
@@ -148,6 +151,9 @@ type
       ## Gold paid to this butcher for enemy kills this tick. Not hashed.
     animClip*: int
     animTicks*: int32
+    meleeAnim*: bool
+      ## Cosmetic attack subtype: the historic attackClip/hash stays the
+      ## same. Replay/prediction ticks regenerate this; no combat reads it.
     deathTicks*: int32
     drownTicks*: int32
     lastHurtBy*: int32
@@ -198,8 +204,10 @@ type
       ## Thrown under the Big Hook rune: wins clashes outright instead
       ## of trading. The buffed disk plows through lesser chains.
     lightning*: bool
-      ## Thrown under the Lightning rune: a landed enemy hook zaps a
-      ## circle around the victim. Snapshotted at release like mighty.
+      ## Thrown under the Lightning rune: paints burning ground, flies
+      ## at double speed, a landed enemy hook zaps a circle around the
+      ## victim, and a clash shocks the other thrower. Snapshotted at
+      ## release like mighty.
     grappleLatched*: bool
       ## True once the grapple head stuck to a solid face.
     victimId*: int32
@@ -246,6 +254,15 @@ type
       ## Drift sign on the z axis: +1 southward, -1 northward.
     spawnTick*: int32
 
+  FirePatch* = object
+    ## One tile of Lightning burning ground, painted by a charged hook.
+    ## The owning team sees through fog along the trail; damage still
+    ## ignores allies and self.
+    ownerId*: int32
+    team*: Team
+    position*: WorldPoint
+    ticksLeft*: int32
+
   HookRuneSweep = object
     ## One blade segment that might scoop a rune this tick. Resolved
     ## after every hook has moved so list order cannot claim the orb.
@@ -278,8 +295,10 @@ type
     chunkVictimId*: int32
     chunkOwnerId*: int32
     lightningTick*: int32
-      ## Presentation: last charged splash. Not hashed.
+      ## Presentation: last charged splash or clash pulse. Not hashed.
     lightningPoint*: WorldPoint
+    firePatches*: seq[FirePatch]
+      ## Lightning trails. Hashed: burn ticks change HP.
     pings*: seq[Ping]
     runes*: seq[Rune]
     nextRuneId*: int32
@@ -1030,11 +1049,12 @@ proc resolveOverlaps(world: World) =
       for j in i + 1 ..< world.pudges.len:
         world.separatePudges(i, j)
 
-proc setAnim(pudge: var Pudge, clip: int, restart = false) =
+proc setAnim(pudge: var Pudge, clip: int, restart = false, melee = false) =
   ## Starts a clip from the first frame when the pose actually changes.
   if restart or pudge.animClip != clip:
     pudge.animClip = clip
     pudge.animTicks = 0
+    pudge.meleeAnim = melee
 
 proc absDelta(a, b: int32): int32 =
   let d = a - b
@@ -1287,6 +1307,56 @@ proc hasBuff*(pudge: Pudge, kind: RuneKind): bool =
   ## Returns whether this butcher currently carries one rune power.
   pudge.buffTicks > 0 and pudge.buffKind == kind
 
+proc dropFireTrail(world: World, ownerId: int32, team: Team, point: WorldPoint) =
+  ## Parks or refreshes one burning tile for this owner.
+  let
+    cell = tileOf(point)
+    parked = worldAtTile(cell.x, cell.z)
+  for i, patch in world.firePatches.mpairs:
+    if patch.ownerId != ownerId:
+      continue
+    let at = tileOf(patch.position)
+    if at.x == cell.x and at.z == cell.z:
+      patch.ticksLeft = RuneLightningTrailDurationTicks
+      return
+  let born = FirePatch(
+    ownerId: ownerId,
+    team: team,
+    position: parked,
+    ticksLeft: RuneLightningTrailDurationTicks
+  )
+  if world.firePatches.len < int(MaxFirePatches):
+    world.firePatches.add born
+    return
+  var oldest = 0
+  for i in 1 ..< world.firePatches.len:
+    if world.firePatches[i].ticksLeft < world.firePatches[oldest].ticksLeft:
+      oldest = i
+  world.firePatches[oldest] = born
+
+proc dropFireTrailSegment(
+    world: World, ownerId: int32, team: Team, a, b: WorldPoint
+) =
+  ## Paints every trail cell along `a`–`b`, including both ends.
+  world.dropFireTrail(ownerId, team, a)
+  world.dropFireTrail(ownerId, team, b)
+  let span = integerSqrt(distanceSquared(a, b))
+  if span <= int64(RuneLightningTrailStep):
+    return
+  var walked = RuneLightningTrailStep
+  let delta = b - a
+  while int64(walked) < span:
+    world.dropFireTrail(ownerId, team, a + scaledPlanar(delta, walked))
+    let next = walked + RuneLightningTrailStep
+    if next <= walked:
+      break
+    walked = next
+
+proc trailLightningHook(world: World, hook: Hook) =
+  if not hook.lightning or hook.isGrapple or hook.phase == HookIdle:
+    return
+  world.dropFireTrailSegment(hook.ownerId, hook.team, hook.prior, hook.position)
+
 proc topMoveSpeed*(pudge: Pudge): int32 =
   ## Walk speed cap from Treads and the Haste rune, before status cuts.
   result = MovePerTick
@@ -1305,6 +1375,18 @@ proc rotAffected*(world: World, pudge: Pudge): bool =
       continue
     if within(pudge.position, other.position, RotRadius):
       return true
+  false
+
+proc fireAffected*(world: World, pudge: Pudge): bool =
+  ## True while this living enemy stands in hostile Lightning fire.
+  if pudge.state != Alive:
+    return false
+  for patch in world.firePatches:
+    if patch.team == pudge.team or patch.ownerId == pudge.id:
+      continue
+    if within(pudge.position, patch.position, RuneLightningTrailRadius):
+      return true
+  false
 
 proc moveSpeed*(world: World, pudge: Pudge): int32 =
   ## Walk cap after Rot's slow. Overlapping auras do not stack the cut.
@@ -1341,9 +1423,10 @@ proc ownedPermanents*(pudge: Pudge): int32 =
 
 proc inventoryItem*(pudge: Pudge, slot: int): ShopItem =
   ## The family shown in one HUD inventory well, or ShopFlask as empty
-  ## sentinel when the well is vacant (callers check rank).
+  ## sentinel when the well is vacant (callers check rank). A planted
+  ## ward drops to rank 0 and leaves the bag.
   var index = 0
-  for item in ShopBoots..ShopWard:
+  for item in PermanentBagOrder:
     if pudge.itemRank[item] > 0:
       if index == slot:
         return item
@@ -2081,6 +2164,11 @@ proc wardSiteLegal*(
     return false
   not world.tileHasProp(tileX, tileZ, exceptId)
 
+proc inDropRange*(pudge: Pudge, tileX, tileZ: int, reach: int32): bool =
+  ## Chebyshev distance from the butcher's tile to a plant site.
+  let here = tileOf(pudge.position)
+  max(abs(here.x - tileX), abs(here.z - tileZ)) <= int(reach)
+
 proc placementLegal(
     world: World,
     pudge: Pudge,
@@ -2090,16 +2178,20 @@ proc placementLegal(
 ): bool =
   ## Walkable land, in drop range, not a shop/spawn grief tile.
   ## Walls and mines stay on the home bank; wards may sit on either.
-  ## Mines and wards plant under the butcher; a palisade needs an empty tile.
-  if pudge.state != Alive or pudge.inRiver or pudge.hookedBy != 0:
+  ## Mines plant under the butcher; a palisade needs an empty tile.
+  ## Wards plant at `WardPlaceRangeTiles` and may be thrown from the river.
+  if pudge.state != Alive or pudge.hookedBy != 0:
+    return false
+  if kind != PropWard and pudge.inRiver:
     return false
   if kind == PropWard:
     if not world.wardSiteLegal(tileX, tileZ):
       return false
   elif not world.propSiteLegal(pudge.team, tileX, tileZ):
     return false
-  let here = tileOf(pudge.position)
-  if max(abs(here.x - tileX), abs(here.z - tileZ)) > int(PlaceRangeTiles):
+  let reach =
+    if kind == PropWard: WardPlaceRangeTiles else: PlaceRangeTiles
+  if not pudge.inDropRange(tileX, tileZ, reach):
     return false
   for other in world.pudges:
     if other.state != Alive:
@@ -2164,9 +2256,7 @@ proc applyPlaceProp(
     if world.countProps(pudge.id, PropMine) >= maxMinesForRank(rank):
       return false
   of PropWard:
-    if pudge.cooling(pudge.wardCooldown):
-      return false
-    if world.countProps(pudge.id, PropWard) >= maxWardsForRank(rank):
+    if world.countProps(pudge.id, PropWard) >= MaxWardsPerPlayer:
       return false
   var
     tileX = int(mapX)
@@ -2203,7 +2293,7 @@ proc applyPlaceProp(
       pudge, PropWard, tileX, tileZ,
       1, WardDurationTicks
     )
-    pudge.wardCooldown = pudge.armedCooldown(WardCooldownTicks)
+    dec pudge.itemRank[ShopWard]
   true
 
 proc applyPlaceWall*(world: World, pudgeId, mapX, mapY: int32): bool =
@@ -2215,7 +2305,7 @@ proc applyPlaceMine*(world: World, pudgeId, mapX, mapY: int32): bool =
   world.applyPlaceProp(pudgeId, mapX, mapY, PropMine)
 
 proc applyPlaceWard*(world: World, pudgeId, mapX, mapY: int32): bool =
-  ## Drops a hidden sight ward on a nearby land tile. Spends cooldown.
+  ## Drops a hidden sight ward on a nearby land tile. Spends the charge.
   world.applyPlaceProp(pudgeId, mapX, mapY, PropWard)
 
 proc hurtProp*(world: World, propId, amount, attackerId: int32): bool =
@@ -2368,9 +2458,21 @@ proc applyBuyPower*(world: World, pudgeId, itemId: int32): bool =
     return false
   if world.pudges[index].gold < shopPrice(item):
     return false
+  if item == ShopWard:
+    if world.pudges[index].cooling(world.pudges[index].wardCooldown):
+      return false
+    if world.pudges[index].itemRank[ShopWard] >= WardChargeMax:
+      return false
+    if world.pudges[index].itemRank[ShopWard] == 0 and
+        world.pudges[index].ownedPermanents >= InventorySlots:
+      return false
+    inc world.pudges[index].itemRank[ShopWard]
+    world.pudges[index].wardCooldown =
+      world.pudges[index].armedCooldown(WardRestockTicks)
+    return true
   if item.isPermanent:
     let rank = world.pudges[index].itemRank[item]
-    if rank >= ItemMaxRank:
+    if rank >= shopItemMaxRank(item):
       return false
     if rank == 0 and world.pudges[index].ownedPermanents >= InventorySlots:
       return false
@@ -2439,6 +2541,8 @@ proc releasePendingHook(world: World, index: int) =
     damage = bigHookDamage(damage)
   if not pudge.windupGrapple and pudge.hasBuff(RuneDoubleDamage):
     damage = damage * RuneDamageMul
+  let lightning = not pudge.windupGrapple and pudge.hasBuff(RuneLightning)
+  let speed = thrownHookSpeed(pudge.upgrades[UpgradeSpeed], lightning)
   world.hooks.add Hook(
     id: world.nextHookId,
     ownerId: pudge.id,
@@ -2449,13 +2553,13 @@ proc releasePendingHook(world: World, index: int) =
     prior: start,
     heading: facing,
     range: range,
-    speed: hookSpeed(pudge.upgrades[UpgradeSpeed]),
-    peakSpeed: hookSpeed(pudge.upgrades[UpgradeSpeed]),
+    speed: speed,
+    peakSpeed: speed,
     radius: radius,
     damage: damage,
     isGrapple: pudge.windupGrapple,
     mighty: not pudge.windupGrapple and pudge.hasBuff(RuneBigHook),
-    lightning: not pudge.windupGrapple and pudge.hasBuff(RuneLightning)
+    lightning: lightning
   )
   inc world.nextHookId
   pudge.facing = facing
@@ -2562,10 +2666,6 @@ proc blinkLandable(
   if tile.x < 0 or tile.x >= GridTiles or tile.z < 0 or tile.z >= GridTiles:
     return false
   let layer = layerAt(tile.x, tile.z)
-  if pudge.layer != int32(RiverLayer) and
-      (layer == int32(WestLayer) or layer == int32(EastLayer)) and
-      layer != pudge.layer:
-    return false
   if not tileStandable(layer, tile.x, tile.z):
     return false
   if world.wallBlocksTile(tile.x, tile.z):
@@ -2582,8 +2682,8 @@ proc blinkRayStops(
 ): bool =
   ## True when the hop should halt here and keep the last legal landing.
   ## Empty river water is air: the ray flies over it. Range stops a
-  ## side-lane hop short of the far lip; at mid the banks step in, so
-  ## the opposite bank itself is also a stop. An occupied river body
+  ## side-lane hop short of the far lip; the narrower mid gap can be
+  ## crossed when the far bank is in range. An occupied river body
   ## stops the ray (back up). The fountain is air. Cliffs, off-map,
   ## dest-bank palisades, and dest-bank bodies stop it. Origin-bank
   ## walls and bodies do not stop a hop that has the range to splash.
@@ -2591,10 +2691,6 @@ proc blinkRayStops(
   if tile.x < 0 or tile.x >= GridTiles or tile.z < 0 or tile.z >= GridTiles:
     return true
   let layer = layerAt(tile.x, tile.z)
-  if pudge.layer != int32(RiverLayer) and
-      (layer == int32(WestLayer) or layer == int32(EastLayer)) and
-      layer != pudge.layer:
-    return true
   if layer == int32(RiverLayer):
     return occupiedAt(world, pos, pudge.id, layer)
   if not tileStandable(layer, tile.x, tile.z):
@@ -2811,7 +2907,8 @@ proc grantCheatGold(pudge: var Pudge, amount: int32) =
 
 proc fillShopGoods(pudge: var Pudge) =
   for item in ShopBoots..ShopWard:
-    pudge.itemRank[item] = ItemMaxRank
+    pudge.itemRank[item] = shopItemMaxRank(item)
+  pudge.wardCooldown = 0
 
 proc clearCooldowns(pudge: var Pudge) =
   pudge.hookCooldown = 0
@@ -3198,6 +3295,8 @@ proc hookCorridorSees*(world: World, hook: Hook, position: WorldPoint): bool =
 
 proc fogCanSeeTeam*(world: World, team: int, position: WorldPoint): bool =
   ## Whether `team` currently lights `position`. `team < 0` is omniscient.
+  ## Own-team Lightning fire trails light a `RuneLightningTrailRadius`
+  ## disk; the other team does not see through them.
   if team < 0:
     return true
   let (tx, tz) = tileOf(position)
@@ -3213,6 +3312,11 @@ proc fogCanSeeTeam*(world: World, team: int, position: WorldPoint): bool =
     if hook.team.ord != team or hook.phase == HookIdle:
       continue
     if hookCorridorSees(world, hook, position):
+      return true
+  for patch in world.firePatches:
+    if patch.team.ord != team:
+      continue
+    if within(position, patch.position, RuneLightningTrailRadius):
       return true
   false
 
@@ -3232,9 +3336,9 @@ proc scriptTeamOf(world: World, pudgeId: int32): tuple[team: Team, teamOrd: int]
 proc worldObjectCount*(world: World, pudgeId: int32): int =
   ## Fog-clipped observation for one butcher: own team always, enemies
   ## and walls only inside shared sight (home bank, river, living
-  ## teammates and team wards within `SightRadiusTiles`, and the padded
-  ## corridor along in-flight team hooks). Enemy mines and wards stay
-  ## hidden.
+  ## teammates and team wards within `SightRadiusTiles`, the padded
+  ## corridor along in-flight team hooks, and team Lightning fire
+  ## trails). Enemy mines and wards stay hidden.
   let (team, teamOrd) = world.scriptTeamOf(pudgeId)
   world.scriptObjects.setLen(world.pudges.len + world.props.len)
   world.scriptObjectCount = 0
@@ -3420,6 +3524,51 @@ proc stepRot(world: World) =
       if world.pudges[i].shieldTicks > 0 and world.pudges[i].id != ownerId:
         continue
       world.dealPudgeDamage(i, RotDamage, ownerId)
+
+proc stepFire(world: World) =
+  ## Ages Lightning trails and pulses enemy burn. Overlapping patches
+  ## from one owner do not stack; two butchers' lines do. Spawn shields
+  ## block it. Allies and the painter are spared.
+  var keep: seq[FirePatch]
+  for patch in world.firePatches:
+    if patch.ticksLeft <= 1:
+      continue
+    var next = patch
+    dec next.ticksLeft
+    keep.add next
+  world.firePatches = keep
+  if world.tick mod RuneLightningTrailPeriodTicks != 0:
+    return
+  for i in 0 ..< world.pudges.len:
+    if world.pudges[i].state != Alive:
+      continue
+    if world.pudges[i].shieldTicks > 0:
+      continue
+    var
+      hitBy: array[MaxPudgeCount, int32]
+      hitCount = 0
+    for patch in world.firePatches:
+      if patch.team == world.pudges[i].team:
+        continue
+      if patch.ownerId == world.pudges[i].id:
+        continue
+      if not within(
+          world.pudges[i].position, patch.position, RuneLightningTrailRadius
+        ):
+        continue
+      var seen = false
+      for n in 0 ..< hitCount:
+        if hitBy[n] == patch.ownerId:
+          seen = true
+          break
+      if seen:
+        continue
+      if hitCount < hitBy.len:
+        hitBy[hitCount] = patch.ownerId
+        inc hitCount
+      world.dealPudgeDamage(i, RuneLightningTrailDamage, patch.ownerId)
+      if world.pudges[i].state != Alive:
+        break
 
 proc islandFountainPos*(): WorldPoint =
   ## World center of the mid-river fountain rocks.
@@ -3611,7 +3760,7 @@ proc stepMelee(world: World) =
       dec world.pudges[i].swingTicks
       continue
     world.pudges[i].swingTicks = world.pudges[i].attackPeriod
-    world.pudges[i].setAnim(attackClip, restart = true)
+    world.pudges[i].setAnim(attackClip, restart = true, melee = true)
     world.pudges[i].damageLanded = true
     world.dealPudgeDamage(
       target, world.pudges[i].meleeDamage, world.pudges[i].id
@@ -4108,6 +4257,33 @@ proc zapLightning(world: World, ownerId: int32, center: WorldPoint) =
       continue
     world.dealPudgeDamage(i, RuneLightningDamage, ownerId)
 
+proc shockClashThrower(world: World, ownerId, enemyId: int32) =
+  ## Slight chain-shock to the butcher on the other end of a clash.
+  if ownerId == 0 or enemyId == 0 or enemyId >= FirstPropId:
+    return
+  let enemy = world.pudgeIndex(enemyId)
+  if enemy < 0:
+    return
+  if world.pudges[enemy].state != Alive or world.pudges[enemy].shieldTicks > 0:
+    return
+  let owner = world.pudgeIndex(ownerId)
+  if owner >= 0 and world.pudges[enemy].team == world.pudges[owner].team:
+    return
+  world.dealPudgeDamage(enemy, RuneLightningClashDamage, ownerId)
+
+proc pulseClashLightning(
+    world: World, first, second: Hook, point: WorldPoint
+) =
+  ## Lightning pulse at the clash, plus a nick to the enemy thrower.
+  if not first.lightning and not second.lightning:
+    return
+  world.lightningTick = world.tick
+  world.lightningPoint = point
+  if first.lightning:
+    world.shockClashThrower(first.ownerId, second.ownerId)
+  if second.lightning:
+    world.shockClashThrower(second.ownerId, first.ownerId)
+
 proc mineDumpLegal(
     world: World, team: Team, tileX, tileZ: int, exceptId: int32
 ): bool =
@@ -4327,6 +4503,7 @@ proc clashBreakBoth(world: World, interceptor, other: int) =
       z: (chunker.position.z + intercepted.position.z) div 2
     )
   world.announceClash(chunker.ownerId, victimId, intercepted.ownerId, point)
+  world.pulseClashLightning(chunker, intercepted, point)
   world.dropVictim(world.hooks[other])
   world.dropVictim(world.hooks[interceptor])
   world.hooks[interceptor].phase = HookIdle
@@ -4335,8 +4512,8 @@ proc clashBreakBoth(world: World, interceptor, other: int) =
   world.hooks[other].victimId = 0
 
 proc interceptHooks(world: World, interceptor, other: int) =
-  ## Two shuriken disks met: both chains break, nobody takes clash damage.
-  ## The shorter flight (later throw / less traveled) takes the deny gold.
+  ## Two shuriken disks met: both chains break. Lightning still shocks
+  ## the other thrower. The shorter flight takes the deny gold.
   let ownerId = world.hooks[interceptor].ownerId
   world.clashBreakBoth(interceptor, other)
   let chunkerIndex = world.pudgeIndex(ownerId)
@@ -4369,6 +4546,7 @@ proc interceptOneSided(world: World, winner, loser: int) =
     world.hooks[winner].ownerId, victimId, broken.ownerId,
     broken.position
   )
+  world.pulseClashLightning(world.hooks[winner], broken, broken.position)
   world.dropVictim(world.hooks[loser])
   world.hooks[loser].phase = HookIdle
   world.hooks[loser].victimId = 0
@@ -4652,12 +4830,14 @@ proc stepHooks(world: World) =
         if hook.isGrapple:
           let unused = flyGrapple(hook, budget)
           hook.traveled = hook.traveled + (budget - unused)
+          world.trailLightningHook(hook)
           world.recordRuneSweep(runeSweeps, hook)
           if hook.grappleLatched or hook.traveled >= hook.range:
             hook.phase = HookReeling
         else:
           let unused = flyHook(hook, budget)
           hook.traveled = hook.traveled + (budget - unused)
+          world.trailLightningHook(hook)
           if world.sweepMines(hook):
             world.recordRuneSweep(runeSweeps, hook)
             if hook.phase != HookIdle:
@@ -4692,11 +4872,13 @@ proc stepHooks(world: World) =
         continue
       let empty = hook.victimId == 0
       if world.advanceReel(hook, owner):
+        world.trailLightningHook(hook)
         if empty:
           world.recordRuneSweep(runeSweeps, hook)
           if not hook.isGrapple:
             inc world.hookMisses
         continue
+      world.trailLightningHook(hook)
       if hook.victimId == 0 and not hook.isGrapple:
         if world.sweepMines(hook):
           world.recordRuneSweep(runeSweeps, hook)
@@ -4824,6 +5006,12 @@ proc stateHash*(game: Game): uint64 {.measure.} =
     hash.addHashy(prop.maxHp)
     hash.addHashy(prop.ticksLeft)
     hash.addHashy(prop.alive)
+  hash.addHashy(world.firePatches.len)
+  for patch in world.firePatches:
+    hash.addHashy(patch.ownerId)
+    hash.addHashy(patch.team.ord)
+    hash.addHashy(patch.position)
+    hash.addHashy(patch.ticksLeft)
   hash.addHashy(world.pudges.len)
   for pudge in world.pudges:
     hash.addHashy(pudge.id)
@@ -4973,6 +5161,7 @@ proc tickWorld*(game: Game, onHeroTurn: proc() {.closure.}) {.measure.} =
   profileBlock "world":
     world.stepRiver()
     world.stepRot()
+    world.stepFire()
     world.stepRunes()
     world.stepFountain()
     world.resolveOverlaps()

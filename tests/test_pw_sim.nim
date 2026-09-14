@@ -246,6 +246,11 @@ block:
   )
   game.play(1)
   doAssert game.world.pudges[3].hp == BaseHitPoints - BaseMeleeDamage
+  doAssert game.world.pudges[0].meleeAnim, "melee should select the knife clip"
+  let combatHash = game.stateHash()
+  game.world.pudges[0].meleeAnim = false
+  doAssert game.stateHash() == combatHash, "the knife animation must remain cosmetic"
+  game.world.pudges[0].meleeAnim = true
   game.play(AttackTicks * 3)
   assertApart(
     game.world.pudges[0],
@@ -259,6 +264,25 @@ block:
   doAssert game.world.pudges[0].upgrades[UpgradeDistance] == 1
   doAssert game.world.pudges[0].points == 0
   doAssert not applyBuyUpgrade(game.world, game.world.pudges[0].id, 2)
+
+echo "Testing hook and grapple replace the cosmetic melee subtype"
+for grapple in [false, true]:
+  let game = freshGame()
+  game.world.pudges[0].placePudge(30, 64)
+  game.world.pudges[3].placePudge(31, 64)
+  let id = game.world.pudges[0].id
+  doAssert applyAttackTarget(game.world,id,game.world.pudges[3].id)
+  game.play(1)
+  doAssert game.world.pudges[0].meleeAnim
+  doAssert game.world.clone().pudges[0].meleeAnim,
+    "prediction/snapshots must retain the attack subtype"
+  if grapple:
+    doAssert applyGrappleTo(game.world,id,int32(PlayEastMin),64)
+  else:
+    doAssert applyHookTo(game.world,id,int32(PlayEastMin),64)
+  doAssert game.world.pudges[0].animClip == attackClip
+  doAssert not game.world.pudges[0].meleeAnim,
+    "a cast during melee recovery must play the hook, not the knife"
 
 echo "Testing a river-edge hook dumps the victim in the drink"
 block:
@@ -923,6 +947,7 @@ block:
     40
   )
   doAssert game.world.pudges[0].animClip == attackClip
+  doAssert not game.world.pudges[0].meleeAnim, "hook casts must keep their throwing motion"
   doAssert game.world.pudges[0].facing.x > 0, "a hook should face the throw"
 
 echo "Testing two living butchers cannot occupy the same space"
@@ -2698,6 +2723,8 @@ block:
   game.world.pudges[0].gold = ShopWardGold
   doAssert applyBuyPower(game.world, id, int32(ShopWard.ord))
   doAssert game.world.pudges[0].ownedPermanents == 5
+  doAssert game.world.pudges[0].ownedPermanents < InventorySlots,
+    "five families must still leave a vacant well"
   game.world.pudges[0].gold = ShopBootsGold
   doAssert applyBuyPower(game.world, id, int32(ShopBoots.ord)),
     "buy-again must still rank an owned family"
@@ -2817,30 +2844,79 @@ block:
   doAssert game.world.pudges[0].layer == int32(WestLayer)
   doAssert westBank(westTile.x)
 
-echo "Testing blink from the mid bulge cannot clear the pinched river"
+echo "Testing blink crosses the fountain pinch in both directions"
 block:
-  let game = freshGame()
-  parkPudges(game)
-  game.world.pudges[3].placePudge(105, 40)
-  game.world.pudges[4].placePudge(105, 88)
-  game.world.pudges[5].placePudge(110, 40)
-  let lipX = playWestMaxAt(IslandCenterZ)
-  game.world.pudges[0].placePudge(lipX, IslandCenterZ)
-  doAssert game.world.pudges[0].layer == int32(WestLayer)
-  doAssert westBank(lipX, IslandCenterZ)
-  let
-    origin = game.world.pudges[0].position
-    id = game.world.pudges[0].id
-    destX = int32(playEastMinAt(IslandCenterZ))
-  doAssert applyBlinkTo(game.world, id, destX, int32(IslandCenterZ)),
-    "a far-bank click from mid must still fire"
-  let dest = game.world.pudges[0].position
-  let tile = tileOf(dest)
-  doAssert dest.x > origin.x
-  doAssert not eastBank(tile.x, tile.z),
-    "the mid pinch must not let blink land on the far bank"
-  doAssert riverTile(tile.x, tile.z) or westBank(tile.x, tile.z)
-  doAssert game.world.pudges[0].layer != int32(EastLayer)
+  for slot in [0, 3]:
+    for fineAim in [false, true]:
+      let game = freshGame()
+      parkPudges(game)
+      let
+        westX = playWestMaxAt(IslandCenterZ)
+        eastX = playEastMinAt(IslandCenterZ)
+        originX = if slot == 0: westX else: eastX
+        destX = int32(if slot == 0: eastX else: westX)
+        destLayer = int32(if slot == 0: EastLayer else: WestLayer)
+      game.world.pudges[slot].placePudge(originX, IslandCenterZ)
+      let
+        id = game.world.pudges[slot].id
+        origin = game.world.pudges[slot].position
+        originalTeam = game.world.pudges[slot].team
+        hp = game.world.pudges[slot].hp
+        fineX = fineOfTile(destX) + (if fineAim: FineAimScale div 4 else: 0)
+        fineZ = fineOfTile(int32(IslandCenterZ))
+        target = worldAtFine(fineX, fineZ)
+      doAssert integerSqrt(distSq(origin, target)) <= int64(BlinkRange)
+      if fineAim:
+        doAssert applyBlinkFine(game.world, id, fineX, fineZ),
+          "cursor-aimed blink must reach the opposite bank at mid"
+      else:
+        doAssert applyBlinkTo(game.world, id, destX, int32(IslandCenterZ)),
+          "tile-aimed blink must reach the opposite bank at mid"
+      let dest = game.world.pudges[slot].position
+      doAssert dest.x == target.x and dest.z == target.z,
+        "reachable land must not truncate to lava"
+      doAssert game.world.pudges[slot].layer == destLayer
+      doAssert not game.world.pudges[slot].inRiver
+      doAssert game.world.pudges[slot].team == originalTeam
+      game.play(int(TickRate * 2))
+      doAssert game.world.pudges[slot].layer == destLayer
+      doAssert not game.world.pudges[slot].inRiver,
+        "a landed blink must stay on the bank on subsequent ticks"
+      doAssert game.world.pudges[slot].hp == hp,
+        "crossing above lava must not cause drowning damage"
+
+echo "Testing blink across mid still stops at far-bank obstacles"
+block:
+  for wall in [false, true]:
+    let game = freshGame()
+    parkPudges(game)
+    let
+      lipX = playWestMaxAt(IslandCenterZ)
+      blockerX = int32(playEastMinAt(IslandCenterZ) + 6)
+      destX = blockerX + 4
+    game.world.pudges[0].placePudge(lipX, IslandCenterZ)
+    game.world.pudges[3].placePudge(int(blockerX) + 2, IslandCenterZ)
+    if wall:
+      game.world.pudges[3].itemRank[ShopWall] = 1
+      doAssert applyPlaceWall(
+        game.world, game.world.pudges[3].id, blockerX, int32(IslandCenterZ)
+      )
+      game.world.pudges[3].placePudge(100, 40)
+    else:
+      game.world.pudges[3].placePudge(int(blockerX), IslandCenterZ)
+    doAssert applyBlinkTo(
+      game.world, game.world.pudges[0].id, destX, int32(IslandCenterZ)
+    )
+    let dest = game.world.pudges[0].position
+    doAssert dest.x < worldAtTile(int(blockerX), IslandCenterZ).x
+    if wall:
+      let tile = tileOf(dest)
+      doAssert not game.world.wallBlocksTile(tile.x, tile.z)
+      doAssert game.world.pudges[0].layer == int32(EastLayer),
+        "clear land before the far-bank wall remains reachable"
+    else:
+      assertApart(game.world.pudges[0], game.world.pudges[3],
+        "cross-river blink must not overlap the destination's occupant")
 
 echo "Testing blink toward the rim lands on the last walkable tile"
 block:
@@ -3239,40 +3315,70 @@ block:
       planted = true
   doAssert planted, "the grabbed Hooktrap must still be on the field"
 
-echo "Testing Farwatch Wards plant on either bank, hide from enemies, and expire"
+echo "Testing Farwatch Wards are free, restock in shop, plant at range, and expire"
 block:
   let game = freshGame()
   parkPudges(game)
   let west = game.world.pudges[0].id
-  game.world.pudges[0].placePudge(30, 64)
-  doAssert not applyPlaceWard(game.world, west, 32, 64),
-    "cannot place without owning Farwatch Ward"
-  game.world.pudges[0].itemRank[ShopWard] = 1
+  game.world.pudges[0].placePudge(WestShopX, ShopZ)
+  doAssert game.world.pudges[0].inOwnShop
+  game.world.pudges[0].gold = 0
+  doAssert applyBuyPower(game.world, west, int32(ShopWard.ord)),
+    "a free ward must buy at 0 gold"
+  doAssert game.world.pudges[0].gold == 0
+  doAssert game.world.pudges[0].itemRank[ShopWard] == 1
+  doAssert game.world.pudges[0].inventoryItem(0) == ShopWard,
+    "a bought ward must occupy an inventory well"
+  doAssert game.world.pudges[0].wardCooldown == WardRestockTicks
+  doAssert not applyBuyPower(game.world, west, int32(ShopWard.ord)),
+    "cannot hold a second charge while carrying one"
+  game.world.pudges[0].placePudge(int(PlayWestMax), 64)
   doAssert not applyPlaceWard(game.world, west, int32(RiverCenterX), 64),
     "cannot place a ward in the river"
-  doAssert applyPlaceWard(game.world, west, 32, 64)
+  doAssert applyPlaceWard(game.world, west, int32(PlayEastMin + 2), 64),
+    "must plant onto the far bank from the west lip"
   doAssert game.world.props.len == 1
   doAssert game.world.props[0].kind == PropWard
   doAssert game.world.props[0].ticksLeft == WardDurationTicks
+  doAssert game.world.pudges[0].itemRank[ShopWard] == 0,
+    "planting spends the shop charge"
+  doAssert game.world.pudges[0].inventoryItem(0) == ShopFlask,
+    "a planted ward must leave the inventory well"
+  doAssert game.world.pudges[0].ownedPermanents == 0,
+    "spending the ward must free the bag slot"
   let ownId = game.world.props[0].id
   doAssert mineVisibleTo(game.world, ownId, WestTeam)
   doAssert not mineVisibleTo(game.world, ownId, EastTeam),
     "enemies must not see a Farwatch Ward"
+  doAssert not applyPlaceWard(game.world, west, 32, 64),
+    "cannot plant without a charge"
+  game.world.pudges[0].placePudge(WestShopX, ShopZ)
+  doAssert not applyBuyPower(game.world, west, int32(ShopWard.ord)),
+    "shop must still be restocking after the pickup"
   game.world.pudges[0].wardCooldown = 0
-  doAssert not applyPlaceWard(game.world, west, 34, 64),
-    "rank 1 allows only one living ward"
-  game.world.pudges[0].itemRank[ShopWard] = 3
-  game.world.pudges[0].placePudge(90, 64)
-  doAssert applyPlaceWard(game.world, west, 92, 64),
-    "must plant a ward on the enemy bank"
-  doAssert game.world.countProps(west, PropWard) == 2
+  doAssert applyBuyPower(game.world, west, int32(ShopWard.ord)),
+    "a restocked shop must sell another free ward"
+  doAssert not applyPlaceWard(game.world, west, 32, 64),
+    "one living ward at a time"
   game.world.props[0].ticksLeft = 1
   game.play(1)
   var living = 0
   for prop in game.world.props:
     if prop.alive and prop.kind == PropWard:
       inc living
-  doAssert living == 1, "a spent ward must expire"
+  doAssert living == 0, "a spent ward must expire"
+  game.world.pudges[0].placePudge(30, 64)
+  doAssert applyPlaceWard(game.world, west, 32, 64),
+    "must plant again after the last stake expires"
+  game.world.pudges[0].placePudge(RiverCenterX, 48)
+  doAssert game.world.pudges[0].inRiver
+  game.world.pudges[0].wardCooldown = 0
+  game.world.pudges[0].placePudge(WestShopX, ShopZ)
+  doAssert applyBuyPower(game.world, west, int32(ShopWard.ord))
+  game.world.props[0].alive = false
+  game.world.pudges[0].placePudge(RiverCenterX, 48)
+  doAssert applyPlaceWard(game.world, west, int32(PlayEastMin + 1), 48),
+    "a swimming butcher must still throw a ward onto land"
 
 echo "Testing Rot toggle damages, slows, and blocks blink"
 block:

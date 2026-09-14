@@ -5,6 +5,8 @@ import
   polyworld/cli,
   ../examples/pudge_wars/[bots, content, maps, replays, sim]
 
+const BasePolicy {.strdefine.} = ""
+
 const Policies = [
   "base.bas",
   "challenger.bas",
@@ -19,12 +21,15 @@ let
   playersDir =
     currentSourcePath().parentDir.parentDir /
     "examples" / "pudge_wars" / "players"
+  basePolicyPath = if BasePolicy.len > 0: BasePolicy else: playersDir / "base.bas"
   map = generateMap(2026)
 
 echo "Testing bot policies compile and run"
 for name in Policies:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / name, count: PudgeCount)])
+  loadBots(game, [BotGroup(
+    path: (if name == "base.bas": basePolicyPath else: playersDir / name),
+    count: PudgeCount)])
   for i in 0 ..< PudgeCount:
     doAssert game.heroVms[i] != nil, name & " missing vm " & $i
   tickWorld(game, proc() = runBotDecisions(game))
@@ -88,7 +93,7 @@ proc parkBots(game: Game) =
 echo "Testing the default bot blinks off an inbound hook"
 block:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   let origin = game.world.pudges[0].position
   # 18 tiles out: inside dodgeDist 22, outside the 14-tile intercept.
@@ -123,7 +128,7 @@ block:
 echo "Testing the default bot blinks out of the river"
 block:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   game.world.pudges[0].placePudge(RiverCenterX, 40)
   doAssert game.world.pudges[0].inRiver
@@ -167,7 +172,7 @@ block:
 echo "Testing a land chase does not dump the bot in the river"
 block:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   game.world.pudges[1].placePudge(98, 40)
   game.world.pudges[3].placePudge(105, 40)
@@ -180,7 +185,7 @@ block:
 echo "Testing the default bot Rots a close unshielded enemy"
 block:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   game.world.pudges[0].placePudge(30, 64)
   game.world.pudges[3].placePudge(36, 64)
@@ -194,7 +199,7 @@ block:
 echo "Testing the default bot walks inland out of enemy Rot"
 block:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   let home = game.world.pudges[0].spawnTile
   game.world.pudges[0].placePudge(home.x + 8, home.z)
@@ -216,7 +221,7 @@ block:
 echo "Testing the default bot hooks a fogged last-seen lane"
 block:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   game.world.pudges[3].placePudge(RiverCenterX, 40)
   game.world.pudges[3].shieldTicks = 0
@@ -243,36 +248,36 @@ block:
 echo "Testing the default bot spends every kill point in one tick"
 block:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   game.world.pudges[0].points = 3
   tickWorld(game, proc() = runBotDecisions(game))
   doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
   doAssert game.world.pudges[0].points == 0,
     "base bot must dump every unspent kill point the same think"
-  doAssert game.world.pudges[0].upgrades[UpgradeRadius] == 3,
-    "base bot fills Hook Radius before the other skills"
-  doAssert game.world.pudges[0].upgrades[UpgradeDistance] == 0
+  doAssert game.world.pudges[0].upgrades[UpgradeDistance] == 3,
+    "base bot fills Hook Distance before the other skills"
+  doAssert game.world.pudges[0].upgrades[UpgradeRadius] == 0
   doAssert game.world.pudges[0].upgrades[UpgradeSpeed] == 0
   doAssert game.world.pudges[0].upgrades[UpgradeDamage] == 0
 
-echo "Testing the default bot rolls into distance once radius is maxed"
+echo "Testing the default bot rolls into speed once distance is maxed"
 block:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
-  game.world.pudges[0].upgrades[UpgradeRadius] = MaxUpgradeLevel
+  game.world.pudges[0].upgrades[UpgradeDistance] = MaxUpgradeLevel
   game.world.pudges[0].points = 2
   tickWorld(game, proc() = runBotDecisions(game))
   doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
   doAssert game.world.pudges[0].points == 0
-  doAssert game.world.pudges[0].upgrades[UpgradeRadius] == MaxUpgradeLevel
-  doAssert game.world.pudges[0].upgrades[UpgradeDistance] == 2
+  doAssert game.world.pudges[0].upgrades[UpgradeDistance] == MaxUpgradeLevel
+  doAssert game.world.pudges[0].upgrades[UpgradeSpeed] == 2
 
 echo "Testing hook distance upgrades extend the default bot's throw"
 block:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   game.world.pudges[0].placePudge(22, 40)
   game.world.pudges[1].placePudge(90, 40)
@@ -294,7 +299,7 @@ block:
 echo "Testing the default bot leads a headshot toward the reeler"
 block:
   var game = newGame(map, 100, false, ReplayData())
-  loadBots(game, [BotGroup(path: playersDir / "base.bas", count: PudgeCount)])
+  loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   game.world.pudges[0].placePudge(30, 50)
   game.world.pudges[1].placePudge(22, 50)
@@ -319,9 +324,9 @@ if fileExists(playersDir / "partner.bas"):
   block:
     var game = newGame(map, 100, false, ReplayData())
     loadBots(game, [
-      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: basePolicyPath, count: 1),
       BotGroup(path: playersDir / "partner.bas", count: 1),
-      BotGroup(path: playersDir / "base.bas", count: 4)
+      BotGroup(path: basePolicyPath, count: 4)
     ])
     parkBots(game)
     game.world.pudges[0].placePudge(22, 50)
@@ -332,6 +337,10 @@ if fileExists(playersDir / "partner.bas"):
       game.world.pudges[i].hookCooldown = 0
       game.world.pudges[i].windupTicks = 0
     game.world.pudges[3].hookedBy = game.world.pudges[0].id
+    # Isolate headshot aiming from the partner's optional blink. At these
+    # exact fixture coordinates its landing and lead aim can coincide;
+    # the old Base's incidental blink happened to move the reeler first.
+    game.world.pudges[1].blinkCooldown = BlinkCooldownTicks
     tickWorld(game, proc() = runBotDecisions(game))
     doAssert not game.heroVms[1].failed, game.heroVms[1].lastError
     doAssert game.world.pudges[1].windupTicks > 0,
@@ -347,9 +356,9 @@ if fileExists(playersDir / "partner.bas"):
   block:
     var game = newGame(map, 100, false, ReplayData())
     loadBots(game, [
-      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: basePolicyPath, count: 1),
       BotGroup(path: playersDir / "partner.bas", count: 1),
-      BotGroup(path: playersDir / "base.bas", count: 4)
+      BotGroup(path: basePolicyPath, count: 4)
     ])
     parkBots(game)
     game.world.pudges[0].placePudge(22, 50)
@@ -391,9 +400,9 @@ if fileExists(playersDir / "partner.bas"):
   block:
     var game = newGame(map, 100, false, ReplayData())
     loadBots(game, [
-      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: basePolicyPath, count: 1),
       BotGroup(path: playersDir / "partner.bas", count: 1),
-      BotGroup(path: playersDir / "base.bas", count: 4)
+      BotGroup(path: basePolicyPath, count: 4)
     ])
     parkBots(game)
     game.world.pudges[1].placePudge(30, 64)
@@ -418,9 +427,9 @@ if fileExists(playersDir / "partner.bas"):
   block:
     var game = newGame(map, 100, false, ReplayData())
     loadBots(game, [
-      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: basePolicyPath, count: 1),
       BotGroup(path: playersDir / "partner.bas", count: 1),
-      BotGroup(path: playersDir / "base.bas", count: 4)
+      BotGroup(path: basePolicyPath, count: 4)
     ])
     parkBots(game)
     game.world.pudges[1].placePudge(30, 64)
@@ -441,9 +450,9 @@ if fileExists(playersDir / "partner.bas"):
   block:
     var game = newGame(map, 100, false, ReplayData())
     loadBots(game, [
-      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: basePolicyPath, count: 1),
       BotGroup(path: playersDir / "partner.bas", count: 1),
-      BotGroup(path: playersDir / "base.bas", count: 4)
+      BotGroup(path: basePolicyPath, count: 4)
     ])
     parkBots(game)
     game.world.pudges[0].placePudge(40, 64)
@@ -475,9 +484,9 @@ if fileExists(playersDir / "partner.bas"):
   block:
     var game = newGame(map, 100, false, ReplayData())
     loadBots(game, [
-      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: basePolicyPath, count: 1),
       BotGroup(path: playersDir / "partner.bas", count: 1),
-      BotGroup(path: playersDir / "base.bas", count: 4)
+      BotGroup(path: basePolicyPath, count: 4)
     ])
     parkBots(game)
     game.world.pudges[0].placePudge(RiverCenterX, 50)
@@ -506,9 +515,9 @@ if fileExists(playersDir / "partner.bas"):
   block:
     var game = newGame(map, 100, false, ReplayData())
     loadBots(game, [
-      BotGroup(path: playersDir / "base.bas", count: 1),
+      BotGroup(path: basePolicyPath, count: 1),
       BotGroup(path: playersDir / "partner.bas", count: 1),
-      BotGroup(path: playersDir / "base.bas", count: 4)
+      BotGroup(path: basePolicyPath, count: 4)
     ])
     parkBots(game)
     game.world.pudges[0].placePudge(22, 48)

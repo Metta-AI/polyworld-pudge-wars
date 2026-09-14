@@ -165,6 +165,7 @@ proc pudgeJson(world: World, pudge: Pudge, slot: int): JsonNode =
     "upgrades": upgrades,
     "item_ranks": itemRanks,
     "items": itemRanks,
+    "ward_restock": max(pudge.wardCooldown, 0),
     "buff": buffOrd,
     "say": sayNode,
     "say_tick": sayTick
@@ -182,7 +183,18 @@ proc hookJson(world: World, hook: Hook): JsonNode =
     "x": round(pos.x, 3),
     "y": round(pos.y, 3),
     "victim": hook.victimId,
-    "flying": hook.phase == HookFlying
+    "flying": hook.phase == HookFlying,
+    "lightning": hook.lightning
+  }
+
+proc fireJson(patch: FirePatch): JsonNode =
+  let pos = tileCoord(patch.position)
+  %*{
+    "owner_id": patch.ownerId,
+    "team": patch.team.ord,
+    "x": round(pos.x, 3),
+    "y": round(pos.y, 3),
+    "ticks": patch.ticksLeft
   }
 
 proc runeJson(rune: Rune): JsonNode =
@@ -255,7 +267,7 @@ proc hookInFlight(world: World, ownerId: int32): bool =
       return true
   false
 
-proc intentRejectReason(slot: int, kind: IntentKind): string =
+proc intentRejectReason(slot: int, kind: IntentKind, itemId = 0'i32): string =
   ## Short token for a rejected intent. Read after apply, so the
   ## butcher state is the same as before a failed command.
   if slot < 0 or slot >= game.world.pudges.len:
@@ -285,11 +297,17 @@ proc intentRejectReason(slot: int, kind: IntentKind): string =
     else: "maxed"
   of IntentBuyPower:
     if not hero.inOwnShop: "shop"
+    elif itemId == int32(ShopWard.ord):
+      if hero.wardCooldown > 0: "cooldown"
+      elif hero.itemRank[ShopWard] >= WardChargeMax: "held"
+      else: "rejected"
     elif hero.gold <= 0: "gold"
     else: "rejected"
-  of IntentPlaceWall, IntentPlaceMine, IntentPlaceWard:
+  of IntentPlaceWall, IntentPlaceMine:
     if hero.inRiver: "river"
     else: "rejected"
+  of IntentPlaceWard:
+    "rejected"
   of IntentRot:
     "rejected"
   else:
@@ -329,7 +347,7 @@ proc snapshotAccepted*() =
       continue
     let answer =
       if res.accepted: %true
-      else: %intentRejectReason(slot, res.kind)
+      else: %intentRejectReason(slot, res.kind, res.a)
     if sentKeys[slot][key]:
       if not lastAccepted[slot].hasKey(key):
         lastAccepted[slot][key] = newJArray()
@@ -368,6 +386,7 @@ proc observation*(slot: int, final = false): JsonNode =
   var visibleHooks = newJArray()
   var visibleRunes = newJArray()
   var visibleProps = newJArray()
+  var visibleFires = newJArray()
   for i, pudge in world.pudges:
     if fogShownPudgeTeam(world, teamOrd, pudge):
       visiblePudges.add pudgeJson(world, pudge, i)
@@ -390,6 +409,9 @@ proc observation*(slot: int, final = false): JsonNode =
         not fogCanSee(world, viewer.team, prop.propCenter):
       continue
     visibleProps.add propJson(prop)
+  for patch in world.firePatches:
+    # Lightning fire shows through fog of war, matching the renderer.
+    visibleFires.add fireJson(patch)
   # The same flat, fog-clipped list BASIC objectCount/objectAt walks:
   # own team in roster order, then visible props. kind matches BASIC
   # objectKind (1 butcher, 2 wall, 3 mine, 4 ward).
@@ -424,6 +446,7 @@ proc observation*(slot: int, final = false): JsonNode =
     }
   result = %*{
     "type": if final: "final" else: "observation",
+    "game_version": ReplayGameVersion,
     "slot": slot,
     "tick": world.tick,
     "max_ticks": maxTicks,
@@ -442,7 +465,8 @@ proc observation*(slot: int, final = false): JsonNode =
       "pudges": visiblePudges,
       "hooks": visibleHooks,
       "runes": visibleRunes,
-      "props": visibleProps
+      "props": visibleProps,
+      "fires": visibleFires
     },
     "objects": objectsNode,
     "ally_ping": pingNode,
@@ -456,11 +480,14 @@ proc globalSnapshot(): JsonNode =
   let world = game.world
   var pudges = newJArray()
   var hooks = newJArray()
+  var fires = newJArray()
   for i, pudge in world.pudges:
     pudges.add pudgeJson(world, pudge, i)
   for hook in world.hooks:
     if hook.phase != HookIdle:
       hooks.add hookJson(world, hook)
+  for patch in world.firePatches:
+    fires.add fireJson(patch)
   var names = newJArray()
   for name in playerNames:
     names.add %name
@@ -479,6 +506,7 @@ proc globalSnapshot(): JsonNode =
     "rune_next": runeNextJson(world),
     "pudges": pudges,
     "hooks": hooks,
+    "fires": fires,
     "player_names": names,
     "started": started,
     "paused": false,

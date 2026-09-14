@@ -15,6 +15,7 @@ import
   content,
   maps,
   sim,
+  teammates,
   replays
 
 type
@@ -48,7 +49,8 @@ type
     DataRuneSoon,
     DataRuneNextKind,
     DataRuneNextX,
-    DataRuneNextY
+    DataRuneNextY,
+    DataTeamPingResponder
 
 const
   PudgeDataNames: array[PudgeDataSlot, string] = [
@@ -81,7 +83,8 @@ const
     "runeSoon",
     "runeNextKind",
     "runeNextX",
-    "runeNextY"
+    "runeNextY",
+    "teamPingResponder"
   ]
 
 var
@@ -225,8 +228,8 @@ proc initPudgeHost(pudgeId: int32): Host =
       activeGame.recordingError = error.msg
       raise newException(BasicError, "replay recording failed: " & error.msg)
     int32(applyWalkTo(activeGame.world, pudgeId, arguments[0], arguments[1]))
-  let hookToProc: HostProc = proc(
-      arguments: openArray[int32]
+  proc castHook(
+      arguments: openArray[int32], rescueId = -1'i32
   ): int32 =
     var
       aimX = arguments[0]
@@ -245,6 +248,13 @@ proc initPudgeHost(pudgeId: int32): Host =
       aimY = clamp(
         aimY + rng.between(-spread, spread), 0'i32, int32(GridTiles - 1)
       )
+    if rescueId >= 0:
+      let index = activeGame.world.pudgeIndex(pudgeId)
+      if index < 0 or
+          not activeGame.world.canThrowHook(activeGame.world.pudges[index]) or
+          not activeGame.world.friendlyHookLaneClear(
+            pudgeId, aimX, aimY, rescueId):
+        return 0
     try:
       if activeGame.recorder != nil:
         activeGame.recorder.recordHookTo(
@@ -257,6 +267,25 @@ proc initPudgeHost(pudgeId: int32): Host =
       activeGame.recordingError = error.msg
       raise newException(BasicError, "replay recording failed: " & error.msg)
     int32(applyHookTo(activeGame.world, pudgeId, aimX, aimY))
+  let hookToProc: HostProc = proc(arguments: openArray[int32]): int32 =
+    castHook(arguments)
+  let safeHookToProc: HostProc = proc(arguments: openArray[int32]): int32 =
+    castHook(arguments, 0)
+  let rescueAllyProc: HostProc = proc(arguments: openArray[int32]): int32 =
+    let allyId = arguments[0]
+    if not activeGame.world.mayRescueAlly(pudgeId, allyId):
+      return 0
+    let ally = activeGame.world.pudges[activeGame.world.pudgeIndex(allyId)]
+    let at = tileOf(ally.position)
+    castHook([int32(at.x), int32(at.z)], allyId)
+  let allyNeedsRescueProc: HostProc = proc(arguments: openArray[int32]): int32 =
+    let
+      caster = activeGame.world.pudgeIndex(pudgeId)
+      ally = activeGame.world.pudgeIndex(arguments[0])
+    if caster < 0 or ally < 0 or caster == ally or
+        activeGame.world.pudges[caster].team != activeGame.world.pudges[ally].team:
+      return 0
+    int32(activeGame.world.needsRescue(activeGame.world.pudges[ally]))
   let attackTargetProc: HostProc = proc(
       arguments: openArray[int32]
   ): int32 =
@@ -528,6 +557,9 @@ proc initPudgeHost(pudgeId: int32): Host =
   discard result.addFunction("runeKind", 1, runeKindProc, 4)
   discard result.addFunction("walkTo", 2, walkToProc, 400)
   discard result.addFunction("hookTo", 2, hookToProc, 400)
+  discard result.addFunction("safeHookTo", 2, safeHookToProc, 400)
+  discard result.addFunction("rescueAlly", 1, rescueAllyProc, 400)
+  discard result.addFunction("allyNeedsRescue", 1, allyNeedsRescueProc, 20)
   discard result.addFunction("attackTarget", 1, attackTargetProc, 20)
   discard result.addFunction("buyUpgrade", 1, buyUpgradeProc, 20)
   discard result.addFunction("buyPower", 1, buyPowerProc, 20)
@@ -675,7 +707,7 @@ proc runPudgeScript(game: Game, index: int) {.measure.} =
     )
     vm.runtime.setData(
       pudgeDataIds[DataHookReady],
-      if pudge.hookCooldown <= 0: 1'i32 else: 0'i32
+      int32(game.world.canThrowHook(pudge))
     )
     vm.runtime.setData(
       pudgeDataIds[DataBlinkReady],
@@ -703,6 +735,9 @@ proc runPudgeScript(game: Game, index: int) {.measure.} =
       vm.runtime.setData(pudgeDataIds[DataAllyPingY], -1'i32)
       vm.runtime.setData(pudgeDataIds[DataAllyPingAge], -1'i32)
       vm.runtime.setData(pudgeDataIds[DataAllyPingBy], 0'i32)
+    vm.runtime.setData(
+      pudgeDataIds[DataTeamPingResponder], game.teamPingResponder(pudge.team)
+    )
     let soon = runeSoonTicks(game.world)
     vm.runtime.setData(pudgeDataIds[DataRuneSoon], soon)
     if soon <= 0:

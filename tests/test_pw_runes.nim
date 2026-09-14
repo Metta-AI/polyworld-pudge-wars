@@ -359,6 +359,15 @@ block:
   doAssert stateHash(game) != withHook, "a charged hook must hash"
   game.world.hooks.setLen(0)
 
+  game.world.firePatches.add FirePatch(
+    ownerId: game.world.pudges[0].id,
+    team: WestTeam,
+    position: game.world.pudges[0].position,
+    ticksLeft: 12
+  )
+  doAssert stateHash(game) != baseline, "fire trails must be hashed"
+  game.world.firePatches.setLen(0)
+
   doAssert stateHash(game) == baseline, "every probe must restore state"
 
 echo "Testing bounty pays gold and leaves a combat buff"
@@ -420,9 +429,11 @@ block:
       break
   doAssert latched, "the charged hook must land"
   doAssert game.world.lightningTick == game.world.tick
-  doAssert game.world.pudges[3].hp ==
-    victimHp - BaseHookDamage - RuneLightningDamage,
+  let expected = victimHp - BaseHookDamage - RuneLightningDamage
+  doAssert game.world.pudges[3].hp <= expected,
     "the latched enemy takes hook damage plus the splash"
+  doAssert game.world.pudges[3].hp >= expected - RuneLightningTrailDamage * 8,
+    "fire-trail burn on the flight path stays slight"
   doAssert game.world.pudges[4].hp == nearHp - RuneLightningDamage,
     "a clustered enemy must take the splash"
   doAssert game.world.pudges[1].hp == allyHp, "allies are not zapped"
@@ -456,6 +467,144 @@ block:
   doAssert game.world.pudges[3].hp == eastHp,
     "an ally land must not splash enemies"
   doAssert game.world.lightningTick == 0
+
+echo "Testing a lightning hook flies at double speed"
+block:
+  let game = freshGame(runePeriod = 0)
+  parkPudges(game)
+  game.world.pudges[0].placePudge(30, 64)
+  game.world.pudges[0].buffKind = RuneLightning
+  game.world.pudges[0].buffTicks = RuneBuffTicks
+  doAssert applyHookTo(game.world, game.world.pudges[0].id, 50, 64)
+  game.play(int(HookWindupTicks))
+  doAssert game.world.hooks.len == 1
+  doAssert game.world.hooks[0].lightning
+  let expected = thrownHookSpeed(0, true) + HookAccel
+  doAssert game.world.hooks[0].speed == expected,
+    "a charged throw must fly at double hook speed"
+  doAssert game.world.hooks[0].peakSpeed == expected,
+    "reel speed must snapshot the same doubled throw"
+  doAssert thrownHookSpeed(0, true) == hookSpeed(0) * RuneLightningSpeedMul
+
+echo "Testing a lightning grapple keeps unbuffed speed"
+block:
+  let game = freshGame(runePeriod = 0)
+  parkPudges(game)
+  game.world.pudges[0].placePudge(30, 64)
+  game.world.pudges[0].buffKind = RuneLightning
+  game.world.pudges[0].buffTicks = RuneBuffTicks
+  doAssert applyGrappleTo(game.world, game.world.pudges[0].id, 50, 64)
+  game.play(int(HookWindupTicks))
+  doAssert game.world.hooks.len == 1
+  doAssert game.world.hooks[0].isGrapple
+  doAssert not game.world.hooks[0].lightning,
+    "grapple must not snapshot the Lightning charge"
+  doAssert game.world.hooks[0].speed == hookSpeed(0) + HookAccel,
+    "grapple must not inherit Lightning hook speed"
+
+echo "Testing lightning walking and blinking do not paint fire"
+block:
+  let game = freshGame(runePeriod = 0)
+  parkPudges(game)
+  game.world.pudges[0].buffKind = RuneLightning
+  game.world.pudges[0].buffTicks = RuneBuffTicks
+  doAssert applyWalkTo(game.world, game.world.pudges[0].id, 50, 64)
+  game.play(24)
+  doAssert game.world.firePatches.len == 0,
+    "a lightning walk must not paint fire"
+  game.world.pudges[0].placePudge(22, 64)
+  doAssert applyBlinkTo(game.world, game.world.pudges[0].id, 36, 64)
+  game.play(1)
+  doAssert game.world.firePatches.len == 0,
+    "a lightning blink must not paint fire"
+
+echo "Testing a lightning hook paints a fire trail that burns enemies"
+block:
+  let game = freshGame(runePeriod = 0)
+  parkPudges(game)
+  for pudge in game.world.pudges.mitems:
+    pudge.shieldTicks = 0
+  game.world.pudges[0].placePudge(30, 64)
+  game.world.pudges[0].buffKind = RuneLightning
+  game.world.pudges[0].buffTicks = RuneBuffTicks
+  doAssert applyHookTo(game.world, game.world.pudges[0].id, 50, 64)
+  game.play(int(HookWindupTicks) + 8)
+  doAssert game.world.firePatches.len > 0, "a charged hook must paint fire"
+  let painted = game.world.firePatches[0]
+  game.world.hooks.setLen(0)
+  game.world.pudges[0].placePudge(22, 40)
+  game.world.pudges[0].buffTicks = 0
+  let cell = tileOf(painted.position)
+  game.world.pudges[3].placePudge(cell.x, cell.z)
+  game.world.pudges[3].shieldTicks = 0
+  let
+    enemyHp = game.world.pudges[3].hp
+    allyHp = game.world.pudges[1].hp
+    selfHp = game.world.pudges[0].hp
+  game.play(int(RuneLightningTrailPeriodTicks))
+  doAssert game.world.pudges[3].hp == enemyHp - RuneLightningTrailDamage,
+    "an enemy standing in the trail must burn"
+  doAssert game.world.pudges[1].hp == allyHp, "allies are not burned"
+  doAssert game.world.pudges[0].hp == selfHp, "the painter is not burned"
+  doAssert game.world.fireAffected(game.world.pudges[3])
+
+echo "Testing a lightning hook clash shocks the other thrower"
+block:
+  let game = freshGame(runePeriod = 0)
+  parkPudges(game)
+  for pudge in game.world.pudges.mitems:
+    pudge.shieldTicks = 0
+  let
+    westHp = game.world.pudges[0].hp
+    eastHp = game.world.pudges[3].hp
+    mid = worldAtTile(64, 40)
+  game.world.hooks.add Hook(
+    id: game.world.nextHookId,
+    ownerId: game.world.pudges[0].id,
+    team: WestTeam,
+    phase: HookFlying,
+    position: WorldPoint(x: mid.x - 8 * WorldScale, z: mid.z),
+    origin: WorldPoint(x: mid.x - 8 * WorldScale, z: mid.z),
+    prior: WorldPoint(x: mid.x - 8 * WorldScale, z: mid.z),
+    heading: heading(WorldScale, 0),
+    range: 20 * WorldScale,
+    speed: BaseHookSpeed,
+    peakSpeed: BaseHookSpeed,
+    radius: BaseHookRadius,
+    damage: BaseHookDamage,
+    lightning: true
+  )
+  inc game.world.nextHookId
+  game.world.hooks.add Hook(
+    id: game.world.nextHookId,
+    ownerId: game.world.pudges[3].id,
+    team: EastTeam,
+    phase: HookFlying,
+    position: WorldPoint(x: mid.x + 8 * WorldScale, z: mid.z),
+    origin: WorldPoint(x: mid.x + 8 * WorldScale, z: mid.z),
+    prior: WorldPoint(x: mid.x + 8 * WorldScale, z: mid.z),
+    heading: heading(-WorldScale, 0),
+    range: 20 * WorldScale,
+    speed: BaseHookSpeed,
+    peakSpeed: BaseHookSpeed,
+    radius: BaseHookRadius,
+    damage: BaseHookDamage
+  )
+  inc game.world.nextHookId
+  var denied = false
+  for _ in 0 ..< 40:
+    game.play(1)
+    if game.world.hookDenies > 0:
+      denied = true
+      break
+  doAssert denied, "opposing flying disks should clash"
+  doAssert game.world.hooks.len == 0
+  doAssert game.world.lightningTick == game.world.tick,
+    "a charged clash must fire a lightning pulse"
+  doAssert game.world.pudges[0].hp == westHp,
+    "the lightning thrower is not shocked by their own pulse"
+  doAssert game.world.pudges[3].hp == eastHp - RuneLightningClashDamage,
+    "the enemy thrower takes the clash shock"
 
 echo "Testing the stock bot hooks a rune drifting past its lane"
 block:

@@ -65,6 +65,9 @@ fi
 cp "${src}/pw.html" "${output_dir}/index.html"
 cp "${src}/pw.js" "${output_dir}/pw.js"
 cp "${src}/pw.wasm" "${output_dir}/pw.wasm"
+for asset in recap-overlay.js boot-scene.js; do
+  cp "${polyworld_root}/examples/pudge_wars/${asset}" "${output_dir}/${asset}"
+done
 if [[ -f "${src}/pw.data" ]]; then
   cp "${src}/pw.data" "${output_dir}/pw.data"
 fi

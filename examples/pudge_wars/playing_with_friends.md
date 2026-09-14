@@ -126,6 +126,38 @@ Genre-standard controls (rebindable via `--keys FILE`, one
 
 Grab the runes drifting down the river — haste, double damage, regen,
 big hook, lightning, bounty — by walking into them or hooking them.
+Lightning doubles hook speed, paints a fire trail your team can see
+through fog, zaps a circle when the hook lands, and shocks the other
+thrower if the chains clash.
+
+### Getting help from the default bots
+
+Press **G** over a spot to ask for cover. For the next three seconds,
+the closest available bot covers that call; the others keep their lanes.
+A river or enemy-bank call brings the responder to your team's safe
+bank, not into the water. Immediate dodges, retreating, and rescues take
+priority over a rally.
+
+Bots avoid offensive throws through nearby teammates. They still try to
+rescue someone on an enemy chain or a swimmer at 60% health or less.
+If you are healthy and deliberately wading, they leave you alone:
+ping your own position to ask for a pull. A rescue already being attempted
+by another teammate is left to that teammate.
+
+These behaviors belong to `players/base.bas`; custom policies need to
+opt into the new helpers. Hook collision and human aiming are unchanged,
+so late movement and ricochets can still catch allies. Bot acknowledgments
+are captured in diagnostic logs, not displayed as team chat.
+
+See [the teammate test notes](TEAMMATE_TESTS.md) for checks and match results.
+
+The default Base also fights from farther inland, saves Blink for defense
+and river escape, and prioritizes hook distance then speed upgrades. It
+uses short hooks in close fights and approaches an allied catch from the
+safe bank. See [the combat evaluation](BASE_POLICY_EVALUATION.md) for the
+measured improvement against Myasnik and remaining limitations. Restart
+the host to load an updated BASIC policy; no native rebuild is needed
+for a policy-only change.
 
 ## Leaving, dropping, rejoining
 

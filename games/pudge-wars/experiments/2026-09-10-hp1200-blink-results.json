@@ -1,0 +1,275 @@
+{
+  "engine_version": 36,
+  "local_only": true,
+  "native_fair_bot_every": 8,
+  "json_action_delay_ticks": 1,
+  "policies": {
+    "baseline.bas": "72cf4e8aa9437a87411dbb7a0b4e25bf2916dbfb5892debe53c30c44b20c90b7",
+    "baseline.py": "07db67fa0336450a9b8e6ffd4685d0ac119b0ac83bd0d4f5ff350e0ae2c022cb",
+    "selected.bas": "40b0973a44f4ae09dd4313068dc9a74ddf18ccae72277e1fe7e4211628963a21",
+    "selected.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+    "myasnik_v75.bas": "f2e93668e4073212c3794aaac1af93fb4ae1931faa86fad8e56534f60d90dbc7"
+  },
+  "completed_games": 544,
+  "results": {
+    "dev-recover-duel": {
+      "games": 12,
+      "wins": 9,
+      "timeLimits": 2,
+      "meanKills": 8.666666666666666,
+      "meanOpponentKills": 5.083333333333333
+    },
+    "json-duel-control-6301": {
+      "games": 12,
+      "wins": 12,
+      "timeLimits": 0,
+      "meanKills": 10.0,
+      "meanOpponentKills": 4.083333333333333
+    },
+    "screen-spacing_recover-myasnik_v75": {
+      "games": 12,
+      "wins": 12,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 17.75
+    },
+    "holdout-final-myasnik-1": {
+      "games": 24,
+      "wins": 20,
+      "timeLimits": 4,
+      "meanKills": 9.5,
+      "meanOpponentKills": 3.7083333333333335
+    },
+    "json-duel-baseline": {
+      "games": 12,
+      "wins": 12,
+      "timeLimits": 0,
+      "meanKills": 10.0,
+      "meanOpponentKills": 3.75
+    },
+    "json-duel-final": {
+      "games": 12,
+      "wins": 12,
+      "timeLimits": 0,
+      "meanKills": 10.0,
+      "meanOpponentKills": 4.666666666666667
+    },
+    "screen-fountain": {
+      "games": 12,
+      "wins": 9,
+      "timeLimits": 0,
+      "meanKills": 28.916666666666668,
+      "meanOpponentKills": 22.666666666666668
+    },
+    "verify-equivalence-3": {
+      "games": 24,
+      "wins": 24,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 13.208333333333334
+    },
+    "screen-recover_cross": {
+      "games": 12,
+      "wins": 11,
+      "timeLimits": 0,
+      "meanKills": 29.333333333333332,
+      "meanOpponentKills": 21.083333333333332
+    },
+    "screen-recover75": {
+      "games": 12,
+      "wins": 11,
+      "timeLimits": 0,
+      "meanKills": 29.333333333333332,
+      "meanOpponentKills": 20.916666666666668
+    },
+    "screen-baseline": {
+      "games": 12,
+      "wins": 10,
+      "timeLimits": 0,
+      "meanKills": 28.666666666666668,
+      "meanOpponentKills": 22.083333333333332
+    },
+    "dev-final-myasnik_v75-1": {
+      "games": 12,
+      "wins": 8,
+      "timeLimits": 4,
+      "meanKills": 8.583333333333334,
+      "meanOpponentKills": 3.5833333333333335
+    },
+    "holdout-base-myasnik-1": {
+      "games": 24,
+      "wins": 23,
+      "timeLimits": 0,
+      "meanKills": 9.833333333333334,
+      "meanOpponentKills": 5.25
+    },
+    "holdout-final-base-3": {
+      "games": 24,
+      "wins": 19,
+      "timeLimits": 0,
+      "meanKills": 28.875,
+      "meanOpponentKills": 21.583333333333332
+    },
+    "screen-spacing_recover-baseline": {
+      "games": 12,
+      "wins": 10,
+      "timeLimits": 0,
+      "meanKills": 29.583333333333332,
+      "meanOpponentKills": 24.583333333333332
+    },
+    "screen-retreat30": {
+      "games": 12,
+      "wins": 10,
+      "timeLimits": 0,
+      "meanKills": 29.25,
+      "meanOpponentKills": 20.416666666666668
+    },
+    "dev-final-baseline-3": {
+      "games": 12,
+      "wins": 9,
+      "timeLimits": 0,
+      "meanKills": 28.75,
+      "meanOpponentKills": 23.666666666666668
+    },
+    "json-holdout-base": {
+      "games": 16,
+      "wins": 9,
+      "timeLimits": 0,
+      "meanKills": 26.375,
+      "meanOpponentKills": 24.125
+    },
+    "holdout-final-myasnik-3": {
+      "games": 24,
+      "wins": 24,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 13.208333333333334
+    },
+    "json-screen-recover": {
+      "games": 8,
+      "wins": 6,
+      "timeLimits": 0,
+      "meanKills": 28.375,
+      "meanOpponentKills": 22.125
+    },
+    "dev-recover-v-base": {
+      "games": 12,
+      "wins": 6,
+      "timeLimits": 0,
+      "meanKills": 25.5,
+      "meanOpponentKills": 24.833333333333332
+    },
+    "screen-spacing-myasnik_v75": {
+      "games": 12,
+      "wins": 11,
+      "timeLimits": 0,
+      "meanKills": 29.75,
+      "meanOpponentKills": 18.75
+    },
+    "verify-equivalence-1": {
+      "games": 24,
+      "wins": 23,
+      "timeLimits": 0,
+      "meanKills": 9.833333333333334,
+      "meanOpponentKills": 5.25
+    },
+    "duel-confirm-final-teams": {
+      "games": 24,
+      "wins": 17,
+      "timeLimits": 5,
+      "meanKills": 8.75,
+      "meanOpponentKills": 4.125
+    },
+    "json-screen-baseline": {
+      "games": 4,
+      "wins": 4,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 16.0
+    },
+    "json-holdout-myasnik": {
+      "games": 16,
+      "wins": 16,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 16.125
+    },
+    "holdout-base-myasnik-3": {
+      "games": 24,
+      "wins": 22,
+      "timeLimits": 0,
+      "meanKills": 29.5,
+      "meanOpponentKills": 18.416666666666668
+    },
+    "json-screen-fountain": {
+      "games": 8,
+      "wins": 3,
+      "timeLimits": 0,
+      "meanKills": 24.875,
+      "meanOpponentKills": 26.625
+    },
+    "screen-early_damage": {
+      "games": 12,
+      "wins": 9,
+      "timeLimits": 0,
+      "meanKills": 27.833333333333332,
+      "meanOpponentKills": 22.416666666666668
+    },
+    "dev-final-myasnik_v75-3": {
+      "games": 12,
+      "wins": 12,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 16.5
+    },
+    "screen2-cross_escape": {
+      "games": 12,
+      "wins": 10,
+      "timeLimits": 0,
+      "meanKills": 28.583333333333332,
+      "meanOpponentKills": 22.416666666666668
+    },
+    "json-duel-selected": {
+      "games": 12,
+      "wins": 11,
+      "timeLimits": 1,
+      "meanKills": 9.833333333333334,
+      "meanOpponentKills": 4.333333333333333
+    },
+    "dev-baseline-duel": {
+      "games": 12,
+      "wins": 9,
+      "timeLimits": 3,
+      "meanKills": 8.25,
+      "meanOpponentKills": 3.75
+    },
+    "duel-confirm-baseline": {
+      "games": 24,
+      "wins": 22,
+      "timeLimits": 2,
+      "meanKills": 9.75,
+      "meanOpponentKills": 4.041666666666667
+    },
+    "screen-fountain_raid": {
+      "games": 12,
+      "wins": 9,
+      "timeLimits": 0,
+      "meanKills": 28.916666666666668,
+      "meanOpponentKills": 21.75
+    },
+    "screen2-cross_raid": {
+      "games": 12,
+      "wins": 10,
+      "timeLimits": 0,
+      "meanKills": 28.583333333333332,
+      "meanOpponentKills": 22.416666666666668
+    },
+    "screen-spacing-baseline": {
+      "games": 12,
+      "wins": 10,
+      "timeLimits": 0,
+      "meanKills": 29.166666666666668,
+      "meanOpponentKills": 22.583333333333332
+    }
+  }
+}

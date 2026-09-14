@@ -3,12 +3,12 @@
 import
   std/[math, os, strutils, tables, times],
   chroma, opengl, pixie, silky, vmath, windy,
-  audio, content, director, fog, maps, sim, game, human, keybinds, netclient, netsim,
+  audio, butcherhook, butcherknife, content, director, fog, maps, sim, game, human, keybinds, netclient, netsim,
   netpredict, replays, ui,
   polyworld/[
     actioncam, characters, chrome, common, gameuis, particles, particleshaders,
     pathing, player, profiles, quadterrain, rtscameras, shadows, shapes,
-    tapes, viewers, worldbars
+    tapes, terrainsurfaces, viewers, worldbars
   , visions]
 
 when not defined(emscripten):
@@ -21,12 +21,6 @@ const
   AppIconPath = "examples/pudge_wars/macos/AppIcon.png"
   WestHook = rgbx(220, 72, 64, 230)
   EastHook = rgbx(72, 148, 230, 230)
-  ChainIron = rgbx(168, 164, 156, 240)
-  ChainDark = rgbx(78, 74, 70, 245)
-  HookBlade = rgbx(42, 40, 38, 255)
-  HookHub = rgbx(92, 88, 84, 255)
-  HookEdge = rgbx(196, 192, 184, 252)
-  HookTrail = rgbx(236, 236, 232, 170)
   GrabGlow = rgbx(168, 72, 230, 90)
   SpawnShieldDisk = rgbx(90, 210, 255, 95)
     ## Ice disk under a spawn-protected butcher. Saturated so it still
@@ -53,6 +47,9 @@ const
     ## Drifting motes along the blight rim.
   LightningFlash = rgbx(255, 236, 80, 200)
   LightningRing = rgbx(255, 214, 90, 140)
+  FireTrailFill = rgbx(255, 86, 18, 120)
+  FireTrailCore = rgbx(255, 196, 48, 165)
+  FireTrailEmber = rgbx(255, 140, 32, 130)
   DefaultCameraDistance = 75.0'f32
     ## Starts at the closest shipped zoom (75–155). Clamped live by
     ## zoomMinDistance / zoomMaxDistance.
@@ -83,20 +80,9 @@ const
   PalisadeTop = rgbx(162, 116, 70, 255)
   PalisadeBarLift = 2.15'f32
   PalisadeBarWidth = 1.15'f32
-  ShurikenRadius = BaseHookRadius.float32 / WorldScale.float32
+  MeatHookRadius = BaseHookRadius.float32 / WorldScale.float32
     ## Visual head matches the sim latch disk (2.75 tiles at rank 0).
     ## Big Hook and radius upgrades scale this 1:1.
-  ShurikenHubRadius = 1.18'f32
-  ShurikenHoleRadius = 0.47'f32
-  ShurikenHalfHeight = 0.33'f32
-  ShurikenPoints = 6
-  ShurikenFlySpin = 11.0'f32
-  ShurikenReelSpin = 2.8'f32
-  ChainLinkStep = 0.82'f32
-  ChainLinkLength = 1.28'f32
-  ChainLinkWidth = 0.72'f32
-  ChainLinkThick = 0.18'f32
-  ChainGrabWidth = 0.24'f32
   RuneCoreRadius = RuneRadius.float32 / WorldScale.float32
     ## Same 1-tile body the sim grabs with; the tablet sits on this.
   RuneBobRate = 1.15'f32
@@ -414,6 +400,42 @@ proc addRotCloud(
       8
     )
 
+proc addFireStain(
+    renderer: var ShapeRenderer,
+    feet: Vec3,
+    radius: float32,
+    life: float32,
+    seconds: float32
+) =
+  ## Burning tile painted by a charged Lightning hook. Drawn through
+  ## fog of war on purpose: the trail is the tell. Own-team vision
+  ## along the same disk lives in `fogCanSeeTeam`.
+  let
+    flicker = 0.5'f32 + 0.5'f32 * sin(seconds * 13.0'f32 + feet.x * 2.4'f32)
+    fade = max(0.0'f32, min(life, 1.0'f32))
+    fillA = 24.0'f32 + fade * 32.0'f32 + flicker * 12.0'f32
+    coreA = 36.0'f32 + fade * 36.0'f32 + flicker * 14.0'f32
+  renderer.addCircle(
+    feet,
+    radius * (0.62'f32 + flicker * 0.06'f32),
+    fadeRgbx(FireTrailFill, fillA),
+    16
+  )
+  renderer.addCircle(
+    feet,
+    radius * 0.22'f32,
+    fadeRgbx(FireTrailCore, coreA),
+    10
+  )
+  var ember = feet
+  ember.y += 0.10'f32 + flicker * 0.06'f32
+  renderer.addCircle(
+    ember,
+    0.22'f32 + flicker * 0.08'f32,
+    fadeRgbx(FireTrailEmber, 40.0'f32 + fade * 20.0'f32),
+    8
+  )
+
 proc waterSheetAt(x, z: int): bool =
   layers.len > WaterLayer and
     layers[WaterLayer].tiles[z * GridTiles + x].exists
@@ -547,128 +569,6 @@ proc addDebugCollisionOverlays(renderer: var ShapeRenderer) =
     let ec = tileCenterRender(east.x, east.z)
     renderer.addDebugRect(ec.x - pad, ec.z - pad, ec.x + pad, ec.z + pad, SpawnPadColor)
 
-proc xzDir(v: Vec3): Vec3 =
-  let len = hypot(v.x, v.z)
-  if len < 1e-6'f32:
-    vec3(0, 0, 1)
-  else:
-    vec3(v.x / len, 0, v.z / len)
-
-proc xzPerp(v: Vec3): Vec3 =
-  let d = xzDir(v)
-  vec3(-d.z, 0, d.x)
-
-const
-  LinkSides = 8
-  LinkInner = 0.58'f32
-
-proc addChainLink(
-    renderer: var ShapeRenderer,
-    center: Vec3,
-    along: Vec3,
-    stand: bool,
-    color: ColorRGBX,
-    size = 1.0'f32
-) =
-  ## One oval chain link. Flat links lie in XZ; standing links occupy
-  ## the throw/up plane so they interlock from the play camera.
-  let
-    axisA = xzDir(along) * (ChainLinkLength * 0.5'f32 * size)
-    axisB =
-      if stand: vec3(0, ChainLinkWidth * 0.5'f32 * size, 0)
-      else: xzPerp(along) * (ChainLinkWidth * 0.5'f32 * size)
-    thick =
-      if stand: xzPerp(along) * (ChainLinkThick * size)
-      else: vec3(0, ChainLinkThick * size, 0)
-  var
-    outer: array[LinkSides + 1, Vec3]
-    inner: array[LinkSides + 1, Vec3]
-  for i in 0 .. LinkSides:
-    let
-      a = TAU * i.float32 / LinkSides.float32
-      radial = axisA * cos(a) + axisB * sin(a)
-    outer[i] = center + radial
-    inner[i] = center + radial * LinkInner
-  for i in 0 ..< LinkSides:
-    let
-      o0 = outer[i]
-      o1 = outer[i + 1]
-      n0 = inner[i]
-      n1 = inner[i + 1]
-    renderer.addQuad(o0 + thick, o1 + thick, n1 + thick, n0 + thick, color)
-    renderer.addQuad(o0 - thick, n0 - thick, n1 - thick, o1 - thick, color)
-    renderer.addQuad(o0 + thick, o0 - thick, o1 - thick, o1 + thick, color)
-    renderer.addQuad(n0 + thick, n1 + thick, n1 - thick, n0 - thick, ChainDark)
-
-proc shurikenPoint(center: Vec3, angle, radius, y: float32): Vec3 =
-  vec3(
-    center.x + sin(angle) * radius,
-    y,
-    center.z + cos(angle) * radius
-  )
-
-proc addShuriken(
-    renderer: var ShapeRenderer,
-    center: Vec3,
-    yaw: float32,
-    teamColor: ColorRGBX,
-    radius = ShurikenRadius
-) =
-  ## Six-point iron throwing star at the chain tip. `radius` is the
-  ## sim latch disk in render units, so Big Hook and radius upgrades
-  ## grow the head 1:1 with grab size.
-  let
-    scale = radius / ShurikenRadius
-    hubR = ShurikenHubRadius * scale
-    holeR = ShurikenHoleRadius * scale
-    halfH = ShurikenHalfHeight * scale
-    topY = center.y + halfH
-    botY = center.y - halfH * 0.45'f32
-    step = TAU / ShurikenPoints.float32
-  for i in 0 ..< ShurikenPoints:
-    let
-      a = yaw + step * i.float32
-      aL = a - step * 0.5'f32
-      aR = a + step * 0.5'f32
-      tipT = shurikenPoint(center, a, radius, topY)
-      tipB = shurikenPoint(center, a, radius, botY)
-      lT = shurikenPoint(center, aL, hubR, topY)
-      lB = shurikenPoint(center, aL, hubR, botY)
-      rT = shurikenPoint(center, aR, hubR, topY)
-      rB = shurikenPoint(center, aR, hubR, botY)
-    renderer.addTriangle(lT, tipT, rT, HookBlade)
-    renderer.addQuad(lT, tipT, tipB, lB, ChainDark)
-    renderer.addQuad(rT, rB, tipB, tipT, ChainDark)
-    renderer.addTriangle(
-      shurikenPoint(center, a - step * 0.07'f32, radius * 0.80'f32, topY + 0.01'f32),
-      shurikenPoint(center, a, radius * 1.04'f32, topY + 0.01'f32),
-      shurikenPoint(center, a + step * 0.07'f32, radius * 0.80'f32, topY + 0.01'f32),
-      HookEdge
-    )
-  const HubSegs = 12
-  let hubTop = topY + 0.02'f32
-  for i in 0 ..< HubSegs:
-    let
-      a0 = yaw + TAU * i.float32 / HubSegs.float32
-      a1 = yaw + TAU * (i + 1).float32 / HubSegs.float32
-      o0 = shurikenPoint(center, a0, hubR, hubTop)
-      o1 = shurikenPoint(center, a1, hubR, hubTop)
-      i0 = shurikenPoint(center, a0, holeR, hubTop)
-      i1 = shurikenPoint(center, a1, holeR, hubTop)
-      o0b = shurikenPoint(center, a0, hubR, botY)
-      o1b = shurikenPoint(center, a1, hubR, botY)
-      i0b = shurikenPoint(center, a0, holeR, botY)
-      i1b = shurikenPoint(center, a1, holeR, botY)
-    renderer.addQuad(o0, o1, i1, i0, HookHub)
-    renderer.addQuad(i0, i1, i1b, i0b, ChainIron)
-    renderer.addQuad(o0, o0b, o1b, o1, ChainDark)
-    renderer.addQuad(
-      shurikenPoint(center, a0, holeR * 1.45'f32, hubTop + 0.01'f32),
-      shurikenPoint(center, a1, holeR * 1.45'f32, hubTop + 0.01'f32),
-      shurikenPoint(center, a1, holeR * 1.08'f32, hubTop + 0.01'f32),
-      shurikenPoint(center, a0, holeR * 1.08'f32, hubTop + 0.01'f32),
-      teamColor
-    )
 
 proc runeMix(stone, glow: ColorRGBX, glowParts, parts: int): ColorRGBX =
   let stoneParts = parts - glowParts
@@ -984,37 +884,6 @@ proc addRiverRune(
   )
   renderer.addRuneGlyph(face, yaw, kind, glow)
 
-proc chainPoint(points: openArray[Vec3], span, t: float32): Vec3 =
-  if points.len == 0:
-    return
-  if span <= 1e-6'f32:
-    return points[^1]
-  var
-    want = t * span
-    walked = 0.0'f32
-  if want < 0: want = 0
-  if want > span: want = span
-  for i in 0 ..< points.len - 1:
-    let
-      delta = points[i + 1] - points[i]
-      step = hypot(delta.x, delta.z)
-    if walked + step >= want or i == points.len - 2:
-      let u =
-        if step <= 1e-6'f32: 0.0'f32
-        else: (want - walked) / step
-      return points[i] * (1.0'f32 - u) + points[i + 1] * u
-    walked += step
-  points[^1]
-
-proc chainTangent(points: openArray[Vec3], span, t: float32): Vec3 =
-  let
-    a = chainPoint(points, span, max(t - 0.02'f32, 0.0'f32))
-    b = chainPoint(points, span, min(t + 0.02'f32, 1.0'f32))
-    d = b - a
-  if hypot(d.x, d.z) < 1e-6'f32:
-    vec3(0, 0, 1)
-  else:
-    d
 
 proc fogCrossing(a, b: Vec3): Vec3 =
   ## Walks the fog boundary along `a`→`b`. `a` and `b` must disagree
@@ -1073,46 +942,90 @@ proc drawMeatHook(
     flying: bool,
     grabbed: bool,
     teamColor: ColorRGBX,
-    spin: float32,
-    headRadius = ShurikenRadius,
-    showHead = true
+    seconds: float32,
+    headRadius = MeatHookRadius,
+    showHead = true,
+    charged = false,
+    attachHand = false,
+    handOrigin = vec3(0,0,0)
 ) =
   if points.len == 0:
     return
   let
-    yaw = renderFacing(heading) + spin
-    scale = headRadius / ShurikenRadius
-    hubR = ShurikenHubRadius * scale
-    headPos = liftPoint(points[^1], 1.05'f32)
-  if points.len == 1:
-    if showHead:
-      renderer.addShuriken(headPos, yaw, teamColor, headRadius)
-    return
-  var span = 0.0'f32
-  for i in 0 ..< points.len - 1:
-    let delta = points[i + 1] - points[i]
-    span += hypot(delta.x, delta.z)
-  let
-    chainSpan = max(span - hubR, 0.0'f32)
-    links = max(int(chainSpan / ChainLinkStep), 2)
+    yaw = renderFacing(heading)
+    headPos = liftPoint(points[^1], 1.45'f32)
+    roll = if grabbed: 0'f32 else: sin(seconds * 5.0'f32) * 0.06'f32
+    transform = hookTransform(headPos, yaw, headRadius, roll)
+    eye = if showHead: transform * HookEye else: headPos
   var lifted: seq[Vec3]
-  for p in points:
-    lifted.add liftPoint(p, 0.95'f32)
-  if flying:
-    renderer.addPolyline(lifted, HookTrail, 0.10'f32)
-  if grabbed:
-    renderer.addPolyline(lifted, teamColor, ChainGrabWidth)
-  renderer.addPolyline(lifted, ChainDark, 0.11'f32)
-  for i in 0 ..< links:
+  for i in 0..<points.high:
     let
-      t = i.float32 / links.float32
-      p = liftPoint(chainPoint(points, chainSpan, t), 0.98'f32)
-      tan = chainTangent(points, chainSpan, t)
-      stand = (i and 1) != 0
-      tone = if stand: ChainDark else: ChainIron
-    renderer.addChainLink(p, tan, stand, tone)
+      a = points[i]
+      b = points[i+1]
+      steps = max(1, int(ceil(length(b-a) / 2.0'f32)))
+    for j in 0..<steps:
+      let u = j.float32 / steps.float32
+      var p = liftPoint(a * (1-u) + b * u, 1.45'f32)
+      # A small amount of slack gives the chain weight; a caught victim
+      # pulls it taut. Every sample stays above its local terrain surface.
+      if not grabbed:
+        p.y -= sin(u * PI.float32) * (if flying: 0.12'f32 else: 0.22'f32)
+      lifted.add p
   if showHead:
-    renderer.addShuriken(headPos, yaw, teamColor, headRadius)
+    let forward = vec3(sin(yaw),0,cos(yaw))
+    while lifted.len > 1 and dot(lifted[^1]-eye,forward) > 0:
+      lifted.setLen(lifted.len-1)
+  lifted.add eye
+  if attachHand and lifted.len > 1:
+    lifted[0] = handOrigin
+  renderer.addHookChain(lifted, charged=charged)
+  if showHead:
+    renderer.addButcherHook(transform,teamColor)
+
+const
+  FirepitTiles = [
+    "crypt-rock-1", "crypt-rock-2", "crypt-rock-1", "crypt-rock-2",
+    "crypt-grate-2", "crypt-lava-2", "crypt-lava-3"
+  ]
+    ## Banks vary only inside the charcoal volcanic pair. No purple stone.
+  FirepitRock = SurfaceNames.len
+  FirepitJagged = SurfaceNames.len + 1
+  FirepitGrate = SurfaceNames.len + 4
+  FirepitLava = SurfaceNames.len + 5
+  FirepitCrust = SurfaceNames.len + 6
+  FirepitFloor = vec3(1.04, 0.96, 0.86)
+  FirepitSkirt = vec3(0.78, 0.62, 0.48)
+
+proc applyArenaTerrain(mapSeed: int) =
+  ## Volcanic rock floor at authored brightness. Gameplay kinds stay put.
+  seed = mapSeed
+  initTerrain(MixedTrees, GeneratedTerrain, PaintedRocks, FirepitTiles)
+  terrainSplats = false
+  setTileMaterial(
+    int(GrassTile), FirepitRock.float32, FirepitJagged.float32,
+    FirepitFloor, FirepitSkirt, 1
+  )
+  setTileMaterial(
+    int(RoadTile), FirepitGrate.float32, FirepitGrate.float32,
+    vec3(1.08, 0.96, 0.84), vec3(0.72, 0.48, 0.34), 5
+  )
+  setTileMaterial(
+    int(RockTile), FirepitJagged.float32, FirepitRock.float32,
+    FirepitFloor, FirepitSkirt, 4
+  )
+  setTileMaterial(
+    int(MarshTile), FirepitLava.float32, FirepitRock.float32,
+    vec3(1.06, 0.92, 0.74), vec3(0.64, 0.38, 0.26), 2
+  )
+  setTileMaterial(
+    int(StoneTile), FirepitCrust.float32, FirepitRock.float32,
+    FirepitFloor, FirepitSkirt, 6
+  )
+  setTileMaterial(
+    int(TreeTile), FirepitJagged.float32, FirepitRock.float32,
+    FirepitFloor, FirepitSkirt, 0
+  )
+  scatterRocks(70, mapSeed)
 
 proc runGraphics*() =
   startProfileTrace()
@@ -1207,34 +1120,21 @@ proc runGraphics*() =
   profileBlock "terrain":
     amplitude = 1.15'f32
     treeHeight = 7.2'f32
-    seed = run.map.seed
-    initTerrain()
-    setTileMaterial(
-      int(MarshTile),
-      VolcanicMaterial,
-      CliffMaterial,
-      vec3(0.38, 0.12, 0.06),
-      vec3(0.14, 0.07, 0.05),
-      3
-    )
-    setTileColor(
-      int(StoneTile),
-      vec3(0.36, 0.30, 0.26),
-      vec3(0.20, 0.16, 0.14)
-    )
-    scatterGrass(500, run.map.seed)
-    scatterRocks(40, run.map.seed)
+    applyArenaTerrain(run.map.seed)
 
   let scene = newCharacterScene(window)
   scene.useToonShading()
   var
     pudgeModels: array[Team, CharacterModel]
     pudgeClips: array[Team, array[5, int]]
+    pudgeMeleeClips: array[Team, int]
+    chainHands: Table[int32, Vec3]
   profileBlock "models":
     for team in Team:
       let spec = PudgeSpecs[team]
       let model = loadCharacterModel(spec.modelPath, spec.targetHeight)
       pudgeModels[team] = model
+      pudgeMeleeClips[team] = model.clipIndex("ButcherChop")
       pudgeClips[team] = [
         model.clipIndex(spec.runClip),
         model.clipIndex(spec.idleClip),
@@ -1249,6 +1149,8 @@ proc runGraphics*() =
     particles = initParticleSystem()
     worldBarRenderer = initWorldBarRenderer()
     shapeRenderer = initShapeRenderer()
+    hookRenderer = initShapeRenderer()
+    knifeRenderer = initShapeRenderer()
     transport = initPlayer(
       live = not run.replayMode,
       durationTicks =
@@ -1817,6 +1719,12 @@ proc runGraphics*() =
       bolt.y = surfaceHeightNear(bolt.x, bolt.z, bolt.y) + 1.4'f32
       particles.emitParticleBurst(CombatSparks, bolt)
       particles.emitParticleBurst(MagicBurst, bolt)
+    for i, patch in run.world.firePatches:
+      if int(run.world.tick + i) mod 16 != 0:
+        continue
+      var ember = renderPoint(patch.position)
+      ember.y = surfaceHeightNear(ember.x, ember.z, ember.y) + 0.22'f32
+      particles.emitParticleBurst(FireBurst, ember)
     for rune in run.world.runes:
       if rune.spawnTick == run.world.tick:
         var pos = renderPoint(rune.position)
@@ -1843,16 +1751,16 @@ proc runGraphics*() =
       particles.emitParticleBurst(MagicBurst, origin)
 
   const SeatTints: array[MaxPudgeCount, chroma.Color] = [
-    color(0.62, 0.78, 1.00, 1.0),   # west 1: sky
-    color(0.62, 1.00, 0.75, 1.0),   # west 2: mint
-    color(0.85, 0.70, 1.00, 1.0),   # west 3: violet
-    color(0.45, 0.92, 0.95, 1.0),   # west 4: aqua
-    color(0.78, 1.00, 0.55, 1.0),   # west 5: lime
-    color(1.00, 0.72, 0.62, 1.0),   # east 1: ember
-    color(1.00, 0.92, 0.58, 1.0),   # east 2: gold
-    color(1.00, 0.65, 0.85, 1.0),   # east 3: rose
-    color(1.00, 0.55, 0.45, 1.0),   # east 4: coral
-    color(0.95, 0.80, 0.45, 1.0)    # east 5: amber
+    color(1.00, 0.55, 0.48, 1.0),   # west 1: crimson
+    color(1.00, 0.72, 0.48, 1.0),   # west 2: rust
+    color(1.00, 0.52, 0.70, 1.0),   # west 3: rose
+    color(1.00, 0.64, 0.38, 1.0),   # west 4: amber
+    color(0.90, 0.42, 0.38, 1.0),   # west 5: brick
+    color(0.52, 0.70, 1.00, 1.0),   # east 1: sky
+    color(0.42, 0.86, 0.95, 1.0),   # east 2: aqua
+    color(0.68, 0.58, 1.00, 1.0),   # east 3: violet
+    color(0.38, 0.74, 1.00, 1.0),   # east 4: steel
+    color(0.58, 0.80, 1.00, 1.0)    # east 5: ice
   ]
 
   proc tintIndex(pudge: Pudge): int =
@@ -1873,8 +1781,9 @@ proc runGraphics*() =
     )
 
   proc butcherTint(worldIndex: int, pudge: Pudge): chroma.Color =
-    ## Seat color, then ice while spawn-shielded, else a sick-green wash
-    ## while Rot is on or the butcher is standing in someone else's cloud.
+    ## Seat color, then ice while spawn-shielded, else a gold crackle
+    ## under Lightning, a sick-green wash while Rot is on or the butcher
+    ## is standing in someone else's cloud, or an ember wash in fire.
     result = seatTint(worldIndex)
     if pudge.state == Dying:
       return
@@ -1892,7 +1801,18 @@ proc runGraphics*() =
       result.b = result.b * (1.0'f32 - weight) + 1.00'f32 * weight
       return
     var weight = 0.0'f32
-    if pudge.rotOn:
+    var washR = 0.10'f32
+    var washG = 0.26'f32
+    var washB = 0.08'f32
+    if pudge.hasBuff(RuneLightning):
+      let beat = 0.5'f32 + 0.5'f32 * sin(
+        unitTime(int32(run.world.tick)) * TAU.float32 * 8.0'f32
+      )
+      weight = 0.22'f32 + 0.16'f32 * beat
+      washR = 1.00'f32
+      washG = 0.86'f32
+      washB = 0.22'f32
+    elif pudge.rotOn:
       weight =
         0.26'f32 + 0.22'f32 * max(0.0'f32, 1.0'f32 - rotPulse(pudge) * 3.0'f32)
     elif run.world.rotAffected(pudge):
@@ -1900,11 +1820,19 @@ proc runGraphics*() =
         unitTime(int32(run.world.tick)) * TAU.float32 * 2.0'f32
       )
       weight = 0.14'f32 + 0.10'f32 * beat
+    elif run.world.fireAffected(pudge):
+      let beat = 0.5'f32 + 0.5'f32 * sin(
+        unitTime(int32(run.world.tick)) * TAU.float32 * 6.0'f32
+      )
+      weight = 0.16'f32 + 0.10'f32 * beat
+      washR = 1.00'f32
+      washG = 0.38'f32
+      washB = 0.08'f32
     if weight <= 0:
       return
-    result.r = result.r * (1.0'f32 - weight) + 0.10'f32 * weight
-    result.g = result.g * (1.0'f32 - weight) + 0.26'f32 * weight
-    result.b = result.b * (1.0'f32 - weight) + 0.08'f32 * weight
+    result.r = result.r * (1.0'f32 - weight) + washR * weight
+    result.g = result.g * (1.0'f32 - weight) + washG * weight
+    result.b = result.b * (1.0'f32 - weight) + washB * weight
 
   proc pudgeLabel(id: int32): string =
     ## Lobby names, bot personality labels, or P<id>.
@@ -2225,10 +2153,7 @@ proc runGraphics*() =
 
   proc rebakeArena() =
     ## Terrain follows `run.map` after a live N vs N resize.
-    seed = run.map.seed
-    initTerrain()
-    scatterGrass(500, run.map.seed)
-    scatterRocks(40, run.map.seed)
+    applyArenaTerrain(run.map.seed)
     bakeTerrain(rebuildWalkability = false)
 
   proc startHostedMatch() =
@@ -2325,6 +2250,7 @@ proc runGraphics*() =
   # network-condition simulator (off/local/good/poor/extreme). F9/F10
   # stay MENU/TEAM. Auto-open when --netsim already turned the sim on.
   var netDebugPanel = netSimConfig().enabled
+  var lastClipOverride = clipOverride
   window.onFrame = proc() =
     # Start/stop Fluffy before profileBlock "frame". startTrace clears
     # the span stack; a matching measurePop of a skipped push is IndexDefect.
@@ -2332,6 +2258,11 @@ proc runGraphics*() =
       discard handleChromeKey(KeyF2)
     profileBlock "frame":
       let dt = frameDelta(lastFrameTime, Step)
+      if clipOverride != lastClipOverride:
+        clipOverrideTime = 0
+        lastClipOverride = clipOverride
+      if clipOverride != ClipOverrideOff:
+        clipOverrideTime += dt
       hostLobbyOpen = netLobbyOpen
       if window.buttonPressed[KeyLeftBracket]:
         toggleTransportBar()
@@ -2523,6 +2454,8 @@ proc runGraphics*() =
         barUp = normalize(cross(barRight, cameraForward))
 
       proc drawButchers() =
+        if not scene.sunDepthPass:
+          knifeRenderer.clear()
         for pudgeIndex in 0 ..< run.world.pudges.len:
           # The local WASM seat renders from the prediction world; all
           # other butchers and every non-predicting build render the
@@ -2532,24 +2465,66 @@ proc runGraphics*() =
             continue
           let
             model = pudgeModels[pudge.team]
-            clip =
+            liveClip =
               if run.world.gameOver and pudge.team == run.world.winner and
                   pudge.state == Alive:
                 pudgeClips[pudge.team][victoryClip]
+              elif pudge.animClip == attackClip and pudge.meleeAnim:
+                pudgeMeleeClips[pudge.team]
               else:
                 pudgeClips[pudge.team][pudge.animClip]
+            clip =
+              case clipOverride
+              of ClipOverrideOff: liveClip
+              of ClipOverrideBind: -1
+              of ClipOverrideIdle: pudgeClips[pudge.team][idleClip]
+              of ClipOverrideRun: pudgeClips[pudge.team][runClip]
+              of ClipOverrideAttack: pudgeMeleeClips[pudge.team]
+              of ClipOverrideDeath: pudgeClips[pudge.team][deathClip]
+              of ClipOverrideVictory: pudgeClips[pudge.team][victoryClip]
             pos = unitPoint(pudge.id, pudge.position)
           var drawn = pos
           drawn.y = surfaceHeightNear(pos.x, pos.z, pos.y)
+          let animSeconds =
+            if clipOverride == ClipOverrideOff:
+              holdTime(model, liveClip, pudge.animTicks,
+                pudge.state == Dying or pudge.animClip == attackClip)
+            elif clip < 0:
+              0'f32
+            else:
+              clipOverrideTime
           drawCharacter(
             scene,
             model,
             drawn,
             unitFacing(pudge.id, pudge.facing),
             clip,
-            holdTime(model, clip, pudge.animTicks, pudge.state == Dying),
+            animSeconds,
             butcherTint(pudgeIndex(run.world, pudge.id), pudge)
           )
+          if not scene.sunDepthPass:
+            let
+              facing = unitFacing(pudge.id, pudge.facing)
+              leftHand = model.characterJointTransform("L_Hand", drawn, facing)
+              rightHand = model.characterJointTransform("R_Hand", drawn, facing)
+              wrap = if pudge.team == WestTeam: rgbx(160,62,46,254)
+                else: rgbx(47,100,153,254)
+              heldRadius = block:
+                var r = hookRadius(pudge.upgrades[UpgradeRadius])
+                if pudge.hasBuff(RuneBigHook):
+                  r = r + r * RuneBigHookPercent div 100
+                r.float32 / WorldScale.float32 * HeldHookVisualScale
+            chainHands[pudge.id] = butcherHeldHookEye(rightHand, facing, heldRadius)
+            knifeRenderer.addButcherKnife(
+              butcherKnifeTransform(leftHand), DefaultButcherKnife, wrap)
+            var hookOut = false
+            for hook in run.world.hooks:
+              if hook.ownerId == pudge.id and hook.phase != HookIdle:
+                hookOut = true
+                break
+            if pudge.state == Alive and not hookOut:
+              knifeRenderer.addButcherHook(
+                butcherHeldHookTransform(rightHand, facing, heldRadius), wrap)
         if scene.sunDepthPass:
           return
         let now = epochTime()
@@ -2600,6 +2575,7 @@ proc runGraphics*() =
       applyPlayViewport()
       drawButchers()
       finishCharacters(scene)
+      knifeRenderer.draw(viewProjection, opaque=true)
       drawWater(
         viewProjection,
         cameraEye,
@@ -2619,6 +2595,17 @@ proc runGraphics*() =
         shapeRenderer.addCircle(glow, GrabGlowRadius, GrabGlow, 14)
       let rotR = RotRadius.float32 / WorldScale.float32
       let rotSeconds = unitTime(int32(run.world.tick))
+      let fireR = RuneLightningTrailRadius.float32 / WorldScale.float32
+      let fireLife = max(RuneLightningTrailDurationTicks.float32, 1.0'f32)
+      for patch in run.world.firePatches:
+        var stain = renderPoint(patch.position)
+        stain.y = surfaceHeightNear(stain.x, stain.z, stain.y) + 0.14'f32
+        shapeRenderer.addFireStain(
+          stain,
+          fireR,
+          patch.ticksLeft.float32 / fireLife,
+          rotSeconds + patch.position.x.float32 * 0.00001'f32
+        )
       for i in 0 ..< run.world.pudges.len:
         let pudge = predictedPudge(i)
         if pudge.state == Dying or not fogShownPudge(pudge):
@@ -2643,8 +2630,7 @@ proc runGraphics*() =
           )
       if run.world.lightningTick > 0:
         let age = int32(run.world.tick) - run.world.lightningTick
-        if age >= 0 and age <= TickRate div 3 and
-            fogCanSee(run.world.lightningPoint):
+        if age >= 0 and age <= TickRate div 3:
           let
             boltR = RuneLightningRadius.float32 / WorldScale.float32
             fade = 1.0'f32 - age.float32 / (TickRate div 3).float32
@@ -2699,6 +2685,7 @@ proc runGraphics*() =
             12
           )
         blinkResidues = kept
+      hookRenderer.clear()
       for hook in run.world.hooks:
         if hook.phase == HookIdle:
           continue
@@ -2706,20 +2693,18 @@ proc runGraphics*() =
         if owner < 0:
           continue
         var chain: seq[Vec3]
-        chain.add unitPoint(
-          run.world.pudges[owner].id,
-          run.world.pudges[owner].position
-        )
+        let
+          ownerPudge = run.world.pudges[owner]
+          hasHand = ownerPudge.id in chainHands and fogShownPudge(ownerPudge)
+          hand = if hasHand: chainHands[ownerPudge.id]
+            else: unitPoint(ownerPudge.id,ownerPudge.position)
+        chain.add hand
         for bounce in hook.bounces:
           chain.add renderPoint(bounce)
         let head = hookPoint(hook.id, hook.position)
         chain.add head
         let
           seconds = unitTime(int32(run.world.tick))
-          spinRate =
-            if hook.phase == HookFlying: ShurikenFlySpin
-            else: ShurikenReelSpin
-          spin = seconds * spinRate + hook.id.float32 * 0.73'f32
           teamColor = if hook.team == WestTeam: WestHook else: EastHook
           headRadius = hook.radius.float32 / WorldScale.float32
         for fragment in clipChainToFog(chain):
@@ -2727,15 +2712,18 @@ proc runGraphics*() =
             continue
           let dx = fragment[^1].x - head.x
           let dz = fragment[^1].z - head.z
-          shapeRenderer.drawMeatHook(
+          hookRenderer.drawMeatHook(
             fragment,
             hook.heading,
             hook.phase == HookFlying,
             hook.victimId != 0,
             teamColor,
-            spin,
+            seconds + hook.id.float32 * 0.73'f32,
             headRadius,
-            showHead = dx * dx + dz * dz < 0.08'f32
+            showHead = dx * dx + dz * dz < 0.08'f32,
+            charged = hook.lightning,
+            attachHand = hasHand and lengthSq(fragment[0]-chain[0]) < 0.08'f32,
+            handOrigin = hand
           )
       for rune in run.world.runes:
         if not fogCanSee(rune.position):
@@ -2790,6 +2778,7 @@ proc runGraphics*() =
       )
       shapeRenderer.addDebugCollisionOverlays()
       shapeRenderer.draw(viewProjection)
+      hookRenderer.draw(viewProjection, opaque=true)
 
       particles.drawParticles(
         viewProjection, barRight, barUp, cameraForward

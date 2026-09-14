@@ -1,8 +1,9 @@
 ## Team-shared fog of war. Presentation and bot observations share
 ## these rules: the whole home bank and the river stay lit. The enemy
 ## bank needs a living teammate or team ward within `SightRadiusTiles`,
-## or a tile in the padded corridor along an in-flight team hook. The
-## hashed sim physics stay omniscient.
+## a tile in the padded corridor along an in-flight team hook, or a
+## tile inside a team Lightning fire trail. The hashed sim physics
+## stay omniscient.
 
 import
   polyworld/[pathing, profiles],
@@ -47,6 +48,26 @@ proc stampSightCorridor(values: var seq[uint8], a0, a1: WorldPoint) =
       if segmentPointWithin(a0, a1, worldAtTile(x, z), padWorld):
         values[row + x] = 255
 
+proc stampFireTrail(values: var seq[uint8], position: WorldPoint) =
+  ## Lights every tile whose center sits within `RuneLightningTrailRadius`
+  ## of this patch. Same disk `fogCanSeeTeam` uses so stamp and scan match.
+  let
+    rWorld = RuneLightningTrailRadius
+    r2 = int64(rWorld) * int64(rWorld)
+    pad = (int(rWorld) + int(WorldScale) - 1) div int(WorldScale)
+    (px, pz) = tileOf(position)
+  for dz in -pad .. pad:
+    let tz = pz + dz
+    if tz < 0 or tz >= GridTiles:
+      continue
+    let row = tz * GridTiles
+    for dx in -pad .. pad:
+      let tx = px + dx
+      if tx < 0 or tx >= GridTiles:
+        continue
+      if distanceSquared(worldAtTile(tx, tz), position) <= r2:
+        values[row + tx] = 255
+
 proc fillTeamVision*(
     world: World, team: int, values: var seq[uint8]
 ) {.measure.} =
@@ -54,7 +75,8 @@ proc fillTeamVision*(
   ## Home bank (including the fountain bulge) and river water are
   ## sequential fills; living teammates
   ## and team wards stamp a Euclidean circle of `SightRadiusTiles`;
-  ## in-flight team hooks stamp a padded polyline.
+  ## in-flight team hooks stamp a padded polyline; team Lightning fire
+  ## trails stamp the same burn disk the sim scans.
   let n = GridTiles * GridTiles
   if values.len != n:
     values.setLen(n)
@@ -81,3 +103,7 @@ proc fillTeamVision*(
       continue
     for segment in hookSightSegments(world, hook):
       stampSightCorridor(values, segment.a0, segment.a1)
+  for patch in world.firePatches:
+    if patch.team.ord != team:
+      continue
+    stampFireTrail(values, patch.position)

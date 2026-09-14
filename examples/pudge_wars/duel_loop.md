@@ -160,7 +160,10 @@ are fog-clipped the same way the renderer is: own team always, enemies
 only on the home bank, in the river, within 20 tiles of a living
 teammate or team ward, or along the padded corridor of an in-flight
 team hook. Shop permanents
-include Farwatch Ward (id 9): 45 s of hidden team sight on either bank.
+include Farwatch Ward (id 9): free shop charge that occupies one of six
+inventory wells, 45 s of hidden team
+sight on either bank, plant within 32 tiles. Planting spends the charge
+and clears the bag well. The shop restocks every 60 s.
 
 Arena facts the policy can rely on:
 
@@ -182,7 +185,7 @@ Arena facts the policy can rely on:
   windup roots the caster — juking beats reacting.
 - Melee: ~28 damage inside ~5.2 tiles. Drowning ticks HP away; a
   swimmer walks home along the shortest path.
-- HP: 840 + 35 per kill, full heal on respawn; the home pad heals
+- HP: 1200 + 35 per kill, full heal on respawn; the home pad heals
   a trickle. Runes float the river on a public clock: first drop at
   0:20, then every 20 s. Even drops spawn north (y=16) and drift
   south; odd spawn south (y=111). Each kind visits both ends before

@@ -91,12 +91,18 @@ const
   CmdBlink = 5
   CmdRot = 6
   KillFeedW = 300.0'f32
-  ShopPanelSize = vec2(400, 304)
-  PermanentShopCols = 5
-  PermanentShopRows = 1
+  ShopPanelSize = vec2(400, 360)
+  PermanentShopCols = 3
+  PermanentShopRows = 2
+  PanelInventory = vec2(252, 243)
+    ## Gods of the Arena bag plate: title, 3×2 of 72px wells, gold.
+  InventoryWellSize = 72.0'f32
+  InventoryBagCols = 3
+  InventoryBagRows = 2
+  InventoryWellGap = vec2(4.0'f32, 5.0'f32)
   DebugWindowTitle = "Debug"
   DebugWindowOrigin = vec2(16, 40)
-  DebugWindowSize = vec2(336, 880)
+  DebugWindowSize = vec2(336, 1000)
   BakedZoomInDistance* = 75.0'f32
     ## Closest camera distance shipped in graphics.nim (max zoom in).
   BakedZoomOutDistance* = 155.0'f32
@@ -122,6 +128,7 @@ type
     west: GameUiPanel
     east: GameUiPanel
     bottom: BottomHudLayout
+    inventory: GameUiPanel
     transport: GameUiPanel
 
   KillFeedEntry = object
@@ -143,6 +150,15 @@ type
   ChatTab = enum
     ChatTabChat
     ChatTabEvents
+
+  ClipOverride* = enum
+    ClipOverrideOff
+    ClipOverrideBind
+    ClipOverrideIdle
+    ClipOverrideRun
+    ClipOverrideAttack
+    ClipOverrideDeath
+    ClipOverrideVictory
 
 var
   killFeed: seq[KillFeedEntry]
@@ -172,6 +188,10 @@ var
   debugHoverFound* = false
   debugHoverX* = 0
   debugHoverZ* = 0
+  clipOverride* = ClipOverrideOff
+    ## F3 butcher clip preview. Off plays the sim pose; anything else
+    ## drives every visible butcher from clipOverrideTime.
+  clipOverrideTime* = 0.0'f32
   showTransportBar = true
     ## Play/pause/speed strip. On for simulations and replays; `[` toggles.
   hostLobbyOpen* = false
@@ -464,6 +484,8 @@ proc publishMatchRecap() =
   recapPublished = true
   echo "pw-match:", matchRecapJson()
 
+proc inventoryPanelOf(layout: GameUiLayout): GameUiPanel
+
 proc placeChrome(layout: GameUiLayout): HudChrome =
   let transportH = transportStripHeight(transportBarOpen())
   HudChrome(
@@ -471,6 +493,7 @@ proc placeChrome(layout: GameUiLayout): HudChrome =
     west: layout.panel(GameUiRegion.TopLeft, PanelRoster),
     east: layout.panel(GameUiRegion.TopRight, PanelRoster),
     bottom: placeBottomHud(layout.size, transportH, 2, int(InventorySlots)),
+    inventory: inventoryPanelOf(layout),
     transport: compactTransportPanel(layout.size, transportH)
   )
 
@@ -548,6 +571,19 @@ proc heroWantsShop(): bool =
   let hero = run.world.pudges[heroIndex()]
   hero.state != Dying and hero.inOwnShop
 
+proc inventoryPanelOf(layout: GameUiLayout): GameUiPanel =
+  ## GOTA-style 3×2 bag, sitting just above the action plate.
+  let
+    transportH = transportStripHeight(transportBarOpen())
+    hud = placeBottomHud(layout.size, transportH, 2, int(InventorySlots))
+  GameUiPanel(
+    origin: vec2(
+      hud.actions.origin.x,
+      max(hud.actions.origin.y - PanelInventory.y - 8, 8)
+    ),
+    size: PanelInventory
+  )
+
 proc spectatorChromeVisible(): bool =
   ## Replay and idle spectators get the POV banner; a live seat does not.
   not humanControlActive()
@@ -623,6 +659,8 @@ proc mouseOverUi*(window: Window, mouse: Vec2): bool =
   if spectatorChromeVisible() and spectatorBannerPanel(layout).contains(mouse):
     return true
   if heroWantsShop() and shopPanelOf(layout).contains(mouse):
+    return true
+  if commandCardVisible() and chrome.inventory.contains(mouse):
     return true
   if chrome.bottom.minimap.contains(mouse) or
       chrome.bottom.buttons.contains(mouse) or
@@ -818,6 +856,13 @@ proc drawMinimap(
       pip,
       RuneColors[run.world.nextRuneKind],
       ring = soon <= TickRate * 5
+    )
+
+  for patch in run.world.firePatches:
+    sk.drawMinimapPip(
+      area,
+      minimapPosition(hudPoint(patch.position), area),
+      3, rgbx(255, 110, 28, 150)
     )
 
   let viewTeam = fogTeam()
@@ -1298,14 +1343,78 @@ proc itemCooldown(hero: Pudge, item: ShopItem): (int32, int32) =
   case item
   of ShopWall: (hero.wallCooldown, wallCooldownTicks(hero.itemRank[item]))
   of ShopMine: (hero.mineCooldown, MineCooldownTicks)
-  of ShopWard: (hero.wardCooldown, WardCooldownTicks)
+  of ShopWard: (0'i32, 0'i32)
   else: (0'i32, 0'i32)
 
 proc carriedShopItems(hero: Pudge): seq[ShopItem] =
-  ## Actives first so wall/mine/ward keep a well when the bag is full.
-  for item in [ShopWall, ShopMine, ShopWard, ShopBoots, ShopLongshot]:
-    if hero.itemRank[item] > 0:
+  ## Bag contents in HUD order. A spent ward is rank 0, so it leaves.
+  for slot in 0 ..< int(InventorySlots):
+    let item = hero.inventoryItem(slot)
+    if item.isPermanent:
       result.add item
+
+proc bagWell(origin: Vec2, col, row: int): GameUiPanel =
+  ## One 72px GOTA inventory tile.
+  GameUiPanel(
+    origin: origin + vec2(
+      col.float32 * (InventoryWellSize + InventoryWellGap.x),
+      row.float32 * (InventoryWellSize + InventoryWellGap.y)
+    ),
+    size: vec2(InventoryWellSize)
+  )
+
+proc inventoryChrome(panel: GameUiPanel): tuple[
+    title, contents, gold: GameUiPanel,
+    slots: array[6, GameUiPanel]
+] =
+  ## Title, 3×2 wells, and gold footer matching Gods of the Arena.
+  const
+    padX = 14.0'f32
+    padY = 10.0'f32
+  let innerW = panel.size.x - padX * 2
+  result.title = GameUiPanel(
+    origin: panel.origin + vec2(padX, padY),
+    size: vec2(innerW, 28)
+  )
+  result.contents = GameUiPanel(
+    origin: vec2(result.title.origin.x, result.title.origin.y + 28 + 12),
+    size: vec2(innerW, InventoryWellSize * 2 + InventoryWellGap.y)
+  )
+  result.gold = GameUiPanel(
+    origin: vec2(result.contents.origin.x, result.contents.origin.y +
+      result.contents.size.y + 1),
+    size: vec2(innerW, 31)
+  )
+  for i in 0 ..< InventoryBagCols * InventoryBagRows:
+    result.slots[i] = bagWell(
+      result.contents.origin, i mod InventoryBagCols, i div InventoryBagCols
+    )
+
+proc itemSlotSpec(
+    hero: Pudge, item: ShopItem, owned, ownedLive: bool
+): CommandSlotSpec =
+  let (remaining, duration) = hero.itemCooldown(item)
+  result = CommandSlotSpec(
+    id: item.ord,
+    icon: ShopItemIcons[item],
+    hotkey: if owned: itemHotkey(item) else: "",
+    enabled: ownedLive or not owned,
+    remaining: if owned: remaining else: 0,
+    duration: duration,
+    overlay: if owned: cooldownOverlay(remaining, duration) else: "",
+    badge:
+      if item == ShopWard: ""
+      elif hero.itemRank[item] > 0: $hero.itemRank[item]
+      else: ""
+  )
+
+proc beginUseBagItem(item: ShopItem) =
+  case item
+  of ShopWall: beginPlaceCommand(ShopWall)
+  of ShopMine: beginPlaceCommand(ShopMine)
+  of ShopWard: beginPlaceCommand(ShopWard)
+  else:
+    discard
 
 proc drawBottomUnit(
     sk: Silky,
@@ -1406,17 +1515,7 @@ proc drawBottomUnit(
   for item in carried:
     if itemWellCount >= 2:
       break
-    let (remaining, duration) = hero.itemCooldown(item)
-    actionSpecs[4 + itemWellCount] = CommandSlotSpec(
-      id: item.ord,
-      icon: ShopItemIcons[item],
-      hotkey: if owned: itemHotkey(item) else: "",
-      enabled: ownedLive or not owned,
-      remaining: if owned: remaining else: 0,
-      duration: duration,
-      overlay: if owned: cooldownOverlay(remaining, duration) else: "",
-      badge: $hero.itemRank[item]
-    )
+    actionSpecs[4 + itemWellCount] = hero.itemSlotSpec(item, owned, ownedLive)
     itemWells[itemWellCount] = item
     inc itemWellCount
   for kind in UpgradeKind:
@@ -1613,11 +1712,11 @@ proc drawBottomUnit(
         issueBuyCommand(UpgradeKind(spec.id - 100))
       else:
         if spec.id == ShopWall.ord:
-          beginPlaceCommand(ShopWall)
+          beginUseBagItem(ShopWall)
         elif spec.id == ShopMine.ord:
-          beginPlaceCommand(ShopMine)
+          beginUseBagItem(ShopMine)
         elif spec.id == ShopWard.ord:
-          beginPlaceCommand(ShopWard)
+          beginUseBagItem(ShopWard)
 
     if window.buttonPressed[MouseRight]:
       let hookWell = hud.actions.actionWell(1)
@@ -1705,6 +1804,73 @@ proc drawBottomUnit(
     else:
       discard
 
+proc drawInventoryPanel(
+    sk: Silky,
+    window: Window,
+    layout: GameUiLayout,
+    inHistory: bool
+) =
+  ## Six-well bag matching Gods of the Arena: 3×2 of 72px tiles.
+  ## Shop families occupy a well while owned; a planted ward leaves it.
+  if not commandCardVisible():
+    return
+  let index = inspectIndex()
+  if index < 0:
+    return
+  let
+    owned = isOwnedInspect()
+    hero = run.world.pudges[index]
+    ownedLive = owned and not inHistory
+    panel = inventoryPanelOf(layout)
+    chrome = inventoryChrome(panel)
+  sk.drawPanel(panel)
+  sk.drawFrame(panel.inset(2))
+  sk.drawLabel(
+    "INVENTORY",
+    chrome.title.origin,
+    chrome.title.size,
+    HudMuted,
+    "Small"
+  )
+  var
+    hoveredItem = ShopFlask
+    hoveredWell = chrome.slots[0]
+    foundHover = false
+  for slot in 0 ..< int(InventorySlots):
+    let well = chrome.slots[slot]
+    let item = hero.inventoryItem(slot)
+    if item.isPermanent:
+      let spec = hero.itemSlotSpec(item, owned, ownedLive)
+      sk.drawCommandSlot(well, spec)
+      if owned and spec.enabled and window.clicked(sk, well):
+        beginUseBagItem(item)
+      if well.contains(sk.mousePos):
+        hoveredItem = item
+        hoveredWell = well
+        foundHover = true
+    else:
+      sk.drawSlot(well)
+  sk.drawSprite("gold", chrome.gold.origin + vec2(0, 6), vec2(20))
+  writeAmount(hudScratch, int(hero.gold))
+  sk.drawLabel(
+    hudScratch,
+    chrome.gold.origin + vec2(31, 0),
+    vec2(chrome.gold.size.x - 31, chrome.gold.size.y),
+    ReadyGold,
+    "Small"
+  )
+  if foundHover:
+    sk.drawHudTooltip(
+      window, hoveredWell,
+      shopItemTooltipLines(
+        hoveredItem,
+        hero.itemRank[hoveredItem],
+        bindLabel(BindWall),
+        bindLabel(BindMine),
+        bindLabel(BindWard)
+      )
+    )
+
 proc canBuyShopRow(hero: Pudge, item: ShopItem): bool =
   if hero.gold < shopPrice(item):
     return false
@@ -1712,7 +1878,15 @@ proc canBuyShopRow(hero: Pudge, item: ShopItem): bool =
     if item == ShopFlask:
       return hero.hp < hero.maxHp
     return true
-  if hero.itemRank[item] >= ItemMaxRank:
+  if item == ShopWard:
+    if hero.wardCooldown > 0:
+      return false
+    if hero.itemRank[ShopWard] >= WardChargeMax:
+      return false
+    if hero.itemRank[ShopWard] == 0 and hero.ownedPermanents >= InventorySlots:
+      return false
+    return true
+  if hero.itemRank[item] >= shopItemMaxRank(item):
     return false
   if hero.itemRank[item] == 0 and hero.ownedPermanents >= InventorySlots:
     return false
@@ -1749,66 +1923,50 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
     RightAlign
   )
   let
-    grid = GameUiPanel(
-      origin: panel.origin + vec2(8, 30),
-      size: vec2(panel.size.x - 16, 92)
-    )
-  var permanents: seq[CommandSlotSpec]
+    gridOrigin = panel.origin + vec2(14, 30)
+  var
+    hoveredPerm = ShopFlask
+    foundPerm = false
+    hoveredWell = GameUiPanel()
+  var i = 0
   for item in ShopBoots..ShopWard:
-    let rank = hero.itemRank[item]
-    permanents.add CommandSlotSpec(
-      id: item.ord,
-      icon: ShopItemIcons[item],
-      enabled: live and hero.canBuyShopRow(item),
-      badge: if rank > 0: $rank else: "",
-      overlay: ""
-    )
-  let clickedPerm = sk.drawCommandGrid(
-    window, grid, permanents, PermanentShopCols, PermanentShopRows
-  )
-  if clickedPerm >= ShopBoots.ord and clickedPerm <= ShopWard.ord:
-    issueBuyPower(ShopItem(clickedPerm))
-  block shopTip:
-    var hovered = ShopFlask
-    var found = false
-    var well = grid
-    var i = 0
-    for item in ShopBoots..ShopWard:
-      let
-        col = i mod PermanentShopCols
-        row = i div PermanentShopCols
-        slot = grid.gridSlot(
-          col, row, PermanentShopCols, PermanentShopRows
-        )
-      if slot.contains(sk.mousePos):
-        hovered = item
-        well = slot
-        found = true
-        break
-      inc i
-    if found:
-      var lines = shopItemTooltipLines(
-        hovered,
-        hero.itemRank[hovered],
-        bindLabel(BindWall),
-        bindLabel(BindMine),
-        bindLabel(BindWard)
+    let
+      col = i mod PermanentShopCols
+      row = i div PermanentShopCols
+      well = bagWell(gridOrigin, col, row)
+      rank = hero.itemRank[item]
+      restock =
+        if item == ShopWard and rank <= 0:
+          cooldownOverlay(hero.wardCooldown, WardRestockTicks)
+        else: ""
+      spec = CommandSlotSpec(
+        id: item.ord,
+        icon: ShopItemIcons[item],
+        enabled: live and hero.canBuyShopRow(item),
+        badge:
+          if item == ShopWard:
+            if rank > 0: "HELD" elif hero.wardCooldown <= 0: "1" else: ""
+          elif rank > 0: $rank
+          else: "",
+        overlay: restock
       )
-      lines[0] = lines[0] & " - " & $shopPrice(hovered) & "g"
-      sk.drawHudTooltip(
-        window,
-        GameUiPanel(
-          origin: vec2(
-            panel.origin.x + panel.size.x + 8.0'f32,
-            well.origin.y
-          ),
-          size: well.size
-        ),
-        lines
-      )
+    sk.drawCommandSlot(well, spec)
+    if spec.enabled and window.clicked(sk, well):
+      issueBuyPower(item)
+    if well.contains(sk.mousePos):
+      hoveredPerm = item
+      hoveredWell = well
+      foundPerm = true
+    inc i
+  while i < PermanentShopCols * PermanentShopRows:
+    sk.drawSlot(bagWell(
+      gridOrigin, i mod PermanentShopCols, i div PermanentShopCols
+    ))
+    inc i
+  const ShopPowerupsY = 30.0'f32 + InventoryWellSize * 2 + InventoryWellGap.y + 16
   sk.drawLabel(
     "POWERUPS",
-    panel.origin + vec2(10, 144),
+    panel.origin + vec2(10, ShopPowerupsY),
     vec2(200, 16),
     ReadyGold,
     "Small"
@@ -1824,7 +1982,7 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
   for i, item in Powerups:
     let
       row = GameUiPanel(
-        origin: panel.origin + vec2(8, 164 + float32(i) * 26),
+        origin: panel.origin + vec2(8, ShopPowerupsY + 20 + float32(i) * 26),
         size: vec2(panel.size.x - 16, 24)
       )
       afford = live and hero.canBuyShopRow(item)
@@ -1833,7 +1991,7 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
       if afford: rgbx(24, 28, 36, 220) else: rgbx(16, 18, 24, 220)
     )
     let label = "[" & PowerKeys[i] & "]  " & ShopItemNames[item] &
-      "  " & $shopPrice(item) & "g"
+      "  " & shopGoldLabel(item)
     sk.drawLabel(
       label,
       row.origin + vec2(6, 3),
@@ -1849,7 +2007,7 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
       hoveredRow = row
   if foundPower:
     var lines = shopItemTooltipLines(hoveredPower, 0)
-    lines[0] = lines[0] & " - " & $shopPrice(hoveredPower) & "g"
+    lines[0] = lines[0] & " - " & shopGoldLabel(hoveredPower)
     sk.drawHudTooltip(
       window,
       GameUiPanel(
@@ -1858,6 +2016,26 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
           hoveredRow.origin.y
         ),
         size: hoveredRow.size
+      ),
+      lines
+    )
+  elif foundPerm:
+    var lines = shopItemTooltipLines(
+      hoveredPerm,
+      hero.itemRank[hoveredPerm],
+      bindLabel(BindWall),
+      bindLabel(BindMine),
+      bindLabel(BindWard)
+    )
+    lines[0] = lines[0] & " - " & shopGoldLabel(hoveredPerm)
+    sk.drawHudTooltip(
+      window,
+      GameUiPanel(
+        origin: vec2(
+          panel.origin.x + panel.size.x + 8.0'f32,
+          hoveredWell.origin.y
+        ),
+        size: hoveredWell.size
       ),
       lines
     )
@@ -2668,6 +2846,16 @@ proc drawDebugMenu(
       checkBox "Playable AABB / ratio", showPlayableBounds
       checkBox "Collision / hook", showCollision
       checkBox "Camera / viewport", showCamera
+      text "Butcher clip"
+      radioButton("Live (sim)", clipOverride, ClipOverrideOff)
+      radioButton("Bind pose", clipOverride, ClipOverrideBind)
+      radioButton("IdleNormal", clipOverride, ClipOverrideIdle)
+      radioButton("RunForward", clipOverride, ClipOverrideRun)
+      radioButton("Attack01", clipOverride, ClipOverrideAttack)
+      radioButton("Death", clipOverride, ClipOverrideDeath)
+      radioButton("Victory", clipOverride, ClipOverrideVictory)
+      if clipOverride != ClipOverrideOff:
+        text &"preview t={clipOverrideTime:.2f}s  (loops)"
       text "Zoom (camera distance; larger = farther out)"
       text &"current: {cameraDistance:.1f}"
       text "Min zoom (out limit, max dist)"
@@ -2885,6 +3073,9 @@ proc drawUi*(
   if clusterVisible:
     sk.drawBottomUnit(
       window, chrome.bottom, transport.inHistory and netRole != NetClient
+    )
+    sk.drawInventoryPanel(
+      window, layout, transport.inHistory and netRole != NetClient
     )
   sk.drawShopPanel(window, layout)
   centerCameraOnInspect(

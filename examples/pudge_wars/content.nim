@@ -2,7 +2,7 @@
 ##
 ## Modeled on Warcraft 3 Pudge Wars v2.03d: two banks split by a river,
 ## every player is a butcher, Meat Hook is the kill skill, Blink is a
-## short dodge hop that cannot clear the river from bank to bank, and
+## short hop that can cross the narrow river gap by the fountain, and
 ## kills buy hook upgrades.
 
 import std/os, polyworld/[common, hashes]
@@ -78,7 +78,7 @@ const
   RuneBuffTicks* = TickRate * 15
   AllyHookHeal* = 120'i32
     ## Hooking a teammate patches them up: support play with the same
-    ## aim skill as the kill shot (~14% of base HP per landed save).
+    ## aim skill as the kill shot (10% of base HP per landed save).
   SightRadiusTiles* = 20'i32
     ## Fog-of-war vision radius per living butcher and team ward
     ## (team-shared). Presentation and bot observations share this:
@@ -117,10 +117,13 @@ const
     ## Bank Palisade: place a timed HP wall on your bank.
   ShopMineGold* = 10'i32
     ## Hooktrap: hidden mine. Enemy hooks detonate; allied hooks grab.
-  ShopWardGold* = 8'i32
-    ## Farwatch Ward: plant a 45 s sight totem on either bank.
-  InventorySlots* = 5'i32
-    ## HUD inventory wells. One unique family per slot; buy-again ranks it.
+  ShopWardGold* = 0'i32
+    ## Farwatch Ward: free charge from the base shop. The slot restocks
+    ## every `WardRestockTicks`; planting spends the charge and clears
+    ## the inventory well.
+  InventorySlots* = 6'i32
+    ## HUD bag wells (3×2, GOTA-style). One unique family per slot;
+    ## buy-again ranks it. A planted ward frees its well.
   ItemMaxRank* = 5'i32
     ## Matches WC3 Pudge Wars v2.03d: five levels, purchase upgrades in place.
   ItemBootsSpeedPercent* = 8'i32
@@ -129,6 +132,10 @@ const
     ## Extra hook damage percent per tile of flight, per Brand rank.
   PlaceRangeTiles* = 3'i32
     ## Chebyshev reach for wall/mine drops from the butcher.
+  WardPlaceRangeTiles* = 32'i32
+    ## Chebyshev plant reach for a carried ward. Side-lane lip-to-lip
+    ## is 24 tiles, so a butcher on their waterline can stake the fog
+    ## brush on the far bank without walking across.
   WallDurationTicks* = TickRate * 10
     ## Base palisade lifetime before it crumbles.
   WallDurationPerRankTicks* = TickRate * 2
@@ -148,8 +155,15 @@ const
   MaxMinesPerPlayer* = 3'i32
   WardDurationTicks* = TickRate * 45
     ## Observer lifetime: 45 s of team sight, then the stake crumbles.
-  WardCooldownTicks* = TickRate * 8
-  MaxWardsPerPlayer* = 2'i32
+  WardRestockTicks* = TickRate * 60
+    ## Shop restock after picking up a free ward. `wardCooldown` is
+    ## this timer, not a place delay.
+  WardCooldownTicks* = WardRestockTicks
+  WardChargeMax* = 1'i32
+    ## Unplanted charges a butcher may carry. One shop pickup.
+  MaxWardsPerPlayer* = 1'i32
+    ## Living stakes per butcher. Restock is 60 s and life is 45 s,
+    ## so a second stake is only in play if you delay the first plant.
   FirstPropId* = 2000'i32
   WallObjectKind* = 2'i32
   MineObjectKind* = 3'i32
@@ -183,9 +197,11 @@ type
     RuneBounty
   ShopItem* = enum
     ## Base-pad catalog. 0-4 are timed/consumable powerups (keys 5-9);
-    ## 5-9 are the five permanent inventory families (one HUD well
-    ## each). Buy-again ranks to 5; inventory full rejects a new
-    ## family. Flask/rune powerups stay distinct from the wells.
+    ## 5-9 are the five inventory families (boots, brand, palisade,
+    ## hooktrap, ward) that occupy the six-well bag. Buy-again ranks
+    ## to 5 except wards, which occupy one well until planted.
+    ## Inventory full rejects a new family. Flask/rune powerups stay
+    ## distinct from the wells.
     ShopFlask,
     ShopHaste,
     ShopRegen,
@@ -213,9 +229,9 @@ type
     targetHeight*: float32
 
 const
-  BaseHitPoints* = 840'i32
-    ## Doubled: fights are brawls now, not two-hook exchanges. Kills
-    ## still grow max HP, and the shop flask heals it all back.
+  BaseHitPoints* = 1200'i32
+    ## Starting HP for every butcher. Kills still grow max HP, and the
+    ## shop flask heals it all back.
   HitPointsPerLevel* = 35'i32
   BaseMeleeDamage* = 28'i32
   PudgeCollisionRadius* = WorldScale * 13 div 5
@@ -238,7 +254,7 @@ const
     ## of skid). Turns of 90° or less carve at full speed instead of
     ## braking (`steerVelocity`), so only stops and reversals pay this.
   BaseHookDamage* = 200'i32
-    ## A landed hook is a real chunk: ~24% of 840 HP, five hits to
+    ## A landed hook is a real chunk: ~17% of 1200 HP, six hits to
     ## kill from full. Upgrades and runes still climb from here.
   HookDamagePerLevel* = 15'i32
   BaseHookRange* = 60 * WorldScale
@@ -270,12 +286,11 @@ const
   GrappleRadius* = WorldScale
     ## Slim head: it grabs walls, not butchers.
   BlinkRangeTiles* = 20'i32
-    ## Sidestep, not a map hop. Side-lane lip-to-lip is 24 tiles
-    ## (`PlayEastMin - PlayWestMax`); this stays under that. At mid the
-    ## banks step in, so blink also refuses the opposite bank. River
-    ## water is a legal landing, and a hop from the water can still
-    ## reach a bank. Cliffs, palisades, and occupied circles truncate
-    ## to the last legal point in front of them.
+    ## Side-lane lip-to-lip is 24 tiles (`PlayEastMin - PlayWestMax`),
+    ## beyond this range. At mid the banks step in, allowing a hop onto
+    ## the opposite bank. River water is also a legal landing. Cliffs,
+    ## palisades, and occupied circles truncate to the last legal point
+    ## in front of them.
   BlinkRange* = BlinkRangeTiles * WorldScale
   BlinkCooldownTicks* = TickRate * 8
     ## 8 s: clearly longer than Meat Hook's 2 s, a real commitment.
@@ -285,7 +300,7 @@ const
   RotDamage* = 24'i32
     ## HP per pulse per live cloud. Overlapping disks each fire, so two
     ## butchers rotting the same tile deal 48 (96 DPS) — slow does not
-    ## stack. 48 DPS from one cloud is a real commitment against 840 HP.
+    ## stack. 48 DPS from one cloud is a real commitment against 1200 HP.
   RotPeriodTicks* = TickRate div 2
     ## Pulse cadence; matches drown so the two DoTs read as kin.
   RotSlowPercent* = 40'i32
@@ -299,7 +314,7 @@ const
   ChunkAnnounceTicks* = TickRate * 4
   DrownDamage* = 30'i32
     ## River tick: 30 HP every half second. A dumped butcher without
-    ## a save or hop out lasts about 14 s from full (840 HP).
+    ## a save or hop out lasts about 20 s from full (1200 HP).
   DrownPeriodTicks* = TickRate div 2
   StruggleSpeed* = MovePerTick
     ## River locomotion uses the land walk. Kept as an alias so the
@@ -330,10 +345,27 @@ const
     ## Same round percent as the size buff; cheaper than Double Damage
     ## (2×) because the throw also grows and wins clashes.
   RuneLightningDamage* = 120'i32
-    ## Charged splash on a landed enemy hook: ~14% of 840 HP. The
+    ## Charged splash on a landed enemy hook: 10% of 1200 HP. The
     ## victim also takes hook damage; clustered teammates eat this only.
   RuneLightningRadius* = 8 * WorldScale
     ## Same disk as Rot: a melee clump is inside, a lane partner is not.
+  RuneLightningTrailDamage* = 8'i32
+    ## HP per burn pulse. 16 DPS, a third of Rot, no slow, enemies only.
+  RuneLightningTrailRadius* = 2 * WorldScale
+    ## Tight corridor: a body at melee standoff is outside; walking the
+    ## painted line is inside.
+  RuneLightningTrailPeriodTicks* = TickRate div 2
+    ## Same pulse cadence as Rot / drown so the DoTs read as kin.
+  RuneLightningTrailDurationTicks* = TickRate * 4
+    ## Four seconds of burning ground after the charged hook leaves.
+  RuneLightningTrailStep* = WorldScale
+    ## One patch per tile so a flying hook does not skip cells.
+  RuneLightningClashDamage* = 40'i32
+    ## Shock through a clashing chain: ~3% of 1200 HP to the other thrower.
+  RuneLightningSpeedMul* = 2'i32
+    ## Lightning throws fly (and reel) at double the butcher's hook speed.
+  MaxFirePatches* = 128'i32
+    ## Cap on live lightning trails. Oldest patch yields when full.
   RuneBountyGold* = 4'i32
     ## Instant gold. A kill pays 3; this is a river contest worth a
     ## shop haste/regen and does not overwrite a combat buff.
@@ -353,26 +385,29 @@ const
     ## separate teammates. Live matches use `spawnLayoutFromSeed`.
   EastSpawns* = [(106, 40), (106, 64), (106, 88)]
     ## Mirror of WestSpawns across RiverCenterX (2*64 - 22 = 106).
+  ## Same butcher mesh on both banks. West keeps the authored red paint;
+  ## east is the blue team recolor. Both GLBs share a Tripo biped skin and
+  ## the five named clips.
   PudgeSpecs*: array[Team, PudgeSpec] = [
     PudgeSpec(
       name: "West Butcher",
-      modelPath: DataRoot & "/characters/rpg_monsters/cyclops.glb",
-      runClip: "RunForward",
-      idleClip: "IdleNormal",
-      deathClip: "Death",
-      attackClip: "Attack01",
-      victoryClip: "Victory",
+      modelPath: DataRoot & "/characters/butcher/butcher_game.glb",
+      runClip: "ButcherRun",
+      idleClip: "ButcherIdle",
+      deathClip: "ButcherDeath",
+      attackClip: "ButcherHook",
+      victoryClip: "ButcherVictory",
       targetHeight: 6.4
     ),
     PudgeSpec(
       name: "East Butcher",
-      modelPath: DataRoot & "/characters/rpg_monsters/demon_king.glb",
-      runClip: "RunForward",
-      idleClip: "IdleNormal",
-      deathClip: "Death",
-      attackClip: "Attack01",
-      victoryClip: "Victory",
-      targetHeight: 6.6
+      modelPath: DataRoot & "/characters/butcher/butcher_game_east.glb",
+      runClip: "ButcherRun",
+      idleClip: "ButcherIdle",
+      deathClip: "ButcherDeath",
+      attackClip: "ButcherHook",
+      victoryClip: "ButcherVictory",
+      targetHeight: 6.4
     )
   ]
   UpgradeNames*: array[UpgradeKind, string] = [
@@ -439,9 +474,29 @@ proc shopPrice*(item: ShopItem): int32 =
   ## Gold charged for one purchase (or one rank-up) of this catalog row.
   ShopPrices[item]
 
+proc shopGoldLabel*(item: ShopItem): string =
+  ## Shop row price text. Free catalog rows say FREE, not 0g.
+  let gold = shopPrice(item)
+  if gold <= 0: "FREE" else: $gold & "g"
+
 proc isPermanent*(item: ShopItem): bool =
   ## True for inventory families; false for flask/rune powerups.
   item >= ShopBoots
+
+const
+  PermanentBagOrder*: array[5, ShopItem] = [
+    ShopWall, ShopMine, ShopWard, ShopBoots, ShopLongshot
+  ]
+    ## HUD bag fill order: actives first so a ward/wall/mine keep a
+    ## well when the six-slot bag is otherwise full.
+
+proc shopItemMaxRank*(item: ShopItem): int32 =
+  ## Rank/charge cap. Wards are a single free charge, not a 1-5 family.
+  if item == ShopWard: WardChargeMax else: ItemMaxRank
+
+proc dropReach*(item: ShopItem): int32 =
+  ## Chebyshev plant reach for one gadget family.
+  if item == ShopWard: WardPlaceRangeTiles else: PlaceRangeTiles
 
 proc shopItemBlurb*(
     item: ShopItem; wallKey = "C", mineKey = "V", wardKey = "B"
@@ -460,8 +515,9 @@ proc shopItemBlurb*(
     "Plant a hidden mine (" & mineKey &
       ", then click; walks there if needed). Ally hooks grab it; enemy hooks detonate it."
   of ShopWard:
-    "Plant a hidden sight ward on either bank (" & wardKey &
-      ", then click). Lights fog for your team."
+    "Free sight ward. Buy at the shop, then plant from inventory (" &
+      wardKey &
+      "). Click either bank (or the far fog from your lip). Planting spends the charge; the shop restocks one every 60s."
 
 proc iconPath*(name: string, kind = "icons"): string =
   ## Returns a polyworld_data path for one published PNG.
@@ -629,10 +685,8 @@ proc maxMinesForRank*(rank: int32): int32 =
   if rank <= 0: 0'i32 else: MaxMinesPerPlayer
 
 proc maxWardsForRank*(rank: int32): int32 =
-  ## Simultaneous wards: one at ranks 1-2, two from rank 3.
-  if rank <= 0: 0'i32
-  elif rank >= 3: MaxWardsPerPlayer
-  else: 1'i32
+  ## Simultaneous living wards. One charge, one stake.
+  if rank <= 0: 0'i32 else: MaxWardsPerPlayer
 
 proc formatTiles*(worldUnits: int32): string =
   ## World units as "N.N" tiles for HUD copy.
@@ -662,6 +716,12 @@ proc thrownHookRange*(level: int32, bigHook: bool): int32 =
   result = hookRange(level)
   if bigHook:
     result = result + result * RuneBigHookPercent div 100
+
+proc thrownHookSpeed*(level: int32, lightning: bool): int32 =
+  ## Meat Hook flight speed after the speed upgrade and Lightning.
+  result = hookSpeed(level)
+  if lightning:
+    result = result * RuneLightningSpeedMul
 
 proc attackTooltipLines*(damage, periodTicks: int32): seq[string] =
   ## Title, how-to, and swing numbers for the cleaver well.
@@ -708,8 +768,10 @@ proc hookTooltipLines*(
   if lightning:
     if extra.len > 0:
       extra.add " - "
-    extra.add $RuneLightningDamage & " splash / " &
-      formatTiles(RuneLightningRadius) & " tiles"
+    extra.add $RuneLightningSpeedMul & "x speed - " &
+      $RuneLightningDamage & " splash / " &
+      formatTiles(RuneLightningRadius) & " tiles - trail " &
+      $RuneLightningTrailDamage & " - clash " & $RuneLightningClashDamage
   if extra.len > 0:
     result.add extra
 
@@ -739,14 +801,19 @@ proc blinkTooltipLines*(blinkKey = "F"): seq[string] =
   @[
     "Blink",
     "Hop toward the cursor (" & blinkKey &
-      "). Stops at the last legal tile (cliffs, walls, bodies).",
+      "). Cross the narrow gap by the fountain. Cliffs, walls and bodies stop the hop.",
     $BlinkRangeTiles & " tiles - CD " & formatSeconds(BlinkCooldownTicks)
   ]
 
 proc shopItemTitle*(item: ShopItem, rank: int32): string =
   ## Catalog name, plus rank for inventory families.
   result = ShopItemNames[item]
-  if item.isPermanent:
+  if item == ShopWard:
+    if rank > 0:
+      result.add "  [carrying]"
+    else:
+      result.add "  [in shop]"
+  elif item.isPermanent:
     result.add "  [rank " & $max(rank, 0'i32) & "/" & $ItemMaxRank & "]"
 
 proc shopItemEffect*(item: ShopItem, rank: int32): string =
@@ -781,9 +848,9 @@ proc shopItemEffect*(item: ShopItem, rank: int32): string =
       formatSeconds(MineDurationTicks) & " life - CD " &
       formatSeconds(MineCooldownTicks)
   of ShopWard:
-    formatTiles(SightRadiusTiles * WorldScale) & "-tile sight - max " &
-      $maxWardsForRank(shown) & " - " & formatSeconds(WardDurationTicks) &
-      " life - CD " & formatSeconds(WardCooldownTicks)
+    formatTiles(SightRadiusTiles * WorldScale) & "-tile sight - plant within " &
+      $WardPlaceRangeTiles & " tiles - " & formatSeconds(WardDurationTicks) &
+      " life - shop restocks every " & formatSeconds(WardRestockTicks)
 
 proc shopItemTooltipLines*(
     item: ShopItem, rank: int32;
@@ -923,6 +990,7 @@ proc contentHash*(): uint64 =
   hash.addHashy(ItemBootsSpeedPercent)
   hash.addHashy(ItemLongshotPercent)
   hash.addHashy(PlaceRangeTiles)
+  hash.addHashy(WardPlaceRangeTiles)
   hash.addHashy(WallDurationTicks)
   hash.addHashy(WallDurationPerRankTicks)
   hash.addHashy(WallBaseHp)
@@ -939,7 +1007,9 @@ proc contentHash*(): uint64 =
   hash.addHashy(MineBlastRadius)
   hash.addHashy(MaxMinesPerPlayer)
   hash.addHashy(WardDurationTicks)
+  hash.addHashy(WardRestockTicks)
   hash.addHashy(WardCooldownTicks)
+  hash.addHashy(WardChargeMax)
   hash.addHashy(MaxWardsPerPlayer)
   hash.addHashy(FirstPropId)
   hash.addHashy(WallObjectKind)
@@ -956,5 +1026,13 @@ proc contentHash*(): uint64 =
   hash.addHashy(RuneBigHookDamagePercent)
   hash.addHashy(RuneLightningDamage)
   hash.addHashy(RuneLightningRadius)
+  hash.addHashy(RuneLightningTrailDamage)
+  hash.addHashy(RuneLightningTrailRadius)
+  hash.addHashy(RuneLightningTrailPeriodTicks)
+  hash.addHashy(RuneLightningTrailDurationTicks)
+  hash.addHashy(RuneLightningTrailStep)
+  hash.addHashy(RuneLightningClashDamage)
+  hash.addHashy(RuneLightningSpeedMul)
+  hash.addHashy(MaxFirePatches)
   hash.addHashy(RuneBountyGold)
   uint64(hash)

@@ -7,6 +7,8 @@ import os
 from dataclasses import dataclass
 from typing import Any, cast
 
+from .base import BasePolicy
+
 # Bundled league personalities. `idle` used to stand at spawn; it now
 # aliases rusher so old seat env still plays.
 PERSONALITY = os.environ.get("PUDGE_PERSONALITY", "rusher")
@@ -14,6 +16,7 @@ if PERSONALITY == "idle":
     PERSONALITY = "rusher"
 
 BLINK_RANGE = 20.0
+BASE_HIT_POINTS = 1200.0
 WALK_TILES_PER_TICK = 27_000.0 / 60_000.0
 VEL_SAMPLE = 8
 RESPAWN_TICKS = 32 * 4
@@ -43,14 +46,22 @@ SHOP_PRICES = {
     SHOP_LONGSHOT: 12,
     SHOP_WALL: 10,
     SHOP_MINE: 10,
-    SHOP_WARD: 8,
+    SHOP_WARD: 0,
 }
+WARD_CHARGE_MAX = 1
+WARD_PLACE_RANGE = 32.0
 
 _tracks: dict[int, "Ghost"] = {}
 _last_tick = -1
 _dodge_side = 0
 _last_fly: tuple[float, float, int] | None = None
 _last_seen: tuple[int, float, float, int] | None = None
+POLICY_ARM = os.environ.get("PUDGE_POLICY_ARM", "combined")
+if POLICY_ARM not in {"baseline", "healing", "spacing", "combined"}:
+    raise ValueError(f"Unknown PUDGE_POLICY_ARM: {POLICY_ARM}")
+_base = BasePolicy(heal_allies=POLICY_ARM in {"healing", "combined"},
+                   spread_fishing=POLICY_ARM in {"spacing", "combined"},
+                   trace=POLICY_ARM != "baseline")
 
 
 @dataclass
@@ -61,7 +72,7 @@ class Ghost:
     vx: float = 0.0
     vy: float = 0.0
     tick: int = 0
-    hp: float = 840.0
+    hp: float = BASE_HIT_POINTS
     layer: int = 1
     in_river: bool = False
     alive: bool = True
@@ -112,21 +123,26 @@ def _spend_shop(me: dict[str, Any]) -> list[int]:
     if not me.get("in_shop"):
         return []
     gold = int(me.get("gold") or 0)
-    if gold <= 0:
-        return []
     ranks = _item_ranks(me)
     buys: list[int] = []
     hp = float(me.get("hp") or 0)
-    max_hp = float(me.get("max_hp", 840))
+    max_hp = float(me.get("max_hp", BASE_HIT_POINTS))
     if hp * 2 < max_hp and gold >= SHOP_PRICES[SHOP_FLASK]:
         buys.append(SHOP_FLASK)
         gold -= SHOP_PRICES[SHOP_FLASK]
 
-    def take(item: int, rank_i: int | None, price: int) -> None:
+    def take(
+        item: int,
+        rank_i: int | None,
+        price: int,
+        max_rank: int = MAX_ITEM_RANK,
+    ) -> None:
         nonlocal gold
         if gold < price:
             return
-        if rank_i is not None and ranks[rank_i] >= MAX_ITEM_RANK:
+        if rank_i is not None and ranks[rank_i] >= max_rank:
+            return
+        if item == SHOP_WARD and int(me.get("ward_restock") or 0) > 0:
             return
         buys.append(item)
         gold -= price
@@ -139,14 +155,14 @@ def _spend_shop(me: dict[str, Any]) -> list[int]:
         take(SHOP_BOOTS, 0, SHOP_PRICES[SHOP_BOOTS])
         take(SHOP_WALL, 2, SHOP_PRICES[SHOP_WALL])
         take(SHOP_MINE, 3, SHOP_PRICES[SHOP_MINE])
-        take(SHOP_WARD, 4, SHOP_PRICES[SHOP_WARD])
+        take(SHOP_WARD, 4, SHOP_PRICES[SHOP_WARD], WARD_CHARGE_MAX)
         return buys
     take(SHOP_LONGSHOT, 1, SHOP_PRICES[SHOP_LONGSHOT])
     take(SHOP_BOOTS, 0, SHOP_PRICES[SHOP_BOOTS])
     take(SHOP_BIG_HOOK, None, SHOP_PRICES[SHOP_BIG_HOOK])
     take(SHOP_WALL, 2, SHOP_PRICES[SHOP_WALL])
     take(SHOP_MINE, 3, SHOP_PRICES[SHOP_MINE])
-    take(SHOP_WARD, 4, SHOP_PRICES[SHOP_WARD])
+    take(SHOP_WARD, 4, SHOP_PRICES[SHOP_WARD], WARD_CHARGE_MAX)
     return buys
 
 
@@ -158,7 +174,7 @@ def _want_shop(me: dict[str, Any]) -> bool:
     if ranks[0] < MAX_ITEM_RANK or ranks[1] < MAX_ITEM_RANK:
         return True
     hp = float(me.get("hp") or 0)
-    max_hp = float(me.get("max_hp", 840))
+    max_hp = float(me.get("max_hp", BASE_HIT_POINTS))
     return hp * 2 < max_hp and gold >= 5
 
 
@@ -168,30 +184,34 @@ def _place_gadgets(
     river_east: float,
     action: dict[str, Any],
 ) -> None:
-    if int(me.get("layer", 0)) == 2:
-        return
     ranks = _item_ranks(me)
     if ranks[2] <= 0 and ranks[3] <= 0 and ranks[4] <= 0:
         return
     x = float(me["x"])
     y = float(me["y"])
-    if int(me["team"]) == 0:
-        wall_x = min(x + 3.0, river_west)
-    else:
-        wall_x = max(x - 3.0, river_east)
-    if ranks[2] > 0:
-        action.setdefault("place_wall", [wall_x, y])
-    if ranks[3] > 0:
-        mine_y = max(Y_MIN, min(Y_MAX, y + 3.0))
-        action.setdefault("place_mine", [wall_x, mine_y])
+    in_river = int(me.get("layer", 0)) == 2
+    if not in_river:
+        if int(me["team"]) == 0:
+            wall_x = min(x + 3.0, river_west)
+        else:
+            wall_x = max(x - 3.0, river_east)
+        if ranks[2] > 0:
+            action.setdefault("place_wall", [wall_x, y])
+        if ranks[3] > 0:
+            mine_y = max(Y_MIN, min(Y_MAX, y + 3.0))
+            action.setdefault("place_mine", [wall_x, mine_y])
     if ranks[4] > 0:
         team = int(me["team"])
-        # Wards only matter on the far bank (home + river are already
-        # lit). Drop range is 3 tiles; plant inland of the waterline.
-        if team == 0 and x > river_east:
-            action.setdefault("place_ward", [min(x + 3.0, river_east + 16.0), y])
-        elif team == 1 and x < river_west:
-            action.setdefault("place_ward", [max(x - 3.0, river_west - 16.0), y])
+        # Home bank and river are already lit. Throw onto the far fog
+        # brush from up to 32 tiles away (west lip reaches east land).
+        if team == 0:
+            dest_x = min(x + WARD_PLACE_RANGE, river_east + 8.0)
+            if dest_x > river_east:
+                action.setdefault("place_ward", [dest_x, y])
+        else:
+            dest_x = max(x - WARD_PLACE_RANGE, river_west - 8.0)
+            if dest_x < river_west:
+                action.setdefault("place_ward", [dest_x, y])
 
 
 def reset_memory() -> None:
@@ -201,28 +221,42 @@ def reset_memory() -> None:
     _dodge_side = 0
     _last_fly = None
     _last_seen = None
+    _base.reset()
 
 
 async def main() -> None:
     import websockets
 
-    from coworld.examples.pudgewars.shared.log_shipper import get_logger
+    from ..shared.log_shipper import get_logger
 
     logger = get_logger("pudgewars.player")
     url = os.environ["COWORLD_PLAYER_WS_URL"]
-    logger.info("connecting personality=%s", PERSONALITY)
+    logger.info("connecting personality=%s arm=%s", PERSONALITY, POLICY_ARM)
+    trace_batch = []
+    trace_tick = -256
     async with websockets.connect(url, ping_timeout=None) as websocket:
         async for raw_message in websocket:
             message = cast(dict[str, Any], json.loads(raw_message))
             if message.get("type") == "final" or message.get("done"):
+                if trace_batch:
+                    logger.info("policy_trace %s", json.dumps(trace_batch, separators=(",", ":")))
                 logger.info("received final message, exiting")
                 return
             if message.get("type") == "observation":
                 await websocket.send(json.dumps(choose_action(message)))
+                if _base.events:
+                    trace_batch.extend(_base.events)
+                    _base.events.clear()
+                if trace_batch and (message["tick"] - trace_tick >= 256 or len(trace_batch) >= 32):
+                    logger.info("policy_trace %s", json.dumps(trace_batch, separators=(",", ":")))
+                    trace_batch.clear()
+                    trace_tick = message["tick"]
 
 
 def choose_action(obs: dict[str, Any]) -> dict[str, Any]:
     global _dodge_side
+    if PERSONALITY == "rusher":
+        return _base.choose_action(obs)
     if PERSONALITY == "partner":
         return _choose_partner(obs)
     me = obs["self"]
@@ -344,7 +378,7 @@ def choose_action(obs: dict[str, Any]) -> dict[str, Any]:
     if threat is None:
         _dodge_side = 0
 
-    low_hp = float(me["hp"]) * 100 < float(me.get("max_hp", 840)) * 40
+    low_hp = float(me["hp"]) * 100 < float(me.get("max_hp", BASE_HIT_POINTS)) * 40
     in_river = bool(me.get("in_river") or int(me.get("layer", 0)) == 2)
     dump_chase = bool(drowning or any(
         int(p.get("layer", -1)) == 2 for p in hooked
@@ -362,7 +396,7 @@ def choose_action(obs: dict[str, Any]) -> dict[str, Any]:
         prey_rot
         and not in_river
         and not (target and target.get("shield"))
-        and float(me["hp"]) * 100 >= float(me.get("max_hp", 840)) * 40
+        and float(me["hp"]) * 100 >= float(me.get("max_hp", BASE_HIT_POINTS)) * 40
         and not sniper
     )
     if want_rot != bool(me.get("rot")):
@@ -573,7 +607,7 @@ def _pick_hook(
         and not seen.get("shield")
         and not seen.get("ghost")
     ):
-        if sniper and float(seen.get("hp", 840)) > _wound_max(me):
+        if sniper and float(seen.get("hp", BASE_HIT_POINTS)) > _wound_max(me):
             pass
         elif _in_range(
             me, seen, _engage_range(me, camper or sniper or PERSONALITY == "rusher")
@@ -622,7 +656,7 @@ def _update_tracks(enemies: list[dict[str, Any]], tick: int) -> None:
                 x=x,
                 y=y,
                 tick=tick,
-                hp=float(enemy.get("hp", 840)),
+                hp=float(enemy.get("hp", BASE_HIT_POINTS)),
                 layer=int(enemy.get("layer", 1)),
                 in_river=bool(
                     enemy.get("in_river") or int(enemy.get("layer", -1)) == 2
@@ -734,7 +768,7 @@ def _engage_range(me: dict[str, Any], patient: bool) -> float:
 
 
 def _wound_max(me: dict[str, Any]) -> float:
-    return float(me.get("max_hp", 840)) * 0.5 + 30.0 * _upgrade(me, 0)
+    return float(me.get("max_hp", BASE_HIT_POINTS)) * 0.5 + 30.0 * _upgrade(me, 0)
 
 
 def _home_edge(
@@ -1090,7 +1124,7 @@ def _choose_partner(obs: dict[str, Any]) -> dict[str, Any]:
     in_river = bool(me.get("in_river") or int(me.get("layer", 0)) == 2)
     hook_ready = bool(me.get("hook_ready"))
     blink_ready = bool(me.get("blink_ready"))
-    low_hp = float(me.get("hp", 840)) * 2 < float(me.get("max_hp", 840))
+    low_hp = float(me.get("hp", BASE_HIT_POINTS)) * 2 < float(me.get("max_hp", BASE_HIT_POINTS))
 
     enemies = [
         p for p in pudges
@@ -1365,7 +1399,7 @@ def _choose_partner(obs: dict[str, Any]) -> dict[str, Any]:
             or fight is not None
             or bool(own_catch)
         )
-        and float(me["hp"]) * 5 >= float(me.get("max_hp", 840)) * 2
+        and float(me["hp"]) * 5 >= float(me.get("max_hp", BASE_HIT_POINTS)) * 2
     )
     if want_rot != bool(me.get("rot")):
         # Set, not toggle: idempotent under the 1-tick apply latency.
