@@ -4,24 +4,25 @@
 Coworld JSON protocol. `player.py` selects it for `PUDGE_PERSONALITY=rusher`;
 the other personalities keep their existing implementations.
 
-Hosted `pudge-wars:0.3.16` (simulator 37) uses 1,200 HP, permits safe
+Hosted `pudge-wars:0.3.17` (simulator 37) uses 1,200 HP, permits safe
 fountain Blink crossings, flies Lightning throws at double hook speed, and
-lights team fog from charged-hook fire trails. The updated strategy adds team
-recovery from below 40% HP through 75% HP and guarded escapes toward the home
-bank. See the
+lights team fog from charged-hook fire trails. Replay tapes now carry seat
+labels so Observatory nameplates can show policy names. The updated strategy
+adds team recovery from below 40% HP through 75% HP and guarded escapes toward
+the home bank. See the
 [simulation study](../../games/pudge-wars/experiments/2026-09-10-hp1200-blink.md).
 Crossing requires `game_version >= 35`; older hosts retain their Blink behavior.
 
 Current 3v3 champion: **`pudge-wars-rusher:v14`**, policy-version ID
 `41212e9a-6383-40f8-b44e-f4ceb64ef9c9`, membership
 `lpm_a897a072-a07b-4aef-90fe-ef6e256640b5`.
-Coworld: `cow_548c1ac0-e9af-483e-bc7c-7048991ad267`, platform-hosted Docker players.
+Coworld: `cow_d1aad864-85bf-4028-b9c9-34d4e1a0c044`, platform-hosted Docker players.
 Image: `sha256:678d7c8852d5c7da6f3fa45019660071305e7ff87af9f914106a4bb83e678305`.
 The driver and Docker build default to `combined`. Local container certification
 and hosted game certification passed; fresh hosted competitive results for v14
 are still pending. The duel champion remains v10
 (`6d9aa2b5-5a1c-4c06-9c77-6f2265b43848`), and recurring 1v1 rounds remain paused.
-[Release and verification record](../../docs/hosted-release-0.3.16-2026-09-11.md).
+[Release and verification record](../../docs/hosted-release-0.3.17-2026-09-14.md).
 
 The following results describe the earlier v13 healing/spacing release.
 
@@ -80,7 +81,7 @@ The launcher builds matching native host/client binaries and opens your seat:
 policy directly on this machine; Docker and Coworld credits are not needed.
 Both healing and fishing spacing are enabled for your teammates. Nameplates
 identify each seat. These matches use the current local game rules, which
-now match hosted Coworld 0.3.16 except for later uncommitted edits.
+now match hosted Coworld 0.3.17 except for later uncommitted edits.
 
 Move with WASD or right-click; press Q then click to hook, E to grapple,
 F to blink, R to toggle Rot, X to stop, G to ping, and 1–4 to upgrade.
