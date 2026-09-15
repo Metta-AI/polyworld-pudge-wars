@@ -83,6 +83,8 @@ jobs:
         run: uvx --from "$COWORLD_CLI" coworld --help >/dev/null
 
       - uses: treeform/setup-nim-action@v6
+        with:
+          nim-version: '2.2.10'
 
       - name: Install Nim dependencies
         run: |

@@ -893,7 +893,11 @@ proc drainInbound() =
   for event in events:
     case event.kind
     of InOpen:
-      discard
+      # The runner probes /global before exposing the human's client.
+      # Publish the waiting state without waiting for every player to join.
+      withLock sessionLock:
+        if event.ws in sessions and sessions[event.ws].kind == SkGlobal:
+          sendText(event.ws, $globalSnapshot())
     of InMessage:
       var session: Session
       var known = false
@@ -1110,10 +1114,16 @@ proc healthzHandler(request: Request) {.gcsafe.} =
   request.respond(200, jsonHeaders(), "{\"ok\":true}")
 
 proc playerPageHandler(request: Request) {.gcsafe.} =
-  request.respond(200, htmlHeaders(), PlayerHtml)
+  let clientUrl = getEnv("PUDGE_WARS_CLIENT_URL")
+  doAssert clientUrl.len > 0, "PUDGE_WARS_CLIENT_URL must point to the matching WASM build"
+  request.respond(200, htmlHeaders(), PlayerHtml.replace("__WASM_CLIENT_URL__", $(%clientUrl)))
 
 proc globalPageHandler(request: Request) {.gcsafe.} =
-  request.respond(200, htmlHeaders(), GlobalHtml)
+  {.gcsafe.}:
+    if replayMode:
+      request.respond(200, htmlHeaders(), GlobalHtml)
+    else:
+      playerPageHandler(request)
 
 proc arenaHandler(request: Request) {.gcsafe.} =
   request.respond(200, jsHeaders(), ArenaJs)

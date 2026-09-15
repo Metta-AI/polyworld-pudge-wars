@@ -67,6 +67,7 @@ cp "${src}/pw.js" "${output_dir}/pw.js"
 cp "${src}/pw.wasm" "${output_dir}/pw.wasm"
 for asset in recap-overlay.js boot-scene.js; do
   cp "${polyworld_root}/examples/pudge_wars/${asset}" "${output_dir}/${asset}"
+  cp "${polyworld_root}/examples/pudge_wars/${asset}" "${src}/${asset}"
 done
 if [[ -f "${src}/pw.data" ]]; then
   cp "${src}/pw.data" "${output_dir}/pw.data"
@@ -81,6 +82,7 @@ if [[ -z "${sim_version}" ]]; then
 fi
 printf '{"game":"pudge_wars","simVersion":%s}\n' "${sim_version}" \
   > "${output_dir}/sim-version.json"
+cp "${output_dir}/sim-version.json" "${src}/sim-version.json"
 cover="${polyworld_root}/examples/pudge_wars/cover.webp"
 if [[ -f "$cover" ]]; then
   cp "$cover" "${output_dir}/cover.webp"
