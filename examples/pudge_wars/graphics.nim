@@ -1292,6 +1292,9 @@ proc runGraphics*() =
       previousRunePositions[rune.id] = renderPoint(rune.position)
 
   proc unitPoint(id: int32, position: WorldPoint): Vec3 =
+    if predictor.predictsUnit(id):
+      return renderPoint(predictor.localRenderPoint(
+        if interpolateVisuals: renderAlpha else: 1.0'f32))
     let current = renderPoint(position)
     if not interpolateVisuals:
       return current
@@ -1301,7 +1304,9 @@ proc runGraphics*() =
     let current = renderFacing(facing)
     if not interpolateVisuals:
       return current
-    let previous = previousFacings.getOrDefault(id, current)
+    let previous =
+      if predictor.predictsUnit(id): renderFacing(predictor.previousLocalFacing)
+      else: previousFacings.getOrDefault(id, current)
     previous + shortestTurn(previous, current) * renderAlpha
 
   proc hookPoint(id: int32, position: WorldPoint): Vec3 =
