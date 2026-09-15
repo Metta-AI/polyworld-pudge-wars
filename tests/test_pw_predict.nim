@@ -97,8 +97,10 @@ block:
   queueIntent(refGame, HumanIntent(
     slot: int32(LocalSeat), kind: IntentWalk, a: 40'i32, b: 64'i32
   ))
+  var refPrevious: Pudge
   for _ in 0 ..< Lead:
-    tickWorld(refGame, proc() = discard)
+    refPrevious = refGame.world.pudges[LocalSeat]
+    tickWorld(refGame, proc() = runHumanIntents(refGame, LocalSeat))
   let refPos = refGame.world.pudges[LocalSeat].position
 
   # Predictor: confirmed world at tick C, same walk pending, lead ticks.
@@ -115,6 +117,7 @@ block:
   pred.record(
     HumanIntent(slot: int32(LocalSeat), kind: IntentWalk, a: 40'i32, b: 64'i32),
     uint32(C))
+  let confirmedHash = confirmed.stateHash()
   pred.rebuild(confirmed)
   let predPos = pred.predicted.world.pudges[LocalSeat].position
   doAssert predPos.x == refPos.x and predPos.z == refPos.z,
@@ -122,6 +125,19 @@ block:
   # The confirmed world was not advanced by the rebuild.
   doAssert confirmed.world.tick == C,
     "rebuild must never tick the authoritative world"
+  doAssert confirmed.stateHash() == confirmedHash,
+    "prediction must not mutate the confirmed simulation"
+  doAssert pred.localRenderPoint(0) == refPrevious.position
+  doAssert pred.previousLocalFacing == refPrevious.facing
+  doAssert predPos != confirmed.world.pudges[LocalSeat].position,
+    "an unconfirmed walk must actually move the predicted hero"
+  doAssert pred.predicted.humanIntents.len == 0,
+    "prediction must drain commands on the hero turn"
+  pred.rebuild(confirmed)
+  doAssert pred.predicted.world.pudges[LocalSeat].position == predPos,
+    "rebuilding the same tick must not retain commands from the last rebuild"
+  doAssert pred.predicted.intentResults.len == 1,
+    "rebuild must reset the scratch world's prior acknowledgments"
 
 echo "Testing a stable prediction does not snap frame to frame"
 block:
@@ -198,7 +214,8 @@ block:
   doAssert not pred.snapped
   # The host never recorded that command and the local butcher is now
   # forced far away (a hook dump, say): the next rebuild must snap.
-  confirmed.world.pudges[LocalSeat].position.x += 500_000'i32
+  let here = tileOf(confirmed.world.pudges[LocalSeat].position)
+  confirmed.world.pudges[LocalSeat].placePudge(here.x + 7, here.z)
   pred.rebuild(confirmed)
   doAssert pred.snapped, "a large confirmed correction must register a snap"
 
@@ -219,9 +236,10 @@ block:
   let before = localRenderPoint(pred)
   doAssert abs(before.x - confirmed.world.pudges[LocalSeat].position.x) <
     SnapStep, "render tracks the prediction during ordinary motion"
-  # A teleport-sized confirmed correction (~4.6 tiles, inside the smooth
+  # A teleport-sized confirmed correction (~4 tiles, inside the smooth
   # band): the drawn hero must NOT jump the whole way in one frame.
-  confirmed.world.pudges[LocalSeat].position.x += 300_000'i32
+  let here = tileOf(confirmed.world.pudges[LocalSeat].position)
+  confirmed.world.pudges[LocalSeat].placePudge(here.x + 4, here.z)
   pred.rebuild(confirmed)
   let after = localRenderPoint(pred)
   doAssert abs(after.x - before.x) < SnapStep,
@@ -232,5 +250,74 @@ block:
   let settled = localRenderPoint(pred)
   doAssert abs(settled.x - confirmed.world.pudges[LocalSeat].position.x) <
     SnapEpsilon, "render must converge to the corrected position"
+
+echo "Testing display frames interpolate consecutive predicted ticks"
+block:
+  var legacyBacksteps, fixedBacksteps, samples: int
+  var legacyWorst, fixedWorst: int64
+  for fps in [60, 120, 144]:
+    for lead in MinLead .. MaxLead:
+      for direction in [(1'i32, 0'i32), (-1'i32, 0'i32),
+          (0'i32, 1'i32), (0'i32, -1'i32), (1'i32, 1'i32),
+          (1'i32, -1'i32), (-1'i32, 1'i32), (-1'i32, -1'i32)]:
+        let confirmed = newGame(map, MatchTicks, false, ReplayData())
+        confirmed.humanSlots.add LocalSeat
+        confirmed.world.pudges[LocalSeat].placePudge(30, 40)
+        doAssert applyWalkTo(confirmed.world,
+          confirmed.world.pudges[LocalSeat].id,
+          30 + direction[0] * 12, 40 + direction[1] * 12)
+        # Reach cruising speed before measuring; no bots, collisions,
+        # input changes, or network corrections to mask render backsteps.
+        for _ in 0 ..< 8:
+          tickWorld(confirmed, proc() = discard)
+        let pred = newPredictor()
+        pred.enable(LocalSeat, lead)
+        pred.rebuild(confirmed)
+        doAssert pred.predictsUnit(confirmed.world.pudges[LocalSeat].id)
+        doAssert not pred.predictsUnit(confirmed.world.pudges[1].id)
+        var previousConfirmed = confirmed.world.pudges[LocalSeat].position
+        var lastFixed = pred.localRenderPoint(0)
+        var lastLegacy = previousConfirmed
+        var simulated = 0
+        for frame in 1 .. fps div 3:
+          let target = frame * int(TickRate) div fps
+          while simulated < target:
+            let oldEndpoint = pred.localRenderPoint(1)
+            previousConfirmed = confirmed.world.pudges[LocalSeat].position
+            tickWorld(confirmed, proc() = discard)
+            pred.rebuild(confirmed)
+            doAssert pred.localRenderPoint(0) == oldEndpoint,
+              "tick rollover must start where the previous prediction ended"
+            inc simulated
+          pred.rebuild(confirmed) # real loop rebuilds even without a new tick
+          let alpha = float32((frame * int(TickRate)) mod fps) / float32(fps)
+          let fixed = pred.localRenderPoint(alpha)
+          let endpoint = pred.localRenderPoint()
+          # The old graphics.unitPoint blended confirmed T-1 -> predicted
+          # T+lead, then reset toward confirmed history on every tick.
+          let legacy = WorldPoint(
+            x: int32(float64(previousConfirmed.x) +
+              float64(endpoint.x - previousConfirmed.x) * float64(alpha)),
+            z: int32(float64(previousConfirmed.z) +
+              float64(endpoint.z - previousConfirmed.z) * float64(alpha)))
+          let fixedStep = int64(fixed.x - lastFixed.x) * direction[0] +
+            int64(fixed.z - lastFixed.z) * direction[1]
+          let legacyStep = int64(legacy.x - lastLegacy.x) * direction[0] +
+            int64(legacy.z - lastLegacy.z) * direction[1]
+          if fixedStep < -1: inc fixedBacksteps
+          if legacyStep < -1: inc legacyBacksteps
+          fixedWorst = max(fixedWorst, -fixedStep)
+          legacyWorst = max(legacyWorst, -legacyStep)
+          lastFixed = fixed
+          lastLegacy = legacy
+          inc samples
+        pred.disable()
+        doAssert not pred.predictsUnit(confirmed.world.pudges[LocalSeat].id)
+        doAssert pred.localRenderPoint() == WorldPoint()
+  echo "  ", samples, " display frames: backward steps old=", legacyBacksteps,
+    " fixed=", fixedBacksteps, "; worst backward fixed-point distance old=",
+    legacyWorst, " fixed=", fixedWorst
+  doAssert legacyBacksteps > 0, "the scenario must reproduce the original jitter"
+  doAssert fixedBacksteps == 0, "steady movement must never render backward"
 
 echo "test_pw_predict: all checks passed"

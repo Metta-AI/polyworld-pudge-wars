@@ -64,6 +64,10 @@ type
       ## few frames instead of jumping; normal motion passes through.
     offsetX, offsetZ: int32
     haveRender: bool
+    previousLocalPosition: WorldPoint
+      ## Position immediately before the final predicted tick, NOT the
+      ## previous confirmed tick. Both render endpoints share a timeline.
+    previousLocalFacing*: Heading
 
 const
   MinLead* = 1
@@ -122,6 +126,7 @@ proc disable*(pred: Predictor) =
   pred.issued = 0
   pred.predicted = nil
   pred.havePrev = false
+  pred.haveRender = false
 
 proc record*(pred: Predictor, intent: HumanIntent, atTick: uint32) =
   ## Logs a local intent issued at prediction tick `atTick`. Caller also
@@ -186,6 +191,8 @@ proc rebuild*(pred: Predictor, confirmed: Game) {.measure.} =
   pred.predicted.replayMode = false
   pred.predicted.recorder = nil
   pred.predicted.humanSlots = @[pred.seat]
+  pred.predicted.humanIntents.setLen(0)
+  pred.predicted.intentResults.setLen(0)
   # Apply every still-unconfirmed local order, then advance without any
   # host tape: other seats coast on their last order, no bot decisions,
   # so only our own predicted input changes the world.
@@ -201,11 +208,20 @@ proc rebuild*(pred: Predictor, confirmed: Game) {.measure.} =
   # the authoritative sim, so host determinism is unaffected.
   try:
     for _ in 0 ..< pred.lead:
+      if pred.seat >= 0 and pred.seat < pred.predicted.world.pudges.len:
+        let local = pred.predicted.world.pudges[pred.seat]
+        pred.previousLocalPosition = local.position
+        pred.previousLocalFacing = local.facing
       if pred.predicted.world.gameOver:
         break
-      tickWorld(pred.predicted, proc() = discard)
+      tickWorld(pred.predicted, proc() =
+        runHumanIntents(pred.predicted, pred.seat))
   except Defect:
     pred.predicted.world = confirmed.world.clone()
+    if pred.seat >= 0 and pred.seat < pred.predicted.world.pudges.len:
+      let local = pred.predicted.world.pudges[pred.seat]
+      pred.previousLocalPosition = local.position
+      pred.previousLocalFacing = local.facing
   # Snap detection + render smoothing on the local butcher.
   if pred.seat >= 0 and pred.seat < pred.predicted.world.pudges.len:
     let p = pred.predicted.world.pudges[pred.seat].position
@@ -238,18 +254,35 @@ proc rebuild*(pred: Predictor, confirmed: Game) {.measure.} =
     pred.havePrev = true
     pred.haveRender = true
 
-proc localRenderPoint*(pred: Predictor): WorldPoint =
+proc localRenderPoint*(pred: Predictor, alpha = 1.0'f32): WorldPoint =
   ## The smoothed draw position for the local butcher: identical to the
   ## predicted position during ordinary motion, but with misprediction
   ## teleports eased out. Falls back to the raw predicted position before
   ## the first rebuild.
-  if pred.haveRender:
-    WorldPoint(x: pred.renderX, z: pred.renderZ)
-  elif pred.enabled and pred.predicted != nil and pred.seat >= 0 and
+  ## Interpolate the final two predicted ticks with the display's tick
+  ## fraction. Interpolating from confirmed history instead repeatedly
+  ## rewinds by `lead` ticks whenever that fraction wraps back to zero.
+  if pred.enabled and pred.predicted != nil and pred.seat >= 0 and
       pred.seat < pred.predicted.world.pudges.len:
-    pred.predicted.world.pudges[pred.seat].position
+    let current = pred.predicted.world.pudges[pred.seat].position
+    if not pred.haveRender:
+      return current
+    let t = float64(clamp(alpha, 0.0'f32, 1.0'f32))
+    template blend(a, b: int32): int32 =
+      int32(float64(a) + (float64(b) - float64(a)) * t)
+    # Apply the same correction offset to both endpoints; do not blend
+    # back toward an unsmoothed confirmed position each simulation tick.
+    WorldPoint(
+      x: blend(pred.previousLocalPosition.x, current.x) + pred.offsetX,
+      y: blend(pred.previousLocalPosition.y, current.y),
+      z: blend(pred.previousLocalPosition.z, current.z) + pred.offsetZ)
   else:
     WorldPoint()
+
+proc predictsUnit*(pred: Predictor, id: int32): bool =
+  pred.enabled and pred.predicted != nil and pred.seat >= 0 and
+    pred.seat < pred.predicted.world.pudges.len and
+    pred.predicted.world.pudges[pred.seat].id == id
 
 proc renderWorld*(pred: Predictor, confirmed: Game): World =
   ## The world the client should draw: the prediction world when it is
