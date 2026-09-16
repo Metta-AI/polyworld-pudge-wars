@@ -1,0 +1,568 @@
+{
+  "observation": {
+    "type": "observation",
+    "game_version": 37,
+    "slot": 2,
+    "tick": 6595,
+    "max_ticks": 38400,
+    "kill_goal": 30,
+    "width": 128,
+    "height": 128,
+    "river_west": 53,
+    "river_east": 75,
+    "play_west_max": 52,
+    "play_east_min": 76,
+    "fog": true,
+    "self": {
+      "id": 3,
+      "slot": 2,
+      "team": 0,
+      "x": 33.022,
+      "y": 86.273,
+      "hp": 542,
+      "max_hp": 1270,
+      "alive": true,
+      "hooked": false,
+      "shield": 0,
+      "hook_ready": true,
+      "blink_ready": false,
+      "rot": false,
+      "layer": 0,
+      "gold": 9,
+      "points": 0,
+      "in_shop": false,
+      "kills": 2,
+      "in_river": false,
+      "home_x": 33,
+      "home_y": 34,
+      "upgrades": [
+        0,
+        2,
+        0,
+        0
+      ],
+      "item_ranks": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "items": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "ward_restock": 279,
+      "buff": 0,
+      "say": null,
+      "say_tick": -1
+    },
+    "accepted": {
+      "walk_to": true,
+      "hook_to": "flight"
+    },
+    "print": null,
+    "visible": {
+      "pudges": [
+        {
+          "id": 1,
+          "slot": 0,
+          "team": 0,
+          "x": 36.51,
+          "y": 30.726,
+          "hp": 1036,
+          "max_hp": 1340,
+          "alive": true,
+          "hooked": false,
+          "shield": 0,
+          "hook_ready": false,
+          "blink_ready": true,
+          "rot": false,
+          "layer": 0,
+          "gold": 1,
+          "points": 0,
+          "in_shop": false,
+          "kills": 4,
+          "in_river": false,
+          "home_x": 19,
+          "home_y": 85,
+          "upgrades": [
+            0,
+            4,
+            0,
+            0
+          ],
+          "item_ranks": [
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "items": [
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "ward_restock": 0,
+          "buff": 0,
+          "say": null,
+          "say_tick": -1
+        },
+        {
+          "id": 2,
+          "slot": 1,
+          "team": 0,
+          "x": 32.792,
+          "y": 54.106,
+          "hp": 549,
+          "max_hp": 1305,
+          "alive": true,
+          "hooked": false,
+          "shield": 0,
+          "hook_ready": false,
+          "blink_ready": false,
+          "rot": true,
+          "layer": 0,
+          "gold": 0,
+          "points": 0,
+          "in_shop": false,
+          "kills": 3,
+          "in_river": false,
+          "home_x": 30,
+          "home_y": 63,
+          "upgrades": [
+            0,
+            3,
+            0,
+            0
+          ],
+          "item_ranks": [
+            0,
+            2,
+            0,
+            0,
+            0
+          ],
+          "items": [
+            0,
+            2,
+            0,
+            0,
+            0
+          ],
+          "ward_restock": 1329,
+          "buff": 0,
+          "say": null,
+          "say_tick": -1
+        },
+        {
+          "id": 3,
+          "slot": 2,
+          "team": 0,
+          "x": 33.022,
+          "y": 86.273,
+          "hp": 542,
+          "max_hp": 1270,
+          "alive": true,
+          "hooked": false,
+          "shield": 0,
+          "hook_ready": true,
+          "blink_ready": false,
+          "rot": false,
+          "layer": 0,
+          "gold": 9,
+          "points": 0,
+          "in_shop": false,
+          "kills": 2,
+          "in_river": false,
+          "home_x": 33,
+          "home_y": 34,
+          "upgrades": [
+            0,
+            2,
+            0,
+            0
+          ],
+          "item_ranks": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "items": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "ward_restock": 279,
+          "buff": 0,
+          "say": null,
+          "say_tick": -1
+        },
+        {
+          "id": 4,
+          "slot": 3,
+          "team": 1,
+          "x": 37.352,
+          "y": 51.605,
+          "hp": 49,
+          "max_hp": 1305,
+          "alive": true,
+          "hooked": false,
+          "shield": 0,
+          "hook_ready": false,
+          "blink_ready": false,
+          "rot": false,
+          "layer": 0,
+          "gold": 7,
+          "points": 0,
+          "in_shop": false,
+          "kills": 3,
+          "in_river": false,
+          "home_x": 109,
+          "home_y": 85,
+          "upgrades": [
+            0,
+            3,
+            0,
+            0
+          ],
+          "item_ranks": [
+            0,
+            1,
+            0,
+            0,
+            0
+          ],
+          "items": [
+            0,
+            1,
+            0,
+            0,
+            0
+          ],
+          "ward_restock": 0,
+          "buff": 0,
+          "say": null,
+          "say_tick": -1
+        },
+        {
+          "id": 5,
+          "slot": 4,
+          "team": 1,
+          "x": 95.505,
+          "y": 59.209,
+          "hp": 1200,
+          "max_hp": 1200,
+          "alive": true,
+          "hooked": false,
+          "shield": 0,
+          "hook_ready": true,
+          "blink_ready": false,
+          "rot": false,
+          "layer": 1,
+          "gold": 9,
+          "points": 0,
+          "in_shop": false,
+          "kills": 0,
+          "in_river": false,
+          "home_x": 98,
+          "home_y": 63,
+          "upgrades": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "item_ranks": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "items": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "ward_restock": 0,
+          "buff": 5,
+          "say": null,
+          "say_tick": -1
+        }
+      ],
+      "hooks": [
+        {
+          "owner": 2,
+          "owner_id": 3,
+          "team": 0,
+          "x": 87.37,
+          "y": 71.105,
+          "victim": 0,
+          "flying": false,
+          "lightning": false
+        },
+        {
+          "owner": 4,
+          "owner_id": 5,
+          "team": 1,
+          "x": 52.384,
+          "y": 107.113,
+          "victim": 0,
+          "flying": false,
+          "lightning": false
+        },
+        {
+          "owner": 0,
+          "owner_id": 1,
+          "team": 0,
+          "x": 89.814,
+          "y": 60.915,
+          "victim": 0,
+          "flying": true,
+          "lightning": false
+        }
+      ],
+      "runes": [],
+      "props": [
+        {
+          "id": 2009,
+          "kind": "ward",
+          "team": 0,
+          "x": 79.5,
+          "y": 54.5,
+          "hp": 1
+        }
+      ],
+      "fires": []
+    },
+    "objects": [
+      {
+        "id": 1,
+        "kind": 1,
+        "team": 0,
+        "x": 36.51,
+        "y": 30.726,
+        "hp": 1036,
+        "alive": true,
+        "layer": 0,
+        "hooked": false,
+        "shielded": false,
+        "rot": false
+      },
+      {
+        "id": 2,
+        "kind": 1,
+        "team": 0,
+        "x": 32.792,
+        "y": 54.106,
+        "hp": 549,
+        "alive": true,
+        "layer": 0,
+        "hooked": false,
+        "shielded": false,
+        "rot": true
+      },
+      {
+        "id": 3,
+        "kind": 1,
+        "team": 0,
+        "x": 33.022,
+        "y": 86.273,
+        "hp": 542,
+        "alive": true,
+        "layer": 0,
+        "hooked": false,
+        "shielded": false,
+        "rot": false
+      },
+      {
+        "id": 4,
+        "kind": 1,
+        "team": 1,
+        "x": 37.352,
+        "y": 51.605,
+        "hp": 49,
+        "alive": true,
+        "layer": 0,
+        "hooked": false,
+        "shielded": false,
+        "rot": false
+      },
+      {
+        "id": 5,
+        "kind": 1,
+        "team": 1,
+        "x": 95.505,
+        "y": 59.209,
+        "hp": 1200,
+        "alive": true,
+        "layer": 1,
+        "hooked": false,
+        "shielded": false,
+        "rot": false
+      },
+      {
+        "id": 2009,
+        "kind": 4,
+        "team": 0,
+        "x": 79.5,
+        "y": 54.5,
+        "hp": 1,
+        "alive": true,
+        "layer": 1,
+        "hooked": false,
+        "shielded": false,
+        "rot": false
+      }
+    ],
+    "ally_ping": null,
+    "rune_next": {
+      "soon": 445,
+      "kind": 5,
+      "x": 64,
+      "y": 16
+    },
+    "score": {
+      "west": 9,
+      "east": 3
+    },
+    "done": false,
+    "winner": ""
+  },
+  "parent": {
+    "walk_to": [
+      36,
+      97.0
+    ]
+  },
+  "candidate": {
+    "hook_to": [
+      94.18036039999997,
+      63.991032266666664
+    ],
+    "walk_to": [
+      36,
+      97.0
+    ]
+  },
+  "state": {
+    "heal_allies": true,
+    "spread_fishing": true,
+    "trace": false,
+    "recovering": false,
+    "tick": 6595,
+    "samples": {
+      "1": [
+        6588,
+        36.311,
+        32.174,
+        0.08899999999999864,
+        -0.7629999999999981
+      ],
+      "2": [
+        6594,
+        32.792,
+        54.106,
+        0.0,
+        0.0
+      ],
+      "3": [
+        6592,
+        32.92,
+        85.355,
+        0.968,
+        0.2360000000000042
+      ],
+      "4": [
+        6595,
+        37.352,
+        51.605,
+        0.0,
+        0.0
+      ],
+      "5": [
+        6594,
+        95.41,
+        58.769,
+        -0.6360000000000099,
+        2.2959999999999994
+      ],
+      "6": [
+        3393,
+        88.113,
+        68.218,
+        14.298000000000002,
+        1.6869999999999976
+      ]
+    },
+    "last_enemy": {
+      "id": 4,
+      "slot": 3,
+      "team": 1,
+      "x": 37.352,
+      "y": 51.605,
+      "hp": 49,
+      "max_hp": 1305,
+      "alive": true,
+      "hooked": false,
+      "shield": 0,
+      "hook_ready": false,
+      "blink_ready": false,
+      "rot": false,
+      "layer": 0,
+      "gold": 7,
+      "points": 0,
+      "in_shop": false,
+      "kills": 3,
+      "in_river": false,
+      "home_x": 109,
+      "home_y": 85,
+      "upgrades": [
+        0,
+        3,
+        0,
+        0
+      ],
+      "item_ranks": [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "items": [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "ward_restock": 0,
+      "buff": 0,
+      "say": null,
+      "say_tick": -1
+    },
+    "last_seen": 6595,
+    "dodge_side": 0,
+    "rescue_until": 6593,
+    "team_roster": [
+      1,
+      2,
+      3
+    ],
+    "events": []
+  }
+}

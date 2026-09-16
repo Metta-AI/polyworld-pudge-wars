@@ -78,6 +78,28 @@ class CampaignComparisonTest(unittest.TestCase):
         self.assertEqual(excluded, [dict(episode_id='z', seed=7, candidate_side=0)])
         self.assertEqual(comparison.independent_rows(list(reversed(rows)), 'first-id'), (chosen, excluded))
 
+    def test_campaign_checks_the_explicit_game_version(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            episode = dict(id='episode', policy_version_ids=['a'] * 3 + ['b'] * 3,
+                           coworld_version='0.3.21')
+            request = dict(id='request', label='candidate-west', policy='a', opponent='b', n=3,
+                           candidate_side=0, num_episodes=1, status='completed',
+                           counts={'completed': 1}, episodes=[episode])
+            result = dict(request_id='request', episode_id='episode', candidate_side=0, n=3,
+                          result=dict(seed=7, scores=[1] * 3 + [0] * 3, west_kills=30, east_kills=20))
+            (root / 'status.json').write_text(json.dumps([request]))
+            (root / 'hosted-results.json').write_text(json.dumps([result]))
+            report = comparison.summarize(root, 'candidate-', game_version='0.3.21')
+            self.assertEqual(report['games'], 1)
+            self.assertEqual(report['game_version'], '0.3.21')
+            with self.assertRaisesRegex(ValueError, 'game mismatch'):
+                comparison.summarize(root, 'candidate-', game_version='0.3.13')
+
+    def test_comparison_rejects_different_game_versions(self):
+        with self.assertRaisesRegex(ValueError, 'same game version'):
+            comparison.compare(dict(game_version='0.3.21'), dict(game_version='0.3.13'))
+
 
 if __name__ == '__main__':
     unittest.main()

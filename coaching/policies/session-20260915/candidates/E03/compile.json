@@ -1,0 +1,9 @@
+{
+  "variant": "alternate-target",
+  "ir_sha256": "a6718bde3dc2995e0da2b5038e96f1ea93df9218c8c45b9cb2bd961a0bff4d52",
+  "semantic_sha256": "682b0672526ee07036e12df74a6c844f7a806d8dccbe4d9e828b0bf6f60013e5",
+  "oracle_sha256": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "policy_sha256": "d4b6255a68e42aafa738b2f5ca22aca553f1b278cd8696fbee3c95c0d37daaa0",
+  "compiler_sha256": "c31163b333ff279cbe2532362151115b9f088a2c039e7924e9a3280d20d847c7",
+  "status": "candidate; not accepted until empirical verification and evaluation"
+}

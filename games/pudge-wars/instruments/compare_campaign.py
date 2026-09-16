@@ -67,7 +67,7 @@ def describe(rows):
                 banks=banks, win_rate=outcomes['wins'] / len(rows), mean_kill_margin=mean(margins))
 
 
-def summarize(study, prefix, repeated_seeds='reject'):
+def summarize(study, prefix, repeated_seeds='reject', game_version='0.3.13'):
     requests = [r for r in json.loads((study / 'status.json').read_text()) if r['label'].startswith(prefix)]
     if not requests:
         raise ValueError(f'No requests for {prefix}')
@@ -82,7 +82,7 @@ def summarize(study, prefix, repeated_seeds='reject'):
         roster = [request['policy'] if i // request['n'] == request['candidate_side'] else request['opponent']
                   for i in range(2 * request['n'])]
         for episode in request['episodes']:
-            if episode['policy_version_ids'] != roster or episode['coworld_version'] != '0.3.13':
+            if episode['policy_version_ids'] != roster or episode['coworld_version'] != game_version:
                 raise ValueError('Resolved roster or game mismatch')
     request_ids = {r['id'] for r in requests}
     rows = [r for r in json.loads((study / 'hosted-results.json').read_text()) if r['request_id'] in request_ids]
@@ -92,7 +92,7 @@ def summarize(study, prefix, repeated_seeds='reject'):
         raise ValueError('Harvested episode identity mismatch')
     selected, excluded = independent_rows(rows, repeated_seeds)
     descriptive = describe(selected)
-    return dict(prefix=prefix, policy=requests[0]['policy'], opponent=requests[0]['opponent'],
+    return dict(prefix=prefix, policy=requests[0]['policy'], opponent=requests[0]['opponent'], game_version=game_version,
                 players_per_team=requests[0]['n'], **descriptive,
                 win_rate_95ci=wilson(descriptive['wins'], len(selected)), requests=sorted(request_ids),
                 episode_ids=sorted(r['episode_id'] for r in selected),
@@ -102,6 +102,8 @@ def summarize(study, prefix, repeated_seeds='reject'):
 
 
 def compare(baseline, candidate, minimum_unique=0):
+    if baseline.get('game_version') != candidate.get('game_version'):
+        raise ValueError('Comparisons require the same game version')
     if (baseline['opponent'], baseline['players_per_team']) != (candidate['opponent'], candidate['players_per_team']):
         raise ValueError('Comparisons require the same opponent and variant')
     if set(baseline['episode_ids']) & set(candidate['episode_ids']):
@@ -162,9 +164,10 @@ def main():
     parser.add_argument('--repeated-seeds', choices=['reject', 'first-id'], default='reject',
                         help='Pre-record the choice before confirmation. first-id keeps the smallest episode ID for each seed.')
     parser.add_argument('--minimum-unique', type=int, default=0, help='Pre-recorded minimum distinct seeds per arm for a verdict')
+    parser.add_argument('--game-version', default='0.3.13', help='Exact expected version in every resolved episode')
     args = parser.parse_args()
-    report = compare(summarize(args.study, args.baseline, args.repeated_seeds),
-                     summarize(args.study, args.candidate, args.repeated_seeds), args.minimum_unique)
+    report = compare(summarize(args.study, args.baseline, args.repeated_seeds, args.game_version),
+                     summarize(args.study, args.candidate, args.repeated_seeds, args.game_version), args.minimum_unique)
     for name in ['baseline', 'candidate']:
         paths = getattr(args, name + '_survey')
         if paths:

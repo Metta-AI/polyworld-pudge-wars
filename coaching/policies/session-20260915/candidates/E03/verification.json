@@ -1,0 +1,9 @@
+{
+  "cases": 769,
+  "changed": 17,
+  "failures": [],
+  "scoped_lift_agreement": 1.0,
+  "residual_fraction": 0.0,
+  "candidate_agreement": 1.0,
+  "scope": "Finite enemy visibility, availability, range, ally obstruction and priority partitions. Full-policy semantic residual remains unmeasured."
+}

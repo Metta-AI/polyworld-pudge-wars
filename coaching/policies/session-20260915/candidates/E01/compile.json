@@ -1,0 +1,9 @@
+{
+  "variant": "followup",
+  "ir_sha256": "8a5be7dbda1c51c787f526dfa1001055f14d5be854f9b47d39c286d8e64663e5",
+  "semantic_sha256": "06f339f1df7f7dc91c3c3fb03d0adb2026b2af462f09fd9d3fdd0d44cd289ea4",
+  "oracle_sha256": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "policy_sha256": "0ff40f6b8f8168b99359ba36052b1cdf3d94be3443bdbb450e1dd3a8c330bbcd",
+  "compiler_sha256": "a5e912bfe24e9a1db9c4270f053fd31808c4d24708ca3d4f45273bd3911438d6",
+  "status": "candidate; not accepted until empirical verification and evaluation"
+}

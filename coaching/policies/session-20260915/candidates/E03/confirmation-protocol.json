@@ -1,0 +1,33 @@
+{
+  "iteration_id": "coaching-20260915-E03-confirm-branch",
+  "parent_id": "pudge-wars-rusher:v14",
+  "recorded_at": "2026-09-15T22:43:54.340811+00:00",
+  "hypothesis": "The exact frozen alternate-target edit provides a modest, repeatable positive score-margin effect (~+2) against v14.",
+  "edits": [
+    {
+      "edit_id": "E03",
+      "layer": 5,
+      "block": "t-alternate-target",
+      "change": "No new semantic or code edit; independent evidence branch for the existing proposed change."
+    }
+  ],
+  "candidate_sha256": "d4b6255a68e42aafa738b2f5ca22aca553f1b278cd8696fbee3c95c0d37daaa0",
+  "protocol": {
+    "seeds": [
+      916701,
+      916800
+    ],
+    "games": 200,
+    "sides": [
+      0,
+      1
+    ],
+    "kill_goal": 30,
+    "max_ticks": 38400,
+    "primary_metric": "mean paired-bank kill margin",
+    "interval": "10000 bootstrap resamples of 100 seed blocks; fixed rng9152026",
+    "acceptance": "Complete all 200 games; zero action/state leaks; mean margin >=1 and its 95% interval strictly positive. Report wins and headshots descriptively. Then require original fresh hosted protocol before champion update.",
+    "not_optional_stopping": "The original 24-game screen remains separate and failed its gate. No selection data enter this confirmation or CI. No further extension based on p-value or interval."
+  },
+  "status": "preregistered"
+}

@@ -34,6 +34,29 @@ kills; the previous native evaluator counted non-goal timeouts as draws.
 Use the actual product's score convention for hosted claims. Do not promote
 solely because a small local or hosted screen looks good.
 
+### 2026-09-15 coaching campaign floor
+
+The new coaching campaign pins Coworld 0.3.21 and v14 as the immutable parent.
+Its preregistered primary confirmation uses **80 episodes per arm**, 40 per
+bank, against Richard v7. At least **70 distinct seeds per arm** must survive
+the declared first-episode-ID duplicate rule; cross-arm seed reuse rejects the
+independent comparison. Do not count a 20-per-arm selection screen as a verdict.
+
+This sample targets a large, 25-percentage-point win-rate difference: the usual
+two-proportion normal approximation with two-sided alpha .05 and power .80
+requires at most about 63 independent games per arm near the worst-case pooled
+win rate of .5. The 70-unique floor adds slack; it is not adequate power for
+small improvements. Report exact counts, bank results, Newcombe intervals and
+Fisher's test. Promotion requires a positive 95% win-rate-difference interval,
+positive score-margin change, clean reconciliation, and the separately
+registered Myasnik guardrail. Complete the full confirmation before deciding;
+do not add episodes in response to a near-significant result.
+
+The campaign launcher is `coaching/hosted_evaluate.py`, which validates each
+request against the live schema and uses the study's saved Coworld version.
+The older campaign tool below is pinned to 0.3.13 and must not be used unchanged
+for this study.
+
 After an encouraging Myasnik screen, check both other pinned leaders and
 1v1 separately before promotion. Healing and role assignment have no same-team
 target in 1v1 and should preserve the duel path. Record failures and rejected

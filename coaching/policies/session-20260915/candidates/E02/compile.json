@@ -1,0 +1,9 @@
+{
+  "variant": "return-sweep",
+  "ir_sha256": "58306f257f464b20cbbaf499334fd7af96263450f3c9640dc81d30209776fa13",
+  "semantic_sha256": "10d69ecc686fc366f186c35a0cbf286c756f01d1154f43005d3e4263f9ea1ac3",
+  "oracle_sha256": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "policy_sha256": "74f22943ff5d368ba74b645406f54c4bb34396e9cd84c041756181f255d8aee4",
+  "compiler_sha256": "d6f742c309c2771c3c9a5069dfc65f5bd5a07f5b1da77a197757b4b3b483d076",
+  "status": "candidate; not accepted until empirical verification and evaluation"
+}

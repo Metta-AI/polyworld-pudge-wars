@@ -1,0 +1,9 @@
+{
+  "cases": 450,
+  "changed": 18,
+  "failures": [],
+  "scoped_lift_agreement": 1.0,
+  "residual_fraction": 0.0,
+  "candidate_agreement": 1.0,
+  "scope": "Finite geometric, phase and competing-movement partitions. Contact timing and full-policy semantics are not lifted."
+}
