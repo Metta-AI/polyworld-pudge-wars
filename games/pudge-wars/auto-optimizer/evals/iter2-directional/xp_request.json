@@ -1,6 +1,6 @@
 {
   "can_cancel": true,
-  "completed_at": null,
+  "completed_at": "2026-09-17T03:33:23.367319Z",
   "completed_count": 40,
   "cost_preview": null,
   "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
@@ -3632,7 +3632,7 @@
   "requester_user_id": "h0835grji1zfy5wakd4i56kn",
   "running_count": 0,
   "started_at": "2026-09-17T03:12:48.428645Z",
-  "status": "running",
+  "status": "completed",
   "submitted_count": 0,
   "variant_id": "league-3v3"
 }

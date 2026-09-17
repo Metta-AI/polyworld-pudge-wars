@@ -96,36 +96,40 @@ for one tick (hook speed ≈0.6 tile/tick, so waiting one tick at >10 tiles
 costs nothing). Unit tests cover the post-blink owner geometry. v2 gets no
 directional eval; v3 inherits the eval plan against baseline `xreq_3e9e30f4`.
 
-**Directional** (`xreq_e43bf971` v3 vs `xreq_3e9e30f4` v1; top-3 field, 1v1
-seating, n=40 each, both harvested 2026-09-17T03Z, 0 tainted, 0 tracebacks
-in all 80 policy logs, all 80 episodes with a numeric score):
+**v3 smoke** (`xreq_4f8155c2`, n=3): clean 3/3, 0 tracebacks, `threat_class`
+src=track 757 / none 19, no owner fallback; 1/3 wins (smoke only).
 
-| arm | clean n | win rate ± SE | west | east | vs a-aron-pudge-rusher:v1 | vs co-gas-…-richard:v7 | vs pudge-wars-rusher:v16 |
-|---|---|---|---|---|---|---|---|
-| v1 (champion) | 40 | **0.425 ± 0.078** | 10/20 | 7/20 | 8/13 (0.62) | 7/17 (0.41) | 2/10 (0.20) |
-| v3 (candidate) | 40 | **0.325 ± 0.074** | 8/20 | 5/20 | 3/13 (0.23) | 6/16 (0.38) | 4/11 (0.36) |
+**Directional** (`xreq_e43bf971`, v3, top-3 field, 1v1 seating, n=40, same
+protocol and day as baseline v1 `xreq_3e9e30f4`): clean 40/40, 0 tainted,
+0 tracebacks in all 40 policy logs, every episode connected.
 
-Delta −10 pp, 0.93 pooled SE: **no detectable overall change at n=40**, and
-the pre-registered +8 pp did not appear. The named-opponent split fails the
-rule: vs `a-aron-pudge-rusher:v1` 0.23 vs 0.62 (−38 pp, ≈2.2 pooled SE) — a
-regression beyond 1 SE on a top-3 opponent. The v16 gain (+16 pp on n≈10) is
-inside its own noise.
+| | v3 (`xreq_e43bf971`) | v1 (`xreq_3e9e30f4`) |
+| --- | --- | --- |
+| win rate | 0.325 ± 0.074 | 0.425 ± 0.078 |
+| west / east | 0.400 / 0.250 | 0.500 / 0.350 |
+| vs a-aron-pudge-rusher:v1 | 0.231 (n=13) | 0.615 (n=13) |
+| vs co-gas-pudge-blind-hook-richard:v7 | 0.375 (n=16) | 0.412 (n=17) |
+| vs pudge-wars-rusher:v16 | 0.364 (n=11) | 0.200 (n=10) |
+| kills / deaths per game | 17.35 / 19.70 | 17.75 / 18.33 |
+| our hook acc / opp hook acc | 0.178 / 0.200 | 0.181 / 0.187 |
+| time-limit fraction | 0.875 | 0.800 |
 
-Mechanism check (policy traces, `behavior.json` in each eval dir): v3
-classified 264 hooks/episode (hit 79, wide 101, away 73, blind 2, pending 10;
-96% from a tracked head), so the filter *did* engage and skipped ~65% of
-in-range hooks. Yet v3 still fired 48 ± 8 defensive Blinks per episode, and
-low-HP recoveries went **up** 17.9 → 19.7 per game (+1.8, ≈1.6 SE) — damage
-taken did not fall. The likely reading: with an 8-tile margin the "wide"
-class includes hooks that still land (the collision radius is not measured;
-enemies lead our movement), so the filter removed dodges that were saving us
-while keeping Blink busy on the rest.
+Trace: `threat_class` per game = hit 125.8, wide 100.9, away 72.7, pending
+10.2, blind 3.1 (`evals/iter2-directional/log_triage.json`).
 
-**Verdict: reject.** Rollback condition met (candidate ≤ baseline − 1 pooled
-SE on a top-3 opponent; no mechanism-side improvement). Champion stays
-`pudge-auto-optimizer:v1`. The classifier code is retained in source behind
-`PUDGE_THREAT_FILTER=collision` (default `distance` = v1 behavior) because its
-`threat_class` trace is useful diagnostic data for both arms; it is not part
-of any candidate's behavior. Lever entry in `../closed_levers.md`. Caveat:
-1v1 seating under the `League 3v3` label — transfer to 3v3 ladder rounds is
-unverified in either direction.
+**Decision: reject.** Win rate delta −0.100 is −0.93 pooled SE — no
+detectable win-rate change at n=40, and certainly no promotion. The
+preregistered rollback condition fires on deaths: +1.37/game (threshold
++0.5) with ~101 `wide` classifications per game that v1 would have dodged.
+The mechanism (ignore hooks that pass wide) removed dodges without buying
+hooks (our accuracy 0.181→0.178, throws 384→379). The a-aron swing
+(0.615→0.231, n=13 each) is the largest per-opponent regression and is the
+matchup where "wide" hooks most often curve into hits. Champion stays
+`pudge-auto-optimizer:v1`; rollback ref `v1`. Recorded in
+`closed_levers.md`. Hosted cost: smoke 0.362 + directional 7.880 USD.
+
+Code: the classifier was removed from the branch source with the rollback
+(HEAD = v1 source + the iteration-3 hold clamp); it survives in the `v3`
+image and in git history (`2f4318c` kept it as an opt-in `PUDGE_THREAT_FILTER`
+arm). Caveat: 1v1 seating under the `League 3v3` label — transfer to 3v3
+ladder rounds is unverified in either direction.

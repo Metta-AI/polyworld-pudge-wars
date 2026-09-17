@@ -46,10 +46,20 @@
     "iteration": 3,
     "policy_ref": "pudge-auto-optimizer:v4",
     "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
-    "base_ref": "pudge-auto-optimizer:v1",
-    "status": "uploaded 2026-09-17T03:39:48Z (built in the bootstrap session, which has Docker Hub access); smoke iter3-smoke xreq_538ede79 (n=3, top-3) running; next: inspect logs (0 tracebacks, edge_clamp events present) then directional n=40 vs v1 xreq_3e9e30f4 on the same protocol",
+    "status": "uploaded 2026-09-17T03:39:48Z by the bootstrap session devin-53dc4bed (the automation run could not pull python:3.12-slim). Behavior = v1 + fishing-hold y clamp [30,98]; built from 2f4318c, which still carried the rejected v3 classifier as a dormant opt-in (PUDGE_THREAT_FILTER default 'distance' = v1 trigger). Branch HEAD source is d1f6d7c + clamp (classifier removed); same default behavior, so the next candidate builds from HEAD. Smoke iter3-smoke xreq_538ede79 (n=3, top-3) running; next: inspect logs (0 tracebacks, edge_clamp present) then directional n=40 vs v1 xreq_3e9e30f4 on the same protocol.",
     "experiment": "experiments/2026-09-17-edge-band-hold.md",
-    "note": "v3 (iteration 2) was REJECTED: 0.325\u00b10.074 vs v1 0.425\u00b10.078 at n=40 each, -38pp vs a-aron-pudge-rusher:v1. v4 therefore builds on v1 behavior: PUDGE_THREAT_FILTER defaults to 'distance' (original dodge trigger); the v3 classifier stays in source as the opt-in 'collision' arm and still emits threat_class traces under both arms."
+    "last_uploaded": {
+      "policy_ref": "pudge-auto-optimizer:v4",
+      "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
+      "verdict": "pending"
+    },
+    "base_ref": "pudge-auto-optimizer:v1",
+    "source_commit": "2f4318c",
+    "previous_candidate": {
+      "policy_ref": "pudge-auto-optimizer:v3",
+      "policy_version_id": "6523437c-6102-40eb-b8e1-5d6aad37c50e",
+      "verdict": "reject"
+    }
   },
   "champion": {
     "policy_ref": "pudge-auto-optimizer:v1",
@@ -92,8 +102,18 @@
     },
     {
       "date": "2026-09-17",
-      "topic": "threat filter",
-      "note": "Collision-classified dodging (v3: blink only for hit/blind hooks) did not beat the distance-only trigger at n=40 (0.325\u00b10.074 vs 0.425\u00b10.078; -38pp vs a-aron-pudge-rusher:v1) and low-HP recoveries rose 17.9->19.7/game. Lever closed under the 8-tile margin; a retry needs a measured collision radius and hooked/death instrumentation joined to threat_class first (see closed_levers.md)."
+      "topic": "collision-threat filter",
+      "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325\u00b10.074 vs v1 0.425\u00b10.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
+    },
+    {
+      "date": "2026-09-17",
+      "topic": "edge exposure",
+      "note": "v1 replays (40 clean): 31% of own-bank time within 8 tiles of top/bottom edge; long hooks aimed at us there land 16.4% vs 9.6% lane / 8.9% mid; 6.9 of 16.7 landed long hooks per game are caught in the edge band. pudge-wars-rusher:v16 spends 19% there. Basis for iteration 3 (hold y clamp)."
+    },
+    {
+      "date": "2026-09-17",
+      "topic": "long-hook lead",
+      "note": "Replay lead sweep on v1 (6507 hooks, fitted radius 6.1 tiles): modeled accuracy peaks at span/12 (0.471 vs 0.363 no-lead, current span/30 = 0.410) but target dodge was generated against the real hook so this is diagnostic only; a hosted A/B is needed before touching the lead. evals/iter0-directional/lead_sweep.json."
     },
     {
       "date": "2026-09-17",
@@ -122,7 +142,7 @@
       "network_access_request": "network-access-request-c5e64ee0b2e84e1498897fe141520f8e",
       "fix": "add production.cloudfront.docker.com to the automation network policy (https://app.devin.ai/org/metta-ai/automations/auto-600aa4eb690e459190c04b10d5c0c9fb); the blueprint's `docker pull python:3.12-slim` does not survive into the snapshot (docker images was empty at session start)",
       "next_run": "retry `docker pull --platform linux/amd64 python:3.12-slim`; if it succeeds, build iter3 -> upload v4 -> smoke -> directional per experiments/2026-09-17-edge-band-hold.md",
-      "resolution": "v4 built+uploaded from the bootstrap session (devin-53dc4bed, Docker Hub reachable) at 03:39Z. The allowlist fix is still needed for future automation runs to build images."
+      "resolution": "v4 built+uploaded from the bootstrap session (devin-53dc4bed, Docker Hub reachable) at 03:39Z. Automation net_policy update proposed (add production.cloudfront.docker.com); until applied, automation runs cannot build images."
     }
   ]
 }

@@ -35,7 +35,6 @@ def segment_distance(start: list[float], end: list[float], at: list[float]) -> f
 class BasePolicy:
     heal_allies: bool = False
     spread_fishing: bool = False
-    threat_filter: str = "distance"  # "distance" (any flying enemy hook within 22) or "collision" (hit/blind only)
     trace: bool = False
     recovering: bool = False
     tick: int = -1
@@ -45,8 +44,6 @@ class BasePolicy:
     dodge_side: int = 0
     rescue_until: int = 0
     team_roster: set[int] = field(default_factory=set)
-    hook_track: dict[int, tuple[int, float, float, str]] = field(default_factory=dict)
-    threat_info: dict[str, Any] = field(default_factory=dict)
     events: deque = field(default_factory=lambda: deque(maxlen=256))
 
     def reset(self) -> None:
@@ -58,67 +55,11 @@ class BasePolicy:
         self.dodge_side = 0
         self.rescue_until = 0
         self.team_roster.clear()
-        self.hook_track.clear()
-        self.threat_info.clear()
         self.events.clear()
 
     def record(self, event: str, **values: Any) -> None:
         if self.trace:
             self.events.append(dict(event=event, tick=self.tick, **values))
-
-    def collision_threat(self, me: dict, hooks: list[dict], team: int) -> dict | None:
-        """Nearest enemy hook in flight that counts as a threat under `threat_filter`.
-
-        Every hook within 22 tiles is classified (and traced) either way.
-        Heading comes from the head's displacement since the previous tick;
-        the owner's position is not used because the owner may Blink after
-        the throw while the head keeps its heading. An untracked head is
-        blind when close and otherwise waits one tick for a track (pending).
-        The "collision" filter keeps only hit/blind hooks; "distance" keeps
-        them all, which is the original policy's behaviour.
-        """
-        tick = self.tick
-        seen: dict[int, tuple[int, float, float, str]] = {}
-        threats = []
-        for hook in hooks:
-            if hook["team"] == team or not hook["flying"]:
-                continue
-            owner_id = hook["owner_id"]
-            old = self.hook_track.get(owner_id)
-            dx = dy = 0.0
-            source = "none"
-            if old is not None and 0 < tick - old[0] <= 4:
-                dx, dy = hook["x"] - old[1], hook["y"] - old[2]
-                if math.hypot(dx, dy) >= 0.05:
-                    source = "track"
-            dist = distance(me, hook)
-            cls = old[3] if old is not None else ""
-            if dist <= 22:
-                along = perp = None
-                if source == "none":
-                    cls = "blind" if dist <= 10 else "pending"
-                else:
-                    length = math.hypot(dx, dy)
-                    ux, uy = dx / length, dy / length
-                    rx, ry = me["x"] - hook["x"], me["y"] - hook["y"]
-                    along = rx * ux + ry * uy
-                    perp = abs(rx * uy - ry * ux)
-                    cls = "away" if along < 0 else "wide" if perp > 8 else "hit"
-                if self.threat_filter == "distance" or cls in {"hit", "blind"}:
-                    threats.append((dist, hook, cls, along, perp))
-                if old is None or old[3] != cls:
-                    self.record("threat_class", owner=owner_id, cls=cls, src=source, dist=round(dist, 1),
-                                along=None if along is None else round(along, 1),
-                                perp=None if perp is None else round(perp, 1))
-            seen[owner_id] = (tick, hook["x"], hook["y"], cls)
-        self.hook_track = seen
-        if not threats:
-            return None
-        dist, hook, cls, along, perp = min(threats, key=lambda t: t[0])
-        self.threat_info = {"owner": hook["owner_id"], "cls": cls,
-                            "along": None if along is None else round(along, 1),
-                            "perp": None if perp is None else round(perp, 1)}
-        return hook
 
     @staticmethod
     def healing_pair(players: list[dict], enemies: list[dict], hooks: list[dict], team: int) -> tuple[dict, dict] | None:
@@ -244,7 +185,8 @@ class BasePolicy:
         hold_x = west - 16 if team == 0 else east + 16
         home = [me["home_x"], me["home_y"]]
         rank = sum(p["id"] < me["id"] for p in allies)
-        threat = self.collision_threat(me, hooks, team)
+        threat = min((h for h in hooks if h["team"] != team and h["flying"] and distance(me, h) <= 22),
+                     key=lambda h: distance(me, h), default=None)
         if threat is None:
             self.dodge_side = 0
         elif self.dodge_side == 0:
@@ -369,7 +311,6 @@ class BasePolicy:
                 x, y = point(me["x"] + (-16 if me["layer"] == 0 else 16), me["y"] + 16 * self.dodge_side)
                 scale = min(1.0, 20.0 / math.hypot(x - me["x"], y - me["y"]))
                 action["blink_to"] = [me["x"] + (x - me["x"]) * scale, me["y"] + (y - me["y"]) * scale]
-                self.record("dodge_blink", **self.threat_info)
         if me["hooked"]:
             return action
 
