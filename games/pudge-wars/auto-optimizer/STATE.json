@@ -46,7 +46,7 @@
     "iteration": 8,
     "policy_ref": "pudge-auto-optimizer:v11",
     "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
-    "status": "iteration 8 open: v11 uploaded (not submitted); smoke xreq_7de665f4 clean 3/3, 0 tracebacks, threat_seen present (first sight ~39 tiles); matched directional pair launched 21:53Z, harvest next run",
+    "status": "iteration 8 open: v11 uploaded (not submitted); smoke xreq_7de665f4 clean 3/3, 0 tracebacks, threat_seen present; matched directional pair (v11 xreq_f5666240 15/40, v10 xreq_d3f7c348 18/40 at 22:52Z) still running — next run harvests both, taint-filters, writes verdict",
     "experiment": "experiments/2026-09-17-early-walk-dodge.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v11",
@@ -125,7 +125,8 @@
       "n": 40,
       "protocol": "league target, candidate + top_n=3",
       "created": "2026-09-17T21:53Z",
-      "harvest": "tools/hosted.py xp poll <id> --label iter8-directional; xp summarize --label iter8-directional --policy pudge-auto-optimizer:v11; logs per episode (--policy <version id> --agent <seat>)"
+      "harvest": "tools/hosted.py xp poll <id> --label iter8-directional; xp summarize --label iter8-directional --policy pudge-auto-optimizer:v11; logs per episode (--policy <version id> --agent <seat>)",
+      "progress_at_handoff": "15/40 completed, 0 failed at 2026-09-17T22:52Z (60-min cap reached; leave running)"
     },
     "iter8-baseline-v10": {
       "xreq_id": "xreq_d3f7c348-5818-4059-9b04-4185eb69c2e7",
@@ -133,7 +134,8 @@
       "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
       "n": 40,
       "protocol": "league target, candidate + top_n=3 (matched window)",
-      "created": "2026-09-17T21:53Z"
+      "created": "2026-09-17T21:53Z",
+      "progress_at_handoff": "18/40 completed, 0 failed at 2026-09-17T22:52Z (60-min cap reached; leave running)"
     }
   },
   "findings": [
