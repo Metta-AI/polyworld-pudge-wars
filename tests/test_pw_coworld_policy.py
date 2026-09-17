@@ -3,7 +3,7 @@
 import copy
 import unittest
 
-from coworld.player.base import BasePolicy
+from coworld.player.base import LEAD_DIVISOR, BasePolicy
 
 
 def unit(pid=1, team=0, x=36, y=40):
@@ -160,14 +160,30 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         enemy = unit(4, 1, 91, 40)
         self.assertEqual(self.policy.choose_action(observation(others=[enemy]))["hook_to"], [91, 40])
 
-    def test_shorter_velocity_prediction(self):
+    def test_long_hook_leads_for_the_flight_time(self):
+        policy = BasePolicy(trace=True)
         enemy = unit(4, 1, 90, 40)
         obs = observation(others=[enemy])
-        self.policy.choose_action(obs)
+        policy.choose_action(obs)
         obs["tick"] += 8
         enemy["y"] += 4
-        aim = self.policy.choose_action(obs)["hook_to"]
-        self.assertAlmostEqual(aim[1], 44 + 4 * 54 / 30)
+        aim = policy.choose_action(obs)["hook_to"]
+        self.assertAlmostEqual(aim[1], 44 + 4 * 54 / LEAD_DIVISOR)
+        recorded = [e for e in policy.events if e["event"] == "hook_lead"]
+        self.assertEqual(recorded, [dict(event="hook_lead", tick=208, span=54.0, lead=18.0, v8=4.0)])
+        # The speed upgrade shortens the lead; a short brawl hook is not traced.
+        obs["self"]["upgrades"] = [0, 0, 3, 0]
+        obs["tick"] += 8
+        enemy["y"] += 4
+        self.assertAlmostEqual(policy.choose_action(obs)["hook_to"][1], 48 + 4 * 54 / (LEAD_DIVISOR + 3))
+        close = unit(4, 1, 50, 40)
+        obs = observation(others=[close])
+        obs["tick"] = 224
+        policy.choose_action(obs)
+        obs["tick"] += 8
+        close["y"] += 4
+        policy.choose_action(obs)
+        self.assertEqual(len([e for e in policy.events if e["event"] == "hook_lead"]), 2)
 
     def test_does_not_blink_to_chase_or_stretch_a_hook(self):
         me = unit()

@@ -1,0 +1,219 @@
+{
+  "throws": 7331,
+  "radius": 5.2,
+  "agreement": 6904,
+  "actual_landed": 592,
+  "model_landed_actual_aim": 415,
+  "sweep": {
+    "none": {
+      "hits": 2565,
+      "rate": 0.3498840540171873,
+      "by_opp": {
+        "co-gas-pudge-blind-hook-richard:v7": {
+          "hits": 735,
+          "n": 2045,
+          "rate": 0.3594132029339853
+        },
+        "pudge-wars-rusher:v16": {
+          "hits": 728,
+          "n": 2149,
+          "rate": 0.33876221498371334
+        },
+        "a-aron-pudge-rusher:v1": {
+          "hits": 1102,
+          "n": 3137,
+          "rate": 0.3512910423971948
+        }
+      }
+    },
+    "span/60": {
+      "hits": 2756,
+      "rate": 0.3759377983903969,
+      "by_opp": {
+        "co-gas-pudge-blind-hook-richard:v7": {
+          "hits": 804,
+          "n": 2045,
+          "rate": 0.39315403422982886
+        },
+        "pudge-wars-rusher:v16": {
+          "hits": 762,
+          "n": 2149,
+          "rate": 0.3545835272219637
+        },
+        "a-aron-pudge-rusher:v1": {
+          "hits": 1190,
+          "n": 3137,
+          "rate": 0.37934332164488366
+        }
+      }
+    },
+    "span/30": {
+      "hits": 2905,
+      "rate": 0.39626244714227254,
+      "by_opp": {
+        "co-gas-pudge-blind-hook-richard:v7": {
+          "hits": 857,
+          "n": 2045,
+          "rate": 0.41907090464547675
+        },
+        "pudge-wars-rusher:v16": {
+          "hits": 786,
+          "n": 2149,
+          "rate": 0.3657515123313169
+        },
+        "a-aron-pudge-rusher:v1": {
+          "hits": 1262,
+          "n": 3137,
+          "rate": 0.40229518648390183
+        }
+      }
+    },
+    "span/20": {
+      "hits": 3054,
+      "rate": 0.41658709589414816,
+      "by_opp": {
+        "co-gas-pudge-blind-hook-richard:v7": {
+          "hits": 891,
+          "n": 2045,
+          "rate": 0.4356968215158924
+        },
+        "pudge-wars-rusher:v16": {
+          "hits": 831,
+          "n": 2149,
+          "rate": 0.3866914844113541
+        },
+        "a-aron-pudge-rusher:v1": {
+          "hits": 1332,
+          "n": 3137,
+          "rate": 0.42460949952183613
+        }
+      }
+    },
+    "span/15": {
+      "hits": 3250,
+      "rate": 0.44332287546037374,
+      "by_opp": {
+        "co-gas-pudge-blind-hook-richard:v7": {
+          "hits": 931,
+          "n": 2045,
+          "rate": 0.45525672371638143
+        },
+        "pudge-wars-rusher:v16": {
+          "hits": 928,
+          "n": 2149,
+          "rate": 0.43182875756165656
+        },
+        "a-aron-pudge-rusher:v1": {
+          "hits": 1391,
+          "n": 3137,
+          "rate": 0.4434172776538094
+        }
+      }
+    },
+    "span/12": {
+      "hits": 3364,
+      "rate": 0.45887327786113763,
+      "by_opp": {
+        "co-gas-pudge-blind-hook-richard:v7": {
+          "hits": 928,
+          "n": 2045,
+          "rate": 0.45378973105134474
+        },
+        "pudge-wars-rusher:v16": {
+          "hits": 1022,
+          "n": 2149,
+          "rate": 0.4755700325732899
+        },
+        "a-aron-pudge-rusher:v1": {
+          "hits": 1414,
+          "n": 3137,
+          "rate": 0.4507491233662735
+        }
+      }
+    },
+    "span/10": {
+      "hits": 3078,
+      "rate": 0.41986086482062474,
+      "by_opp": {
+        "co-gas-pudge-blind-hook-richard:v7": {
+          "hits": 841,
+          "n": 2045,
+          "rate": 0.41124694376528115
+        },
+        "pudge-wars-rusher:v16": {
+          "hits": 953,
+          "n": 2149,
+          "rate": 0.4434620753838995
+        },
+        "a-aron-pudge-rusher:v1": {
+          "hits": 1284,
+          "n": 3137,
+          "rate": 0.409308256295824
+        }
+      }
+    },
+    "span/8": {
+      "hits": 2472,
+      "rate": 0.33719819942709045,
+      "by_opp": {
+        "co-gas-pudge-blind-hook-richard:v7": {
+          "hits": 673,
+          "n": 2045,
+          "rate": 0.32909535452322736
+        },
+        "pudge-wars-rusher:v16": {
+          "hits": 752,
+          "n": 2149,
+          "rate": 0.3499302000930665
+        },
+        "a-aron-pudge-rusher:v1": {
+          "hits": 1047,
+          "n": 3137,
+          "rate": 0.3337583678673892
+        }
+      }
+    },
+    "span/6": {
+      "hits": 2075,
+      "rate": 0.28304460510162327,
+      "by_opp": {
+        "co-gas-pudge-blind-hook-richard:v7": {
+          "hits": 575,
+          "n": 2045,
+          "rate": 0.28117359413202936
+        },
+        "pudge-wars-rusher:v16": {
+          "hits": 629,
+          "n": 2149,
+          "rate": 0.29269427640763146
+        },
+        "a-aron-pudge-rusher:v1": {
+          "hits": 871,
+          "n": 3137,
+          "rate": 0.27765380937201145
+        }
+      }
+    },
+    "span/5": {
+      "hits": 1919,
+      "rate": 0.2617651070795253,
+      "by_opp": {
+        "co-gas-pudge-blind-hook-richard:v7": {
+          "hits": 524,
+          "n": 2045,
+          "rate": 0.25623471882640586
+        },
+        "pudge-wars-rusher:v16": {
+          "hits": 589,
+          "n": 2149,
+          "rate": 0.27408096789204284
+        },
+        "a-aron-pudge-rusher:v1": {
+          "hits": 806,
+          "n": 3137,
+          "rate": 0.2569333758367867
+        }
+      }
+    }
+  }
+}

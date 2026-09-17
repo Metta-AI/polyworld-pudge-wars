@@ -14,6 +14,8 @@ from typing import Any
 
 
 HOLD_Y_MIN, HOLD_Y_MAX = 30.0, 98.0  # fishing hold keeps a two-sided dodge lane clear of the walls
+LEAD_DIVISOR = 12.0  # lead = v8 * span / (LEAD_DIVISOR + speed level): ~80% of a hook's real flight time
+LEAD_TRACE_SPAN = 30.0
 
 
 def distance(a: dict, b: dict) -> float:
@@ -338,9 +340,12 @@ class BasePolicy:
         if target is not None and distance(me, target) <= reach + radius:
             vx, vy = self.velocity(target)
             span = max(abs(me["x"] - target["x"]), abs(me["y"] - target["y"]))
-            aim = point(target["x"] + vx * span / (30 + levels[2]), target["y"] + vy * span / (30 + levels[2]))
-            if segment_distance([me["x"], me["y"]], aim, [64, 64]) > 5:
-                throw(aim)
+            lead = span / (LEAD_DIVISOR + levels[2])
+            aim = point(target["x"] + vx * lead, target["y"] + vy * lead)
+            if segment_distance([me["x"], me["y"]], aim, [64, 64]) > 5 and throw(aim):
+                v8 = math.hypot(vx, vy)
+                if span >= LEAD_TRACE_SPAN and v8 > 0:
+                    self.record("hook_lead", span=round(span, 1), lead=round(v8 * lead, 1), v8=round(v8, 2))
         if not river:
             for rune in obs["visible"]["runes"]:
                 if abs(me["x"] - rune["x"]) <= 36 and abs(me["y"] - rune["y"]) <= 36:

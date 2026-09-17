@@ -59,6 +59,14 @@
       "policy_ref": "pudge-auto-optimizer:v3",
       "policy_version_id": "6523437c-6102-40eb-b8e1-5d6aad37c50e",
       "verdict": "reject"
+    },
+    "next_iteration": {
+      "iteration": 4,
+      "change": "LEAD_DIVISOR 30 -> 12 (+hook_lead trace)",
+      "experiment": "experiments/2026-09-17-hook-lead-divisor.md",
+      "base_ref": "pudge-auto-optimizer:v4",
+      "built": false,
+      "uploaded": false
     }
   },
   "champion": {
@@ -153,11 +161,14 @@
       "session": "devin-4c31d8f447274f27ac417b27c640c43b",
       "kind": "network",
       "status": "open",
-      "summary": "Automation runs still cannot build images. docker pull python:3.12-slim -> layer blobs redirected to production.cloudfront.docker.com (blocked; allowlist has only production.cloudflare.docker.com). Alternatives probed and blocked: public.ecr.aws, mirror.gcr.io, archive.ubuntu.com. Using our own ECR repo as a base (FROM 471879937681.dkr.ecr.../pudge-auto-optimizer:v4) fails too: the Softmax pre-signed ECR role (coworld-artifact-push) is push-only (ecr:BatchGetImage denied, 403). Iteration-4 code change + unit test are committed unbuilt.",
-      "network_access_request": "network-access-request-51efe82b3a1247c2b6a2cb3c9554306",
-      "fix": "add production.cloudfront.docker.com to the automation network policy (https://app.devin.ai/org/metta-ai/automations/auto-600aa4eb690e459190c04b10d5c0c9fb) OR have the blueprint bake python:3.12-slim into the snapshot (docker images is empty at session start).",
-      "next_run": "retry `docker pull --platform linux/amd64 python:3.12-slim`; if it works: build iter4 -> upload v5 -> smoke -> matched directional v5 vs v4 (n=40 each) per experiments/2026-09-17-<iter4 slug>.md; else a human/bootstrap session with Docker Hub access builds v5 from the branch HEAD.",
-      "side_effect": "probing left an unused pending image-upload record named pudge-auto-optimizer-basepull-probe on the Softmax side (no policy version created); ignore it."
+      "summary": "Automation runs still cannot build images. docker pull python:3.12-slim -> layer blobs redirected to production.cloudfront.docker.com (blocked; allowlist has only production.cloudflare.docker.com); the 06:55Z attempt after the iteration-4 code change failed earlier still with `429 Too Many Requests` on the manifest HEAD at registry-1.docker.io (anonymous pull quota), same on retry after 90s. Alternatives probed and blocked: public.ecr.aws, mirror.gcr.io, archive.ubuntu.com. Using our own ECR repo as a base fails too: the Softmax pre-signed ECR role (coworld-artifact-push) is push-only (ecr:BatchGetImage denied, 403). Iteration-4 code change + unit test are committed unbuilt.",
+      "fix": "add production.cloudfront.docker.com to the automation network policy (https://app.devin.ai/org/metta-ai/automations/auto-600aa4eb690e459190c04b10d5c0c9fb) OR have the blueprint bake python:3.12-slim into the snapshot (docker images is empty at session start). A Docker Hub login (DOCKERHUB token secret) would also lift the anonymous 429 quota.",
+      "next_run": "retry `docker pull --platform linux/amd64 python:3.12-slim`; if it works: build iter4 -> upload v5 -> smoke iter4-smoke (require hook_lead events, 0 tracebacks) -> matched directional v5 (iter4-directional) and v4 (iter4-directional-v4), n=40 each, per experiments/2026-09-17-hook-lead-divisor.md; else a human/bootstrap session with Docker Hub access builds v5 from the branch HEAD.",
+      "side_effect": "probing left an unused pending image-upload record named pudge-auto-optimizer-basepull-probe on the Softmax side (no policy version created); ignore it.",
+      "network_access_requests": [
+        "network-access-request-51efe82b3a1247c2b6a2cb3c9554306",
+        "network-access-request-0fa27681bb79495980467cf0edcc439b"
+      ]
     }
   ],
   "pending_decisions": [
