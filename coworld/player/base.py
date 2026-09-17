@@ -46,6 +46,9 @@ class BasePolicy:
     dodge_side: int = 0
     rescue_until: int = 0
     was_hooked: bool = False
+    escape_sent: int = -1
+    escape_hold_until: int = -1
+    blink_spent: int = -10_000
     team_roster: set[int] = field(default_factory=set)
     events: deque = field(default_factory=lambda: deque(maxlen=256))
 
@@ -58,6 +61,9 @@ class BasePolicy:
         self.dodge_side = 0
         self.rescue_until = 0
         self.was_hooked = False
+        self.escape_sent = -1
+        self.escape_hold_until = -1
+        self.blink_spent = -10_000
         self.team_roster.clear()
         self.events.clear()
 
@@ -208,21 +214,39 @@ class BasePolicy:
                         enemy_hp=target["hp"] if target else None,
                         dist=round(distance(me, target), 1) if target else None, rot_locked=foreign_rot)
         self.was_hooked = me["hooked"]
+        # The host echoes last tick's verdict per action key: True or the
+        # engine's rejection reason. An accepted hop starts Blink's cooldown.
+        echo = (obs.get("accepted") or {}).get("blink_to")
+        if echo is True and 0 <= tick - self.escape_sent <= 2:
+            self.blink_spent = self.escape_sent
+        if (0 < tick - self.escape_sent <= 2 and self.blink_spent != self.escape_sent
+                and self.escape_hold_until < tick):
+            refused = echo if isinstance(echo, str) else (None if me["blink_ready"] else "rot_off_no_blink")
+            if refused is not None:
+                self.escape_hold_until = tick + 32
+                self.record("bank_escape_refused", reason=refused, hp=me["hp"], blink_ready=me["blink_ready"])
         # Pulled onto the enemy bank without the HP edge: leave before the
         # point-blank re-hook instead of trading. Blink covers the mid-strip
         # crossing; on the side lanes it reaches river water short of our lip.
         # The engine refuses Blink inside any live Rot disk (8 tiles, ours
-        # included): an enemy Rot pins us to the brawl, our own is switched
-        # off first and the hop follows next tick.
+        # included) and the host folds that into blink_ready: an enemy Rot
+        # pins us to the brawl; our own is switched off first (cooldown
+        # tracked from the accepted hops) and the hop follows next tick. A
+        # refused hop holds the escape for a second so we brawl instead of
+        # standing still.
         escape_to, escape_via = None, "river"
-        if (me["blink_ready"] and target is not None and not own_land and not river and not me["hooked"]
+        blink_clear = me["blink_ready"] or (me["rot"] and not me["hooked"] and not foreign_rot
+                                            and tick - self.blink_spent >= 256)
+        if (blink_clear and target is not None and not own_land and not river and not me["hooked"]
                 and caught is None and not foreign_rot and obs.get("game_version", 0) >= 35
+                and self.escape_hold_until < tick
                 and distance(me, target) <= 12 and me["hp"] + 40 < target["hp"] and target["hp"] > 120):
             escape_to = self.fountain_escape(obs, enemies, True)
             if escape_to is not None:
                 escape_via = "fountain"
             else:
                 escape_to = point(me["x"] + (-20 if team == 0 else 20), me["y"])
+            self.escape_sent = tick
         brawl = target is not None and (me["hp"] + 40 >= target["hp"] or target["hp"] <= 120
                                         or (not own_land and not river and escape_to is None))
         rot = bool(target and any(distance(me, p) <= 8 for p in enemies)

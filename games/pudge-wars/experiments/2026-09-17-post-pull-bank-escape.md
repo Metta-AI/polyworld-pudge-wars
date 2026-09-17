@@ -158,3 +158,28 @@ range).
   single change, fixed to respect the engine's Rot lock — precedent v2 → v3).
   No win-rate claim from the smoke. v9 = v8 + `not foreign_rot` gate + own
   Rot switched off before the hop; `pull_landed.rot_locked` added.
+- 18:42:50Z v9 uploaded (`5acc2a73-0077-4e5d-a82a-e30241e76676`, source
+  `6841ee4`). Smoke `iter7-smoke-v9`
+  `xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5`: clean n=3, 0 tracebacks, 2/3
+  wins (smoke only); `pull_landed` 58.3/game, `bank_escape` 13.7/game.
+  Two games clean (3 + 3 well-spaced hops); the east game vs
+  `pudge-wars-rusher:v16` still had two pinned runs (ticks 19763–19775 and
+  19783–19798, HP and distance frozen, `blink_ready=true` throughout) — so
+  the Rot lock was *not* the (only) refusal cause. Host facts found
+  afterwards (`coworld_host.nim`): `blink_ready` already folds
+  `rotAffected`, windup and hooked into the flag, so a refusal with
+  `blink_ready=true` is a landing failure (`blinkLanding` found no legal
+  point on the ray — a palisade/body on the first quarter-tile, or off-map);
+  and every reply is echoed back next tick in `obs.accepted` with the
+  engine's rejection reason (`rot`/`casting`/`hooked`/`cooldown`/`rejected`).
+  Also: because the host's `blink_ready` is false inside our *own* Rot, the
+  v9 "switch Rot off first" path could never fire on the host (the gate
+  required `blink_ready`) — an outgunned brawl with Rot on never escaped.
+- Decision: v9 superseded by v10 (same single change): (1) log the echo
+  reason and, after a refused hop, hold the escape 32 ticks and brawl as v4
+  (`bank_escape_refused{reason}`); (2) track Blink's cooldown from accepted
+  hops (`accepted.blink_to == true`, 256 ticks) so the own-Rot switch-off
+  fires when Blink is actually off cooldown; if Blink is still not ready the
+  tick after the switch-off, the same 32-tick hold applies
+  (`reason=rot_off_no_blink`). Unit test
+  `test_refused_bank_escape_falls_back_to_the_brawl`.

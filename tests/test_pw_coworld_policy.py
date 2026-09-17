@@ -125,19 +125,54 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         action = BasePolicy().choose_action(obs)
         self.assertNotIn("blink_to", action)
         self.assertEqual(action["attack_target"], 4)
-        # Our own Rot is switched off first; the hop follows once it is off.
-        me["rot"] = True
+        # Our own Rot is switched off first (the host reports blink_ready
+        # false inside our own disk); the hop follows once it is off.
+        me.update(rot=True, blink_ready=False)
         enemy["rot"] = False
         obs = observation(me, [enemy])
         obs["game_version"] = 36
-        action = BasePolicy().choose_action(obs)
+        policy = BasePolicy(trace=True)
+        action = policy.choose_action(obs)
         self.assertNotIn("blink_to", action)
         self.assertNotIn("attack_target", action)
         self.assertIs(action["rot"], False)
-        me["rot"] = False
+        me.update(rot=False, blink_ready=True)
+        obs = observation(me, [enemy])
+        obs.update(game_version=36, tick=201)
+        self.assertEqual(policy.choose_action(obs)["blink_to"], [72.0, 40.0])
+        # A Blink spent recently keeps Rot on (no pointless switch-off).
+        obs = observation(me, [enemy])
+        obs.update(game_version=36, tick=202, accepted={"blink_to": True})
+        me.update(rot=True, blink_ready=False, x=92)
+        action = policy.choose_action(obs)
+        self.assertNotIn("rot", action)
+        self.assertEqual(action["attack_target"], 4)
+        self.assertEqual([e["event"] for e in policy.events], ["bank_escape"])
+
+    def test_refused_bank_escape_falls_back_to_the_brawl(self):
+        me = unit(x=92)
+        me.update(hp=600, layer=1, blink_ready=True)
+        enemy = unit(4, 1, 96)
         obs = observation(me, [enemy])
         obs["game_version"] = 36
-        self.assertEqual(BasePolicy().choose_action(obs)["blink_to"], [72.0, 40.0])
+        policy = BasePolicy(trace=True)
+        self.assertEqual(policy.choose_action(obs)["blink_to"], [72.0, 40.0])
+        # The host rejected the hop (e.g. a palisade on the ray): brawl for
+        # a second instead of re-sending it every tick.
+        obs = observation(me, [enemy])
+        obs.update(game_version=36, tick=201, accepted={"blink_to": "rejected"})
+        action = policy.choose_action(obs)
+        self.assertNotIn("blink_to", action)
+        self.assertEqual(action["attack_target"], 4)
+        self.assertIs(action["rot"], True)
+        self.assertEqual([e["event"] for e in policy.events], ["bank_escape", "bank_escape_refused"])
+        self.assertEqual(policy.events[1]["reason"], "rejected")
+        obs = observation(me, [enemy])
+        obs.update(game_version=36, tick=220)
+        self.assertNotIn("blink_to", policy.choose_action(obs))
+        obs = observation(me, [enemy])
+        obs.update(game_version=36, tick=234)
+        self.assertEqual(policy.choose_action(obs)["blink_to"], [72.0, 40.0])
 
     def test_favourable_enemy_bank_brawl_is_kept(self):
         for my_hp, enemy_hp in ((840, 840), (600, 100)):

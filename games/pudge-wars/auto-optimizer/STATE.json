@@ -91,7 +91,8 @@
     "image_digest": "sha256:9bd3ede8473360ee657e0d26a936161addfb3225f979efa5e2aaa9718180210c",
     "change": "post-pull bank escape: on the enemy bank without the brawl HP edge (hp+40 < enemy hp, enemy hp > 120), enemy within 12, Blink ready -> blink_to home (fountain_escape landing in the mid strip, else 20 tiles toward our bank = river water) instead of the forced brawl; pull_landed + bank_escape trace events; v9 adds the engine Rot-lock gate (no escape while an enemy Rot disk covers us; own Rot switched off before the hop), pull_landed.rot_locked",
     "eval_ids": {
-      "smoke_v8": "xreq_700c9ae9-41e9-4b21-9992-70b841795a57"
+      "smoke_v8": "xreq_700c9ae9-41e9-4b21-9992-70b841795a57",
+      "smoke": "xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5"
     },
     "superseded_in_iteration": {
       "policy_ref": "pudge-auto-optimizer:v8",
@@ -133,6 +134,15 @@
       "status": "completed",
       "created": "2026-09-17T18:16Z",
       "result": "clean n=3, 0 tracebacks, pull_landed 47.3/game, bank_escape 22.7/game but 62/67 gaps < Blink cooldown (hop refused in Rot disks) -> v8 superseded by v9"
+    },
+    "iter7-smoke-v9": {
+      "id": "xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5",
+      "policy": "pudge-auto-optimizer:v9",
+      "episodes": 3,
+      "top_n": 3,
+      "status": "completed",
+      "created": "2026-09-17T18:45Z",
+      "result": "clean n=3, 0 tracebacks, pull_landed 58.3/game, bank_escape 13.7/game; 2 games clean, east game vs rusher:v16 still pinned twice with blink_ready=true (landing refusal, not Rot) -> v9 superseded by v10"
     }
   },
   "findings": [
