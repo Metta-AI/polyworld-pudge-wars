@@ -210,3 +210,50 @@ range).
 - 20:05Z candidate `iter7-directional`
   `xreq_66cb8e23-e95d-4d4a-a1a7-18e28b2a9761` (v10, top-3, n=40) launched
   on the identical protocol.
+- 20:40Z candidate arm terminal (40/40 completed, 0 failed); 80/80 replays
+  decoded and verified with `pwheadless` built from the checkout
+  (`~/.nimby/pkgs` paths); `replay_survey.json` written in both eval dirs.
+
+## Verdict (2026-09-17T20:5xZ) — **weak_evidence** (directional +, all preregistered tripwires pass); v10 is the behaviour base for iteration 8; champion v1 unchanged
+
+| arm | clean win rate | west | east | vs a-aron:v1 | vs richard:v7 | vs rusher:v16 | kills/game | deaths/game | enemy-bank deaths | drown deaths | river s/game |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| v10 `xreq_66cb8e23` | **0.725 ± 0.071** (n=40, taint 0) | 0.800 (20) | 0.650 (20) | 0.688 (16) | 0.923 (13) | 0.545 (11) | 17.8 | 12.25 | 7.25 | 0.43 | 7.8 |
+| v4 `xreq_9071f4e6` (same window) | **0.550 ± 0.079** (n=40, taint 0) | 0.650 (20) | 0.450 (20) | 0.714 (14) | 0.583 (12) | 0.357 (14) | 16.1 | 13.35 | 8.18 | 0.08 | 3.9 |
+
+- Delta **+0.175 = +1.65 pooled SE** (pooled SE 0.106): inside the 2-SE band,
+  so formally *no detectable change at this N* — but the direction is
+  positive in every slice: both seats up (west +0.15, east +0.20 — the east
+  seat gained more, as preregistered), 2 of 3 opponents up, a-aron:v1 flat
+  (−0.026, well within 1 SE). Zero tracebacks in 40/40 logs, 0 tainted.
+- History check: v4 on this exact protocol has read 0.750, 0.650, 0.475,
+  0.750 and now 0.550 across five windows (range 0.28 wide at n=40), so a
+  single-window +0.175 is not a promotion-grade signal; the same-window pair
+  is what carries the read.
+- Mechanism (policy_trace + replays): `bank_escape` **2.0/game** (82 hops,
+  every one accepted on the first tick; 4 of 81 gaps < 256 ticks, i.e. a
+  second legitimate hop after a re-pull), `bank_escape_refused` 0.4/game
+  (15: 9 `rejected` = no legal landing on the ray, 3 `rot_off_no_blink`, 2
+  `casting`, 1 `rot`) — the hold works, no pinned runs. The rate is below the
+  preregistered ≳3/game because at landing 580 of 654 outgunned enemy-bank
+  pulls (89 %) had the hooker's Rot disk over us (Blink is engine-locked) and
+  only 17 had Blink ready (v4 spends Blink on `dodge_blink` ~70×/game).
+  Escapes fire late in the brawl (median 190 HP vs 464 enemy HP), which is
+  why 17 of the 82 hops end in a **drowning** (drown deaths 0.43 vs
+  0.08/game): the 20-tile hop from x≈92 lands in the river at ~190 HP.
+- Preregistered movement: deaths −1.1/game (target −1.5; direction right,
+  short), enemy-bank deaths −11 % (target −20 %), river time 7.8 s (≤ 12 s
+  ✓), kills **+1.7** (limit −1.0 ✓), win rate v10 > v4 ✓, east ≥ west gain ✓.
+  Tripwires: rusher:v16 and a-aron:v1 slices not >1 SE below v4 ✓; river
+  time < 20 s ✓. Rollback condition **not** met (win rate above v4, deaths
+  below, kills up, `bank_escape` ≥ 1/game, no tracebacks).
+- Decision: **weak_evidence**. v10 stays `STATE.latest` and becomes the
+  behaviour base for iteration 8 (as v4 did in iteration 3). Not promoted:
+  the promotion rule needs > 2 pooled SE at gate n=100 against champion v1 in
+  one window. Rollback ref: v4 `774d5ee5` (remove the escape branch).
+- Next lever candidates (evidence above): (a) the gate run itself —
+  v10 vs v1 at n=100 each, same window, to settle promotion; (b) make the
+  hop land on the *home bank*, not in the river, when HP < drown budget
+  (17 drownings/40 games are a direct cost of `via=river`); (c) reserve Blink
+  at low HP on the enemy bank instead of spending it on the reactive dodge
+  (only 17/654 outgunned landings had Blink up).

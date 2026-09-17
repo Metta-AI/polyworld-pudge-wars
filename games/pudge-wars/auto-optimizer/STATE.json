@@ -46,12 +46,12 @@
     "iteration": 7,
     "policy_ref": "pudge-auto-optimizer:v10",
     "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
-    "status": "iteration 7 open: v10 uploaded (inert) 2026-09-17T19:15:11Z (v8, v9 superseded after their smokes); v10 smoke + matched directional pending",
+    "status": "iteration 7 closed 2026-09-17T20:5xZ: weak_evidence (v10 0.725±0.071 vs matched v4 0.550±0.079, +1.65 pooled SE, all slices up, tripwires pass). v10 = behaviour base for iteration 8; not promoted (gate n=100 vs champion v1 needed). Not submitted.",
     "experiment": "experiments/2026-09-17-post-pull-bank-escape.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v10",
       "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
-      "verdict": "pending (iteration 7)"
+      "verdict": "weak_evidence (iteration 7): +0.175 / +1.65 pooled SE vs matched v4; base for iteration 8"
     },
     "base_ref": "pudge-auto-optimizer:v4",
     "source_commit": "92433f5",
@@ -108,7 +108,10 @@
         "policy_version_id": "5acc2a73-0077-4e5d-a82a-e30241e76676",
         "reason": "smoke xreq_fb4870cb: 0 tracebacks, 2 clean games, but refused hops still pinned one game with blink_ready=true (landing refusal); own-Rot switch-off could never fire on the host; no directional run, no win-rate claim"
       }
-    ]
+    ],
+    "verdict": "weak_evidence",
+    "base_for_next_iteration": "pudge-auto-optimizer:v10 (6cc36a18-5a4e-499d-8aca-75e21ca9bf07, source 92433f5)",
+    "rollback_ref": "pudge-auto-optimizer:v4 (774d5ee5-d4ad-49de-82cc-54457a53041e)"
   },
   "champion": {
     "policy_ref": "pudge-auto-optimizer:v1",
@@ -135,54 +138,7 @@
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
-  "open_evals": {
-    "iter7-smoke": {
-      "id": "xreq_700c9ae9-41e9-4b21-9992-70b841795a57",
-      "policy": "pudge-auto-optimizer:v8",
-      "episodes": 3,
-      "top_n": 3,
-      "status": "completed",
-      "created": "2026-09-17T18:16Z",
-      "result": "clean n=3, 0 tracebacks, pull_landed 47.3/game, bank_escape 22.7/game but 62/67 gaps < Blink cooldown (hop refused in Rot disks) -> v8 superseded by v9"
-    },
-    "iter7-smoke-v9": {
-      "id": "xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5",
-      "policy": "pudge-auto-optimizer:v9",
-      "episodes": 3,
-      "top_n": 3,
-      "status": "completed",
-      "created": "2026-09-17T18:45Z",
-      "result": "clean n=3, 0 tracebacks, pull_landed 58.3/game, bank_escape 13.7/game; 2 games clean, east game vs rusher:v16 still pinned twice with blink_ready=true (landing refusal, not Rot) -> v9 superseded by v10"
-    },
-    "iter7-smoke-v10": {
-      "id": "xreq_e844ef81-349d-4861-8458-9c374ff1e6b1",
-      "policy": "pudge-auto-optimizer:v10",
-      "episodes": 3,
-      "top_n": 3,
-      "status": "completed",
-      "created": "2026-09-17T19:17Z",
-      "result": "clean n=3, 0 tracebacks, no pinned runs, 0 bank_escape_refused; bank_escape 1.3/game (4 hops over 51 outgunned enemy-bank landings: 45 rot_locked at landing) -> mechanism correct but rarer than the preregistered >=3/game"
-    },
-    "iter7-directional-v4": {
-      "id": "xreq_9071f4e6-f8ba-4609-8456-660557380b40",
-      "policy": "pudge-auto-optimizer:v4",
-      "episodes": 40,
-      "top_n": 3,
-      "status": "completed",
-      "created": "2026-09-17T19:19Z",
-      "note": "matched baseline arm for the iteration-7 candidate (v10)",
-      "result": "clean 40/40, 0 tracebacks, win 0.550+-0.079; west 0.650 east 0.450; vs a-aron:v1 0.714 (14), blind-hook-richard:v7 0.583 (12), rusher:v16 0.357 (14)"
-    },
-    "iter7-directional": {
-      "id": "xreq_66cb8e23-e95d-4d4a-a1a7-18e28b2a9761",
-      "policy": "pudge-auto-optimizer:v10",
-      "episodes": 40,
-      "top_n": 3,
-      "status": "pending",
-      "created": "2026-09-17T20:05Z",
-      "note": "candidate arm; matched baseline iter7-directional-v4"
-    }
-  },
+  "open_evals": {},
   "findings": [
     {
       "date": "2026-09-17",
@@ -227,6 +183,11 @@
     {
       "date": "2026-09-17",
       "finding": "Same v4 code scored 0.650±0.076 (iter4 window) and 0.475±0.079 (iter5 window) on the identical top-3 n=40 protocol: window-to-window drift ≈0.17 for identical code. Never compare across windows; always run the matched baseline arm."
+    },
+    {
+      "iteration": 7,
+      "date": "2026-09-17",
+      "finding": "Blink cannot be used to leave a Rot brawl: applyBlinkFine refuses while any live Rot disk (8 tiles, ours or theirs) covers us, and the host's blink_ready already folds that in. 89% of outgunned enemy-bank landings are Rot-locked at release; only 17/654 had Blink up (v4 dodge_blink ~70/game). The post-pull escape therefore fires ~2/game, mostly late (median 190 HP) and via the river, where 17/82 hops drowned. Host echoes each reply's verdict in obs.accepted (reason strings rot/casting/hooked/cooldown/rejected): use it instead of re-sending a refused command."
     }
   ],
   "automation": {
@@ -274,6 +235,11 @@
       "recorded_at": "2026-09-17T06:30:00Z",
       "topic": "v4 promotion gate",
       "ask": "The v4 60-episode gate arm xreq_bc7bc25e was cancelled by a human at 04:36Z while the matched v1 arm xreq_c04fbf1e completed (0.400+-0.063, n=60). To close the gate, v4 needs >=60 more clean episodes in one window against a v1/v5 arm (~12 USD). Automation runs will not relaunch it without a go-ahead; iteration 4's v5-vs-v4 matched directional (n=40 each) adds v4 evidence as a side effect."
+    },
+    {
+      "raised": "2026-09-17T20:55Z",
+      "decision": "Run the promotion gate for v10 (n=100 v10 + n=100 champion v1, same window, ~$30 hosted) before or instead of a new iteration-8 change? Directional was +1.65 pooled SE only; v4 baseline varies 0.475-0.750 across windows at n=40.",
+      "default_if_unanswered": "next run opens iteration 8 on v10 and launches the v10/v1 gate arms alongside its own directional if budget allows"
     }
   ]
 }
