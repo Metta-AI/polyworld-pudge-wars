@@ -106,8 +106,20 @@ network policy — `STATE.json` → `blockers`). The bootstrap session built and
 uploaded it at 03:39Z as **v4** (`774d5ee5…`, image `sha256:40e361d0…`,
 source `2f4318c`, base v1).
 
-**Smoke** `xreq_538ede79` (n=3, top-3): _running_ — check 0 tracebacks and
-`edge_clamp` events with non-trivial raw y before the directional.
+**Smoke** `xreq_538ede79` (n=3, top-3, 03:40–04:02Z): clean 3/3, 0 tainted,
+0 tracebacks in the three v4 policy logs (`evals/iter3-smoke/logs/`), hosted
+cost 0.5309 USD. Won 2/3 (vs a-aron-pudge-rusher:v1 1/2, vs
+pudge-wars-rusher:v16 1/1) — smoke only, no win-rate claim. Instrumentation
+landed with non-trivial values: `edge_clamp` fired 578 / 427 / 502 times per
+episode (one sample per 32 ticks while binding, games run 38,400 ticks →
+the clamp bound on ≈48% / 36% / 42% of ticks). The raw hold y it overrode
+was mostly a far edge (`raw` 16, 99.9–100.6, 111 → `y` 30.0 / 98.0), i.e. the
+v1 hold does sit in the edge band for a large share of the game, as the
+Observation claimed. The v4 image (built from `2f4318c`) also emits the
+dormant classifier's `threat_class` events in `distance` mode (88–196 per
+episode); they are diagnostic only and do not change behavior.
 
-**Directional**: _pending_ (n=40, same protocol as v1 `xreq_3e9e30f4`;
-mechanism metrics via `tools/edge_exposure.py` on the v4 replays).
+**Directional** `xreq_4e49fbc4` (n=40, top-3, launched 04:05Z, same protocol
+as v1 `xreq_3e9e30f4` 02:39–03:14Z; the smoke's top-3 roster matched the
+v1 arm's field): _running_. Mechanism metrics via `tools/edge_exposure.py` on
+the v4 replays once harvested.

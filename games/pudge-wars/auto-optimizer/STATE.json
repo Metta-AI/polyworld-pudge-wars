@@ -46,7 +46,7 @@
     "iteration": 3,
     "policy_ref": "pudge-auto-optimizer:v4",
     "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
-    "status": "uploaded 2026-09-17T03:39:48Z by the bootstrap session devin-53dc4bed (the automation run could not pull python:3.12-slim). Behavior = v1 + fishing-hold y clamp [30,98]; built from 2f4318c, which still carried the rejected v3 classifier as a dormant opt-in (PUDGE_THREAT_FILTER default 'distance' = v1 trigger). Branch HEAD source is d1f6d7c + clamp (classifier removed); same default behavior, so the next candidate builds from HEAD. Smoke iter3-smoke xreq_538ede79 (n=3, top-3) running; next: inspect logs (0 tracebacks, edge_clamp present) then directional n=40 vs v1 xreq_3e9e30f4 on the same protocol.",
+    "status": "uploaded 2026-09-17T03:39:48Z (bootstrap session devin-53dc4bed; automation run could not pull python:3.12-slim). Behavior = v1 + fishing-hold y clamp [30,98]; built from 2f4318c (v3 classifier dormant, PUDGE_THREAT_FILTER default 'distance'). Branch HEAD source = d1f6d7c + clamp (classifier removed), same default behavior. Smoke xreq_538ede79 clean 3/3, 0 tracebacks, edge_clamp bound on ~36-48% of ticks (hosted 0.5309 USD). Directional xreq_4e49fbc4 (n=40, top-3) launched 04:05Z, matched to v1 xreq_3e9e30f4; next: poll, logs, taint-filter, edge_exposure on replays, verdict vs v1 0.425+-0.078.",
     "experiment": "experiments/2026-09-17-edge-band-hold.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v4",
@@ -87,7 +87,7 @@
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
   "open_evals": {
-    "iter3-smoke": "xreq_538ede79-7539-4b13-ae9c-78aa6e38c4bb"
+    "iter3-directional": "xreq_4e49fbc4-37c1-4dd6-96ce-eaa3bc456322"
   },
   "findings": [
     {
