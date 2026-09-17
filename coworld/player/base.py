@@ -255,7 +255,7 @@ class BasePolicy:
             reach *= 1.5
             radius *= 1.5
 
-        def pull_wins(enemy_hp: float, span: float) -> bool:
+        def pull_wins(enemy_hp: float, span: float, **detail: Any) -> bool:
             """A long hook reels the enemy onto us: only pull one we can out-brawl afterwards."""
             if span < LEAD_TRACE_SPAN or enemy_hp <= 120:
                 return True
@@ -263,7 +263,7 @@ class BasePolicy:
             if enemy_hp - landed <= me["hp"] + PULL_HP_MARGIN:
                 return True
             if tick % 32 == 0:
-                self.record("pull_skip", span=round(span, 1), hp=me["hp"], enemy_hp=enemy_hp, landed=round(landed))
+                self.record("pull_skip", span=round(span, 1), hp=me["hp"], enemy_hp=enemy_hp, landed=round(landed), **detail)
             return False
 
         def throw(aim: list[float], rescue_id: int = 0) -> bool:
@@ -369,19 +369,19 @@ class BasePolicy:
         if target is None and not river and tick > 8:
             poke_x = east + 8 if team == 0 else west - 8
             poke_y = me["y"]
-            poke_ok = True
             if self.last_enemy is not None:
                 age = tick - self.last_seen
                 vx, vy = self.velocity(self.last_enemy)
                 poke_y = self.last_enemy["y"] + vy * age / 8
                 if age <= 96:
                     poke_x = self.last_enemy["x"] + vx * age / 8
-                    poke_ok = pull_wins(self.last_enemy["hp"], max(abs(me["x"] - poke_x), abs(me["y"] - poke_y)))
                 else:
                     poke_x = east + 2 if team == 0 else west - 2
             poke_x = max(east + 1, min(113, poke_x)) if team == 0 else min(west - 1, max(14, poke_x))
-            if poke_ok:
-                throw(point(poke_x, max(16, min(111, poke_y))))
+            poke_y = max(16, min(111, poke_y))
+            # A blind poke reels in whoever it finds; the last sighting's HP is the best guess of who that is.
+            if self.last_enemy is None or pull_wins(self.last_enemy["hp"], max(abs(me["x"] - poke_x), abs(me["y"] - poke_y)), poke_age=tick - self.last_seen):
+                throw(point(poke_x, poke_y))
 
         if target is not None and distance(me, target) <= 5.5 and brawl and not flee_rot:
             action["attack_target"] = target["id"]
