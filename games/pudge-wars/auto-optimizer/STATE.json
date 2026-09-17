@@ -30,7 +30,12 @@
     "source_commit": "d1f6d7c9a06c3a064fff1fd710e45703b62c77b8",
     "source_tree_sha256": "38cd7d149b02a010aa09e774a4bf04d275fe8fa8f7c81c1e7bb624f7c9cbc314",
     "policy_ref": "pudge-auto-optimizer:v1",
-    "policy_version_id": "a7afee99-e56f-40eb-ae64-6bc08f83ae71"
+    "policy_version_id": "a7afee99-e56f-40eb-ae64-6bc08f83ae71",
+    "directional_eval": "xreq_3e9e30f4-d1af-4a46-9d93-45c1ef55a5ca",
+    "directional_win_rate": 0.425,
+    "directional_se": 0.078,
+    "directional_n_clean": 40,
+    "directional_n_tainted": 0
   },
   "reference": {
     "ladder_anchor_ref": "pudge-wars-rusher:v16",
@@ -41,7 +46,7 @@
     "iteration": 2,
     "policy_ref": "pudge-auto-optimizer:v3",
     "policy_version_id": "6523437c-6102-40eb-b8e1-5d6aad37c50e",
-    "status": "uploaded; smoke xreq_4f8155c2 running; v2 superseded (owner-heading fallback removed)",
+    "status": "uploaded; smoke xreq_4f8155c2 clean 3/3 (0 tracebacks, 'pending' class present, no owner fallback); directional xreq_e43bf971 (n=40, top-3, same protocol as baseline xreq_3e9e30f4) running",
     "experiment": "experiments/2026-09-17-collision-threat.md"
   },
   "champion": {
@@ -69,8 +74,7 @@
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
   "open_evals": {
-    "iter0-directional": "xreq_3e9e30f4-d1af-4a46-9d93-45c1ef55a5ca",
-    "iter2-smoke": "xreq_4f8155c2-ca8c-4210-b245-d211fde7fb9f"
+    "iter2-directional": "xreq_e43bf971-56f7-4b68-a4db-c42655b19430"
   },
   "findings": [
     {
