@@ -107,3 +107,16 @@ question (team-keyed code asymmetry in the defensive Blink).
   reports 0.0 for automation sessions; no open evals to harvest).
 - Iteration opened in the ledger; `spent_today_usd` before any hosted launch:
   17.542306.
+- 15:08Z built `pudge-auto-optimizer:iter6` (offline base image, as v5/v6),
+  uploaded as **`pudge-auto-optimizer:v7` = `bd16628b-b986-47f7-8e33-e87f74245468`**,
+  source `b7653c1`, tags recorded.
+- 15:10–15:31Z smoke `xreq_c0656607` (n=3, top-3): completed 3/3, taint 0,
+  0 tracebacks, all 3 logs connected; 1 W / 2 L (runtime check only). Trace:
+  `pull_skip` 132/game (v6: 20.5/game) with `poke_age` present — 396 skips =
+  339 stale (age > 96) / 37 fresh / 20 visible. Example stale skip:
+  tick 35680, span 41.5, hp 866 vs enemy_hp 1585, landed 610, poke_age 107.
+  The exempt path was indeed the dominant one; the gate now engages ~6× more.
+- 15:33Z launched matched directional in the same window:
+  v7 `xreq_c505529a-0dca-49c7-81cb-d50b16f35097` (`iter6-directional`) and
+  v4 `xreq_f6c102e7-8fad-41be-95b6-1585a34ec5d1` (`iter6-directional-v4`),
+  n=40 each vs top-3.

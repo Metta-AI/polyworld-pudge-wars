@@ -46,7 +46,7 @@
     "iteration": 6,
     "policy_ref": "pudge-auto-optimizer:v7",
     "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
-    "status": "iteration 6 open: v7 (complete pull gate incl. stale poke) uploaded 2026-09-17T15:08Z; smoke + matched directional v7/v4 pending",
+    "status": "iteration 6 open: v7 uploaded 15:08Z, smoke xreq_c0656607 clean (0 tracebacks, poke_age present); matched directional v7 xreq_c505529a + v4 xreq_f6c102e7 (n=40 each, top-3) launched 15:33Z in the same window",
     "experiment": "experiments/2026-09-17-stale-poke-pull-gate.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v7",
@@ -107,7 +107,35 @@
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
-  "open_evals": {},
+  "open_evals": {
+    "iter6-smoke": {
+      "id": "xreq_c0656607-1226-45cd-b5e3-5374f7a93261",
+      "policy": "pudge-auto-optimizer:v7",
+      "episodes": 3,
+      "status": "completed",
+      "result": "clean n=3, 0 tracebacks, pull_skip 132/game with poke_age (stale 339 / fresh 37 / visible 20 skips)"
+    },
+    "iter6-directional": {
+      "id": "xreq_c505529a-0dca-49c7-81cb-d50b16f35097",
+      "policy": "pudge-auto-optimizer:v7",
+      "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
+      "episodes": 40,
+      "top_n": 3,
+      "launched_at": "2026-09-17T15:33Z",
+      "status": "running",
+      "summarize": "tools/hosted.py xp poll xreq_c505529a-0dca-49c7-81cb-d50b16f35097 --label iter6-directional && tools/hosted.py xp summarize --label iter6-directional --policy bd16628b-b986-47f7-8e33-e87f74245468"
+    },
+    "iter6-directional-v4": {
+      "id": "xreq_f6c102e7-8fad-41be-95b6-1585a34ec5d1",
+      "policy": "pudge-auto-optimizer:v4",
+      "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
+      "episodes": 40,
+      "top_n": 3,
+      "launched_at": "2026-09-17T15:33Z",
+      "status": "running",
+      "summarize": "tools/hosted.py xp poll xreq_f6c102e7-8fad-41be-95b6-1585a34ec5d1 --label iter6-directional-v4 && tools/hosted.py xp summarize --label iter6-directional-v4 --policy 774d5ee5-d4ad-49de-82cc-54457a53041e"
+    }
+  },
   "findings": [
     {
       "date": "2026-09-17",
