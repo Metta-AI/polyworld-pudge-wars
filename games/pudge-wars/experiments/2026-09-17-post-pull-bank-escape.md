@@ -77,9 +77,16 @@ reeling a caught enemy, the nearest visible enemy is within 12 tiles, and
 retreat=True)` if that returns a landing (mid strip, own bank), else the
 point 20 tiles toward our bank at our current `y` (river water). `brawl` and
 `rot` are recomputed with the escape, so no `attack_target`/Rot is issued on
-the escape tick. All throws remain untouched. Unit tests:
-`test_outgunned_on_the_enemy_bank_blinks_toward_home` (both seats, fountain
-and river destinations) and `test_favourable_enemy_bank_brawl_is_kept`
+the escape tick. All throws remain untouched. **Engine constraint (added in
+v9 after the v8 smoke, see run log):** `applyBlinkFine` refuses the hop while
+`rotAffected` — standing inside any live Rot disk (`RotRadius` = 8 tiles),
+the enemy's or our own. The gate therefore also requires no enemy Rot within 8
+tiles (`foreign_rot`; otherwise the v4 brawl is kept unchanged), and when our
+own Rot is on the escape tick only switches it off (no attack, no Blink) and
+the hop is issued the next tick. `pull_landed` gains `rot_locked`. Unit
+tests: `test_outgunned_on_the_enemy_bank_blinks_toward_home` (both seats,
+fountain and river destinations), `test_bank_escape_respects_the_rot_blink_lock`
+and `test_favourable_enemy_bank_brawl_is_kept`
 (HP edge or finishing a ≤ 120 HP enemy still brawls; no escape without Blink).
 The existing `test_hook_before_melee_and_fight_when_cornered` (no Blink)
 and `test_dodge_on_foreign_bank_heads_inland` (no visible enemy) are
@@ -96,7 +103,7 @@ the matched window; the east seat gains at least as much as the west.
 
 **Eval plan.** Smoke n=3 (`iter7-smoke`, top-3 field, zero tracebacks,
 `pull_landed` and `bank_escape` present in the policy_trace lines). Matched
-directional n=40 vs top-3 for v8 (`iter7-directional`) and v4
+directional n=40 vs top-3 for the candidate (v8 → v9 after the smoke fix; `iter7-directional`) and v4
 (`iter7-directional-v4`) launched in the same window; readout taint-filtered,
 split by seat and opponent; decision rule per `STATE.eval_protocol`
 (directional is direction only; promotion needs the gate protocol at n=100
@@ -128,3 +135,26 @@ range).
   reports 0.0 for this automation's sessions; no open evals to harvest).
 - Iteration opened in the ledger; `spent_today_usd` before any hosted launch:
   24.53842.
+- 18:13:46Z v8 uploaded (`24128d4e-0b67-4ac3-bd37-b8117cdb0b61`, source
+  `32eb7e6`, image `sha256:13a3a868…`). Smoke `iter7-smoke`
+  `xreq_700c9ae9-41e9-4b21-9992-70b841795a57`: clean n=3, 0 tracebacks, 3/3
+  connected, 1/3 wins (smoke only); `pull_landed` 47.3/game, `bank_escape`
+  22.7/game (68 events), all `via=river` (no mid-strip case in 3 games).
+- **v8 smoke finding — the mechanism is half-broken.** 62 of 67 inter-event
+  gaps between `bank_escape` events are < 256 ticks (Blink cooldown): the
+  event fires on consecutive ticks from the same spot with `blink_ready`
+  staying true, i.e. the engine refused the hop (e.g. ticks 27716–27753 in
+  `ereq_163e6b69`, 38 ticks pinned at the same destination; 37120–37142 in
+  `ereq_4eec4cd4`). Cause in `examples/pudge_wars/sim.nim`: `applyBlinkFine`
+  returns false while `rotAffected(pudge)` — inside any live Rot disk
+  (8 tiles), including our own — and Rot is exactly what a puller runs at
+  point blank. During those pinned ticks v8 neither attacked nor rotted
+  (`brawl` off), which is strictly worse than v4. Only ~4 of ~7 escape
+  attempts actually hopped. Of 65 enemy-bank `pull_landed` events only 3
+  had `blink_ready=true` (the reactive dodge on the incoming hook usually
+  spends Blink), so the escape mostly fires later in the brawl, not at
+  release; 56/65 landings were outgunned by the HP criterion.
+- Decision: v8 is **superseded before directional** (same hypothesis, same
+  single change, fixed to respect the engine's Rot lock — precedent v2 → v3).
+  No win-rate claim from the smoke. v9 = v8 + `not foreign_rot` gate + own
+  Rot switched off before the hop; `pull_landed.rot_locked` added.

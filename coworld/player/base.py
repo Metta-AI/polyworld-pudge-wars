@@ -202,18 +202,22 @@ class BasePolicy:
                 self.dodge_side = -1
         caught = next((p for p in enemies if p["hooked"]), None)
         swimming = next((p for p in enemies if p["layer"] == 2), None)
+        foreign_rot = any(p["rot"] and distance(me, p) <= 8 for p in units if p["id"] != me["id"])
         if self.was_hooked and not me["hooked"]:
             self.record("pull_landed", layer=me["layer"], own_land=own_land, blink_ready=me["blink_ready"], hp=me["hp"],
                         enemy_hp=target["hp"] if target else None,
-                        dist=round(distance(me, target), 1) if target else None)
+                        dist=round(distance(me, target), 1) if target else None, rot_locked=foreign_rot)
         self.was_hooked = me["hooked"]
         # Pulled onto the enemy bank without the HP edge: leave before the
         # point-blank re-hook instead of trading. Blink covers the mid-strip
         # crossing; on the side lanes it reaches river water short of our lip.
+        # The engine refuses Blink inside any live Rot disk (8 tiles, ours
+        # included): an enemy Rot pins us to the brawl, our own is switched
+        # off first and the hop follows next tick.
         escape_to, escape_via = None, "river"
         if (me["blink_ready"] and target is not None and not own_land and not river and not me["hooked"]
-                and caught is None and obs.get("game_version", 0) >= 35 and distance(me, target) <= 12
-                and me["hp"] + 40 < target["hp"] and target["hp"] > 120):
+                and caught is None and not foreign_rot and obs.get("game_version", 0) >= 35
+                and distance(me, target) <= 12 and me["hp"] + 40 < target["hp"] and target["hp"] > 120):
             escape_to = self.fountain_escape(obs, enemies, True)
             if escape_to is not None:
                 escape_via = "fountain"
@@ -223,7 +227,6 @@ class BasePolicy:
                                         or (not own_land and not river and escape_to is None))
         rot = bool(target and any(distance(me, p) <= 8 for p in enemies)
                    and brawl and not river and not low and me["hp"] > 96)
-        foreign_rot = any(p["rot"] and distance(me, p) <= 8 for p in units if p["id"] != me["id"])
         flee_rot = foreign_rot and not rot
 
         action: dict[str, Any] = {}
@@ -329,7 +332,7 @@ class BasePolicy:
                 self.record("fountain_escape", destination=crossing)
             elif river:
                 action["blink_to"] = point(west if team == 0 else east, me["y"])
-            elif escape_to is not None:
+            elif escape_to is not None and not me["rot"]:
                 action["blink_to"] = escape_to
                 self.record("bank_escape", hp=me["hp"], enemy_hp=target["hp"], dist=round(distance(me, target), 1),
                             destination=escape_to, via=escape_via)

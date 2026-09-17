@@ -114,6 +114,31 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         self.assertEqual([e["event"] for e in policy.events], ["bank_escape"])
         self.assertEqual(policy.events[0]["via"], "fountain")
 
+    def test_bank_escape_respects_the_rot_blink_lock(self):
+        # An enemy Rot disk within 8 tiles makes Blink impossible: brawl as v4.
+        me = unit(x=92)
+        me.update(hp=600, layer=1, blink_ready=True)
+        enemy = unit(4, 1, 96)
+        enemy["rot"] = True
+        obs = observation(me, [enemy])
+        obs["game_version"] = 36
+        action = BasePolicy().choose_action(obs)
+        self.assertNotIn("blink_to", action)
+        self.assertEqual(action["attack_target"], 4)
+        # Our own Rot is switched off first; the hop follows once it is off.
+        me["rot"] = True
+        enemy["rot"] = False
+        obs = observation(me, [enemy])
+        obs["game_version"] = 36
+        action = BasePolicy().choose_action(obs)
+        self.assertNotIn("blink_to", action)
+        self.assertNotIn("attack_target", action)
+        self.assertIs(action["rot"], False)
+        me["rot"] = False
+        obs = observation(me, [enemy])
+        obs["game_version"] = 36
+        self.assertEqual(BasePolicy().choose_action(obs)["blink_to"], [72.0, 40.0])
+
     def test_favourable_enemy_bank_brawl_is_kept(self):
         for my_hp, enemy_hp in ((840, 840), (600, 100)):
             me = unit(x=92)

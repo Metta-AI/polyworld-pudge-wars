@@ -90,7 +90,9 @@
     },
     "image_digest": "sha256:13a3a86834a06205d40b50fa72ba13f1e0eaf2da362d136e5718783f46d6ed53",
     "change": "post-pull bank escape: on the enemy bank without the brawl HP edge (hp+40 < enemy hp, enemy hp > 120), enemy within 12, Blink ready -> blink_to home (fountain_escape landing in the mid strip, else 20 tiles toward our bank = river water) instead of the forced brawl; pull_landed + bank_escape trace events",
-    "eval_ids": {}
+    "eval_ids": {
+      "smoke": "xreq_700c9ae9-41e9-4b21-9992-70b841795a57"
+    }
   },
   "champion": {
     "policy_ref": "pudge-auto-optimizer:v1",
@@ -117,7 +119,16 @@
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
-  "open_evals": {},
+  "open_evals": {
+    "iter7-smoke": {
+      "id": "xreq_700c9ae9-41e9-4b21-9992-70b841795a57",
+      "policy": "pudge-auto-optimizer:v8",
+      "episodes": 3,
+      "top_n": 3,
+      "status": "pending",
+      "created": "2026-09-17T18:16Z"
+    }
+  },
   "findings": [
     {
       "date": "2026-09-17",
