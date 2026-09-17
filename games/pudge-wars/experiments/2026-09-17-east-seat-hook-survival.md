@@ -121,3 +121,52 @@ any traceback / missing `pull_skip` in the smoke. Rollback = remove the
   `xreq_424b4fe0`. Verdict block to be written by the harvesting run:
   compare v6 vs v4 pooled and per seat, plus `pull_exchange.py` on the v6
   replays to confirm the unfavorable-pull bucket shrank (mechanism check).
+
+## Verdict (iteration 5, written 2026-09-17 14:1xZ)
+
+**Decision: no_signal → reject as new base; lever stays open (refine, not closed).**
+Champion `pudge-auto-optimizer:v1` unchanged; behaviour base stays `v4`.
+
+| arm | clean win rate | west | east | vs a-aron:v1 | vs richard:v7 | vs rusher:v16 | deaths/game |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| v6 `xreq_7c995925` | **0.575 ± 0.078** (n=40, taint 0) | 0.700 (20) | 0.450 (20) | 0.778 (9) | 0.643 (14) | 0.412 (17) | 12.7 |
+| v4 `xreq_424b4fe0` (same window) | **0.487 ± 0.080** (n=39, 1 episode still running at write time) | 0.550 (20) | 0.421 (19) | 0.556 (9) | 0.500 (12) | 0.444 (18) | 13.3 |
+
+Delta +0.088, pooled SE 0.112 → **+0.79 SE: no detectable change at n=40.**
+No slice regresses beyond 1 SE (v16 0.412 vs 0.444, −0.3 SE); deaths did not
+rise (tripwire passed); 0 tracebacks in 40/40 logs, `pull_skip` 20.5/game
+(≈ 27 s of blocked long throws per 20-min game — the gate fires rarely).
+History note: v4 scored 0.650 ± 0.076 in the iteration-4 window and 0.487 ±
+0.080 here — a 0.16 swing for identical code, so cross-window comparisons
+are worthless; only the matched arm counts.
+
+**Mechanism check failed.** `pull_exchange.py` on the v6 replays
+(`evals/iter5-directional/pull_exchange.json`): unfavourable long-hook
+landings (`no_edge`) were **81** (policy died in 0.69 of them) vs **72** in
+the v4 arm (0.61). Reconstructing each unfavourable landing back to its
+`hook_launched`:
+
+| launch path | v4 | v6 |
+| --- | --- | --- |
+| gate would have passed at launch, but we lost HP during the hook's flight (mutual exchange) | 16 | 26 |
+| aimed at a visible target the gate should block | 16 | 4 |
+| aim at the far bank lip (x≈50 / x≈78 = the **stale blind poke**, age > 3 s, exempt from the gate) | 38 | 50 |
+| rune hook passing through the enemy | ~0 | 1 |
+
+So the gate did remove the visible-target unfavourable pulls (16 → 4) but
+they were the minority; the exempt stale poke — thrown at the bank lip, then
+flying its full 60-tile range into whoever stands behind it — produces the
+bulk, and with fewer visible throws the held hook is released as a stale
+poke a moment later instead. The exemption ("no HP knowledge") was wrong:
+`last_enemy["hp"]` from a few seconds ago is still a good estimate (HP only
+moves by hook damage and slow regen).
+
+**Rollback:** none needed — v4 remains the base; v6 is not built upon.
+
+**Next (iteration 6, one change):** the complete pull gate on v4 — apply
+`pull_wins(last_enemy.hp, span)` to the stale poke too (and consider
+suppressing the bank-lip poke entirely while `low`/recovering), keep the
+visible-target gate. Prediction: `no_edge` landings fall below ~40/40 games
+(mechanism), own deaths −1/game; verdict by matched directional + the same
+`pull_exchange.py` table. If the stale-poke gate also fails to move
+`no_edge`, close the lever.

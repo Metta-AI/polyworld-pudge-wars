@@ -46,31 +46,32 @@
     "iteration": 5,
     "policy_ref": "pudge-auto-optimizer:v6",
     "policy_version_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
-    "status": "v6 smoke clean (xreq_68d87223: n=3, 0 tracebacks, pull_skip present 63/8/4 per episode); matched directional v6 (xreq_7c995925) and v4 (xreq_424b4fe0) launched, pending harvest",
+    "status": "iteration 5 closed: v6 no_signal (0.575\u00b10.078 n=40 vs matched v4 0.487\u00b10.080 n=39, +0.79 SE; mechanism failed, stale-poke path exempt). v4 stays the behaviour base; v6 not built upon.",
     "experiment": "experiments/2026-09-17-east-seat-hook-survival.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v6",
       "policy_version_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
-      "verdict": "pending (iteration 5 smoke + directional)"
+      "verdict": "no_signal (iteration 5; not adopted as base; lever refined for iteration 6)"
     },
     "base_ref": "pudge-auto-optimizer:v4",
     "source_commit": "3830bbe",
     "previous_candidate": {
-      "policy_ref": "pudge-auto-optimizer:v5",
-      "policy_version_id": "0c975025-8d8c-4059-bd1e-bbc3e3654fdd",
-      "verdict": "reject (iteration 4; rollback to v4)"
+      "policy_ref": "pudge-auto-optimizer:v6",
+      "policy_version_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
+      "verdict": "no_signal (iteration 5; base stays v4)"
     },
     "next_iteration": {
-      "iteration": 5,
+      "iteration": 6,
       "base_ref": "pudge-auto-optimizer:v4",
-      "change": "long-hook pull gate (pull_wins)",
-      "experiment": "experiments/2026-09-17-east-seat-hook-survival.md",
-      "built": true,
-      "uploaded": true,
+      "change": "complete long-hook pull gate: apply pull_wins(last_enemy.hp, span) to the stale (>3 s) blind poke too; keep the visible-target gate from v6",
+      "experiment": "to be written: experiments/2026-09-1x-stale-poke-pull-gate.md",
+      "built": false,
+      "uploaded": false,
+      "evidence": "evals/iter5-directional/pull_exchange.json + experiment verdict table: 50 of 81 unfavourable landings in v6 came from the exempt stale poke at the bank lip; visible-target unfavourable throws fell 16 -> 4",
       "candidate_directions": [
-        "east-seat weakness (v4 0.550 / v5 0.368 east vs 0.75-0.80 west) - inspect east replays/hold geometry",
-        "gate long throws on target HP / opponent type (pulling a full-HP rusher in without a kill cost the v16 matchup)",
-        "close the v4-vs-v1 gate question before stacking more candidates on an un-promoted base"
+        "complete pull gate (above) \u2014 mechanism target no_edge < 40/40 games, deaths -1/game",
+        "if that fails to move no_edge, close the pull-gate lever and return to the seat question: mirror shows a 0.14 west prior for identical code; a team-keyed asymmetry (defensive Blink uses layer==0) is the remaining code suspect",
+        "close the v4-vs-v1 gate question (gate_n=100 matched) before stacking further"
       ]
     },
     "accepted_behaviour": {
@@ -105,16 +106,6 @@
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
   "open_evals": {
-    "iter5-directional": {
-      "xreq": "xreq_7c995925-5c7f-4448-ba62-232024dad9b2",
-      "policy": "pudge-auto-optimizer:v6",
-      "policy_version_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
-      "top_n": 3,
-      "episodes": 40,
-      "launched": "2026-09-17T13:24Z",
-      "summarize_policy_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
-      "purpose": "iteration 5 candidate directional arm"
-    },
     "iter5-directional-v4": {
       "xreq": "xreq_424b4fe0-956c-4473-9d73-6b89bd74a2aa",
       "policy": "pudge-auto-optimizer:v4",
@@ -123,7 +114,8 @@
       "episodes": 40,
       "launched": "2026-09-17T13:24Z",
       "summarize_policy_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
-      "purpose": "iteration 5 matched baseline arm (same window/protocol)"
+      "purpose": "iteration 5 matched baseline arm (same window/protocol)",
+      "status": "39/40 complete at 14:15Z; one straggler episode (ereq_c5f605d2) still running \u2014 next run: xp poll, xp summarize, refresh compare_v6_v4.txt; cannot change the no_signal verdict"
     }
   },
   "findings": [
