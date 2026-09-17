@@ -43,11 +43,16 @@
     "note": "Current #1 (Aaron). Named-target comparison reference and top_n member; NOT our baseline."
   },
   "latest": {
-    "iteration": 2,
-    "policy_ref": "pudge-auto-optimizer:v3",
-    "policy_version_id": "6523437c-6102-40eb-b8e1-5d6aad37c50e",
-    "status": "uploaded; smoke xreq_4f8155c2 clean 3/3 (0 tracebacks, 'pending' class present, no owner fallback); directional xreq_e43bf971 (n=40, top-3, same protocol as baseline xreq_3e9e30f4) running",
-    "experiment": "experiments/2026-09-17-collision-threat.md"
+    "iteration": 3,
+    "policy_ref": null,
+    "policy_version_id": null,
+    "status": "iteration 3 code landed (v1 + fishing hold y clamp [30,98], edge_clamp trace) but NOT built/uploaded: Docker Hub CDN production.cloudfront.docker.com blocked. Last uploaded version is v3 (6523437c), rejected 2026-09-17: directional xreq_e43bf971 0.325\u00b10.074 vs v1 0.425\u00b10.078, deaths +1.37/game (rollback fired). Next candidate builds on champion v1.",
+    "experiment": "experiments/2026-09-17-edge-band-hold.md",
+    "last_uploaded": {
+      "policy_ref": "pudge-auto-optimizer:v3",
+      "policy_version_id": "6523437c-6102-40eb-b8e1-5d6aad37c50e",
+      "verdict": "reject"
+    }
   },
   "champion": {
     "policy_ref": "pudge-auto-optimizer:v1",
@@ -73,9 +78,7 @@
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
-  "open_evals": {
-    "iter2-directional": "xreq_e43bf971-56f7-4b68-a4db-c42655b19430"
-  },
+  "open_evals": {},
   "findings": [
     {
       "date": "2026-09-17",
@@ -86,6 +89,21 @@
       "date": "2026-09-17",
       "topic": "hook heading",
       "note": "Owner position must not be used to infer a flying hook's heading: the owner may Blink after the throw while the head keeps its heading (examples/pudge_wars/human_play.md). Only head displacement between ticks is trustworthy; v2 used the owner fallback in ~1% of classifications and was superseded by v3."
+    },
+    {
+      "date": "2026-09-17",
+      "topic": "collision-threat filter",
+      "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325\u00b10.074 vs v1 0.425\u00b10.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
+    },
+    {
+      "date": "2026-09-17",
+      "topic": "edge exposure",
+      "note": "v1 replays (40 clean): 31% of own-bank time within 8 tiles of top/bottom edge; long hooks aimed at us there land 16.4% vs 9.6% lane / 8.9% mid; 6.9 of 16.7 landed long hooks per game are caught in the edge band. pudge-wars-rusher:v16 spends 19% there. Basis for iteration 3 (hold y clamp)."
+    },
+    {
+      "date": "2026-09-17",
+      "topic": "long-hook lead",
+      "note": "Replay lead sweep on v1 (6507 hooks, fitted radius 6.1 tiles): modeled accuracy peaks at span/12 (0.471 vs 0.363 no-lead, current span/30 = 0.410) but target dodge was generated against the real hook so this is diagnostic only; a hosted A/B is needed before touching the lead. evals/iter0-directional/lead_sweep.json."
     }
   ],
   "automation": {

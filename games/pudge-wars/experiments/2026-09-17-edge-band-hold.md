@@ -1,11 +1,17 @@
 # Iteration 3 — keep the fishing hold out of the map-edge band
 
 Campaign: `pudge-auto-optimizer` (records in [`../auto-optimizer/`](../auto-optimizer/)).
-Base arm: `pudge-auto-optimizer:v3` (`6523437c-6102-40eb-b8e1-5d6aad37c50e`).
+Base arm: `pudge-auto-optimizer:v1` (champion,
+`a7afee99-e56f-40eb-ae64-6bc08f83ae71`, source `d1f6d7c`). Pre-registered
+on v3, re-based on v1 the same run once the v3 directional fired the
+collision-threat experiment's rollback condition (deaths +1.37/game; see
+`2026-09-17-collision-threat.md`) — v4 = v1 + this one change, so the
+comparison to the champion stays single-cause.
 Candidate arm: `pudge-auto-optimizer:v4`. Comparison arms available in the
-same protocol: v1 baseline `xreq_3e9e30f4` (n=40, harvested), v3
-`xreq_e43bf971` (n=40, launched 2026-09-17 ~03:15Z).
-Status: **open** — hypothesis pre-registered before the change was written.
+same protocol: v1 champion `xreq_3e9e30f4` (n=40, harvested), v3
+`xreq_e43bf971` (n=40, harvested, rejected).
+Status: **open** — hypothesis pre-registered before the change was written;
+code landed, image not yet built (Docker Hub CDN blocked, see Results).
 
 ## Hypothesis record
 
@@ -58,7 +64,7 @@ affected. Aim, dodge, blink, threat, shop, rune and rescue logic are untouched.
 **Expected metric movement.** Mechanism (replays, candidate directional
 n=40): own-bank edge share 0.31 → ≤ 0.10; long hooks landing on us per
 game 16.7 → ≤ 14.5 (edge catches move to lane rate); deaths per game 18.3 →
-≤ 16.5. Outcome: clean win rate +5 to +10 pp over the same-window v3 arm;
+≤ 16.5. Outcome: clean win rate +5 to +10 pp over the v1 champion arm;
 at n=40 (SE ≈ 0.08) this is directional only, the mechanism metrics are the
 falsifiable part. Tripwires: our own hook accuracy (0.181) and throws per
 game (384) must not drop by more than 10% (a hold farther from an edge-hugging
@@ -67,9 +73,11 @@ y is clamped too).
 
 **Eval plan.** Smoke n=3 (0 tracebacks, `edge_clamp` events present with
 non-trivial raw y) → directional n=40 on the primary protocol (`STATE.json`
-`eval_protocol`, roster [candidate, top_n=3], auto slots), same window as
-the v3 directional `xreq_e43bf971` → gate n≈100 only if the directional
-clears 2 pooled SE over v3.
+`eval_protocol`, roster [candidate, top_n=3], auto slots), with a fresh
+equal-n v1 champion arm launched in the same window (the 2026-09-17T02Z
+`xreq_3e9e30f4` is the historical anchor, not the matched arm, once the
+candidate runs on a later day) → gate n≈100 only if the directional clears
+2 pooled SE over v1.
 
 **Overfit risk.** The band is measured on our own v1 replays against this
 week's top-3 field. The geometric argument (one dodge direction, unled
@@ -78,10 +86,10 @@ a future edge-camping opponent could sit out of our clamped reach at y≈17;
 our hooks reach 60+ tiles so a 13-tile y offset costs little range. Rune
 spawns near the edges become slightly longer throws.
 
-**Rollback condition.** Candidate clean win rate ≤ v3 − 1 pooled SE in the
+**Rollback condition.** Candidate clean win rate ≤ v1 − 1 pooled SE in the
 same window, or edge share not reduced below 0.15 (change did not bind), or
 our hook accuracy / throws per game down > 10%, or any traceback. Rollback
-ref: `pudge-auto-optimizer:v3`.
+ref: `pudge-auto-optimizer:v1`.
 
 ## Results
 

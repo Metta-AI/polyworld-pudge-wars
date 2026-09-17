@@ -180,11 +180,8 @@ class BaseCoworldPolicyTest(unittest.TestCase):
     def test_defensive_blink_stays_inside_actual_range(self):
         me = unit()
         me["blink_ready"] = True
-        hook = dict(owner_id=4, team=1, x=56, y=40, flying=True, victim=0)
-        self.policy.choose_action(observation(me, hooks=[hook]))
-        obs = observation(me, hooks=[dict(hook, x=54)])
-        obs["tick"] = 201
-        hop = self.policy.choose_action(obs)["blink_to"]
+        hook = dict(owner_id=4, team=1, x=54, y=40, flying=True, victim=0)
+        hop = self.policy.choose_action(observation(me, hooks=[hook]))["blink_to"]
         self.assertLessEqual((hop[0] - 36) ** 2 + (hop[1] - 40) ** 2, 400.00001)
         self.assertLess(hop[0], me["x"])
 
@@ -380,79 +377,6 @@ class SupportOpportunityTest(unittest.TestCase):
         obs["tick"] = 224
         obs["rune_next"] = {"soon": 100, "x": 64, "y": 18}
         self.assertEqual(BasePolicy().choose_action(obs)["walk_to"], [36, 30])
-
-    def test_hook_aimed_elsewhere_is_not_a_threat(self):
-        me = unit()
-        me["blink_ready"] = True
-        enemy = unit(4, 1, 60, 40)
-        # The head flies from (60,40) through (52,50): its line passes ~19 tiles from us.
-        first = dict(owner_id=4, team=1, x=53.6, y=48, flying=True, victim=0)
-        second = dict(owner_id=4, team=1, x=52, y=50, flying=True, victim=0)
-        policy = BasePolicy(trace=True)
-        far = policy.choose_action(observation(me, [enemy], hooks=[first]))
-        self.assertNotIn("blink_to", far)
-        obs2 = observation(me, [enemy], hooks=[second])
-        obs2["tick"] = 201
-        action = policy.choose_action(obs2)
-        self.assertNotIn("blink_to", action)
-        classes = [(e["cls"], e["src"]) for e in policy.events if e["event"] == "threat_class"]
-        self.assertEqual(classes, [("pending", "none"), ("wide", "track")])
-
-    def test_owner_position_after_blink_does_not_steer_the_classification(self):
-        me = unit()
-        me["blink_ready"] = True
-        # Owner threw west along y=41 then blinked north-east: owner->head points south-west.
-        enemy = unit(4, 1, 70, 20)
-        first = dict(owner_id=4, team=1, x=52, y=41, flying=True, victim=0)
-        second = dict(owner_id=4, team=1, x=50, y=41, flying=True, victim=0)
-        policy = BasePolicy(trace=True)
-        policy.choose_action(observation(me, [enemy], hooks=[first]))
-        obs2 = observation(me, [enemy], hooks=[second])
-        obs2["tick"] = 201
-        action = policy.choose_action(obs2)
-        self.assertIn("blink_to", action)
-        classes = [(e["cls"], e["src"]) for e in policy.events if e["event"] == "threat_class"]
-        self.assertEqual(classes, [("pending", "none"), ("hit", "track")])
-
-    def test_untracked_hook_close_by_is_dodged_at_once(self):
-        me = unit()
-        me["blink_ready"] = True
-        hook = dict(owner_id=4, team=1, x=44, y=40, flying=True, victim=0)
-        policy = BasePolicy(trace=True)
-        action = policy.choose_action(observation(me, hooks=[hook]))
-        self.assertIn("blink_to", action)
-        blinks = [e for e in policy.events if e["event"] == "dodge_blink"]
-        self.assertEqual(blinks[-1]["cls"], "blind")
-
-    def test_hook_moving_away_is_not_a_threat(self):
-        me = unit()
-        me["blink_ready"] = True
-        policy = BasePolicy(trace=True)
-        first = dict(owner_id=4, team=1, x=44, y=40, flying=True, victim=0)
-        second = dict(owner_id=4, team=1, x=46, y=40, flying=True, victim=0)
-        obs = observation(me, hooks=[first])
-        policy.choose_action(obs)
-        obs2 = observation(me, hooks=[second])
-        obs2["tick"] = 201
-        action = policy.choose_action(obs2)
-        self.assertNotIn("blink_to", action)
-        classes = [(e["cls"], e["src"]) for e in policy.events if e["event"] == "threat_class"]
-        self.assertEqual(classes, [("blind", "none"), ("away", "track")])
-
-    def test_hook_closing_on_us_keeps_the_dodge(self):
-        me = unit()
-        me["blink_ready"] = True
-        policy = BasePolicy(trace=True)
-        first = dict(owner_id=4, team=1, x=52, y=41, flying=True, victim=0)
-        second = dict(owner_id=4, team=1, x=50, y=41, flying=True, victim=0)
-        policy.choose_action(observation(me, hooks=[first]))
-        obs2 = observation(me, hooks=[second])
-        obs2["tick"] = 201
-        action = policy.choose_action(obs2)
-        self.assertIn("blink_to", action)
-        self.assertLess(action["blink_to"][0], me["x"])
-        blinks = [e for e in policy.events if e["event"] == "dodge_blink"]
-        self.assertEqual(blinks[-1]["cls"], "hit")
 
 
 if __name__ == "__main__":
