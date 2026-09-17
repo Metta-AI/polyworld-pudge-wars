@@ -46,7 +46,7 @@
     "iteration": 5,
     "policy_ref": "pudge-auto-optimizer:v6",
     "policy_version_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
-    "status": "v6 (v4 + long-hook pull gate: throw a >=30-tile hook only if the enemy would be at or below our HP+40 after the predicted hook damage; +pull_skip trace) uploaded 12:56Z by devin-c6eafeae, source 3830bbe, image sha256:ab76d9ba... UNTESTED: smoke and matched directional pending (see open_evals). Upload tags omitted; VERSION_LOG/ledger are the metadata of record.",
+    "status": "v6 smoke clean (xreq_68d87223: n=3, 0 tracebacks, pull_skip present 63/8/4 per episode); matched directional v6 (xreq_7c995925) and v4 (xreq_424b4fe0) launched, pending harvest",
     "experiment": "experiments/2026-09-17-east-seat-hook-survival.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v6",
@@ -105,13 +105,25 @@
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
   "open_evals": {
-    "iter5-smoke": {
-      "xreq": "xreq_68d87223-9856-4b37-abe4-5ad5a19d08f5",
+    "iter5-directional": {
+      "xreq": "xreq_7c995925-5c7f-4448-ba62-232024dad9b2",
       "policy": "pudge-auto-optimizer:v6",
-      "episodes": 3,
+      "policy_version_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
       "top_n": 3,
+      "episodes": 40,
+      "launched": "2026-09-17T13:24Z",
       "summarize_policy_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
-      "launched": "2026-09-17T13:0xZ"
+      "purpose": "iteration 5 candidate directional arm"
+    },
+    "iter5-directional-v4": {
+      "xreq": "xreq_424b4fe0-956c-4473-9d73-6b89bd74a2aa",
+      "policy": "pudge-auto-optimizer:v4",
+      "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
+      "top_n": 3,
+      "episodes": 40,
+      "launched": "2026-09-17T13:24Z",
+      "summarize_policy_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
+      "purpose": "iteration 5 matched baseline arm (same window/protocol)"
     }
   },
   "findings": [

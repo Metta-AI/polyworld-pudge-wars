@@ -110,3 +110,14 @@ identification.
 same window, or deaths/game not down (≥ v4's), or kills/game down > 1, or
 any traceback / missing `pull_skip` in the smoke. Rollback = remove the
 `pull_wins` gate (three call sites + constants) → v4 source.
+## Run log (iteration 5, 2026-09-17)
+
+- Smoke `iter5-smoke` (`xreq_68d87223`): clean n=3, taint 0, 0 tracebacks,
+  `pull_skip` present in all three logs (63 / 8 / 4 events; e.g. hp=920 vs
+  enemy 1200, landed=200 → skipped; hp=260 vs 1200 with longshot landed=318
+  → skipped). Smoke score 1/3 is not evidence (n=3).
+- Directional arms launched 13:36Z on the identical protocol
+  (top_n=3, 40 episodes): candidate v6 `xreq_7c995925`, matched baseline v4
+  `xreq_424b4fe0`. Verdict block to be written by the harvesting run:
+  compare v6 vs v4 pooled and per seat, plus `pull_exchange.py` on the v6
+  replays to confirm the unfavorable-pull bucket shrank (mechanism check).
