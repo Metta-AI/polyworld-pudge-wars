@@ -295,18 +295,23 @@ def cmd_xp_summarize(args: argparse.Namespace) -> None:
         episodes = raw_get(c, f"/v2/experience-requests/{args.xreq_id}/episodes") if args.xreq_id else \
             json.loads((out_dir / "xp_request.json").read_text())["episodes"]
     save_json(out_dir / "episodes.json", episodes)
+    pid, _ = resolve_ref(args.policy)
     clean: list[dict[str, Any]] = []
     taint: list[dict[str, Any]] = []
     for ep in episodes:
-        mine = [p for p in ep.get("participants", []) if p.get("policy_version_id") == args.policy]
-        if ep.get("status") != "completed" or not mine or not ep.get("scores"):
-            taint.append({"id": ep["id"], "status": ep.get("status"), "error_type": ep.get("error_type"), "error": ep.get("error")})
+        mine = [p for p in ep.get("participants", []) if p.get("policy_version_id") == pid]
+        score = next((s["score"] for s in ep.get("scores") or [] if s["policy_version_id"] == pid), None)
+        if ep.get("status") != "completed" or not mine or score is None:
+            taint.append({"id": ep["id"], "status": ep.get("status"), "error_type": ep.get("error_type"), "error": ep.get("error"),
+                          "reason": "not completed" if ep.get("status") != "completed" else "policy absent" if not mine else "unscored"})
             continue
-        score = next((s["score"] for s in ep["scores"] if s["policy_version_id"] == args.policy), None)
+        seats = len(ep["participants"])
         opp = [f"{p['policy_name']}:v{p['version']}" for p in ep["participants"]
-               if p.get("kind") == "policy" and not p.get("is_filler") and p.get("policy_version_id") != args.policy]
-        clean.append({"id": ep["id"], "slot": mine[0]["position"], "team": "west" if mine[0]["position"] < 3 else "east",
-                      "score": score, "opponents": opp, "seed": ep.get("seed"), "replay_url": ep.get("replay_url")})
+               if p.get("kind") == "policy" and not p.get("is_filler") and p.get("policy_version_id") != pid]
+        clean.append({"id": ep["id"], "episode_id": ep.get("episode_id"), "slot": mine[0]["position"], "seats": seats,
+                      "team": "west" if mine[0]["position"] < seats / 2 else "east",
+                      "score": score, "opponents": opp, "variant": ep.get("variant_name"), "cost_usd": ep.get("cost_usd"),
+                      "replay_url": ep.get("replay_url")})
 
     def tally(sel: list[dict[str, Any]]) -> dict[str, Any]:
         n = len(sel)
@@ -319,7 +324,8 @@ def cmd_xp_summarize(args: argparse.Namespace) -> None:
         "by_team": {t: tally([r for r in clean if r["team"] == t]) for t in ("west", "east")},
         "by_opponent": {k: tally([r for r in clean if ",".join(r["opponents"]) == k])
                         for k in sorted({",".join(r["opponents"]) for r in clean})},
-        "taint_reasons": sorted({str(t.get("error_type") or t.get("status")) for t in taint}),
+        "taint_reasons": sorted({str(t.get("error_type") or t.get("reason")) for t in taint}),
+        "hosted_cost_usd": round(sum(ep.get("cost_usd") or 0 for ep in episodes), 4),
     }
     save_json(out_dir / "summary.json", {**summary, "clean_rows": clean, "tainted_rows": taint})
     o = summary["overall"]

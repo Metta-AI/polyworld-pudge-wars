@@ -70,6 +70,24 @@
   },
   "open_evals": {
     "iter0-smoke": "xreq_8e48fa28-9057-4727-b626-8cef4770cd1e",
-    "iter1-smoke": "xreq_8ca151a8-8bde-4e1b-bfa2-cda1c44b96e1"
+    "iter1-smoke": "xreq_8ca151a8-8bde-4e1b-bfa2-cda1c44b96e1",
+    "iter0-directional": "xreq_3e9e30f4-d1af-4a46-9d93-45c1ef55a5ca"
+  },
+  "findings": [
+    {
+      "date": "2026-09-17",
+      "topic": "eval field shape",
+      "note": "XP request with roster [ours, top_n=3] seats 2 participants (1v1: position 0 west, 1 east) even though variant_name is 'League 3v3'. Ladder scheduler is team_pair/blocks with filler_policy, ranking elo k=8 mean. 1v1 XP results may not transfer to 3v3 ladder rounds; next run should probe a 6-slot roster (ours x3 vs top_n x3 or ours+fillers) and compare seat counts in episodes.json before trusting transfer."
+    }
+  ],
+  "automation": {
+    "id": "auto-600aa4eb690e459190c04b10d5c0c9fb",
+    "url": "https://app.devin.ai/automations/600aa4eb690e459190c04b10d5c0c9fb",
+    "schedule": "every 3 hours (UTC, :00)",
+    "devin_mode": "ultra",
+    "max_concurrent_runs": 1,
+    "max_acu_per_run": 40,
+    "prompt": "automation_prompt.md",
+    "created_at": "2026-09-17T02:36:17Z"
   }
 }

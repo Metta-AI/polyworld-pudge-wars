@@ -120,6 +120,15 @@ protocol at equal n; the anchor is the yardstick, not our baseline.
 Fresh-field XP requests (`hosted.py xp create --top-n 3`) are the secondary,
 broader guardrail. Local `pwheadless` runs are debugging instruments only.
 
+## Recurring automation
+
+Devin automation `auto-600aa4eb690e459190c04b10d5c0c9fb`
+(<https://app.devin.ai/automations/600aa4eb690e459190c04b10d5c0c9fb>) starts one
+`ultra` session every three hours (UTC, on the hour; concurrency 1, 40 ACU cap
+per run) with the prompt in `automation_prompt.md`. Each run resumes from this
+directory and the campaign branch; it never submits to the league. Details are
+mirrored under `automation` in `STATE.json`.
+
 ## Cost accounting
 
 Devin bills sessions in ACUs. Each ledger row stores the session id, the mode

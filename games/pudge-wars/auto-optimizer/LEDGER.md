@@ -9,7 +9,7 @@ Coworld daily-budget delta observed across the iteration's evals.
 
 | Iter | Started (UTC) | Devin session | Mode | Change | Policy | Eval | Verdict | LLM cost (ACU) | Final | LLM USD | Hosted USD |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 0 | 2026-09-17T02:04 | [devin-53](https://app.devin.ai/sessions/53dc4bedf928403fa5309ba0df2a6aa4) | ultra | Baseline: repo default Python policy (coworld/player @ d1f6d7c, rusher/combined), no behavior change | `pudge-auto-optimizer:v1` | `xreq_8e48fa28-9057-4727-b626-8cef4770cd1e` (xp-smoke-top3-n3, clean ?/taint ?) | pending | unrecorded | no |  |  |
+| 0 | 2026-09-17T02:04 | [devin-53](https://app.devin.ai/sessions/53dc4bedf928403fa5309ba0df2a6aa4) | ultra | Baseline: repo default Python policy (coworld/player @ d1f6d7c, rusher/combined), no behavior change | `pudge-auto-optimizer:v1` | `xreq_8e48fa28-9057-4727-b626-8cef4770cd1e` (smoke, clean 3/taint 0) | **baseline** — smoke xreq_8e48fa28 (top-3 field, n=3): clean 3/3, 0 tracebacks, telemetry present; won 2/3 (0.667±0.27; 1v1 seating, W 1/2 E 1/1; vs a-aron-pudge-rusher:v1 1/2, vs co-gas-pudge-blind-hook-richard:v7 1/1). Smoke only — no baseline win-rate claim until directional n=40. | unrecorded | no |  | 0.62 |
 | 1 | 2026-09-17T02:18 | [devin-53](https://app.devin.ai/sessions/53dc4bedf928403fa5309ba0df2a6aa4) | ultra | Collision-aware hook threat selection (heading-based hit/wide/away filter, 8-tile margin) + threat_class/dodge_blink trace events | `pudge-auto-optimizer:v2` | `xreq_8ca151a8-8bde-4e1b-bfa2-cda1c44b96e1` (xp-smoke-top3-n3, clean ?/taint ?) | pending | unrecorded | no |  |  |
 
-Totals: 0.00 ACU across 2 iteration(s); hosted compute $0.00.
+Totals: 0.00 ACU across 2 iteration(s); hosted compute $0.62.
