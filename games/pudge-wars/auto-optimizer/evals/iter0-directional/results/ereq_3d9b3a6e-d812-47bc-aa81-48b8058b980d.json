@@ -1,0 +1,31 @@
+{
+  "east_kills": 15,
+  "end_reason": "time_limit",
+  "end_tick": 38400,
+  "kill_goal": 30,
+  "per_seat": [
+    {
+      "deaths": 15,
+      "hooks_landed": 78,
+      "hooks_thrown": 381,
+      "kills": 26,
+      "slot": 0,
+      "team": 0
+    },
+    {
+      "deaths": 26,
+      "hooks_landed": 77,
+      "hooks_thrown": 402,
+      "kills": 15,
+      "slot": 1,
+      "team": 1
+    }
+  ],
+  "scores": [
+    1.0,
+    0.0
+  ],
+  "seed": 758914731,
+  "west_kills": 26,
+  "winner_team": "west"
+}

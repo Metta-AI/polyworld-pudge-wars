@@ -365,6 +365,22 @@ class SupportOpportunityTest(unittest.TestCase):
             obs["rune_next"] = dict(soon=150, x=64, y=48)
             self.assertEqual(original.choose_action(obs), changed.choose_action(obs))
 
+    def test_solo_hold_stays_out_of_the_edge_band(self):
+        policy = BasePolicy(trace=True)
+        # tick 224 puts player 1's juke at zero, so the solo hold mirrors the enemy's y exactly.
+        for enemy_y, expected in [(17, 30), (111, 98), (64, 64)]:
+            me = unit(y=max(30, min(98, enemy_y)))
+            obs = observation(me, [unit(4, 1, 100, enemy_y)])
+            obs["tick"] = 224
+            self.assertEqual(policy.choose_action(obs)["walk_to"], [36, expected])
+        recorded = [e for e in policy.events if e["event"] == "edge_clamp"]
+        self.assertEqual([(e["raw"], e["y"]) for e in recorded], [(17.0, 30.0), (111.0, 98.0)])
+        low = unit(y=40)
+        obs = observation(low)
+        obs["tick"] = 224
+        obs["rune_next"] = {"soon": 100, "x": 64, "y": 18}
+        self.assertEqual(BasePolicy().choose_action(obs)["walk_to"], [36, 30])
+
     def test_hook_aimed_elsewhere_is_not_a_threat(self):
         me = unit()
         me["blink_ready"] = True

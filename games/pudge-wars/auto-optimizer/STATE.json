@@ -97,5 +97,18 @@
     "max_acu_per_run": 40,
     "prompt": "automation_prompt.md",
     "created_at": "2026-09-17T02:36:17Z"
-  }
+  },
+  "blockers": [
+    {
+      "recorded_at": "2026-09-17T03:45:00Z",
+      "iteration": 3,
+      "session": "devin-88e8709da3984dc1b96dd8cad5837b40",
+      "kind": "network",
+      "status": "open",
+      "summary": "docker pull python:3.12-slim fails: Docker Hub redirects layer blobs to production.cloudfront.docker.com, which is not in the automation network allowlist (only production.cloudflare.docker.com is). v4 image could not be built; iteration-3 code change + unit test are committed unbuilt.",
+      "network_access_request": "network-access-request-c5e64ee0b2e84e1498897fe141520f8e",
+      "fix": "add production.cloudfront.docker.com to the automation network policy (https://app.devin.ai/org/metta-ai/automations/auto-600aa4eb690e459190c04b10d5c0c9fb); the blueprint's `docker pull python:3.12-slim` does not survive into the snapshot (docker images was empty at session start)",
+      "next_run": "retry `docker pull --platform linux/amd64 python:3.12-slim`; if it succeeds, build iter3 -> upload v4 -> smoke -> directional per experiments/2026-09-17-edge-band-hold.md"
+    }
+  ]
 }
