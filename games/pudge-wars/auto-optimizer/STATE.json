@@ -46,28 +46,37 @@
     "iteration": 4,
     "policy_ref": "pudge-auto-optimizer:v5",
     "policy_version_id": "0c975025-8d8c-4059-bd1e-bbc3e3654fdd",
-    "status": "v5 uploaded 09:05Z (devin-00a960a6) = v4 + LEAD_DIVISOR 30->12 (+hook_lead trace), source 1bb1971. Smoke iter4-smoke xreq_70c3e656 CLEAN: 3/3 wins (2 seats/episode), 0 tracebacks, hook_lead present (33-44 hook bursts/episode, median lead 9-13 units at span>=30). Matched directional v5 (xreq_e2df9823) and v4 (xreq_09380b97), top-n 3, n=40 each, launched 09:31Z; spent_today_usd before launch 5.653338. Base image substituted (host pyenv rootfs) because Docker Hub CDN is blocked; see VERSION_LOG v5.",
+    "status": "v5 (v4 + LEAD_DIVISOR 30->12, +hook_lead trace) REJECTED 10:10Z (devin-00a960a6) on the matched directional: v5 0.590+-0.080 (n=39 clean, 1 episode ereq_6b7643b0 still running at harvest) vs v4 0.650+-0.076 (n=40 clean), -0.5 pooled SE = no aggregate signal; tripwires fired: deaths/game +12.8% and vs pudge-wars-rusher:v16 0.312 vs 0.714 (-2.3 SE, deaths 14.6 vs 7.7); our hook accuracy flat (0.156 vs 0.150). 0 tracebacks in 39/39 v5 logs. Source rolled back to v4 behaviour (LEAD_DIVISOR=30; hook_lead trace kept as instrumentation). Iteration 5 builds on v4 (774d5ee5). See experiments/2026-09-17-hook-lead-divisor.md Verdict and closed_levers.md.",
     "experiment": "experiments/2026-09-17-hook-lead-divisor.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v5",
       "policy_version_id": "0c975025-8d8c-4059-bd1e-bbc3e3654fdd",
-      "verdict": "pending (smoke clean; directional v5/v4 running)"
+      "verdict": "reject (directional n=40 matched vs v4: -0.5 SE aggregate, v16 -2.3 SE, deaths +12.8%)"
     },
     "base_ref": "pudge-auto-optimizer:v4",
     "source_commit": "1bb1971",
     "previous_candidate": {
-      "policy_ref": "pudge-auto-optimizer:v4",
-      "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
-      "verdict": "rerun (signal +0.34 / 4.0 SE over v1; gate arm cancelled, not promoted)"
+      "policy_ref": "pudge-auto-optimizer:v5",
+      "policy_version_id": "0c975025-8d8c-4059-bd1e-bbc3e3654fdd",
+      "verdict": "reject (iteration 4; rollback to v4)"
     },
     "next_iteration": {
-      "iteration": 4,
-      "change": "LEAD_DIVISOR 30 -> 12 (+hook_lead trace)",
-      "experiment": "experiments/2026-09-17-hook-lead-divisor.md",
+      "iteration": 5,
       "base_ref": "pudge-auto-optimizer:v4",
-      "built": true,
-      "uploaded": true,
-      "policy_ref": "pudge-auto-optimizer:v5"
+      "change": null,
+      "experiment": null,
+      "built": false,
+      "uploaded": false,
+      "candidate_directions": [
+        "east-seat weakness (v4 0.550 / v5 0.368 east vs 0.75-0.80 west) - inspect east replays/hold geometry",
+        "gate long throws on target HP / opponent type (pulling a full-HP rusher in without a kill cost the v16 matchup)",
+        "close the v4-vs-v1 gate question before stacking more candidates on an un-promoted base"
+      ]
+    },
+    "accepted_behaviour": {
+      "policy_ref": "pudge-auto-optimizer:v4",
+      "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
+      "note": "latest behaviour the next candidate builds on: v1 + edge-band clamp (iteration 3, verdict rerun). v4 is NOT promoted over champion v1; see pending_decisions."
     }
   },
   "champion": {
@@ -96,8 +105,8 @@
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
   "open_evals": {
-    "iter4-directional": "xreq_e2df9823-bc88-4eae-a93d-1942d8a9fedf",
-    "iter4-directional-v4": "xreq_09380b97-d256-4d4a-841a-1ccad48b4107"
+    "iter4-directional (straggler)": "xreq_e2df9823-bc88-4eae-a93d-1942d8a9fedf",
+    "_note": "39/40 done; ereq_6b7643b0 still running at 10:10Z. Next run: xp poll, then re-run xp summarize/results for label iter4-directional to fold it in (cannot change the reject verdict). iter4-directional-v4 xreq_09380b97 is complete and harvested."
   },
   "findings": [
     {
@@ -113,7 +122,7 @@
     {
       "date": "2026-09-17",
       "topic": "collision-threat filter",
-      "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325\u00b10.074 vs v1 0.425\u00b10.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
+      "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325±0.074 vs v1 0.425±0.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
     },
     {
       "date": "2026-09-17",
@@ -173,7 +182,7 @@
         "network-access-request-51efe82b3a1247c2b6a2cb3c9554306",
         "network-access-request-0fa27681bb79495980467cf0edcc439b"
       ],
-      "resolution": "09Z run (devin-00a960a6): Docker Hub blob pull still fails (production.cloudfront.docker.com EOF). Worked around without network: ~/pybase/make_rootfs.sh copies the host pyenv CPython 3.12.13 (interpreter, stdlib, pip, OpenSSL 3.0.2 + shared libs, CA certs) into a rootfs, `docker import` it as localpy:3.12-slim and `docker tag` it python:3.12-slim so the unchanged Dockerfile builds offline (pip reaches pypi.org, which is allowlisted). v5 built and uploaded this way (VERSION_LOG v5 records the base-image deviation). The script lives only in the session home; the blueprint should recreate it or the network policy should add production.cloudfront.docker.com so future runs use the official base."
+      "resolution": "09Z run (devin-00a960a6): Docker Hub blob pull still fails (production.cloudfront.docker.com EOF). Worked around without network: auto-optimizer/tools/offline_base_image.sh (committed) copies the host pyenv CPython 3.12.13 (interpreter, stdlib, pip, OpenSSL 3.0.2 + shared libs, CA certs) into a rootfs, `docker import` it as localpy:3.12-slim and `docker tag` it python:3.12-slim so the unchanged Dockerfile builds offline (pip reaches pypi.org, which is allowlisted). v5 built and uploaded this way (VERSION_LOG v5 records the base-image deviation). The helper is committed in the branch; the blueprint should recreate it or the network policy should add production.cloudfront.docker.com so future runs use the official base."
     }
   ],
   "pending_decisions": [

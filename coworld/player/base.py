@@ -14,7 +14,7 @@ from typing import Any
 
 
 HOLD_Y_MIN, HOLD_Y_MAX = 30.0, 98.0  # fishing hold keeps a two-sided dodge lane clear of the walls
-LEAD_DIVISOR = 12.0  # lead = v8 * span / (LEAD_DIVISOR + speed level): ~80% of a hook's real flight time
+LEAD_DIVISOR = 30.0  # lead = v8 * span / (LEAD_DIVISOR + speed level); empirical, see closed_levers.md
 LEAD_TRACE_SPAN = 30.0
 
 

@@ -8,10 +8,11 @@ Champion for the promotion gate: `pudge-auto-optimizer:v1`
 (`a7afee99-e56f-40eb-ae64-6bc08f83ae71`, 0.410 ± 0.049 pooled over n=100).
 Candidate arm: `pudge-auto-optimizer:v5` (`0c975025-8d8c-4059-bd1e-bbc3e3654fdd`,
 source `1bb1971`, uploaded 2026-09-17T09:05Z by devin-00a960a6).
-Status: **open, directional running** — hypothesis pre-registered
-2026-09-17T06Z by devin-4c31d8f4 before the change was written; smoke clean
-09:29Z; matched directional v5 `xreq_e2df9823` / v4 `xreq_09380b97` (n=40
-each) launched 09:31Z, to be harvested by the next run.
+Status: **rejected 2026-09-17T10Z** (directional, matched v5 vs v4 n=40,
+no aggregate signal; strongest-opponent and deaths tripwires fired — see
+Verdict). Hypothesis pre-registered 2026-09-17T06Z by devin-4c31d8f4 before
+the change was written; smoke clean 09:29Z; matched directional v5
+`xreq_e2df9823` / v4 `xreq_09380b97` launched 09:31Z, harvested 10:10Z.
 
 ## Hypothesis record
 
@@ -152,28 +153,80 @@ new lead is ≈ 2.5× the old span/30 one. 3 wins at n=3 is **not evidence**
 **Directional (launched 09:31Z, same window, identical protocol: roster
 [arm, top_n=3], auto slots, n=40):**
 
-| arm | request | state at 09:33Z |
+| arm | request | state at 10:10Z |
 |---|---|---|
-| v5 candidate | `xreq_e2df9823-bc88-4eae-a93d-1942d8a9fedf` (`iter4-directional`) | pending |
-| v4 base | `xreq_09380b97-d256-4d4a-841a-1ccad48b4107` (`iter4-directional-v4`) | pending |
+| v5 candidate | `xreq_e2df9823-bc88-4eae-a93d-1942d8a9fedf` (`iter4-directional`) | 39/40 completed, 1 episode (`ereq_6b7643b0`) still running after 40 min — counted as tainted/not-yet-clean |
+| v4 base | `xreq_09380b97-d256-4d4a-841a-1ccad48b4107` (`iter4-directional-v4`) | completed 40/40 |
 
-`spent_today_usd` before launch 5.653338 (before smoke 4.845818); each
-40-episode arm has cost ≈ 4.7 USD historically.
+`spent_today_usd` before launch 5.653338 (before smoke 4.845818), after
+harvest 7.668736 (both arms ≈ 4.0 USD hosted at ≈ 0.10 USD/episode, plus the
+last episode still metering). Both arms: 2 seats per episode, no shared
+seeds (auto slots; the arms are matched on protocol/field/window, not
+paired).
 
-**Verdict:** pending — decision rule from `STATE.eval_protocol`: v5 clean
-win rate vs v4 clean win rate in the same window, > 2 pooled SE = signal;
-inside = no signal at n=40 (then check the mechanism metrics from the
-replays: long-hook landed rate in the 45–60 bucket, throws and deaths per
-game); ≤ v4 − 1 SE or any tripwire = reject, rollback to v4. Any outcome at
-n=40 is directional only; promotion over the v1 champion needs the n≈100
-gate.
+**Log triage (v5, 39 episodes,
+`auto-optimizer/evals/iter4-directional/log_triage.json`):** 0 tracebacks,
+0 non-participating seats, `hook_lead` 614/game, `edge_clamp` 484/game — the
+change was live in every episode.
 
-**Next run:** `tools/hosted.py xp poll` both requests, `xp summarize --label
-iter4-directional --policy pudge-auto-optimizer:v5 --xreq-id xreq_e2df9823…`
-and `--label iter4-directional-v4 --policy pudge-auto-optimizer:v4 --xreq-id
-xreq_09380b97…`, download the v5 logs (`hosted.py logs <ereq> --policy
-0c975025-8d8c-4059-bd1e-bbc3e3654fdd --agent <slot>`; the API wants the
-version UUID, and `--agent` is the seat index of *our* policy in that
-episode), taint-filter, compare arms, write the verdict here, in
-`ledger.py verdict --iteration 4`, `STATE.latest` (and `closed_levers.md` on
-reject). Then re-read devin-00a960a6's `acus_consumed` and record it.
+**Readout** (taint-first, engine per-seat counters from
+`hosted.py xp results`; full table with SEs in
+`auto-optimizer/evals/iter4-directional/compare_v5_v4.txt`):
+
+| metric | v5 (n=39 clean, 1 running) | v4 (n=40 clean, 0 tainted) | Δ (pooled SE) |
+|---|---|---|---|
+| clean win rate | **0.590 ± 0.080** | **0.650 ± 0.076** | −0.060 (−0.5 SE) → no detectable change |
+| west / east | 0.800 / 0.368 | 0.750 / 0.550 | +0.05 / −0.18 (−1.1 SE east) |
+| kills / game | 15.95 | 15.98 | 0.0 |
+| deaths / game | 13.26 ± 1.13 | 11.75 ± 1.21 | **+1.51 (+12.8%, +0.9 SE) — tripwire (>10%)** |
+| hooks thrown / landed | 389.9 / 60.0 | 383.4 / 57.0 | +6.5 / +3.0 |
+| our hook accuracy | 0.156 ± 0.010 | 0.150 ± 0.010 | +0.006 (+0.4 SE) — predicted lift absent |
+| opponent accuracy on us | 0.154 | 0.139 | +0.015 (+1.0 SE) |
+| vs a-aron-pudge-rusher:v1 | 0.846 (n=13) | 0.500 (n=14) | **+0.35 (+2.0 SE)**; kills +4.4, acc 0.191 vs 0.164 |
+| vs co-gas-…-richard:v7 | 0.700 (n=10) | 0.750 (n=12) | −0.05; kills −5.2 (−2.5 SE), acc 0.150 vs 0.189 |
+| vs pudge-wars-rusher:v16 | **0.312 (n=16)** | **0.714 (n=14)** | **−0.40 (−2.3 SE)**; deaths 14.6 vs 7.7 (+2.7 SE), v16 acc on us 0.169 vs 0.114 (+2.2 SE), our landed +11/game but kills +1 |
+
+Anomaly gate: N resolves ≈ ±0.11 at 1 SE, so only a large effect could show;
+taint 0/40 (v4) and 0 tainted + 1 unfinished (v5) — background; history:
+v4's 0.650 sits between its earlier 0.750 ± 0.068 (iter3 directional) and
+the 0.400 ± 0.063 v1 champion gate arm, i.e. within the field's known
+window-to-window swing, which is exactly why the arms were run in the same
+window; win/loss counts reconcile (23 W / 16 L = 39); behavioural
+corroboration: the win-rate moves per opponent line up with the counters
+(more landed hooks and kills on a-aron; more landed hooks but no kills and
+far more deaths against v16).
+
+**Verdict: reject (directional).** Aggregate: no detectable change at n=40
+(−0.5 pooled SE), so the primary decision is "no signal", but two
+pre-registered tripwires fire — deaths per game +12.8% (> 10%) and the
+strongest top-3 opponent, `pudge-wars-rusher:v16`, regresses by 2.3 pooled
+SE (the promotion rule tolerates 1 SE) — and the predicted mechanism (higher
+landed rate) is absent in the engine counters (+0.4 SE overall). The effect
+is opponent-specific and net negative on the ladder-relevant field: the
+longer lead lands more long hooks on the rusher v16 (+11/game) but those
+hooks pull a full-HP rusher into melee range without killing it (kills +1),
+after which it out-hooks us (its accuracy on us +55%, our deaths +89%). The
+a-aron gain (+2.0 SE, n=13/14) is real-looking but does not offset it, and a
+divisor that only helps against a dodging opponent is the overfit risk that
+was pre-registered. Decision record: candidate v5 / base v4 / champion v1;
+n=39 vs 40; Δ = −0.06 ± 0.11; broad guardrail: fail (v16); rollback
+`pudge-auto-optimizer:v4` (base stays the latest accepted source, HEAD
+reverts `LEAD_DIVISOR` to 30 in the next iteration's source change or the
+next iteration builds on v4's commit `2f4318c`). Lever closed in
+`closed_levers.md`. Caveats: the long-hook landed rate per distance bucket
+(the mechanism metric) was not measured — no `pwheadless` decoder on the
+automation box; replays are in `results_summary.json` rows for a later
+decode. A gated variant ("lead long only when the pulled target is
+killable / not a rusher") is a new hypothesis, not a retune of this one.
+
+**Next run:** if `ereq_6b7643b0` finished, fold it into
+`evals/iter4-directional/` (`xp summarize` again; n=40) — it cannot change
+the verdict (one episode moves the rate by ≤ 0.026). Iteration 5 starts from
+v4 behaviour (`LEAD_DIVISOR = 30`; keep the `hook_lead` trace if useful, or
+drop it — that is instrumentation, not behaviour). Candidate directions from
+this readout: (a) v4 is weakest **east** (0.550 here, 0.368 for v5) and vs
+a-aron (0.500) — check the east-seat geometry/hold in the replays;
+(b) don't hook full-HP rushers from range — a target-HP or opponent-type
+gate on long throws; (c) finish the v4-vs-v1 gate question
+(`STATE.pending_decisions`) before spending on more candidates on top of an
+un-promoted base.

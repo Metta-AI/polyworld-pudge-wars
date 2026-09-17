@@ -160,7 +160,7 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         enemy = unit(4, 1, 91, 40)
         self.assertEqual(self.policy.choose_action(observation(others=[enemy]))["hook_to"], [91, 40])
 
-    def test_long_hook_leads_for_the_flight_time(self):
+    def test_long_hook_lead_is_applied_and_traced(self):
         policy = BasePolicy(trace=True)
         enemy = unit(4, 1, 90, 40)
         obs = observation(others=[enemy])
@@ -170,7 +170,7 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         aim = policy.choose_action(obs)["hook_to"]
         self.assertAlmostEqual(aim[1], 44 + 4 * 54 / LEAD_DIVISOR)
         recorded = [e for e in policy.events if e["event"] == "hook_lead"]
-        self.assertEqual(recorded, [dict(event="hook_lead", tick=208, span=54.0, lead=18.0, v8=4.0)])
+        self.assertEqual(recorded, [dict(event="hook_lead", tick=208, span=54.0, lead=round(4 * 54 / LEAD_DIVISOR, 1), v8=4.0)])
         # The speed upgrade shortens the lead; a short brawl hook is not traced.
         obs["self"]["upgrades"] = [0, 0, 3, 0]
         obs["tick"] += 8
