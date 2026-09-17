@@ -93,6 +93,51 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         action = self.policy.choose_action(observation(me, hooks=[hook]))
         self.assertGreater(action["blink_to"][0], me["x"])
 
+    def test_outgunned_on_the_enemy_bank_blinks_toward_home(self):
+        for team, x, enemy_x, landing in ((0, 92, 96, [72.0, 40.0]), (1, 36, 32, [56.0, 40.0])):
+            me = unit(team=team, x=x)
+            me.update(hp=600, layer=1 - team, blink_ready=True)
+            enemy = unit(4, 1 - team, enemy_x)
+            obs = observation(me, [enemy])
+            self.assertNotIn("blink_to", BasePolicy().choose_action(obs))
+            obs["game_version"] = 36
+            action = BasePolicy().choose_action(obs)
+            self.assertEqual(action["blink_to"], landing)
+            self.assertNotIn("attack_target", action)
+            self.assertFalse(action.get("rot", False))
+        me = unit(x=73, y=60)
+        me.update(hp=600, layer=1, blink_ready=True)
+        obs = observation(me, [unit(4, 1, 80, 60)])
+        obs["game_version"] = 36
+        policy = BasePolicy(trace=True)
+        self.assertEqual(policy.choose_action(obs)["blink_to"], [56.0, 60.0])
+        self.assertEqual([e["event"] for e in policy.events], ["bank_escape"])
+        self.assertEqual(policy.events[0]["via"], "fountain")
+
+    def test_favourable_enemy_bank_brawl_is_kept(self):
+        for my_hp, enemy_hp in ((840, 840), (600, 100)):
+            me = unit(x=92)
+            me.update(hp=my_hp, layer=1, blink_ready=True)
+            enemy = unit(4, 1, 96)
+            enemy["hp"] = enemy_hp
+            obs = observation(me, [enemy])
+            obs["game_version"] = 36
+            action = BasePolicy().choose_action(obs)
+            self.assertNotIn("blink_to", action)
+            self.assertEqual(action["attack_target"], 4)
+        me = unit(x=92)
+        me.update(hp=600, layer=1, hooked=True)
+        enemy = unit(4, 1, 96)
+        policy = BasePolicy(trace=True)
+        policy.choose_action(observation(me, [enemy]))
+        me["hooked"] = False
+        obs = observation(me, [enemy])
+        obs["tick"] = 201
+        self.assertEqual(policy.choose_action(obs)["attack_target"], 4)
+        landed = [e for e in policy.events if e["event"] == "pull_landed"]
+        self.assertEqual(len(landed), 1)
+        self.assertEqual((landed[0]["blink_ready"], landed[0]["enemy_hp"], landed[0]["own_land"]), (False, 840, False))
+
     def test_spends_all_points_distance_then_speed(self):
         me = unit()
         me.update(points=3, upgrades=[0, 9, 0, 0])

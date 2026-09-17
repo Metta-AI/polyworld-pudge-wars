@@ -45,6 +45,7 @@ class BasePolicy:
     last_seen: int = -1
     dodge_side: int = 0
     rescue_until: int = 0
+    was_hooked: bool = False
     team_roster: set[int] = field(default_factory=set)
     events: deque = field(default_factory=lambda: deque(maxlen=256))
 
@@ -56,6 +57,7 @@ class BasePolicy:
         self.last_seen = -1
         self.dodge_side = 0
         self.rescue_until = 0
+        self.was_hooked = False
         self.team_roster.clear()
         self.events.clear()
 
@@ -149,6 +151,7 @@ class BasePolicy:
         if not me["alive"]:
             self.recovering = False
             self.rescue_until = 0
+            self.was_hooked = False
             return {}
         team = me["team"]
         if self.spread_fishing:
@@ -199,7 +202,25 @@ class BasePolicy:
                 self.dodge_side = -1
         caught = next((p for p in enemies if p["hooked"]), None)
         swimming = next((p for p in enemies if p["layer"] == 2), None)
-        brawl = target is not None and (me["hp"] + 40 >= target["hp"] or target["hp"] <= 120 or (not own_land and not river))
+        if self.was_hooked and not me["hooked"]:
+            self.record("pull_landed", layer=me["layer"], own_land=own_land, blink_ready=me["blink_ready"], hp=me["hp"],
+                        enemy_hp=target["hp"] if target else None,
+                        dist=round(distance(me, target), 1) if target else None)
+        self.was_hooked = me["hooked"]
+        # Pulled onto the enemy bank without the HP edge: leave before the
+        # point-blank re-hook instead of trading. Blink covers the mid-strip
+        # crossing; on the side lanes it reaches river water short of our lip.
+        escape_to, escape_via = None, "river"
+        if (me["blink_ready"] and target is not None and not own_land and not river and not me["hooked"]
+                and caught is None and obs.get("game_version", 0) >= 35 and distance(me, target) <= 12
+                and me["hp"] + 40 < target["hp"] and target["hp"] > 120):
+            escape_to = self.fountain_escape(obs, enemies, True)
+            if escape_to is not None:
+                escape_via = "fountain"
+            else:
+                escape_to = point(me["x"] + (-20 if team == 0 else 20), me["y"])
+        brawl = target is not None and (me["hp"] + 40 >= target["hp"] or target["hp"] <= 120
+                                        or (not own_land and not river and escape_to is None))
         rot = bool(target and any(distance(me, p) <= 8 for p in enemies)
                    and brawl and not river and not low and me["hp"] > 96)
         foreign_rot = any(p["rot"] and distance(me, p) <= 8 for p in units if p["id"] != me["id"])
@@ -308,6 +329,10 @@ class BasePolicy:
                 self.record("fountain_escape", destination=crossing)
             elif river:
                 action["blink_to"] = point(west if team == 0 else east, me["y"])
+            elif escape_to is not None:
+                action["blink_to"] = escape_to
+                self.record("bank_escape", hp=me["hp"], enemy_hp=target["hp"], dist=round(distance(me, target), 1),
+                            destination=escape_to, via=escape_via)
             elif threat is not None:
                 # Keep the requested hop inside Blink's actual 20-tile disk.
                 x, y = point(me["x"] + (-16 if me["layer"] == 0 else 16), me["y"] + 16 * self.dodge_side)
