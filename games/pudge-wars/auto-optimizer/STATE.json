@@ -43,41 +43,43 @@
     "note": "Current #1 (Aaron). Named-target comparison reference and top_n member; NOT our baseline."
   },
   "latest": {
-    "iteration": 5,
-    "policy_ref": "pudge-auto-optimizer:v6",
-    "policy_version_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
-    "status": "iteration 5 closed: v6 no_signal (0.575\u00b10.078 n=40 vs matched v4 0.475\u00b10.079 n=40, +0.90 SE; mechanism failed, stale-poke path exempt). v4 stays the behaviour base; v6 not built upon.",
-    "experiment": "experiments/2026-09-17-east-seat-hook-survival.md",
+    "iteration": 6,
+    "policy_ref": "pudge-auto-optimizer:v7",
+    "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
+    "status": "iteration 6 open: v7 (complete pull gate incl. stale poke) uploaded 2026-09-17T15:08Z; smoke + matched directional v7/v4 pending",
+    "experiment": "experiments/2026-09-17-stale-poke-pull-gate.md",
     "last_uploaded": {
-      "policy_ref": "pudge-auto-optimizer:v6",
-      "policy_version_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
-      "verdict": "no_signal (iteration 5; not adopted as base; lever refined for iteration 6)"
+      "policy_ref": "pudge-auto-optimizer:v7",
+      "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
+      "verdict": "open (iteration 6)"
     },
     "base_ref": "pudge-auto-optimizer:v4",
-    "source_commit": "3830bbe",
+    "source_commit": "b7653c1",
     "previous_candidate": {
       "policy_ref": "pudge-auto-optimizer:v6",
       "policy_version_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
       "verdict": "no_signal (iteration 5; base stays v4)"
     },
-    "next_iteration": {
-      "iteration": 6,
-      "base_ref": "pudge-auto-optimizer:v4",
-      "change": "complete long-hook pull gate: apply pull_wins(last_enemy.hp, span) to the stale (>3 s) blind poke too; keep the visible-target gate from v6",
-      "experiment": "to be written: experiments/2026-09-1x-stale-poke-pull-gate.md",
-      "built": false,
-      "uploaded": false,
-      "evidence": "evals/iter5-directional/pull_exchange.json + experiment verdict table: 50 of 81 unfavourable landings in v6 came from the exempt stale poke at the bank lip; visible-target unfavourable throws fell 16 -> 4",
-      "candidate_directions": [
-        "complete pull gate (above) \u2014 mechanism target no_edge < 40/40 games, deaths -1/game",
-        "if that fails to move no_edge, close the pull-gate lever and return to the seat question: mirror shows a 0.14 west prior for identical code; a team-keyed asymmetry (defensive Blink uses layer==0) is the remaining code suspect",
-        "close the v4-vs-v1 gate question (gate_n=100 matched) before stacking further"
-      ]
-    },
     "accepted_behaviour": {
       "policy_ref": "pudge-auto-optimizer:v4",
       "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
       "note": "latest behaviour the next candidate builds on: v1 + edge-band clamp (iteration 3, verdict rerun). v4 is NOT promoted over champion v1; see pending_decisions."
+    },
+    "current_iteration": {
+      "iteration": 6,
+      "base_ref": "pudge-auto-optimizer:v4",
+      "change": "complete long-hook pull gate: apply pull_wins(last_enemy.hp, span) to the stale (>3 s) blind poke too; keep the visible-target gate from v6",
+      "experiment": "experiments/2026-09-17-stale-poke-pull-gate.md",
+      "built": true,
+      "uploaded": true,
+      "evidence": "evals/iter5-directional/pull_exchange.json + experiment verdict table: 50 of 81 unfavourable landings in v6 came from the exempt stale poke at the bank lip; visible-target unfavourable throws fell 16 -> 4",
+      "candidate_directions": [
+        "complete pull gate (above) — mechanism target no_edge < 40/40 games, deaths -1/game",
+        "if that fails to move no_edge, close the pull-gate lever and return to the seat question: mirror shows a 0.14 west prior for identical code; a team-keyed asymmetry (defensive Blink uses layer==0) is the remaining code suspect",
+        "close the v4-vs-v1 gate question (gate_n=100 matched) before stacking further"
+      ],
+      "policy_ref": "pudge-auto-optimizer:v7",
+      "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468"
     }
   },
   "champion": {
@@ -120,7 +122,7 @@
     {
       "date": "2026-09-17",
       "topic": "collision-threat filter",
-      "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325\u00b10.074 vs v1 0.425\u00b10.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
+      "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325±0.074 vs v1 0.425±0.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
     },
     {
       "date": "2026-09-17",
@@ -149,7 +151,7 @@
     },
     {
       "date": "2026-09-17",
-      "finding": "Same v4 code scored 0.650\u00b10.076 (iter4 window) and 0.475\u00b10.079 (iter5 window) on the identical top-3 n=40 protocol: window-to-window drift \u22480.17 for identical code. Never compare across windows; always run the matched baseline arm."
+      "finding": "Same v4 code scored 0.650±0.076 (iter4 window) and 0.475±0.079 (iter5 window) on the identical top-3 n=40 protocol: window-to-window drift ≈0.17 for identical code. Never compare across windows; always run the matched baseline arm."
     }
   ],
   "automation": {
