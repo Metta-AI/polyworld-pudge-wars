@@ -104,7 +104,16 @@
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
-  "open_evals": {},
+  "open_evals": {
+    "iter5-smoke": {
+      "xreq": "xreq_68d87223-9856-4b37-abe4-5ad5a19d08f5",
+      "policy": "pudge-auto-optimizer:v6",
+      "episodes": 3,
+      "top_n": 3,
+      "summarize_policy_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
+      "launched": "2026-09-17T13:0xZ"
+    }
+  },
   "findings": [
     {
       "date": "2026-09-17",
@@ -140,6 +149,11 @@
       "date": "2026-09-17",
       "topic": "edge-band hold (v4)",
       "note": "v4 (v1 + fishing-hold y clamp [30,98]) directional n=40 top-3: 0.750+-0.068 vs v1 0.425+-0.078 matched / 0.400+-0.063 fresh n=60; deaths 18.3->10.7/game, opponent hook accuracy 0.187->0.132, own throws unchanged (383/game), own accuracy 0.181->0.147. Replay decode (bootstrap session): own edge-time share 0.314->0.023, long hooks landed on us at the edge 6.92->0.38/game. Strongest lever found so far; the remaining death budget (10.7/game) is now mid-lane exposure, not edge pinning."
+    },
+    {
+      "date": "2026-09-17",
+      "topic": "seat prior (hosted v4 mirror)",
+      "note": "iter5-diag-mirror-v4 (xreq_9033037e, v4 vs v4, n=40 clean, taint 0, all time_limit): identical code wins 23 west / 12 east / 5 draws = west share 0.638 +- 0.076 (1.8 SE above 0.5); west kills 11.18 vs east 8.90 (+2.28 +- 0.99/game). Local base.bas native mirror (200 seeds) gave west +0.09. So roughly 0.1-0.14 of the optimizer's ~0.2 east deficit is a native/host seat prior (engine or a team-keyed code asymmetry such as the defensive Blink using layer==0), the rest is opponent interaction. hosted.py xp summarize is NOT meaningful for a mirror (both slots carry the same version id; platform score 0.5 on 35 episodes); read results/*.json winner_team instead. Cost 5.20 USD."
     }
   ],
   "automation": {

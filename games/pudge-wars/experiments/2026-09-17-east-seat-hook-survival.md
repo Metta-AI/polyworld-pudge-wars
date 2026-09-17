@@ -59,9 +59,14 @@ deaths. Native constants used for the prediction: `BaseHookDamage 200`,
 (`examples/pudge_wars/content.nim`). `closed_levers.md`: collision-threat
 filter (v3), longer lead (v5) closed; the pull gate is the "killability
 gate" it lists as a distinct hypothesis. Seat diagnostic
-`iter5-diag-mirror-v4` (`xreq_9033037e`, v4 vs v4 n=40) was launched
-12:1xZ to size the native/host seat prior; it was still running when v6 was
-built, so it is harvested by the next run and read alongside this result.
+`iter5-diag-mirror-v4` (`xreq_9033037e`, v4 vs v4, n=40 clean, taint 0):
+identical code wins **23 west / 12 east / 5 draws** (west share 0.638 ± 0.076,
+west kills 11.18 vs east 8.90/game, +2.28 ± 0.99). So ~0.1–0.14 of the
+~0.2 east deficit is a native/host seat prior (a)/(b), the remainder (c);
+the hosted `xp summarize` score is meaningless for a mirror (both slots
+carry the same version id) — read `evals/iter5-diag-mirror-v4/results/`.
+The pull gate has no seat term; it targets the (c) part, which the pull
+tabulation shows is concentrated in the east seat.
 
 **Missing data.** Whether the bad pulls are thrown at a *visible* target
 or as blind pokes at the last seen position (replays do not carry our
