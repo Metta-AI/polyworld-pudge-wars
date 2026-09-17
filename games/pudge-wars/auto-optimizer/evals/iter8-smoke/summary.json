@@ -1,0 +1,88 @@
+{
+  "by_opponent": {
+    "a-aron-pudge-rusher:v1": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 1.0
+    },
+    "co-gas-pudge-blind-hook-richard:v7": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 1.0
+    },
+    "pudge-wars-rusher:v16": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 1.0
+    }
+  },
+  "by_team": {
+    "east": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 1.0
+    },
+    "west": {
+      "n": 2,
+      "se": 0.0,
+      "win_rate": 1.0
+    }
+  },
+  "clean": 3,
+  "clean_rows": [
+    {
+      "cost_usd": 0.161852,
+      "episode_id": "876de7aa-863e-4f77-af65-99e82dc58935",
+      "id": "ereq_234a809f-8e8c-4e16-acd3-dbe26c95f32b",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/912be412-e906-431c-abb9-55b35fa73c31.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.125431,
+      "episode_id": "67cafba3-f540-49b1-becc-7501b896cf67",
+      "id": "ereq_db810bfa-527b-4af6-847c-e53f22fd3fef",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/9edce791-feaf-4200-b718-18f231488e51.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.095658,
+      "episode_id": "1d446814-31af-487f-9adf-023292d9f871",
+      "id": "ereq_42027fe3-8ca8-47e6-908b-2eaf5bf03b35",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/ddda003d-c761-41a4-adf4-25a0a7cc7dce.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    }
+  ],
+  "hosted_cost_usd": 0.3829,
+  "overall": {
+    "n": 3,
+    "se": 0.0,
+    "win_rate": 1.0
+  },
+  "policy": "pudge-auto-optimizer:v11",
+  "taint_rate": 0.0,
+  "taint_reasons": [],
+  "tainted": 0,
+  "tainted_rows": [],
+  "xreq_id": null
+}

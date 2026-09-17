@@ -43,75 +43,54 @@
     "note": "Current #1 (Aaron). Named-target comparison reference and top_n member; NOT our baseline."
   },
   "latest": {
-    "iteration": 7,
-    "policy_ref": "pudge-auto-optimizer:v10",
-    "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
-    "status": "iteration 7 closed 2026-09-17T20:5xZ: weak_evidence (v10 0.725±0.071 vs matched v4 0.550±0.079, +1.65 pooled SE, all slices up, tripwires pass). v10 = behaviour base for iteration 8; not promoted (gate n=100 vs champion v1 needed). Not submitted.",
-    "experiment": "experiments/2026-09-17-post-pull-bank-escape.md",
+    "iteration": 8,
+    "policy_ref": "pudge-auto-optimizer:v11",
+    "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+    "status": "iteration 8 open: v11 uploaded (not submitted); smoke xreq_7de665f4 clean 3/3, 0 tracebacks, threat_seen present (first sight ~39 tiles); matched directional pair launched 21:53Z, harvest next run",
+    "experiment": "experiments/2026-09-17-early-walk-dodge.md",
     "last_uploaded": {
+      "policy_ref": "pudge-auto-optimizer:v11",
+      "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+      "verdict": "pending"
+    },
+    "base_ref": "pudge-auto-optimizer:v10",
+    "source_commit": "e2af332",
+    "image_digest": "sha256:04ca2609c05b64742eef3fbe20cc094ae1100948a591bcc2a0157cc7813a70b4",
+    "change": "early walking dodge: threat radius for the walking dodge 22 -> 40 tiles (DODGE_RADIUS); Blink hop, free gate and counter-throw stay at 22 (BLINK_THREAT_RADIUS); threat_seen trace event",
+    "previous_candidate": {
+      "iteration": 7,
       "policy_ref": "pudge-auto-optimizer:v10",
       "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
-      "verdict": "weak_evidence (iteration 7): +0.175 / +1.65 pooled SE vs matched v4; base for iteration 8"
-    },
-    "base_ref": "pudge-auto-optimizer:v4",
-    "source_commit": "92433f5",
-    "previous_candidate": {
-      "policy_ref": "pudge-auto-optimizer:v7",
-      "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
-      "verdict": "reject (iteration 6; pull-gate lever closed; base stays v4)"
+      "status": "iteration 7 closed 2026-09-17T20:5xZ: weak_evidence (v10 0.725±0.071 vs matched v4 0.550±0.079, +1.65 pooled SE, all slices up, tripwires pass). v10 = behaviour base for iteration 8; not promoted (gate n=100 vs champion v1 needed). Not submitted.",
+      "experiment": "experiments/2026-09-17-post-pull-bank-escape.md",
+      "base_ref": "pudge-auto-optimizer:v4",
+      "source_commit": "92433f5",
+      "image_digest": "sha256:33ecb0e78dbad188a1a6465831123ed8ebca38d3b9e4381842c69f87d17e3ef5",
+      "change": "post-pull bank escape: on the enemy bank without the brawl HP edge (hp+40 < enemy hp, enemy hp > 120), enemy within 12, Blink ready -> blink_to home (fountain_escape landing in the mid strip, else 20 tiles toward our bank = river water) instead of the forced brawl; pull_landed + bank_escape trace events; v9/v10 add the engine gates: no escape inside an enemy Rot disk, own Rot switched off first (Blink cooldown tracked from accepted hops), bank_escape_refused{reason} from the host echo with a 32-tick hold (brawl as v4) after a refused hop",
+      "eval_ids": {
+        "smoke_v8": "xreq_700c9ae9-41e9-4b21-9992-70b841795a57",
+        "smoke_v9": "xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5",
+        "smoke": "xreq_e844ef81-349d-4861-8458-9c374ff1e6b1",
+        "directional_v4": "xreq_9071f4e6-f8ba-4609-8456-660557380b40",
+        "directional": "xreq_66cb8e23-e95d-4d4a-a1a7-18e28b2a9761"
+      },
+      "verdict": "weak_evidence",
+      "base_for_next_iteration": "pudge-auto-optimizer:v10 (6cc36a18-5a4e-499d-8aca-75e21ca9bf07, source 92433f5)",
+      "rollback_ref": "pudge-auto-optimizer:v4 (774d5ee5-d4ad-49de-82cc-54457a53041e)"
     },
     "accepted_behaviour": {
-      "policy_ref": "pudge-auto-optimizer:v4",
-      "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
-      "note": "latest behaviour the next candidate builds on: v1 + edge-band clamp (iteration 3, verdict rerun). v4 is NOT promoted over champion v1; see pending_decisions."
+      "policy_ref": "pudge-auto-optimizer:v10",
+      "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+      "note": "latest behaviour the next candidate builds on: v4 + post-pull bank escape (iteration 7, weak_evidence). NOT promoted over champion v1; see pending_decisions."
     },
-    "closed_iteration": {
-      "iteration": 6,
-      "base_ref": "pudge-auto-optimizer:v4",
-      "change": "complete long-hook pull gate: apply pull_wins(last_enemy.hp, span) to the stale (>3 s) blind poke too; keep the visible-target gate from v6",
-      "experiment": "experiments/2026-09-17-stale-poke-pull-gate.md",
-      "built": true,
-      "uploaded": true,
-      "evidence": "evals/iter5-directional/pull_exchange.json + experiment verdict table: 50 of 81 unfavourable landings in v6 came from the exempt stale poke at the bank lip; visible-target unfavourable throws fell 16 -> 4",
-      "candidate_directions": [
-        "complete pull gate (above) — mechanism target no_edge < 40/40 games, deaths -1/game",
-        "if that fails to move no_edge, close the pull-gate lever and return to the seat question: mirror shows a 0.14 west prior for identical code; a team-keyed asymmetry (defensive Blink uses layer==0) is the remaining code suspect",
-        "close the v4-vs-v1 gate question (gate_n=100 matched) before stacking further"
-      ],
-      "policy_ref": "pudge-auto-optimizer:v7",
-      "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
-      "verdict": "reject",
-      "eval_ids": {
-        "smoke": "xreq_c0656607-1226-45cd-b5e3-5374f7a93261",
-        "directional": "xreq_c505529a-0dca-49c7-81cb-d50b16f35097",
-        "directional_v4": "xreq_f6c102e7-8fad-41be-95b6-1585a34ec5d1"
-      },
-      "note": "iteration 6 record; see experiments/2026-09-17-stale-poke-pull-gate.md"
-    },
-    "image_digest": "sha256:33ecb0e78dbad188a1a6465831123ed8ebca38d3b9e4381842c69f87d17e3ef5",
-    "change": "post-pull bank escape: on the enemy bank without the brawl HP edge (hp+40 < enemy hp, enemy hp > 120), enemy within 12, Blink ready -> blink_to home (fountain_escape landing in the mid strip, else 20 tiles toward our bank = river water) instead of the forced brawl; pull_landed + bank_escape trace events; v9/v10 add the engine gates: no escape inside an enemy Rot disk, own Rot switched off first (Blink cooldown tracked from accepted hops), bank_escape_refused{reason} from the host echo with a 32-tick hold (brawl as v4) after a refused hop",
     "eval_ids": {
-      "smoke_v8": "xreq_700c9ae9-41e9-4b21-9992-70b841795a57",
-      "smoke_v9": "xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5",
-      "smoke": "xreq_e844ef81-349d-4861-8458-9c374ff1e6b1",
-      "directional_v4": "xreq_9071f4e6-f8ba-4609-8456-660557380b40",
-      "directional": "xreq_66cb8e23-e95d-4d4a-a1a7-18e28b2a9761"
+      "smoke": "xreq_7de665f4-f016-4f77-a735-a40f26d07554",
+      "directional": "xreq_f5666240-596d-44d0-b469-f682d0143a8a",
+      "directional_v10": "xreq_d3f7c348-5818-4059-9b04-4185eb69c2e7"
     },
-    "superseded_in_iteration": [
-      {
-        "policy_ref": "pudge-auto-optimizer:v8",
-        "policy_version_id": "24128d4e-0b67-4ac3-bd37-b8117cdb0b61",
-        "reason": "smoke xreq_700c9ae9: 0 tracebacks but bank_escape re-fired on consecutive ticks (engine refuses Blink while rotAffected); no directional run, no win-rate claim"
-      },
-      {
-        "policy_ref": "pudge-auto-optimizer:v9",
-        "policy_version_id": "5acc2a73-0077-4e5d-a82a-e30241e76676",
-        "reason": "smoke xreq_fb4870cb: 0 tracebacks, 2 clean games, but refused hops still pinned one game with blink_ready=true (landing refusal); own-Rot switch-off could never fire on the host; no directional run, no win-rate claim"
-      }
-    ],
-    "verdict": "weak_evidence",
-    "base_for_next_iteration": "pudge-auto-optimizer:v10 (6cc36a18-5a4e-499d-8aca-75e21ca9bf07, source 92433f5)",
-    "rollback_ref": "pudge-auto-optimizer:v4 (774d5ee5-d4ad-49de-82cc-54457a53041e)"
+    "verdict": "pending",
+    "base_for_next_iteration": "pending (v11 if verdict >= weak_evidence, else stays v10)",
+    "rollback_ref": "pudge-auto-optimizer:v10 (6cc36a18-5a4e-499d-8aca-75e21ca9bf07)"
   },
   "champion": {
     "policy_ref": "pudge-auto-optimizer:v1",
@@ -138,7 +117,25 @@
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
-  "open_evals": {},
+  "open_evals": {
+    "iter8-directional": {
+      "xreq_id": "xreq_f5666240-596d-44d0-b469-f682d0143a8a",
+      "policy_ref": "pudge-auto-optimizer:v11",
+      "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+      "n": 40,
+      "protocol": "league target, candidate + top_n=3",
+      "created": "2026-09-17T21:53Z",
+      "harvest": "tools/hosted.py xp poll <id> --label iter8-directional; xp summarize --label iter8-directional --policy pudge-auto-optimizer:v11; logs per episode (--policy <version id> --agent <seat>)"
+    },
+    "iter8-baseline-v10": {
+      "xreq_id": "xreq_d3f7c348-5818-4059-9b04-4185eb69c2e7",
+      "policy_ref": "pudge-auto-optimizer:v10",
+      "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+      "n": 40,
+      "protocol": "league target, candidate + top_n=3 (matched window)",
+      "created": "2026-09-17T21:53Z"
+    }
+  },
   "findings": [
     {
       "date": "2026-09-17",
