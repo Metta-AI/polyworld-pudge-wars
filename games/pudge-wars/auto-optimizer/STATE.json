@@ -44,17 +44,17 @@
   },
   "latest": {
     "iteration": 7,
-    "policy_ref": "pudge-auto-optimizer:v9",
-    "policy_version_id": "5acc2a73-0077-4e5d-a82a-e30241e76676",
-    "status": "iteration 7 open: v9 uploaded (inert) 2026-09-17T18:42:50Z (v8 superseded after smoke: Blink refused inside Rot disks); v9 smoke + matched directional pending",
+    "policy_ref": "pudge-auto-optimizer:v10",
+    "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+    "status": "iteration 7 open: v10 uploaded (inert) 2026-09-17T19:15:11Z (v8, v9 superseded after their smokes); v10 smoke + matched directional pending",
     "experiment": "experiments/2026-09-17-post-pull-bank-escape.md",
     "last_uploaded": {
-      "policy_ref": "pudge-auto-optimizer:v9",
-      "policy_version_id": "5acc2a73-0077-4e5d-a82a-e30241e76676",
+      "policy_ref": "pudge-auto-optimizer:v10",
+      "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
       "verdict": "pending (iteration 7)"
     },
     "base_ref": "pudge-auto-optimizer:v4",
-    "source_commit": "6841ee4",
+    "source_commit": "92433f5",
     "previous_candidate": {
       "policy_ref": "pudge-auto-optimizer:v7",
       "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
@@ -88,17 +88,24 @@
       },
       "note": "iteration 6 record; see experiments/2026-09-17-stale-poke-pull-gate.md"
     },
-    "image_digest": "sha256:9bd3ede8473360ee657e0d26a936161addfb3225f979efa5e2aaa9718180210c",
-    "change": "post-pull bank escape: on the enemy bank without the brawl HP edge (hp+40 < enemy hp, enemy hp > 120), enemy within 12, Blink ready -> blink_to home (fountain_escape landing in the mid strip, else 20 tiles toward our bank = river water) instead of the forced brawl; pull_landed + bank_escape trace events; v9 adds the engine Rot-lock gate (no escape while an enemy Rot disk covers us; own Rot switched off before the hop), pull_landed.rot_locked",
+    "image_digest": "sha256:33ecb0e78dbad188a1a6465831123ed8ebca38d3b9e4381842c69f87d17e3ef5",
+    "change": "post-pull bank escape: on the enemy bank without the brawl HP edge (hp+40 < enemy hp, enemy hp > 120), enemy within 12, Blink ready -> blink_to home (fountain_escape landing in the mid strip, else 20 tiles toward our bank = river water) instead of the forced brawl; pull_landed + bank_escape trace events; v9/v10 add the engine gates: no escape inside an enemy Rot disk, own Rot switched off first (Blink cooldown tracked from accepted hops), bank_escape_refused{reason} from the host echo with a 32-tick hold (brawl as v4) after a refused hop",
     "eval_ids": {
       "smoke_v8": "xreq_700c9ae9-41e9-4b21-9992-70b841795a57",
-      "smoke": "xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5"
+      "smoke_v9": "xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5"
     },
-    "superseded_in_iteration": {
-      "policy_ref": "pudge-auto-optimizer:v8",
-      "policy_version_id": "24128d4e-0b67-4ac3-bd37-b8117cdb0b61",
-      "reason": "smoke xreq_700c9ae9: 0 tracebacks but bank_escape re-fired on consecutive ticks (engine refuses Blink while rotAffected); no directional run, no win-rate claim"
-    }
+    "superseded_in_iteration": [
+      {
+        "policy_ref": "pudge-auto-optimizer:v8",
+        "policy_version_id": "24128d4e-0b67-4ac3-bd37-b8117cdb0b61",
+        "reason": "smoke xreq_700c9ae9: 0 tracebacks but bank_escape re-fired on consecutive ticks (engine refuses Blink while rotAffected); no directional run, no win-rate claim"
+      },
+      {
+        "policy_ref": "pudge-auto-optimizer:v9",
+        "policy_version_id": "5acc2a73-0077-4e5d-a82a-e30241e76676",
+        "reason": "smoke xreq_fb4870cb: 0 tracebacks, 2 clean games, but refused hops still pinned one game with blink_ready=true (landing refusal); own-Rot switch-off could never fire on the host; no directional run, no win-rate claim"
+      }
+    ]
   },
   "champion": {
     "policy_ref": "pudge-auto-optimizer:v1",
