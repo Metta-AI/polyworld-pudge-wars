@@ -1,0 +1,113 @@
+{
+  "episodes": 40,
+  "bands": {
+    "edge": 24,
+    "mid": 52
+  },
+  "seats": {
+    "me": {
+      "own_bank_samples": 174768,
+      "bands": {
+        "edge": {
+          "time_share": 0.038,
+          "long_hooks_aimed_at": 145,
+          "landed": 16,
+          "landed_rate": 0.11,
+          "landed_per_game": 0.4
+        },
+        "lane": {
+          "time_share": 0.724,
+          "long_hooks_aimed_at": 4399,
+          "landed": 302,
+          "landed_rate": 0.069,
+          "landed_per_game": 7.55
+        },
+        "mid": {
+          "time_share": 0.238,
+          "long_hooks_aimed_at": 1467,
+          "landed": 137,
+          "landed_rate": 0.093,
+          "landed_per_game": 3.42
+        }
+      }
+    },
+    "opp:a-aron-pudge-rusher:v1": {
+      "own_bank_samples": 58100,
+      "bands": {
+        "edge": {
+          "time_share": 0.289,
+          "long_hooks_aimed_at": 781,
+          "landed": 108,
+          "landed_rate": 0.138,
+          "landed_per_game": 2.7
+        },
+        "lane": {
+          "time_share": 0.483,
+          "long_hooks_aimed_at": 1235,
+          "landed": 107,
+          "landed_rate": 0.087,
+          "landed_per_game": 2.67
+        },
+        "mid": {
+          "time_share": 0.227,
+          "long_hooks_aimed_at": 563,
+          "landed": 33,
+          "landed_rate": 0.059,
+          "landed_per_game": 0.82
+        }
+      }
+    },
+    "opp:co-gas-pudge-blind-hook-richard:v7": {
+      "own_bank_samples": 49434,
+      "bands": {
+        "edge": {
+          "time_share": 0.261,
+          "long_hooks_aimed_at": 548,
+          "landed": 85,
+          "landed_rate": 0.155,
+          "landed_per_game": 2.12
+        },
+        "lane": {
+          "time_share": 0.486,
+          "long_hooks_aimed_at": 984,
+          "landed": 94,
+          "landed_rate": 0.096,
+          "landed_per_game": 2.35
+        },
+        "mid": {
+          "time_share": 0.253,
+          "long_hooks_aimed_at": 528,
+          "landed": 38,
+          "landed_rate": 0.072,
+          "landed_per_game": 0.95
+        }
+      }
+    },
+    "opp:pudge-wars-rusher:v16": {
+      "own_bank_samples": 63011,
+      "bands": {
+        "edge": {
+          "time_share": 0.276,
+          "long_hooks_aimed_at": 777,
+          "landed": 41,
+          "landed_rate": 0.053,
+          "landed_per_game": 1.02
+        },
+        "lane": {
+          "time_share": 0.426,
+          "long_hooks_aimed_at": 761,
+          "landed": 58,
+          "landed_rate": 0.076,
+          "landed_per_game": 1.45
+        },
+        "mid": {
+          "time_share": 0.297,
+          "long_hooks_aimed_at": 514,
+          "landed": 40,
+          "landed_rate": 0.078,
+          "landed_per_game": 1.0
+        }
+      }
+    }
+  }
+}

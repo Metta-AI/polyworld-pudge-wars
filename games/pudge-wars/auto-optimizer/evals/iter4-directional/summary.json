@@ -11,16 +11,16 @@
       "win_rate": 0.7
     },
     "pudge-wars-rusher:v16": {
-      "n": 16,
-      "se": 0.11587810136086973,
-      "win_rate": 0.3125
+      "n": 17,
+      "se": 0.11051016901502637,
+      "win_rate": 0.29411764705882354
     }
   },
   "by_team": {
     "east": {
-      "n": 19,
-      "se": 0.11066473327112564,
-      "win_rate": 0.3684210526315789
+      "n": 20,
+      "se": 0.1066536450385077,
+      "win_rate": 0.35
     },
     "west": {
       "n": 20,
@@ -28,7 +28,7 @@
       "win_rate": 0.8
     }
   },
-  "clean": 39,
+  "clean": 40,
   "clean_rows": [
     {
       "cost_usd": 0.099821,
@@ -42,6 +42,20 @@
       "seats": 2,
       "slot": 0,
       "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.100362,
+      "episode_id": "8f850c6a-32e5-4148-89b8-f3f1f8cea84f",
+      "id": "ereq_6b7643b0-3002-4a50-aeb1-3ebf35c58e1c",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/9e28ef9b-f570-43b3-95e5-985b1a49aaf8.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
       "variant": "League 3v3"
     },
     {
@@ -577,26 +591,16 @@
       "variant": "League 3v3"
     }
   ],
-  "hosted_cost_usd": 5.4558,
+  "hosted_cost_usd": 5.5562,
   "overall": {
-    "n": 39,
-    "se": 0.07876386131162097,
-    "win_rate": 0.5897435897435898
+    "n": 40,
+    "se": 0.07816249100431741,
+    "win_rate": 0.575
   },
-  "policy": "pudge-auto-optimizer:v5",
-  "taint_rate": 0.025,
-  "taint_reasons": [
-    "not completed"
-  ],
-  "tainted": 1,
-  "tainted_rows": [
-    {
-      "error": null,
-      "error_type": null,
-      "id": "ereq_6b7643b0-3002-4a50-aeb1-3ebf35c58e1c",
-      "reason": "not completed",
-      "status": "running"
-    }
-  ],
-  "xreq_id": "xreq_e2df9823-bc88-4eae-a93d-1942d8a9fedf"
+  "policy": "0c975025-8d8c-4059-bd1e-bbc3e3654fdd",
+  "taint_rate": 0.0,
+  "taint_reasons": [],
+  "tainted": 0,
+  "tainted_rows": [],
+  "xreq_id": null
 }

@@ -222,6 +222,11 @@ killable / not a rusher") is a new hypothesis, not a retune of this one.
 **Next run:** if `ereq_6b7643b0` finished, fold it into
 `evals/iter4-directional/` (`xp summarize` again; n=40) — it cannot change
 the verdict (one episode moves the rate by ≤ 0.026). Iteration 5 starts from
+
+**Straggler folded (12Z run, devin-c6eafeae):** `ereq_6b7643b0` completed
+as a loss; final v5 readout n=40 clean, 0.575 ± 0.078 vs v4 0.650 ± 0.076
+(−0.7 pooled SE), east 0.350 (n=20) vs west 0.800 (n=20), vs v16 0.294
+(n=17). Verdict unchanged: reject.
 v4 behaviour (`LEAD_DIVISOR = 30`; keep the `hook_lead` trace if useful, or
 drop it — that is instrumentation, not behaviour). Candidate directions from
 this readout: (a) v4 is weakest **east** (0.550 here, 0.368 for v5) and vs

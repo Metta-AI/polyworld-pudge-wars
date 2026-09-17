@@ -46,7 +46,7 @@
     "iteration": 4,
     "policy_ref": "pudge-auto-optimizer:v5",
     "policy_version_id": "0c975025-8d8c-4059-bd1e-bbc3e3654fdd",
-    "status": "v5 (v4 + LEAD_DIVISOR 30->12, +hook_lead trace) REJECTED 10:10Z (devin-00a960a6) on the matched directional: v5 0.590+-0.080 (n=39 clean, 1 episode ereq_6b7643b0 still running at harvest) vs v4 0.650+-0.076 (n=40 clean), -0.5 pooled SE = no aggregate signal; tripwires fired: deaths/game +12.8% and vs pudge-wars-rusher:v16 0.312 vs 0.714 (-2.3 SE, deaths 14.6 vs 7.7); our hook accuracy flat (0.156 vs 0.150). 0 tracebacks in 39/39 v5 logs. Source rolled back to v4 behaviour (LEAD_DIVISOR=30; hook_lead trace kept as instrumentation). Iteration 5 builds on v4 (774d5ee5). See experiments/2026-09-17-hook-lead-divisor.md Verdict and closed_levers.md.",
+    "status": "v5 (v4 + LEAD_DIVISOR 30->12, +hook_lead trace) REJECTED 10:10Z (devin-00a960a6) on the matched directional: v5 0.575+-0.078 (n=40 clean; straggler ereq_6b7643b0 folded in at 12Z as a loss) vs v4 0.650+-0.076 (n=40 clean), -0.7 pooled SE = no aggregate signal; tripwires fired: deaths/game +12.8% and vs pudge-wars-rusher:v16 0.312 vs 0.714 (-2.3 SE, deaths 14.6 vs 7.7); our hook accuracy flat (0.156 vs 0.150). 0 tracebacks in 39/39 v5 logs. Source rolled back to v4 behaviour (LEAD_DIVISOR=30; hook_lead trace kept as instrumentation). Iteration 5 builds on v4 (774d5ee5). See experiments/2026-09-17-hook-lead-divisor.md Verdict and closed_levers.md.",
     "experiment": "experiments/2026-09-17-hook-lead-divisor.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v5",
@@ -104,10 +104,7 @@
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
-  "open_evals": {
-    "iter4-directional (straggler)": "xreq_e2df9823-bc88-4eae-a93d-1942d8a9fedf",
-    "_note": "39/40 done; ereq_6b7643b0 still running at 10:10Z. Next run: xp poll, then re-run xp summarize/results for label iter4-directional to fold it in (cannot change the reject verdict). iter4-directional-v4 xreq_09380b97 is complete and harvested."
-  },
+  "open_evals": {},
   "findings": [
     {
       "date": "2026-09-17",
@@ -122,7 +119,7 @@
     {
       "date": "2026-09-17",
       "topic": "collision-threat filter",
-      "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325±0.074 vs v1 0.425±0.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
+      "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325\u00b10.074 vs v1 0.425\u00b10.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
     },
     {
       "date": "2026-09-17",
