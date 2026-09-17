@@ -43,16 +43,19 @@
     "note": "Current #1 (Aaron). Named-target comparison reference and top_n member; NOT our baseline."
   },
   "latest": {
-    "iteration": 2,
-    "policy_ref": "pudge-auto-optimizer:v3",
-    "policy_version_id": "6523437c-6102-40eb-b8e1-5d6aad37c50e",
-    "status": "uploaded; smoke xreq_4f8155c2 clean 3/3 (0 tracebacks, 'pending' class present, no owner fallback); directional xreq_e43bf971 (n=40, top-3, same protocol as baseline xreq_3e9e30f4) running",
-    "experiment": "experiments/2026-09-17-collision-threat.md"
+    "iteration": 3,
+    "policy_ref": "pudge-auto-optimizer:v4",
+    "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
+    "base_ref": "pudge-auto-optimizer:v1",
+    "status": "uploaded 2026-09-17T03:39:48Z (built in the bootstrap session, which has Docker Hub access); smoke iter3-smoke xreq_538ede79 (n=3, top-3) running; next: inspect logs (0 tracebacks, edge_clamp events present) then directional n=40 vs v1 xreq_3e9e30f4 on the same protocol",
+    "experiment": "experiments/2026-09-17-edge-band-hold.md",
+    "note": "v3 (iteration 2) was REJECTED: 0.325\u00b10.074 vs v1 0.425\u00b10.078 at n=40 each, -38pp vs a-aron-pudge-rusher:v1. v4 therefore builds on v1 behavior: PUDGE_THREAT_FILTER defaults to 'distance' (original dodge trigger); the v3 classifier stays in source as the opt-in 'collision' arm and still emits threat_class traces under both arms."
   },
   "champion": {
     "policy_ref": "pudge-auto-optimizer:v1",
     "policy_version_id": "a7afee99-e56f-40eb-ae64-6bc08f83ae71",
-    "promoted_in_iteration": 0
+    "promoted_in_iteration": 0,
+    "note": "v3 challenged in iteration 2 and was rejected (see ledger iteration 2 / experiments/2026-09-17-collision-threat.md); v1 remains champion. Every candidate builds on the champion's behavior, never on a rejected candidate."
   },
   "eval_protocol": {
     "primary": "Experience request on the league target: roster = [our policy, top_n=3], slots auto (-1); the platform seats the league fillers like the ladder does. Report clean win rate with binomial SE, split by team side (west/east) and by opponent, taint-filtered. Baseline and candidate are run on this identical protocol at equal n in the same window; the delta between them is the verdict.",
@@ -74,7 +77,7 @@
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
   "open_evals": {
-    "iter2-directional": "xreq_e43bf971-56f7-4b68-a4db-c42655b19430"
+    "iter3-smoke": "xreq_538ede79-7539-4b13-ae9c-78aa6e38c4bb"
   },
   "findings": [
     {
@@ -86,6 +89,16 @@
       "date": "2026-09-17",
       "topic": "hook heading",
       "note": "Owner position must not be used to infer a flying hook's heading: the owner may Blink after the throw while the head keeps its heading (examples/pudge_wars/human_play.md). Only head displacement between ticks is trustworthy; v2 used the owner fallback in ~1% of classifications and was superseded by v3."
+    },
+    {
+      "date": "2026-09-17",
+      "topic": "threat filter",
+      "note": "Collision-classified dodging (v3: blink only for hit/blind hooks) did not beat the distance-only trigger at n=40 (0.325\u00b10.074 vs 0.425\u00b10.078; -38pp vs a-aron-pudge-rusher:v1) and low-HP recoveries rose 17.9->19.7/game. Lever closed under the 8-tile margin; a retry needs a measured collision radius and hooked/death instrumentation joined to threat_class first (see closed_levers.md)."
+    },
+    {
+      "date": "2026-09-17",
+      "topic": "concurrency",
+      "note": "The 03:00Z automation run (session devin-88e8709d) started iteration 3 on top of v3 while the bootstrap session was still finishing v3's directional verdict. Rule: an iteration's base_ref is STATE.champion at the time of upload; if a candidate's verdict is still open, wait for it or build on the champion. Unbuilt automation change was rebuilt here as v4 on v1."
     }
   ],
   "automation": {
@@ -104,11 +117,12 @@
       "iteration": 3,
       "session": "devin-88e8709da3984dc1b96dd8cad5837b40",
       "kind": "network",
-      "status": "open",
+      "status": "worked-around",
       "summary": "docker pull python:3.12-slim fails: Docker Hub redirects layer blobs to production.cloudfront.docker.com, which is not in the automation network allowlist (only production.cloudflare.docker.com is). v4 image could not be built; iteration-3 code change + unit test are committed unbuilt.",
       "network_access_request": "network-access-request-c5e64ee0b2e84e1498897fe141520f8e",
       "fix": "add production.cloudfront.docker.com to the automation network policy (https://app.devin.ai/org/metta-ai/automations/auto-600aa4eb690e459190c04b10d5c0c9fb); the blueprint's `docker pull python:3.12-slim` does not survive into the snapshot (docker images was empty at session start)",
-      "next_run": "retry `docker pull --platform linux/amd64 python:3.12-slim`; if it succeeds, build iter3 -> upload v4 -> smoke -> directional per experiments/2026-09-17-edge-band-hold.md"
+      "next_run": "retry `docker pull --platform linux/amd64 python:3.12-slim`; if it succeeds, build iter3 -> upload v4 -> smoke -> directional per experiments/2026-09-17-edge-band-hold.md",
+      "resolution": "v4 built+uploaded from the bootstrap session (devin-53dc4bed, Docker Hub reachable) at 03:39Z. The allowlist fix is still needed for future automation runs to build images."
     }
   ]
 }

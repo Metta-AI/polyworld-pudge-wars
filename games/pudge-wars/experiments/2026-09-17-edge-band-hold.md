@@ -1,10 +1,14 @@
 # Iteration 3 — keep the fishing hold out of the map-edge band
 
 Campaign: `pudge-auto-optimizer` (records in [`../auto-optimizer/`](../auto-optimizer/)).
-Base arm: `pudge-auto-optimizer:v3` (`6523437c-6102-40eb-b8e1-5d6aad37c50e`).
-Candidate arm: `pudge-auto-optimizer:v4`. Comparison arms available in the
-same protocol: v1 baseline `xreq_3e9e30f4` (n=40, harvested), v3
-`xreq_e43bf971` (n=40, launched 2026-09-17 ~03:15Z).
+Base arm: `pudge-auto-optimizer:v1` (`a7afee99-e56f-40eb-ae64-6bc08f83ae71`, the
+champion). *Correction 03:40Z:* this record was opened against v3 while v3's
+directional was still running; v3 was then **rejected** (see
+`2026-09-17-collision-threat.md`), so v4 was built on v1 behavior — the v3
+classifier is present in source but off (`PUDGE_THREAT_FILTER=distance`).
+Candidate arm: `pudge-auto-optimizer:v4` (`774d5ee5-d4ad-49de-82cc-54457a53041e`).
+Comparison arm in the same protocol: v1 `xreq_3e9e30f4` (n=40, harvested
+02:40–03:14Z); v3 `xreq_e43bf971` (n=40) is a second reference only.
 Status: **open** — hypothesis pre-registered before the change was written.
 
 ## Hypothesis record
@@ -58,7 +62,7 @@ affected. Aim, dodge, blink, threat, shop, rune and rescue logic are untouched.
 **Expected metric movement.** Mechanism (replays, candidate directional
 n=40): own-bank edge share 0.31 → ≤ 0.10; long hooks landing on us per
 game 16.7 → ≤ 14.5 (edge catches move to lane rate); deaths per game 18.3 →
-≤ 16.5. Outcome: clean win rate +5 to +10 pp over the same-window v3 arm;
+≤ 16.5. Outcome: clean win rate +5 to +10 pp over the v1 arm (`xreq_3e9e30f4`);
 at n=40 (SE ≈ 0.08) this is directional only, the mechanism metrics are the
 falsifiable part. Tripwires: our own hook accuracy (0.181) and throws per
 game (384) must not drop by more than 10% (a hold farther from an edge-hugging
@@ -68,8 +72,8 @@ y is clamped too).
 **Eval plan.** Smoke n=3 (0 tracebacks, `edge_clamp` events present with
 non-trivial raw y) → directional n=40 on the primary protocol (`STATE.json`
 `eval_protocol`, roster [candidate, top_n=3], auto slots), same window as
-the v3 directional `xreq_e43bf971` → gate n≈100 only if the directional
-clears 2 pooled SE over v3.
+the v1 directional `xreq_3e9e30f4` (re-run an equal-n v1 arm if the field
+has changed) → gate n≈100 only if the directional clears 2 pooled SE over v1.
 
 **Overfit risk.** The band is measured on our own v1 replays against this
 week's top-3 field. The geometric argument (one dodge direction, unled
@@ -78,18 +82,25 @@ a future edge-camping opponent could sit out of our clamped reach at y≈17;
 our hooks reach 60+ tiles so a 13-tile y offset costs little range. Rune
 spawns near the edges become slightly longer throws.
 
-**Rollback condition.** Candidate clean win rate ≤ v3 − 1 pooled SE in the
+**Rollback condition.** Candidate clean win rate ≤ v1 − 1 pooled SE in the
 same window, or edge share not reduced below 0.15 (change did not bind), or
 our hook accuracy / throws per game down > 10%, or any traceback. Rollback
-ref: `pudge-auto-optimizer:v3`.
+ref: `pudge-auto-optimizer:v1`.
 
 ## Results
 
-_pending_ — code landed in iteration 3 (`BasePolicy.choose_action` clamps the
-fishing hold y to `[HOLD_Y_MIN, HOLD_Y_MAX] = [30, 98]`, `edge_clamp` trace
-event every 32 ticks while the clamp binds; unit test
-`test_solo_hold_stays_out_of_the_edge_band`). The v4 image could **not** be
-built in the 2026-09-17T03Z run: `docker pull python:3.12-slim` is redirected
-to `production.cloudfront.docker.com`, which the automation network policy
-blocks (see `STATE.json` → `blockers`). Not uploaded, not evaluated. Next run:
-build `pudge-auto-optimizer:iter3`, upload v4, smoke, then the directional.
+Code landed in iteration 3 (`BasePolicy.choose_action` clamps the fishing
+hold y to `[HOLD_Y_MIN, HOLD_Y_MAX] = [30, 98]`, `edge_clamp` trace event every
+32 ticks while the clamp binds; unit test
+`test_solo_hold_stays_out_of_the_edge_band`). The automation run of
+2026-09-17T03Z could not build the image (`docker pull python:3.12-slim` is
+redirected to `production.cloudfront.docker.com`, blocked by the automation
+network policy — `STATE.json` → `blockers`). The bootstrap session built and
+uploaded it at 03:39Z as **v4** (`774d5ee5…`, image `sha256:40e361d0…`,
+source `2f4318c`, base v1).
+
+**Smoke** `xreq_538ede79` (n=3, top-3): _running_ — check 0 tracebacks and
+`edge_clamp` events with non-trivial raw y before the directional.
+
+**Directional**: _pending_ (n=40, same protocol as v1 `xreq_3e9e30f4`;
+mechanism metrics via `tools/edge_exposure.py` on the v4 replays).

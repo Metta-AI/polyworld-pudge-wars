@@ -3,7 +3,8 @@
 Campaign: `pudge-auto-optimizer` (records in [`../auto-optimizer/`](../auto-optimizer/)).
 Baseline arm: `pudge-auto-optimizer:v1` (`a7afee99-e56f-40eb-ae64-6bc08f83ae71`,
 repo-default Python policy @ `d1f6d7c`). Candidate arm: `pudge-auto-optimizer:v2`.
-Status: **open** — hypothesis pre-registered before the change was written.
+Status: **closed — rejected** (2026-09-17T03:35Z). v3 did not beat v1 at n=40 on
+the matched protocol and regressed against the field's #1 clone; champion stays v1.
 
 ## Hypothesis record
 
@@ -95,5 +96,36 @@ for one tick (hook speed ≈0.6 tile/tick, so waiting one tick at >10 tiles
 costs nothing). Unit tests cover the post-blink owner geometry. v2 gets no
 directional eval; v3 inherits the eval plan against baseline `xreq_3e9e30f4`.
 
-**Directional**: _pending_ (v1 `xreq_3e9e30f4` n=40 running; v3 smoke
-`xreq_4f8155c2`, then v3 directional n=40 same protocol).
+**Directional** (`xreq_e43bf971` v3 vs `xreq_3e9e30f4` v1; top-3 field, 1v1
+seating, n=40 each, both harvested 2026-09-17T03Z, 0 tainted, 0 tracebacks
+in all 80 policy logs, all 80 episodes with a numeric score):
+
+| arm | clean n | win rate ± SE | west | east | vs a-aron-pudge-rusher:v1 | vs co-gas-…-richard:v7 | vs pudge-wars-rusher:v16 |
+|---|---|---|---|---|---|---|---|
+| v1 (champion) | 40 | **0.425 ± 0.078** | 10/20 | 7/20 | 8/13 (0.62) | 7/17 (0.41) | 2/10 (0.20) |
+| v3 (candidate) | 40 | **0.325 ± 0.074** | 8/20 | 5/20 | 3/13 (0.23) | 6/16 (0.38) | 4/11 (0.36) |
+
+Delta −10 pp, 0.93 pooled SE: **no detectable overall change at n=40**, and
+the pre-registered +8 pp did not appear. The named-opponent split fails the
+rule: vs `a-aron-pudge-rusher:v1` 0.23 vs 0.62 (−38 pp, ≈2.2 pooled SE) — a
+regression beyond 1 SE on a top-3 opponent. The v16 gain (+16 pp on n≈10) is
+inside its own noise.
+
+Mechanism check (policy traces, `behavior.json` in each eval dir): v3
+classified 264 hooks/episode (hit 79, wide 101, away 73, blind 2, pending 10;
+96% from a tracked head), so the filter *did* engage and skipped ~65% of
+in-range hooks. Yet v3 still fired 48 ± 8 defensive Blinks per episode, and
+low-HP recoveries went **up** 17.9 → 19.7 per game (+1.8, ≈1.6 SE) — damage
+taken did not fall. The likely reading: with an 8-tile margin the "wide"
+class includes hooks that still land (the collision radius is not measured;
+enemies lead our movement), so the filter removed dodges that were saving us
+while keeping Blink busy on the rest.
+
+**Verdict: reject.** Rollback condition met (candidate ≤ baseline − 1 pooled
+SE on a top-3 opponent; no mechanism-side improvement). Champion stays
+`pudge-auto-optimizer:v1`. The classifier code is retained in source behind
+`PUDGE_THREAT_FILTER=collision` (default `distance` = v1 behavior) because its
+`threat_class` trace is useful diagnostic data for both arms; it is not part
+of any candidate's behavior. Lever entry in `../closed_levers.md`. Caveat:
+1v1 seating under the `League 3v3` label — transfer to 3v3 ladder rounds is
+unverified in either direction.

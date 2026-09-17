@@ -29,3 +29,9 @@ These seeds are now used evidence. Python results remain directional.
 
 The [support/spacing campaign](experiments/2026-09-09-support-spacing.md)
 and its 240 hosted episodes are likewise used evidence after v13's promotion.
+
+## pudge-auto-optimizer campaign (Python policy, hosted 1v1 XP protocol)
+
+| Lever | Why it is closed |
+|---|---|
+| Collision-classified dodge trigger (Blink only for hooks whose tracked heading passes within 8 tiles; v2/v3, [experiment](experiments/2026-09-17-collision-threat.md)) | v3 vs v1, n=40 each, same window, 0 taint: 0.325±0.074 vs 0.425±0.078 (−10 pp, 0.93 SE) with a −38 pp (≈2.2 SE) regression vs `a-aron-pudge-rusher:v1`; low-HP recoveries rose 17.9→19.7/game although the filter skipped ~65% of in-range hooks. Do not retry with a guessed margin. Reopen only after measuring the true catch radius from replays (hooked events joined to `threat_class`) so "wide" is defined by data, and only with hooked/death counts instrumented in both arms. Code stays available as `PUDGE_THREAT_FILTER=collision`. |
