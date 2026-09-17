@@ -27,30 +27,30 @@
       "win_rate": 0.5
     },
     "pudge-wars-rusher:v16": {
-      "deaths": 12.11111111111111,
+      "deaths": 12.473684210526315,
       "end_tick": 38400.0,
-      "kills": 11.222222222222221,
-      "margin": -0.8888888888888888,
-      "my_acc": 0.12724658519051044,
-      "my_thrown": 386.3888888888889,
-      "n": 18,
-      "opp_acc": 0.16452145214521452,
-      "opp_thrown": 336.6666666666667,
+      "kills": 11.368421052631579,
+      "margin": -1.105263157894737,
+      "my_acc": 0.12949836423118866,
+      "my_thrown": 386.10526315789474,
+      "n": 19,
+      "opp_acc": 0.1690843862111995,
+      "opp_thrown": 337.42105263157896,
       "time_limit": 1.0,
-      "win_rate": 0.4444444444444444
+      "win_rate": 0.42105263157894735
     }
   },
   "by_outcome": {
     "loss": {
-      "deaths": 18.2,
+      "deaths": 18.238095238095237,
       "end_tick": 38400.0,
-      "kills": 12.8,
-      "margin": -5.4,
-      "my_acc": 0.16860389186365418,
-      "my_thrown": 382.85,
-      "n": 20,
-      "opp_acc": 0.2021381347587565,
-      "opp_thrown": 355.45,
+      "kills": 12.857142857142858,
+      "margin": -5.380952380952381,
+      "my_acc": 0.168698681263996,
+      "my_thrown": 382.76190476190476,
+      "n": 21,
+      "opp_acc": 0.20428954423592494,
+      "opp_thrown": 355.23809523809524,
       "time_limit": 1.0,
       "win_rate": 0.0
     },
@@ -70,17 +70,17 @@
   },
   "by_team": {
     "east": {
-      "deaths": 13.052631578947368,
-      "end_tick": 38261.36842105263,
-      "kills": 15.105263157894736,
-      "margin": 2.0526315789473686,
-      "my_acc": 0.1510388190267906,
-      "my_thrown": 385.05263157894734,
-      "n": 19,
-      "opp_acc": 0.15766140205042947,
-      "opp_thrown": 379.89473684210526,
-      "time_limit": 0.9473684210526315,
-      "win_rate": 0.42105263157894735
+      "deaths": 13.35,
+      "end_tick": 38268.3,
+      "kills": 15.05,
+      "margin": 1.7,
+      "my_acc": 0.15200727556190724,
+      "my_thrown": 384.85,
+      "n": 20,
+      "opp_acc": 0.16184436517373496,
+      "opp_thrown": 378.45,
+      "time_limit": 0.95,
+      "win_rate": 0.4
     },
     "west": {
       "deaths": 13.55,
@@ -97,17 +97,17 @@
     }
   },
   "overall": {
-    "deaths": 13.307692307692308,
-    "end_tick": 38332.46153846154,
-    "kills": 14.435897435897436,
-    "margin": 1.1282051282051282,
-    "my_acc": 0.15174212532602152,
-    "my_thrown": 383.4102564102564,
-    "n": 39,
-    "opp_acc": 0.16003111519694505,
-    "opp_thrown": 362.5897435897436,
-    "time_limit": 0.9743589743589743,
-    "win_rate": 0.48717948717948717
+    "deaths": 13.45,
+    "end_tick": 38334.15,
+    "kills": 14.425,
+    "margin": 0.975,
+    "my_acc": 0.15221077344463285,
+    "my_thrown": 383.35,
+    "n": 40,
+    "opp_acc": 0.1621584322384764,
+    "opp_thrown": 362.3,
+    "time_limit": 0.975,
+    "win_rate": 0.475
   },
   "rows": [
     {
@@ -1008,6 +1008,42 @@
       "seed": 798004343,
       "slot": 0,
       "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.311228,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "5517335a-ad33-4208-9ae3-5dba65c25d5a",
+      "id": "ereq_c5f605d2-5f93-4274-822c-f42116e450cb",
+      "margin": -5.0,
+      "me": {
+        "deaths": 19,
+        "hooks_landed": 65,
+        "hooks_thrown": 381,
+        "kills": 14,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 14,
+          "hooks_landed": 87,
+          "hooks_thrown": 351,
+          "kills": 19,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/38a77460-ead5-4e60-b51b-26aa0e97e029.replay",
+      "score": 0.0,
+      "seats": 2,
+      "seed": 799927214,
+      "slot": 1,
+      "team": "east",
       "variant": "League 3v3"
     },
     {

@@ -1,8 +1,8 @@
 v6 (xreq_7c995925): 0.575±0.078 n=40 (tainted 0)
-v4 matched (xreq_424b4fe0): 0.487±0.080 n=39 (tainted 1)
-delta +0.088, pooled SE 0.112 -> +0.79 SE
+v4 matched (xreq_424b4fe0): 0.475±0.079 n=40 (tainted 0; 2 policy logs uncollected by infra 'pod deleted before log collection', engine counters confirm participation)
+delta +0.100, pooled SE 0.111 -> +0.90 SE
 west: v6 0.700 (n=20) vs v4 0.550 (n=20)
-east: v6 0.450 (n=20) vs v4 0.421 (n=19)
+east: v6 0.450 (n=20) vs v4 0.400 (n=20)
 vs a-aron-pudge-rusher:v1: v6 0.778 (n=9) vs v4 0.556 (n=9)
 vs co-gas-pudge-blind-hook-richard:v7: v6 0.643 (n=14) vs v4 0.500 (n=12)
-vs pudge-wars-rusher:v16: v6 0.412 (n=17) vs v4 0.444 (n=18)
+vs pudge-wars-rusher:v16: v6 0.412 (n=17) vs v4 0.421 (n=19)

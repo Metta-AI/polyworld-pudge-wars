@@ -2250,14 +2250,14 @@
     "variant_name": "League 3v3"
   },
   {
-    "completed_at": null,
-    "cost_usd": null,
+    "completed_at": "2026-09-17T14:23:37.179132Z",
+    "cost_usd": 0.311228,
     "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
     "coworld_name": "pudge-wars",
     "coworld_version": "0.3.21",
     "created_at": "2026-09-17T13:24:09.702517Z",
     "dispatched_at": "2026-09-17T13:53:01.244691Z",
-    "episode_id": null,
+    "episode_id": "5517335a-ad33-4208-9ae3-5dba65c25d5a",
     "error": null,
     "error_type": null,
     "failed_agent_index": null,
@@ -2280,9 +2280,18 @@
     "id": "ereq_c5f605d2-5f93-4274-822c-f42116e450cb",
     "job_id": "38a77460-ead5-4e60-b51b-26aa0e97e029",
     "job_index": 25,
-    "live_url": "https://api.observatory.softmax-research.net/v2/coworlds/jobs/38a77460-ead5-4e60-b51b-26aa0e97e029/proxy/client/global?address=wss%3A%2F%2Fapi.observatory.softmax-research.net%2Fv2%2Fcoworlds%2Fjobs%2F38a77460-ead5-4e60-b51b-26aa0e97e029%2Fproxy%2Fglobal",
+    "live_url": null,
     "max_steps": null,
-    "participant_scores": [],
+    "participant_scores": [
+      {
+        "position": 0,
+        "score": 1.0
+      },
+      {
+        "position": 1,
+        "score": 0.0
+      }
+    ],
     "participants": [
       {
         "is_filler": false,
@@ -2313,12 +2322,21 @@
       "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
       "774d5ee5-d4ad-49de-82cc-54457a53041e"
     ],
-    "replay_url": null,
+    "replay_url": "https://softmax-public.s3.amazonaws.com/replays/38a77460-ead5-4e60-b51b-26aa0e97e029.replay",
     "requester_user_id": "h0835grji1zfy5wakd4i56kn",
     "round_id": null,
     "running_at": "2026-09-17T14:03:27.400920Z",
-    "scores": [],
-    "status": "running",
+    "scores": [
+      {
+        "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+        "score": 1.0
+      },
+      {
+        "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
+        "score": 0.0
+      }
+    ],
+    "status": "completed",
     "variant_name": "League 3v3"
   },
   {

@@ -130,14 +130,14 @@ Champion `pudge-auto-optimizer:v1` unchanged; behaviour base stays `v4`.
 | arm | clean win rate | west | east | vs a-aron:v1 | vs richard:v7 | vs rusher:v16 | deaths/game |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | v6 `xreq_7c995925` | **0.575 ± 0.078** (n=40, taint 0) | 0.700 (20) | 0.450 (20) | 0.778 (9) | 0.643 (14) | 0.412 (17) | 12.7 |
-| v4 `xreq_424b4fe0` (same window) | **0.487 ± 0.080** (n=39, 1 episode still running at write time) | 0.550 (20) | 0.421 (19) | 0.556 (9) | 0.500 (12) | 0.444 (18) | 13.3 |
+| v4 `xreq_424b4fe0` (same window) | **0.475 ± 0.079** (n=40, taint 0; 2 logs uncollected by infra, counters confirm play) | 0.550 (20) | 0.400 (20) | 0.556 (9) | 0.500 (12) | 0.421 (19) | 13.5 |
 
-Delta +0.088, pooled SE 0.112 → **+0.79 SE: no detectable change at n=40.**
-No slice regresses beyond 1 SE (v16 0.412 vs 0.444, −0.3 SE); deaths did not
+Delta +0.100, pooled SE 0.111 → **+0.90 SE: no detectable change at n=40.**
+No slice regresses beyond 1 SE (v16 0.412 vs 0.421, −0.1 SE); deaths did not
 rise (tripwire passed); 0 tracebacks in 40/40 logs, `pull_skip` 20.5/game
 (≈ 27 s of blocked long throws per 20-min game — the gate fires rarely).
-History note: v4 scored 0.650 ± 0.076 in the iteration-4 window and 0.487 ±
-0.080 here — a 0.16 swing for identical code, so cross-window comparisons
+History note: v4 scored 0.650 ± 0.076 in the iteration-4 window and 0.475 ±
+0.079 here — a 0.17 swing for identical code, so cross-window comparisons
 are worthless; only the matched arm counts.
 
 **Mechanism check failed.** `pull_exchange.py` on the v6 replays
