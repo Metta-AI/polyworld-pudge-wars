@@ -43,22 +43,22 @@
     "note": "Current #1 (Aaron). Named-target comparison reference and top_n member; NOT our baseline."
   },
   "latest": {
-    "iteration": 6,
-    "policy_ref": "pudge-auto-optimizer:v7",
-    "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
-    "status": "iteration 6 closed: v7 reject (0.675±0.074 n=40 vs matched v4 0.750±0.068 n=40, -0.75 SE; kills -3.6/game, deaths flat; unfavourable long-hook landings 66 vs 74, target <40). Pull-gate lever closed. v4 stays the behaviour base; v7 not built upon.",
-    "experiment": "experiments/2026-09-17-stale-poke-pull-gate.md",
+    "iteration": 7,
+    "policy_ref": "pudge-auto-optimizer:v8",
+    "policy_version_id": "24128d4e-0b67-4ac3-bd37-b8117cdb0b61",
+    "status": "iteration 7 open: v8 uploaded (inert) 2026-09-17T18:13:46Z; smoke + matched directional pending",
+    "experiment": "experiments/2026-09-17-post-pull-bank-escape.md",
     "last_uploaded": {
-      "policy_ref": "pudge-auto-optimizer:v7",
-      "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
-      "verdict": "reject (iteration 6; not adopted as base; pull-gate lever closed)"
+      "policy_ref": "pudge-auto-optimizer:v8",
+      "policy_version_id": "24128d4e-0b67-4ac3-bd37-b8117cdb0b61",
+      "verdict": "pending (iteration 7)"
     },
     "base_ref": "pudge-auto-optimizer:v4",
-    "source_commit": "b7653c1",
+    "source_commit": "32eb7e6",
     "previous_candidate": {
-      "policy_ref": "pudge-auto-optimizer:v6",
-      "policy_version_id": "b454d745-18fb-4b2b-a32a-3a5a14cc75b4",
-      "verdict": "no_signal (iteration 5; base stays v4)"
+      "policy_ref": "pudge-auto-optimizer:v7",
+      "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
+      "verdict": "reject (iteration 6; pull-gate lever closed; base stays v4)"
     },
     "accepted_behaviour": {
       "policy_ref": "pudge-auto-optimizer:v4",
@@ -85,19 +85,12 @@
         "smoke": "xreq_c0656607-1226-45cd-b5e3-5374f7a93261",
         "directional": "xreq_c505529a-0dca-49c7-81cb-d50b16f35097",
         "directional_v4": "xreq_f6c102e7-8fad-41be-95b6-1585a34ec5d1"
-      }
+      },
+      "note": "iteration 6 record; see experiments/2026-09-17-stale-poke-pull-gate.md"
     },
-    "next_iteration": {
-      "iteration": 7,
-      "base_ref": "pudge-auto-optimizer:v4",
-      "change": "to be chosen from evidence; pull-gate lever is CLOSED (v6 no_signal, v7 reject)",
-      "candidate_directions": [
-        "seat question: identical v4 code wins 0.64 west in the iteration-5 mirror and east trails west in every v4 arm (0.65 vs 0.85 iter6, 0.40 vs 0.55 iter5); the remaining code suspect is the team-keyed asymmetry in the defensive Blink (layer==0) — write the experiment, instrument the Blink direction per team, one change",
-        "close the v4-vs-v1 gate question (gate_n=100 matched, same window) before stacking further; v4 has never been formally compared to champion v1 at gate_n",
-        "different hypothesis in the pull space (NOT a retune): suppress the bank-lip blind poke only while low/recovering, or gate only enemies seen within ~2 s; needs its own experiment file"
-      ],
-      "evidence": "evals/iter6-directional/compare_v7_v4.txt, pull_exchange.json (both arms), experiments/2026-09-17-stale-poke-pull-gate.md verdict"
-    }
+    "image_digest": "sha256:13a3a86834a06205d40b50fa72ba13f1e0eaf2da362d136e5718783f46d6ed53",
+    "change": "post-pull bank escape: on the enemy bank without the brawl HP edge (hp+40 < enemy hp, enemy hp > 120), enemy within 12, Blink ready -> blink_to home (fountain_escape landing in the mid strip, else 20 tiles toward our bank = river water) instead of the forced brawl; pull_landed + bank_escape trace events",
+    "eval_ids": {}
   },
   "champion": {
     "policy_ref": "pudge-auto-optimizer:v1",
