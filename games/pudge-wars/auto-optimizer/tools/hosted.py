@@ -14,6 +14,7 @@ fresh session can resume from disk.
     hosted.py xp create --policy <ref> --label L [--episodes N] [--top-n K]
     hosted.py xp poll <xreq_id> --label L
     hosted.py xp summarize --label L --policy <version-id>
+    hosted.py xp results --label L         # engine per-seat counters per clean episode
     hosted.py logs <episode_request_id> --policy <version-id> --agent IDX
 
 A <ref> is `name:vN` or a policy-version UUID.
@@ -346,6 +347,64 @@ def cmd_xp_summarize(args: argparse.Namespace) -> None:
         print(f"  vs {k}: n={v['n']} win={v['win_rate']:.3f}")
 
 
+def cmd_xp_results(args: argparse.Namespace) -> None:
+    """Fetch the engine results JSON (per-seat kills/deaths/hooks, end reason) for
+    every clean episode of a summarized XP eval and aggregate it per opponent."""
+    out_dir = EVALS / args.label
+    summary = json.loads((out_dir / "summary.json").read_text())
+    rows: list[dict[str, Any]] = []
+    with client() as c:
+        for r in summary["clean_rows"]:
+            path = out_dir / "results" / f"{r['id']}.json"
+            if path.exists():
+                res = json.loads(path.read_text())
+            else:
+                res = json.loads(c.get_bytes(f"/v2/episode-requests/{r['id']}/artifacts/results").decode("utf-8"))
+                save_json(path, res)
+            mine = next(s for s in res["per_seat"] if s["slot"] == r["slot"])
+            theirs = [s for s in res["per_seat"] if s["team"] != mine["team"]]
+            rows.append({**r, "end_reason": res["end_reason"], "end_tick": res["end_tick"], "seed": res.get("seed"),
+                         "me": mine, "opp": theirs,
+                         "margin": mine["kills"] - sum(s["kills"] for s in theirs) / max(1, len(theirs))})
+
+    def agg(sel: list[dict[str, Any]]) -> dict[str, Any]:
+        n = len(sel)
+        if not n:
+            return {"n": 0}
+        mt = sum(r["me"]["hooks_thrown"] for r in sel)
+        ml = sum(r["me"]["hooks_landed"] for r in sel)
+        ot = sum(s["hooks_thrown"] for r in sel for s in r["opp"])
+        ol = sum(s["hooks_landed"] for r in sel for s in r["opp"])
+        return {"n": n, "win_rate": sum(r["score"] for r in sel) / n,
+                "kills": sum(r["me"]["kills"] for r in sel) / n, "deaths": sum(r["me"]["deaths"] for r in sel) / n,
+                "margin": sum(r["margin"] for r in sel) / n,
+                "my_thrown": mt / n, "my_acc": ml / max(1, mt), "opp_thrown": ot / n, "opp_acc": ol / max(1, ot),
+                "time_limit": sum(r["end_reason"] == "time_limit" for r in sel) / n,
+                "end_tick": sum(r["end_tick"] for r in sel) / n}
+
+    out = {"overall": agg(rows),
+           "by_team": {t: agg([r for r in rows if r["team"] == t]) for t in ("west", "east")},
+           "by_opponent": {k: agg([r for r in rows if ",".join(r["opponents"]) == k])
+                           for k in sorted({",".join(r["opponents"]) for r in rows})},
+           "by_outcome": {k: agg([r for r in rows if r["score"] == v]) for k, v in (("win", 1.0), ("loss", 0.0))},
+           "rows": rows}
+    save_json(out_dir / "results_summary.json", out)
+    keys = ("n", "win_rate", "kills", "deaths", "margin", "my_thrown", "my_acc", "opp_thrown", "opp_acc", "time_limit")
+
+    def line(name: str, a: dict[str, Any]) -> None:
+        if not a["n"]:
+            return
+        print(f"{name:52s} " + " ".join(f"{k}={a[k]:.3f}" if isinstance(a[k], float) else f"{k}={a[k]}" for k in keys))
+
+    line("overall", out["overall"])
+    for k, v in out["by_team"].items():
+        line(k, v)
+    for k, v in out["by_opponent"].items():
+        line("vs " + k, v)
+    for k, v in out["by_outcome"].items():
+        line(k, v)
+
+
 def cmd_logs(args: argparse.Namespace) -> None:
     with client() as c:
         text = c.get_text(f"/v2/episode-requests/{args.episode_request_id}/{args.policy}/policy-logs/{args.agent}")
@@ -380,6 +439,7 @@ def main() -> None:
     p.add_argument("--timeout", type=int, default=3600); p.add_argument("--interval", type=int, default=60); p.set_defaults(fn=cmd_xp_poll)
     p = xp.add_parser("summarize"); p.add_argument("--label", required=True); p.add_argument("--policy", required=True)
     p.add_argument("--xreq-id", dest="xreq_id"); p.set_defaults(fn=cmd_xp_summarize)
+    p = xp.add_parser("results"); p.add_argument("--label", required=True); p.set_defaults(fn=cmd_xp_results)
 
     p = sub.add_parser("logs"); p.add_argument("episode_request_id"); p.add_argument("--policy", required=True)
     p.add_argument("--agent", type=int, default=0); p.add_argument("--out"); p.set_defaults(fn=cmd_logs)

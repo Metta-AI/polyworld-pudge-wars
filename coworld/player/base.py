@@ -13,6 +13,9 @@ from collections import deque
 from typing import Any
 
 
+HOLD_Y_MIN, HOLD_Y_MAX = 30.0, 98.0  # fishing hold keeps a two-sided dodge lane clear of the walls
+
+
 def distance(a: dict, b: dict) -> float:
     return math.hypot(a["x"] - b["x"], a["y"] - b["y"])
 
@@ -457,7 +460,10 @@ class BasePolicy:
                             self.record("fishing_formation", player=me["id"], y=y, collector=collector, lanes=lanes)
                     elif 0 < upcoming["soon"] <= 256:
                         y = upcoming["y"]
-                    action["walk_to"] = point(hold_x, y)
+                    hold_y = max(HOLD_Y_MIN, min(HOLD_Y_MAX, y))
+                    if hold_y != y and tick % 32 == 0:
+                        self.record("edge_clamp", raw=round(y, 1), y=hold_y)
+                    action["walk_to"] = point(hold_x, hold_y)
 
         # A purchase request may be refused by the live restock timer.
         # Start the ward trip only once a later observation confirms it.
