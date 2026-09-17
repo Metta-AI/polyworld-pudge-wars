@@ -59,8 +59,12 @@ _last_seen: tuple[int, float, float, int] | None = None
 POLICY_ARM = os.environ.get("PUDGE_POLICY_ARM", "combined")
 if POLICY_ARM not in {"baseline", "healing", "spacing", "combined"}:
     raise ValueError(f"Unknown PUDGE_POLICY_ARM: {POLICY_ARM}")
+THREAT_FILTER = os.environ.get("PUDGE_THREAT_FILTER", "distance")
+if THREAT_FILTER not in {"distance", "collision"}:
+    raise ValueError(f"Unknown PUDGE_THREAT_FILTER: {THREAT_FILTER}")
 _base = BasePolicy(heal_allies=POLICY_ARM in {"healing", "combined"},
                    spread_fishing=POLICY_ARM in {"spacing", "combined"},
+                   threat_filter=THREAT_FILTER,
                    trace=POLICY_ARM != "baseline")
 
 

@@ -35,6 +35,7 @@ def segment_distance(start: list[float], end: list[float], at: list[float]) -> f
 class BasePolicy:
     heal_allies: bool = False
     spread_fishing: bool = False
+    threat_filter: str = "distance"  # "distance" (any flying enemy hook within 22) or "collision" (hit/blind only)
     trace: bool = False
     recovering: bool = False
     tick: int = -1
@@ -66,13 +67,15 @@ class BasePolicy:
             self.events.append(dict(event=event, tick=self.tick, **values))
 
     def collision_threat(self, me: dict, hooks: list[dict], team: int) -> dict | None:
-        """Nearest enemy hook in flight whose straight path can actually reach us.
+        """Nearest enemy hook in flight that counts as a threat under `threat_filter`.
 
+        Every hook within 22 tiles is classified (and traced) either way.
         Heading comes from the head's displacement since the previous tick;
         the owner's position is not used because the owner may Blink after
-        the throw while the head keeps its heading. An untracked head is a
-        threat when close (blind) and otherwise waits one tick for a track
-        (pending). Hooks moving away or passing wide are ignored.
+        the throw while the head keeps its heading. An untracked head is
+        blind when close and otherwise waits one tick for a track (pending).
+        The "collision" filter keeps only hit/blind hooks; "distance" keeps
+        them all, which is the original policy's behaviour.
         """
         tick = self.tick
         seen: dict[int, tuple[int, float, float, str]] = {}
@@ -101,7 +104,7 @@ class BasePolicy:
                     along = rx * ux + ry * uy
                     perp = abs(rx * uy - ry * ux)
                     cls = "away" if along < 0 else "wide" if perp > 8 else "hit"
-                if cls in {"hit", "blind"}:
+                if self.threat_filter == "distance" or cls in {"hit", "blind"}:
                     threats.append((dist, hook, cls, along, perp))
                 if old is None or old[3] != cls:
                     self.record("threat_class", owner=owner_id, cls=cls, src=source, dist=round(dist, 1),

@@ -388,7 +388,7 @@ class SupportOpportunityTest(unittest.TestCase):
         # The head flies from (60,40) through (52,50): its line passes ~19 tiles from us.
         first = dict(owner_id=4, team=1, x=53.6, y=48, flying=True, victim=0)
         second = dict(owner_id=4, team=1, x=52, y=50, flying=True, victim=0)
-        policy = BasePolicy(trace=True)
+        policy = BasePolicy(threat_filter="collision", trace=True)
         far = policy.choose_action(observation(me, [enemy], hooks=[first]))
         self.assertNotIn("blink_to", far)
         obs2 = observation(me, [enemy], hooks=[second])
@@ -405,7 +405,7 @@ class SupportOpportunityTest(unittest.TestCase):
         enemy = unit(4, 1, 70, 20)
         first = dict(owner_id=4, team=1, x=52, y=41, flying=True, victim=0)
         second = dict(owner_id=4, team=1, x=50, y=41, flying=True, victim=0)
-        policy = BasePolicy(trace=True)
+        policy = BasePolicy(threat_filter="collision", trace=True)
         policy.choose_action(observation(me, [enemy], hooks=[first]))
         obs2 = observation(me, [enemy], hooks=[second])
         obs2["tick"] = 201
@@ -418,7 +418,7 @@ class SupportOpportunityTest(unittest.TestCase):
         me = unit()
         me["blink_ready"] = True
         hook = dict(owner_id=4, team=1, x=44, y=40, flying=True, victim=0)
-        policy = BasePolicy(trace=True)
+        policy = BasePolicy(threat_filter="collision", trace=True)
         action = policy.choose_action(observation(me, hooks=[hook]))
         self.assertIn("blink_to", action)
         blinks = [e for e in policy.events if e["event"] == "dodge_blink"]
@@ -427,7 +427,7 @@ class SupportOpportunityTest(unittest.TestCase):
     def test_hook_moving_away_is_not_a_threat(self):
         me = unit()
         me["blink_ready"] = True
-        policy = BasePolicy(trace=True)
+        policy = BasePolicy(threat_filter="collision", trace=True)
         first = dict(owner_id=4, team=1, x=44, y=40, flying=True, victim=0)
         second = dict(owner_id=4, team=1, x=46, y=40, flying=True, victim=0)
         obs = observation(me, hooks=[first])
@@ -439,10 +439,27 @@ class SupportOpportunityTest(unittest.TestCase):
         classes = [(e["cls"], e["src"]) for e in policy.events if e["event"] == "threat_class"]
         self.assertEqual(classes, [("blind", "none"), ("away", "track")])
 
+    def test_default_threat_filter_dodges_every_nearby_hook_like_the_baseline(self):
+        me = unit()
+        me["blink_ready"] = True
+        # Same wide-passing head as the collision test; the distance filter dodges it anyway.
+        first = dict(owner_id=4, team=1, x=53.6, y=48, flying=True, victim=0)
+        second = dict(owner_id=4, team=1, x=52, y=50, flying=True, victim=0)
+        policy = BasePolicy(trace=True)
+        self.assertIn("blink_to", policy.choose_action(observation(me, hooks=[first])))
+        obs2 = observation(me, hooks=[second])
+        obs2["tick"] = 201
+        self.assertIn("blink_to", policy.choose_action(obs2))
+        blinks = [e["cls"] for e in policy.events if e["event"] == "dodge_blink"]
+        self.assertEqual(blinks, ["pending", "wide"])
+        far = dict(owner_id=4, team=1, x=70, y=40, flying=True, victim=0)
+        obs3 = observation(me, hooks=[far])
+        self.assertNotIn("blink_to", BasePolicy().choose_action(obs3))
+
     def test_hook_closing_on_us_keeps_the_dodge(self):
         me = unit()
         me["blink_ready"] = True
-        policy = BasePolicy(trace=True)
+        policy = BasePolicy(threat_filter="collision", trace=True)
         first = dict(owner_id=4, team=1, x=52, y=41, flying=True, victim=0)
         second = dict(owner_id=4, team=1, x=50, y=41, flying=True, victim=0)
         policy.choose_action(observation(me, hooks=[first]))
