@@ -120,3 +120,63 @@ question (team-keyed code asymmetry in the defensive Blink).
   v7 `xreq_c505529a-0dca-49c7-81cb-d50b16f35097` (`iter6-directional`) and
   v4 `xreq_f6c102e7-8fad-41be-95b6-1585a34ec5d1` (`iter6-directional-v4`),
   n=40 each vs top-3.
+- 16:00Z both arms terminal (40/40 completed each, 0 failed); decoder
+  `pwheadless` built from `examples/pudge_wars/pw.nim` (`~/.nimby/pkgs` paths),
+  80/80 replays verified.
+
+## Verdict (2026-09-17T16:2xZ) — **reject**; v4 stays the behaviour base; lever closed
+
+Champion `pudge-auto-optimizer:v1` unchanged; behaviour base stays `v4`.
+
+| arm | clean win rate | west | east | vs a-aron:v1 | vs richard:v7 | vs rusher:v16 | kills/game | deaths/game |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| v7 `xreq_c505529a` | **0.675 ± 0.074** (n=40, taint 0) | 0.650 (20) | 0.700 (20) | 0.500 (10) | 0.889 (18) | 0.500 (12) | 16.2 | 11.8 |
+| v4 `xreq_f6c102e7` (same window) | **0.750 ± 0.068** (n=40, taint 0) | 0.850 (20) | 0.650 (20) | 0.938 (16) | 0.647 (17) | 0.571 (7) | 19.8 | 11.9 |
+
+Delta −0.075, pooled SE 0.100 → **−0.75 SE: no detectable win-rate change at
+n=40** (opponent draw differs: v4 met a-aron 16×, v7 10×). 0 tracebacks in
+40/40 logs, `pull_skip` 99/game with `poke_age` (instrumentation confirmed).
+Uncertainty note: v4 scored 0.475 in the iteration-5 window and 0.750 here for
+identical code — only the matched arm counts.
+
+**Rollback tripwires hit.** Kills/game **16.2 vs 19.8 (−3.6; limit −1)**,
+down in two of three opponent slices (a-aron −5.9, richard −2.4, v16 +0.5);
+deaths/game **flat (11.8 vs 11.9; predicted −1)**; hooks thrown −17/game.
+vs a-aron-pudge-rusher:v1 0.500 (n=10) vs 0.938 (n=16) with deaths +3.9/game —
+a per-opponent regression the tripwire flags even at this n.
+
+**Mechanism check failed** (`evals/iter6-directional/pull_exchange.json`,
+`compare_v7_v4.txt`): unfavourable long-hook landings **66 vs 74** per 40
+games (target < 40) while the gate withheld ~99 throws/game. Launch-path
+split of v7's 66: bank-lip poke 37 (v4 46), other aim 27 (v4 17), visible
+target 2 (v4 11). With the *true* enemy HP at launch the gate would have
+passed only 20 of the 66 — so the rule is not wrong, the **stale last-seen HP
+estimate is**: it under-estimates the enemy (they heal out of sight; only
+9/37 bank-lip cases had an enemy death within the previous 60 s, so respawn is
+a minor part). The gate therefore blocks many pulls we would have won (kills
+−3.6) and still lets most of the bad ones through.
+
+**Decision: reject.** The pull-gate family (v6 visible-only, v7 complete) has
+now had two matched n=40 readouts with no win-rate signal and, in its complete
+form, a clear kill cost without a death benefit. Closed in
+`closed_levers.md`. A future version would need a live HP source (e.g. gating
+only when the enemy has been seen within ~2 s, i.e. dropping the blind pokes
+from the gate entirely and instead suppressing the bank-lip poke while
+`low`/recovering) — a different hypothesis, not a retune of this one.
+
+**Next (iteration 7, one change):** return to the seat question. Identical
+v4 code wins 0.64 west in a mirror (iteration 5) and east trails west in both
+v4 arms here (0.65 vs 0.85) and in iteration 5 (0.40 vs 0.55); the remaining
+code suspect is the team-keyed asymmetry in the defensive Blink
+(`layer == 0`). Alternatively close the v4-vs-v1 gate question at `gate_n`
+before stacking anything further.
+
+## Rollback (applied)
+
+`coworld/player/base.py` and `tests/test_pw_coworld_policy.py` restored to the
+v4 source (`a82c65e`): both the v6 visible-target gate and the v7 stale-poke
+gate are removed along with their unit tests, so iteration 7 builds on the v4
+behaviour the ledger names as the base. v7 remains uploaded (inert) for
+reference. ACUs: `devin_session_interact get` reported `acus_consumed=0.0` at
+15:35Z and at wrap-up (16:3xZ) — recorded provisionally, same caveat as
+iterations 2–5.

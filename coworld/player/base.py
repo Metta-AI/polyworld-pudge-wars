@@ -16,9 +16,6 @@ from typing import Any
 HOLD_Y_MIN, HOLD_Y_MAX = 30.0, 98.0  # fishing hold keeps a two-sided dodge lane clear of the walls
 LEAD_DIVISOR = 30.0  # lead = v8 * span / (LEAD_DIVISOR + speed level); empirical, see closed_levers.md
 LEAD_TRACE_SPAN = 30.0
-PULL_HP_MARGIN = 40.0  # same edge the brawl test wants before fighting a reeled enemy
-HOOK_BASE_DAMAGE, HOOK_DAMAGE_PER_LEVEL = 200.0, 15.0
-LONGSHOT_PERCENT_PER_TILE = 1.0
 
 
 def distance(a: dict, b: dict) -> float:
@@ -255,17 +252,6 @@ class BasePolicy:
             reach *= 1.5
             radius *= 1.5
 
-        def pull_wins(enemy_hp: float, span: float, **detail: Any) -> bool:
-            """A long hook reels the enemy onto us: only pull one we can out-brawl afterwards."""
-            if span < LEAD_TRACE_SPAN or enemy_hp <= 120:
-                return True
-            landed = (HOOK_BASE_DAMAGE + HOOK_DAMAGE_PER_LEVEL * levels[0]) * (100 + LONGSHOT_PERCENT_PER_TILE * ranks[1] * int(span)) / 100
-            if enemy_hp - landed <= me["hp"] + PULL_HP_MARGIN:
-                return True
-            if tick % 32 == 0:
-                self.record("pull_skip", span=round(span, 1), hp=me["hp"], enemy_hp=enemy_hp, landed=round(landed), **detail)
-            return False
-
         def throw(aim: list[float], rescue_id: int = 0) -> bool:
             if not me["hook_ready"] or me["hooked"] or "hook_to" in action:
                 return False
@@ -354,13 +340,12 @@ class BasePolicy:
         if target is not None and distance(me, target) <= reach + radius:
             vx, vy = self.velocity(target)
             span = max(abs(me["x"] - target["x"]), abs(me["y"] - target["y"]))
-            if pull_wins(target["hp"], span):
-                lead = span / (LEAD_DIVISOR + levels[2])
-                aim = point(target["x"] + vx * lead, target["y"] + vy * lead)
-                if segment_distance([me["x"], me["y"]], aim, [64, 64]) > 5 and throw(aim):
-                    v8 = math.hypot(vx, vy)
-                    if span >= LEAD_TRACE_SPAN and v8 > 0:
-                        self.record("hook_lead", span=round(span, 1), lead=round(v8 * lead, 1), v8=round(v8, 2))
+            lead = span / (LEAD_DIVISOR + levels[2])
+            aim = point(target["x"] + vx * lead, target["y"] + vy * lead)
+            if segment_distance([me["x"], me["y"]], aim, [64, 64]) > 5 and throw(aim):
+                v8 = math.hypot(vx, vy)
+                if span >= LEAD_TRACE_SPAN and v8 > 0:
+                    self.record("hook_lead", span=round(span, 1), lead=round(v8 * lead, 1), v8=round(v8, 2))
         if not river:
             for rune in obs["visible"]["runes"]:
                 if abs(me["x"] - rune["x"]) <= 36 and abs(me["y"] - rune["y"]) <= 36:
@@ -378,10 +363,7 @@ class BasePolicy:
                 else:
                     poke_x = east + 2 if team == 0 else west - 2
             poke_x = max(east + 1, min(113, poke_x)) if team == 0 else min(west - 1, max(14, poke_x))
-            poke_y = max(16, min(111, poke_y))
-            # A blind poke reels in whoever it finds; the last sighting's HP is the best guess of who that is.
-            if self.last_enemy is None or pull_wins(self.last_enemy["hp"], max(abs(me["x"] - poke_x), abs(me["y"] - poke_y)), poke_age=tick - self.last_seen):
-                throw(point(poke_x, poke_y))
+            throw(point(poke_x, max(16, min(111, poke_y))))
 
         if target is not None and distance(me, target) <= 5.5 and brawl and not flee_rot:
             action["attack_target"] = target["id"]

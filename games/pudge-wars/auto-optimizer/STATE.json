@@ -46,12 +46,12 @@
     "iteration": 6,
     "policy_ref": "pudge-auto-optimizer:v7",
     "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
-    "status": "iteration 6 open: v7 uploaded 15:08Z, smoke xreq_c0656607 clean (0 tracebacks, poke_age present); matched directional v7 xreq_c505529a + v4 xreq_f6c102e7 (n=40 each, top-3) launched 15:33Z in the same window",
+    "status": "iteration 6 closed: v7 reject (0.675±0.074 n=40 vs matched v4 0.750±0.068 n=40, -0.75 SE; kills -3.6/game, deaths flat; unfavourable long-hook landings 66 vs 74, target <40). Pull-gate lever closed. v4 stays the behaviour base; v7 not built upon.",
     "experiment": "experiments/2026-09-17-stale-poke-pull-gate.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v7",
       "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
-      "verdict": "open (iteration 6)"
+      "verdict": "reject (iteration 6; not adopted as base; pull-gate lever closed)"
     },
     "base_ref": "pudge-auto-optimizer:v4",
     "source_commit": "b7653c1",
@@ -65,7 +65,7 @@
       "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
       "note": "latest behaviour the next candidate builds on: v1 + edge-band clamp (iteration 3, verdict rerun). v4 is NOT promoted over champion v1; see pending_decisions."
     },
-    "current_iteration": {
+    "closed_iteration": {
       "iteration": 6,
       "base_ref": "pudge-auto-optimizer:v4",
       "change": "complete long-hook pull gate: apply pull_wins(last_enemy.hp, span) to the stale (>3 s) blind poke too; keep the visible-target gate from v6",
@@ -79,7 +79,24 @@
         "close the v4-vs-v1 gate question (gate_n=100 matched) before stacking further"
       ],
       "policy_ref": "pudge-auto-optimizer:v7",
-      "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468"
+      "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
+      "verdict": "reject",
+      "eval_ids": {
+        "smoke": "xreq_c0656607-1226-45cd-b5e3-5374f7a93261",
+        "directional": "xreq_c505529a-0dca-49c7-81cb-d50b16f35097",
+        "directional_v4": "xreq_f6c102e7-8fad-41be-95b6-1585a34ec5d1"
+      }
+    },
+    "next_iteration": {
+      "iteration": 7,
+      "base_ref": "pudge-auto-optimizer:v4",
+      "change": "to be chosen from evidence; pull-gate lever is CLOSED (v6 no_signal, v7 reject)",
+      "candidate_directions": [
+        "seat question: identical v4 code wins 0.64 west in the iteration-5 mirror and east trails west in every v4 arm (0.65 vs 0.85 iter6, 0.40 vs 0.55 iter5); the remaining code suspect is the team-keyed asymmetry in the defensive Blink (layer==0) — write the experiment, instrument the Blink direction per team, one change",
+        "close the v4-vs-v1 gate question (gate_n=100 matched, same window) before stacking further; v4 has never been formally compared to champion v1 at gate_n",
+        "different hypothesis in the pull space (NOT a retune): suppress the bank-lip blind poke only while low/recovering, or gate only enemies seen within ~2 s; needs its own experiment file"
+      ],
+      "evidence": "evals/iter6-directional/compare_v7_v4.txt, pull_exchange.json (both arms), experiments/2026-09-17-stale-poke-pull-gate.md verdict"
     }
   },
   "champion": {
@@ -107,35 +124,7 @@
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
-  "open_evals": {
-    "iter6-smoke": {
-      "id": "xreq_c0656607-1226-45cd-b5e3-5374f7a93261",
-      "policy": "pudge-auto-optimizer:v7",
-      "episodes": 3,
-      "status": "completed",
-      "result": "clean n=3, 0 tracebacks, pull_skip 132/game with poke_age (stale 339 / fresh 37 / visible 20 skips)"
-    },
-    "iter6-directional": {
-      "id": "xreq_c505529a-0dca-49c7-81cb-d50b16f35097",
-      "policy": "pudge-auto-optimizer:v7",
-      "policy_version_id": "bd16628b-b986-47f7-8e33-e87f74245468",
-      "episodes": 40,
-      "top_n": 3,
-      "launched_at": "2026-09-17T15:33Z",
-      "status": "running",
-      "summarize": "tools/hosted.py xp poll xreq_c505529a-0dca-49c7-81cb-d50b16f35097 --label iter6-directional && tools/hosted.py xp summarize --label iter6-directional --policy bd16628b-b986-47f7-8e33-e87f74245468"
-    },
-    "iter6-directional-v4": {
-      "id": "xreq_f6c102e7-8fad-41be-95b6-1585a34ec5d1",
-      "policy": "pudge-auto-optimizer:v4",
-      "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
-      "episodes": 40,
-      "top_n": 3,
-      "launched_at": "2026-09-17T15:33Z",
-      "status": "running",
-      "summarize": "tools/hosted.py xp poll xreq_f6c102e7-8fad-41be-95b6-1585a34ec5d1 --label iter6-directional-v4 && tools/hosted.py xp summarize --label iter6-directional-v4 --policy 774d5ee5-d4ad-49de-82cc-54457a53041e"
-    }
-  },
+  "open_evals": {},
   "findings": [
     {
       "date": "2026-09-17",

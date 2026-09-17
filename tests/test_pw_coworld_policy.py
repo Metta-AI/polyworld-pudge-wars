@@ -160,61 +160,6 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         enemy = unit(4, 1, 91, 40)
         self.assertEqual(self.policy.choose_action(observation(others=[enemy]))["hook_to"], [91, 40])
 
-    def test_long_hook_does_not_pull_an_enemy_it_cannot_out_brawl(self):
-        policy = BasePolicy(trace=True)
-        me = unit()
-        me["hp"] = 400
-        enemy = unit(4, 1, 91, 40)
-        obs = observation(me, [enemy])
-        obs["tick"] = 224
-        # 840 - 200 (base hook) leaves the reeled enemy 440 above our 400 + 40 edge: no pull.
-        self.assertNotIn("hook_to", policy.choose_action(obs))
-        self.assertEqual(list(policy.events), [dict(event="pull_skip", tick=224, span=55.0, hp=400, enemy_hp=840, landed=200)])
-        # Longshot ranks and damage levels count toward the predicted landing.
-        me["item_ranks"] = [0, 5, 0, 0, 0]
-        me["upgrades"] = [10, 0, 0, 0]
-        self.assertEqual(policy.choose_action(obs)["hook_to"], [91, 40])
-        me["item_ranks"] = [0, 0, 0, 0, 0]
-        me["upgrades"] = [0, 0, 0, 0]
-        enemy["hp"] = 640
-        self.assertEqual(policy.choose_action(obs)["hook_to"], [91, 40])
-        # A blind poke at a recently seen stronger enemy is held back too.
-        enemy["hp"] = 840
-        policy.choose_action(obs)
-        unseen = observation(me)
-        unseen["tick"] = 232
-        self.assertNotIn("hook_to", policy.choose_action(unseen))
-        # Short brawl hooks are never gated on the pull test.
-        close = unit(4, 1, 50, 40)
-        self.assertEqual(policy.choose_action(observation(me, [close]))["hook_to"], [50, 40])
-
-    def test_stale_blind_poke_is_gated_on_the_last_seen_hp(self):
-        policy = BasePolicy(trace=True)
-        me = unit()
-        me["hp"] = 400
-        enemy = unit(4, 1, 91, 40)
-        obs = observation(me, [enemy])
-        obs["tick"] = 224
-        policy.choose_action(obs)
-        policy.events.clear()
-        # The bank-lip poke flies its full range into the 840-HP enemy we last saw: held back.
-        unseen = observation(me)
-        unseen["tick"] = 224 + 96 + 32
-        self.assertNotIn("hook_to", policy.choose_action(unseen))
-        self.assertEqual(list(policy.events), [dict(event="pull_skip", tick=352, span=42.0, hp=400, enemy_hp=840, landed=200, poke_age=128)])
-        # Recovered HP re-opens the poke; so does a weak last sighting.
-        me["hp"] = 840
-        self.assertEqual(policy.choose_action(unseen)["hook_to"], [78, 40])
-        me["hp"] = 400
-        enemy["hp"] = 600
-        obs["tick"] = 400
-        policy.choose_action(obs)
-        unseen["tick"] = 400 + 97
-        self.assertEqual(policy.choose_action(unseen)["hook_to"], [78, 40])
-        # Never having seen an enemy, the opening poke is unchanged.
-        fresh = BasePolicy()
-        self.assertEqual(fresh.choose_action(observation(me))["hook_to"], [84, 40])
-
     def test_long_hook_lead_is_applied_and_traced(self):
         policy = BasePolicy(trace=True)
         enemy = unit(4, 1, 90, 40)

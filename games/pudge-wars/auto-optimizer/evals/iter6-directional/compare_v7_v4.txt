@@ -1,0 +1,15 @@
+v7 (xreq_c505529a): 0.675±0.074 n=40 (tainted 0), 0 tracebacks 40/40, pull_skip 99.2/game
+v4 matched (xreq_f6c102e7, same window, launched 15:33Z): 0.750±0.068 n=40 (tainted 0), 0 tracebacks 40/40
+delta -0.075, pooled SE 0.100 -> -0.75 SE (no detectable win-rate change at n=40)
+west: v7 0.650 (n=20) vs v4 0.850 (n=20)
+east: v7 0.700 (n=20) vs v4 0.650 (n=20)
+vs a-aron-pudge-rusher:v1: v7 0.500 (n=10) vs v4 0.938 (n=16)   deaths 13.5 vs 9.6, kills 15.7 vs 21.6
+vs co-gas-pudge-blind-hook-richard:v7: v7 0.889 (n=18) vs v4 0.647 (n=17)   deaths 10.8 vs 14.5, kills 18.7 vs 21.1
+vs pudge-wars-rusher:v16: v7 0.500 (n=12) vs v4 0.571 (n=7)   deaths 11.9 vs 10.7, kills 12.9 vs 12.4
+engine counters (per game): kills 16.2 vs 19.8 (-3.6), deaths 11.8 vs 11.9 (flat), hooks thrown 366.8 vs 383.5 (-17), accuracy 0.164 vs 0.169
+mechanism (pull_exchange.py on 40+40 verified replays, window 192 ticks, margin 40):
+  long-hook landings 656 vs 688; unfavourable (no_edge) 66 vs 74 (target <40); me_dies after no_edge 0.73 vs 0.69
+  no_edge launch path v7: bank-lip poke 37, other aim 27, visible target 2   | v4: bank-lip poke 46, other aim 17, visible target 11
+  with the TRUE enemy HP at launch the gate would have passed only 20/66 (v7) / 19/74 (v4): the stale last-seen HP under-estimates
+  bank-lip no_edge landings preceded by an enemy death within 60 s: 9/37 (v7), 14/46 (v4) -> respawn is not the main source of the bias
+hosted cost: budget delta 2.83 USD (smoke+v7+v4); per-episode cost_usd sums 0.43 + 6.47 + 6.42
