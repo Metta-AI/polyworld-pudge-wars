@@ -16,6 +16,8 @@ from typing import Any
 HOLD_Y_MIN, HOLD_Y_MAX = 30.0, 98.0  # fishing hold keeps a two-sided dodge lane clear of the walls
 LEAD_DIVISOR = 30.0  # lead = v8 * span / (LEAD_DIVISOR + speed level); empirical, see closed_levers.md
 LEAD_TRACE_SPAN = 30.0
+DODGE_RADIUS = 40.0  # start walking as soon as the enemy hook is lit over the river
+BLINK_THREAT_RADIUS = 22.0  # the Blink hop, the counter-throw and the free gate keep the old neighbourhood
 
 
 def distance(a: dict, b: dict) -> float:
@@ -196,8 +198,9 @@ class BasePolicy:
         hold_x = west - 16 if team == 0 else east + 16
         home = [me["home_x"], me["home_y"]]
         rank = sum(p["id"] < me["id"] for p in allies)
-        threat = min((h for h in hooks if h["team"] != team and h["flying"] and distance(me, h) <= 22),
+        threat = min((h for h in hooks if h["team"] != team and h["flying"] and distance(me, h) <= DODGE_RADIUS),
                      key=lambda h: distance(me, h), default=None)
+        near_threat = threat is not None and distance(me, threat) <= BLINK_THREAT_RADIUS
         if threat is None:
             self.dodge_side = 0
         elif self.dodge_side == 0:
@@ -206,6 +209,8 @@ class BasePolicy:
                 self.dodge_side = 1
             elif me["y"] > 108:
                 self.dodge_side = -1
+            self.record("threat_seen", dist=round(distance(me, threat), 1), side=self.dodge_side,
+                        speed=round(math.hypot(*self.velocity(me)), 1))
         caught = next((p for p in enemies if p["hooked"]), None)
         swimming = next((p for p in enemies if p["layer"] == 2), None)
         foreign_rot = any(p["rot"] and distance(me, p) <= 8 for p in units if p["id"] != me["id"])
@@ -333,7 +338,7 @@ class BasePolicy:
             if needs_help and not ally["shield"] and distance(me, ally) <= reach:
                 rescue.append(ally)
         rescue.sort(key=lambda p: distance(me, p))
-        free = own_land and not me["hooked"] and not low and threat is None and not flee_rot
+        free = own_land and not me["hooked"] and not low and not near_threat and not flee_rot
         own_rescue = any(h["owner_id"] == me["id"] and any(p["id"] == h["victim"] for p in allies) for h in hooks)
         if free and (own_rescue or tick < self.rescue_until):
             # halt is an exclusive wire action; do not drop shop purchases.
@@ -360,7 +365,7 @@ class BasePolicy:
                 action["blink_to"] = escape_to
                 self.record("bank_escape", hp=me["hp"], enemy_hp=target["hp"], dist=round(distance(me, target), 1),
                             destination=escape_to, via=escape_via)
-            elif threat is not None:
+            elif near_threat:
                 # Keep the requested hop inside Blink's actual 20-tile disk.
                 x, y = point(me["x"] + (-16 if me["layer"] == 0 else 16), me["y"] + 16 * self.dodge_side)
                 scale = min(1.0, 20.0 / math.hypot(x - me["x"], y - me["y"]))

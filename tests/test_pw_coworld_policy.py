@@ -93,6 +93,20 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         action = self.policy.choose_action(observation(me, hooks=[hook]))
         self.assertGreater(action["blink_to"][0], me["x"])
 
+    def test_walking_dodge_starts_at_first_sight_but_blink_waits(self):
+        me = unit()
+        me["blink_ready"] = True
+        far = dict(owner_id=4, team=1, x=72, y=46, flying=True, victim=0)  # 36.5 tiles out, over the river
+        policy = BasePolicy(trace=True)
+        action = policy.choose_action(observation(me, hooks=[far]))
+        self.assertEqual(action["walk_to"], [34, 30])
+        self.assertNotIn("blink_to", action)
+        self.assertEqual([(e["event"], e["dist"], e["side"]) for e in policy.events], [("threat_seen", 36.5, -1)])
+        beyond = dict(far, x=78)  # 42.4 tiles: not yet lit for us
+        self.assertEqual(BasePolicy().choose_action(observation(me, hooks=[beyond]))["walk_to"][0], 36)
+        near = dict(far, x=54)
+        self.assertIn("blink_to", BasePolicy().choose_action(observation(me, hooks=[near])))
+
     def test_outgunned_on_the_enemy_bank_blinks_toward_home(self):
         for team, x, enemy_x, landing in ((0, 92, 96, [72.0, 40.0]), (1, 36, 32, [56.0, 40.0])):
             me = unit(team=team, x=x)
@@ -427,7 +441,7 @@ class SupportOpportunityTest(unittest.TestCase):
                                ([], [dict(owner_id=4, team=1, x=50, y=70, flying=True, victim=0)])]:
             policy = BasePolicy(heal_allies=True, trace=True)
             policy.choose_action(observation(me, [ally, *enemies], hooks))
-            self.assertFalse(policy.events)
+            self.assertFalse(any(e["event"] == "heal_request" for e in policy.events))
 
     def test_close_enemy_and_caught_enemy_keep_priority(self):
         me, ally = unit(), unit(2, x=36, y=56)
