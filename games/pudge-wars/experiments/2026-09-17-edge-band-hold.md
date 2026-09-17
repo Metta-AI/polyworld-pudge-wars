@@ -119,7 +119,60 @@ Observation claimed. The v4 image (built from `2f4318c`) also emits the
 dormant classifier's `threat_class` events in `distance` mode (88–196 per
 episode); they are diagnostic only and do not change behavior.
 
-**Directional** `xreq_4e49fbc4` (n=40, top-3, launched 04:05Z, same protocol
-as v1 `xreq_3e9e30f4` 02:39–03:14Z; the smoke's top-3 roster matched the
-v1 arm's field): _running_. Mechanism metrics via `tools/edge_exposure.py` on
-the v4 replays once harvested.
+**Directional** `xreq_4e49fbc4` (n=40, top-3, 04:05–04:25Z, same protocol
+as v1 `xreq_3e9e30f4` 02:39–03:14Z; identical top-3 field): **clean 40/40,
+0 tainted, 0 tracebacks, 40/40 connected** (`evals/iter3-directional/`,
+`log_triage.json`). `edge_clamp` fired 504.6×/game (≈42% of ticks bound).
+
+| arm | window (UTC) | n | win rate | west | east | vs a-aron:v1 | vs richard:v7 | vs rusher:v16 | deaths/g | kills/g | opp hook acc |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| v1 `xreq_3e9e30f4` | 02:39–03:14 | 40 | 0.425 ± 0.078 | 0.50 | 0.35 | 0.615 (13) | 0.412 (17) | 0.200 (10) | 18.3 | 17.8 | 0.187 |
+| **v4 `xreq_4e49fbc4`** | 04:05–04:25 | 40 | **0.750 ± 0.068** | 0.80 | 0.70 | 0.750 (16) | 0.909 (11) | 0.615 (13) | **10.7** | 16.0 | **0.132** |
+| v1 `xreq_c04fbf1e` (fresh, gate arm) | 04:28–04:56 | 60 | 0.400 ± 0.063 | 0.53 | 0.27 | 0.526 (19) | 0.467 (15) | 0.269 (26) | 15.5 | 14.1 | 0.170 |
+
+v1 pooled over both windows: 41/100 = 0.410 ± 0.049. Delta v4 − v1(pooled)
+= **+0.34, pooled SE 0.084 → 4.0 SE**; vs the matched-window v1 arm alone
++0.325 / 3.1 SE. Both sides and all three opponents improved (smallest
+opponent gain +0.13 vs a-aron, n=16 vs 13; none within 1 SE of regressing).
+
+**Mechanism (pre-registered predictions).** Deaths/game 18.3 → 10.7 (target
+≤ 16.5: hit). Opponent hook accuracy 0.187 → 0.132 (−29%) while our throws
+(384 → 383/game) and accuracy (0.181 → 0.147) moved little — tripwire on
+own throws did not fire; own accuracy fell 3.4 pp (we hook from lane, fewer
+edge-pinned easy targets), which is the pre-registered "cost" side and is
+outweighed by the death reduction (kill margin −0.6 → +5.3). The bootstrap
+session (devin-53dc4bed) decoded all 40 v4 replays with the tick-verified
+`pw` headless build and reported, via `tools/edge_exposure.py`: own-bank
+edge time share **0.314 → 0.023**, long hooks landed on us while at the edge
+**6.92 → 0.38/game**, total long hooks landed on us 16.66 → 11.03/game (target
+≤ 14.5: hit), hook damage taken −39%, own dodge rate up. Those decoded
+artifacts were not committed before that session was suspended (05:09Z) —
+the numbers above are quoted from its session log; the raw replays remain
+downloadable from `evals/iter3-directional/episodes.json`.
+
+### Verdict (iteration 3, written 2026-09-17T06Z by devin-4c31d8f4)
+
+**Decision: `rerun` — strong directional signal, promotion gate incomplete.**
+Champion stays **v1**; **v4 stays `STATE.latest` and is the base for
+iteration 4** (the campaign brief builds each iteration on the previous latest
+policy; v4 is not rejected).
+
+- Signal: +0.34 (4.0 pooled SE) over v1 on the identical top-3 protocol,
+  matched-window arm +0.325 (3.1 SE); no side or opponent regression; taint
+  0/40; 0 tracebacks; mechanism confirmed on every pre-registered metric.
+- Why not `promote`: `eval_protocol.gate_n = 100` clean episodes per arm in
+  one window. The bootstrap session launched 60-episode gate arms for v4
+  (`xreq_bc7bc25e`) and v1 (`xreq_c04fbf1e`) at 04:28Z; **the v4 arm was
+  cancelled at 04:36Z by someone other than that session** (all 60 episodes
+  `failed: Experience request cancelled`, 0 completed) while the v1 arm ran to
+  completion. The session asked Aaron whether to relaunch and got no answer
+  before suspension. This run did **not** relaunch it (a human cancel is
+  treated as an instruction until countermanded); `xp create --label
+  iter3-gate-v4` in this run returned the cancelled request via the
+  idempotency key, no spend.
+- To close: a v4 arm of ≥ 60 clean episodes in the same window as a v1 (or
+  v5) arm. Running iteration 4's matched directional as v5 vs **v4** (n=40
+  each) will add to v4's total at no extra cost; a further 60-episode v4 arm
+  (~12 USD) needs Aaron's go-ahead given the cancel.
+- Rollback: `pudge-auto-optimizer:v1` (`a7afee99…`) is the champion and the
+  documented rollback ref; the clamp is two constants (`HOLD_Y_MIN/MAX`).

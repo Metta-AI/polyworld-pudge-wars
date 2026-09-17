@@ -46,12 +46,12 @@
     "iteration": 3,
     "policy_ref": "pudge-auto-optimizer:v4",
     "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
-    "status": "uploaded 2026-09-17T03:39:48Z (bootstrap session devin-53dc4bed; automation run could not pull python:3.12-slim). Behavior = v1 + fishing-hold y clamp [30,98]; built from 2f4318c (v3 classifier dormant, PUDGE_THREAT_FILTER default 'distance'). Branch HEAD source = d1f6d7c + clamp (classifier removed), same default behavior. Smoke xreq_538ede79 clean 3/3, 0 tracebacks, edge_clamp bound on ~36-48% of ticks (hosted 0.5309 USD). Directional xreq_4e49fbc4 (n=40, top-3) launched 04:05Z, matched to v1 xreq_3e9e30f4; next: poll, logs, taint-filter, edge_exposure on replays, verdict vs v1 0.425+-0.078.",
+    "status": "v4 verdict (06Z, devin-4c31d8f4): `rerun` = strong directional signal, gate incomplete. Directional xreq_4e49fbc4 clean 40/40, 0 tainted, 0 tracebacks, win 0.750+-0.068 vs v1 0.425+-0.078 (matched protocol xreq_3e9e30f4) and fresh v1 0.400+-0.063 (n=60 gate arm xreq_c04fbf1e): +0.34 / 4.0 pooled SE, both sides and all 3 opponents up, deaths 18.3->10.7/game, opp hook acc 0.187->0.132. Not promoted: the 60-episode v4 gate arm xreq_bc7bc25e was cancelled externally at 04:36Z (0 completed). v1 stays champion; v4 is the base for iteration 4. See experiments/2026-09-17-edge-band-hold.md#verdict.",
     "experiment": "experiments/2026-09-17-edge-band-hold.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v4",
       "policy_version_id": "774d5ee5-d4ad-49de-82cc-54457a53041e",
-      "verdict": "pending"
+      "verdict": "rerun (signal +0.34 / 4.0 SE over v1; gate arm cancelled, not promoted)"
     },
     "base_ref": "pudge-auto-optimizer:v1",
     "source_commit": "2f4318c",
@@ -86,9 +86,7 @@
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
-  "open_evals": {
-    "iter3-directional": "xreq_4e49fbc4-37c1-4dd6-96ce-eaa3bc456322"
-  },
+  "open_evals": {},
   "findings": [
     {
       "date": "2026-09-17",
@@ -119,6 +117,11 @@
       "date": "2026-09-17",
       "topic": "concurrency",
       "note": "The 03:00Z automation run (session devin-88e8709d) started iteration 3 on top of v3 while the bootstrap session was still finishing v3's directional verdict. Rule: an iteration's base_ref is STATE.champion at the time of upload; if a candidate's verdict is still open, wait for it or build on the champion. Unbuilt automation change was rebuilt here as v4 on v1."
+    },
+    {
+      "date": "2026-09-17",
+      "topic": "edge-band hold (v4)",
+      "note": "v4 (v1 + fishing-hold y clamp [30,98]) directional n=40 top-3: 0.750+-0.068 vs v1 0.425+-0.078 matched / 0.400+-0.063 fresh n=60; deaths 18.3->10.7/game, opponent hook accuracy 0.187->0.132, own throws unchanged (383/game), own accuracy 0.181->0.147. Replay decode (bootstrap session): own edge-time share 0.314->0.023, long hooks landed on us at the edge 6.92->0.38/game. Strongest lever found so far; the remaining death budget (10.7/game) is now mid-lane exposure, not edge pinning."
     }
   ],
   "automation": {
@@ -143,6 +146,25 @@
       "fix": "add production.cloudfront.docker.com to the automation network policy (https://app.devin.ai/org/metta-ai/automations/auto-600aa4eb690e459190c04b10d5c0c9fb); the blueprint's `docker pull python:3.12-slim` does not survive into the snapshot (docker images was empty at session start)",
       "next_run": "retry `docker pull --platform linux/amd64 python:3.12-slim`; if it succeeds, build iter3 -> upload v4 -> smoke -> directional per experiments/2026-09-17-edge-band-hold.md",
       "resolution": "v4 built+uploaded from the bootstrap session (devin-53dc4bed, Docker Hub reachable) at 03:39Z. Automation net_policy update proposed (add production.cloudfront.docker.com); until applied, automation runs cannot build images."
+    },
+    {
+      "recorded_at": "2026-09-17T06:30:00Z",
+      "iteration": 4,
+      "session": "devin-4c31d8f447274f27ac417b27c640c43b",
+      "kind": "network",
+      "status": "open",
+      "summary": "Automation runs still cannot build images. docker pull python:3.12-slim -> layer blobs redirected to production.cloudfront.docker.com (blocked; allowlist has only production.cloudflare.docker.com). Alternatives probed and blocked: public.ecr.aws, mirror.gcr.io, archive.ubuntu.com. Using our own ECR repo as a base (FROM 471879937681.dkr.ecr.../pudge-auto-optimizer:v4) fails too: the Softmax pre-signed ECR role (coworld-artifact-push) is push-only (ecr:BatchGetImage denied, 403). Iteration-4 code change + unit test are committed unbuilt.",
+      "network_access_request": "network-access-request-51efe82b3a1247c2b6a2cb3c9554306",
+      "fix": "add production.cloudfront.docker.com to the automation network policy (https://app.devin.ai/org/metta-ai/automations/auto-600aa4eb690e459190c04b10d5c0c9fb) OR have the blueprint bake python:3.12-slim into the snapshot (docker images is empty at session start).",
+      "next_run": "retry `docker pull --platform linux/amd64 python:3.12-slim`; if it works: build iter4 -> upload v5 -> smoke -> matched directional v5 vs v4 (n=40 each) per experiments/2026-09-17-<iter4 slug>.md; else a human/bootstrap session with Docker Hub access builds v5 from the branch HEAD.",
+      "side_effect": "probing left an unused pending image-upload record named pudge-auto-optimizer-basepull-probe on the Softmax side (no policy version created); ignore it."
+    }
+  ],
+  "pending_decisions": [
+    {
+      "recorded_at": "2026-09-17T06:30:00Z",
+      "topic": "v4 promotion gate",
+      "ask": "The v4 60-episode gate arm xreq_bc7bc25e was cancelled by a human at 04:36Z while the matched v1 arm xreq_c04fbf1e completed (0.400+-0.063, n=60). To close the gate, v4 needs >=60 more clean episodes in one window against a v1/v5 arm (~12 USD). Automation runs will not relaunch it without a go-ahead; iteration 4's v5-vs-v4 matched directional (n=40 each) adds v4 evidence as a side effect."
     }
   ]
 }
