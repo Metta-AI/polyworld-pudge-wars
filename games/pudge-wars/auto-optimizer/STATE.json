@@ -38,10 +38,10 @@
     "note": "Current #1 (Aaron). Named-target comparison reference and top_n member; NOT our baseline."
   },
   "latest": {
-    "iteration": 1,
-    "policy_ref": "pudge-auto-optimizer:v2",
-    "policy_version_id": "7ddf93a5-82f3-4bf4-be0b-0f50d9bef0a0",
-    "status": "uploaded; smoke xreq_8ca151a8 running",
+    "iteration": 2,
+    "policy_ref": "pudge-auto-optimizer:v3",
+    "policy_version_id": "6523437c-6102-40eb-b8e1-5d6aad37c50e",
+    "status": "uploaded; smoke xreq_4f8155c2 running; v2 superseded (owner-heading fallback removed)",
     "experiment": "experiments/2026-09-17-collision-threat.md"
   },
   "champion": {
@@ -69,15 +69,19 @@
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
   "open_evals": {
-    "iter0-smoke": "xreq_8e48fa28-9057-4727-b626-8cef4770cd1e",
-    "iter1-smoke": "xreq_8ca151a8-8bde-4e1b-bfa2-cda1c44b96e1",
-    "iter0-directional": "xreq_3e9e30f4-d1af-4a46-9d93-45c1ef55a5ca"
+    "iter0-directional": "xreq_3e9e30f4-d1af-4a46-9d93-45c1ef55a5ca",
+    "iter2-smoke": "xreq_4f8155c2-ca8c-4210-b245-d211fde7fb9f"
   },
   "findings": [
     {
       "date": "2026-09-17",
       "topic": "eval field shape",
       "note": "XP request with roster [ours, top_n=3] seats 2 participants (1v1: position 0 west, 1 east) even though variant_name is 'League 3v3'. Ladder scheduler is team_pair/blocks with filler_policy, ranking elo k=8 mean. 1v1 XP results may not transfer to 3v3 ladder rounds; next run should probe a 6-slot roster (ours x3 vs top_n x3 or ours+fillers) and compare seat counts in episodes.json before trusting transfer."
+    },
+    {
+      "date": "2026-09-17",
+      "topic": "hook heading",
+      "note": "Owner position must not be used to infer a flying hook's heading: the owner may Blink after the throw while the head keeps its heading (examples/pudge_wars/human_play.md). Only head displacement between ticks is trustworthy; v2 used the owner fallback in ~1% of classifications and was superseded by v3."
     }
   ],
   "automation": {

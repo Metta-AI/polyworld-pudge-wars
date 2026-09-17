@@ -35,7 +35,7 @@ FIELDS = [
     "iteration", "started_at", "finished_at", "devin_session_id", "devin_session_url", "devin_mode",
     "change", "hypothesis", "base_ref", "policy_ref", "policy_version_id", "image_digest", "source_commit",
     "eval_id", "eval_kind", "eval_n_clean", "eval_n_tainted", "verdict", "verdict_summary",
-    "llm_cost_acus", "llm_cost_acus_final", "llm_cost_usd", "hosted_compute_usd", "notes",
+    "llm_cost_acus", "llm_cost_acus_final", "llm_cost_usd", "llm_cost_note", "hosted_compute_usd", "notes",
 ]
 
 
@@ -141,8 +141,27 @@ def cmd_cost(a: argparse.Namespace) -> None:
     row["llm_cost_acus_final"] = bool(a.final)
     row["llm_cost_recorded_at"] = now()
     row["llm_cost_usd"] = usd(row)
+    # A session's ACUs are cumulative, so a session shared by several
+    # iterations is charged once, to its highest iteration; the earlier
+    # rows close at 0 and point there.
+    session = row.get("devin_session_id")
+    for other in rows:
+        if session and other is not row and other.get("devin_session_id") == session \
+                and other["iteration"] < row["iteration"] and not other.get("llm_cost_acus_final"):
+            other["llm_cost_acus"] = 0.0
+            other["llm_cost_acus_final"] = bool(a.final)
+            other["llm_cost_recorded_at"] = now()
+            other["llm_cost_usd"] = usd(other)
+            other["llm_cost_note"] = f"session shared with iteration {row['iteration']}; ACUs recorded there"
     dump(rows)
     print(f"iteration {a.iteration}: {a.acus} ACU final={bool(a.final)} usd={row['llm_cost_usd']}")
+
+
+def cmd_unfinalized(_: argparse.Namespace) -> None:
+    """Iterations whose ACU cost still needs a final reading, one per line."""
+    for row in load():
+        if not row.get("llm_cost_acus_final"):
+            print(f"{row['iteration']} {row.get('devin_session_id')} {row.get('llm_cost_acus')}")
 
 
 def cmd_hosted_cost(a: argparse.Namespace) -> None:
@@ -188,6 +207,7 @@ def main() -> None:
     p.add_argument("--decision", required=True, choices=["promote", "reject", "no_signal", "rerun", "baseline", "weak_evidence"])
     p.add_argument("--summary", required=True); p.set_defaults(fn=cmd_verdict)
     sub.add_parser("render").set_defaults(fn=cmd_render)
+    sub.add_parser("unfinalized").set_defaults(fn=cmd_unfinalized)
     p = sub.add_parser("show"); p.add_argument("--iteration", type=int); p.set_defaults(fn=cmd_show)
     a = ap.parse_args()
     a.fn(a)

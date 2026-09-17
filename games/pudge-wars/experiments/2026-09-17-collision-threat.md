@@ -79,4 +79,21 @@ the trace, or any traceback in candidate stdout/stderr. Rollback ref:
 
 ## Results
 
-_pending_
+**v2 smoke** (`xreq_8ca151a8`, top-3 field, n=3, 1v1 seating): clean 3/3,
+0 tracebacks, won 2/3 (0.667±0.27 — smoke, not evidence). Instrumentation
+landed: 723 `threat_class` events over 3 episodes, 66% `wide`/`away` (target
+was ≥30%), `dodge_blink` 44–69 per episode (all `hit`/`blind`). Heading
+source: `track` 97%, `owner` 1.2%, `none` 1.8%.
+
+**Revision → v3** (iteration 2, same hypothesis, one change): the
+owner→head heading fallback is unsound — the game keeps a hook's heading
+when its owner Blinks (`human_play.md`: "The head keeps its world position
+and heading"), so a real incoming hook could be classed `wide`/`away` from
+the owner's new position. v3 uses tracked head displacement only; an
+untracked hook is `blind` (dodged) within 10 tiles and otherwise `pending`
+for one tick (hook speed ≈0.6 tile/tick, so waiting one tick at >10 tiles
+costs nothing). Unit tests cover the post-blink owner geometry. v2 gets no
+directional eval; v3 inherits the eval plan against baseline `xreq_3e9e30f4`.
+
+**Directional**: _pending_ (v1 `xreq_3e9e30f4` n=40 running; v3 smoke
+`xreq_4f8155c2`, then v3 directional n=40 same protocol).

@@ -289,6 +289,16 @@ def cmd_xp_poll(args: argparse.Namespace) -> None:
             time.sleep(args.interval)
 
 
+def policy_score(ep: dict[str, Any], pid: str) -> float | None:
+    """Our numeric score in an episode: by policy version in `scores`, else by
+    seat in `participant_scores`; None when neither carries a number."""
+    mine = [p for p in ep.get("participants") or [] if p.get("policy_version_id") == pid]
+    seats = {p.get("position") for p in mine}
+    candidates = [s.get("score") for s in ep.get("scores") or [] if s.get("policy_version_id") == pid]
+    candidates += [s.get("score") for s in ep.get("participant_scores") or [] if s.get("position") in seats]
+    return next((float(s) for s in candidates if isinstance(s, (int, float)) and not isinstance(s, bool)), None)
+
+
 def cmd_xp_summarize(args: argparse.Namespace) -> None:
     out_dir = EVALS / args.label
     with client() as c:
@@ -300,7 +310,7 @@ def cmd_xp_summarize(args: argparse.Namespace) -> None:
     taint: list[dict[str, Any]] = []
     for ep in episodes:
         mine = [p for p in ep.get("participants", []) if p.get("policy_version_id") == pid]
-        score = next((s["score"] for s in ep.get("scores") or [] if s["policy_version_id"] == pid), None)
+        score = policy_score(ep, pid)
         if ep.get("status") != "completed" or not mine or score is None:
             taint.append({"id": ep["id"], "status": ep.get("status"), "error_type": ep.get("error_type"), "error": ep.get("error"),
                           "reason": "not completed" if ep.get("status") != "completed" else "policy absent" if not mine else "unscored"})

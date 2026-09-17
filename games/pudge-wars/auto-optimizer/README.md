@@ -39,11 +39,14 @@ python3 $CAMP/tools/hosted.py budget                   # respect eval_protocol.b
 python3 $CAMP/tools/ledger.py show                     # what happened before
 ```
 
-1. **Close the previous iteration's books.** If the last ledger row has
-   `llm_cost_acus_final=false`, fetch that Devin session's final
-   `acus_consumed` (Devin MCP `devin_session_interact action=get`) and run
-   `ledger.py cost --iteration N --acus X --final`. If its eval is still
-   running, `hosted.py cf poll` / `cf summarize` it and write the verdict
+1. **Close the previous iterations' books.** `ledger.py unfinalized` lists
+   every row whose ACU cost is not final (iteration, session id). For each
+   distinct session id, fetch that session's final `acus_consumed` once
+   (Devin MCP `devin_session_interact action=get`) and run
+   `ledger.py cost --iteration N --acus X --final` for the *highest* iteration
+   of that session; the tool closes the earlier rows of the same session at
+   0 ACU with a pointer, so a session total is never counted twice. If an
+   eval is still running, `hosted.py xp poll` / `xp summarize` it and write the verdict
    (`ledger.py verdict`, close the experiment file, update `STATE.latest` /
    `STATE.champion`, add dead levers to `../closed_levers.md`).
 2. **Open this iteration.** `ledger.py start --iteration N+1 --session <this
@@ -68,12 +71,14 @@ python3 $CAMP/tools/ledger.py show                     # what happened before
    ```
    Immediately: `ledger.py set --iteration N policy_ref=... policy_version_id=...
    image_digest=... source_commit=...` and `STATE.latest`.
-6. **Smoke** (`hosted.py cf create --candidate <ref> --n 3 --label iterN-smoke`,
-   poll, `hosted.py logs` on one candidate episode → zero tracebacks).
-7. **Verify** with the primary protocol at `eval_protocol.directional_n` or
-   `gate_n` (`hosted.py cf create --candidate <ref> --n 100 --label iterN-gate`),
-   poll (hours; the next session may finish it), `cf summarize`. Compare with
-   the champion's summary on the same protocol.
+6. **Smoke** (`hosted.py xp create --policy <ref> --episodes 3 --top-n 3
+   --label iterN-smoke`, `xp poll`, `hosted.py logs` on every candidate
+   episode → zero tracebacks, hypothesis instrumentation present).
+7. **Verify** with the primary protocol at `eval_protocol.directional_n`
+   (`hosted.py xp create --policy <ref> --episodes 40 --top-n 3 --label
+   iterN-directional`) launched in the same window as an equal-n run of the
+   champion; poll (the next session may finish it), `xp summarize` both.
+   Escalate to `gate_n` only if the directional pair clears the decision rule.
 8. **Record**: `ledger.py verdict`, `ledger.py hosted-cost`, experiment file
    verdict block, `STATE.champion` on promote, `closed_levers.md` on reject.
 9. **Cost**: at the end of the session fetch this session's `acus_consumed` and
@@ -107,18 +112,16 @@ Reason:
 
 ## Evaluation protocol
 
-The ladder plays two entrants (slots 0 and 3) with four league filler seats.
-The primary oracle is a **counterfactual eval** against
-`reference.ladder_anchor_ref` (currently `pudge-wars-rusher:v16`, the #1
-entrant): the platform replays that policy's real ladder games with our
-candidate in its seat — same seed, same opponent, same fillers — and scores
-each pair. `hosted.py cf summarize` reports the candidate's clean win rate, the
-anchor's win rate on the exact same games, per-probe-slot and per-opponent
-splits, taint counts, and binomial SE. Two candidates are compared on this
-protocol at equal n; the anchor is the yardstick, not our baseline.
-
-Fresh-field XP requests (`hosted.py xp create --top-n 3`) are the secondary,
-broader guardrail. Local `pwheadless` runs are debugging instruments only.
+Counterfactual evals are **disabled for this league** (HTTP 409), so the
+oracle is a fresh-field **XP request** against the live top of the ladder
+(`hosted.py xp create --policy <ref> --top-n 3`). `xp summarize` reports the
+clean win rate with binomial SE, per-side / per-opponent splits, taint counts
+and hosted cost. Candidate and champion are compared at equal n in the same
+window; the `cf` subcommands stay in `hosted.py` for when counterfactuals
+are re-enabled. Known caveat (STATE `findings`): the current roster seats two
+participants per episode even under the `League 3v3` variant, so a 1v1 result
+may not transfer to team-pair ladder rounds. Local `pwheadless` runs are
+debugging instruments only.
 
 ## Recurring automation
 
@@ -134,5 +137,8 @@ mirrored under `automation` in `STATE.json`.
 Devin bills sessions in ACUs. Each ledger row stores the session id, the mode
 (`ultra`), and `acus_consumed` as read from the Devin session API, first
 provisionally by the session itself and then finalized by the next session.
-Set `cost.usd_per_acu` in `STATE.json` to render USD. Hosted eval compute is
+A session's ACU figure is cumulative, so when one session produces several
+iterations the total is charged to the highest iteration and the earlier rows
+close at 0 ACU with `llm_cost_note` pointing there (iterations 0 and 1 share
+the bootstrap session). Set `cost.usd_per_acu` in `STATE.json` to render USD. Hosted eval compute is
 recorded from the Coworld daily-budget delta (`hosted.py budget`).

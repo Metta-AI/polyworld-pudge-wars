@@ -62,12 +62,14 @@ class BasePolicy:
         if self.trace:
             self.events.append(dict(event=event, tick=self.tick, **values))
 
-    def collision_threat(self, me: dict, hooks: list[dict], units: list[dict], team: int) -> dict | None:
+    def collision_threat(self, me: dict, hooks: list[dict], team: int) -> dict | None:
         """Nearest enemy hook in flight whose straight path can actually reach us.
 
-        Heading comes from the head's displacement since the previous tick,
-        else from owner to head. Without either estimate the hook counts as a
-        threat. Hooks moving away or passing wide are ignored.
+        Heading comes from the head's displacement since the previous tick;
+        the owner's position is not used because the owner may Blink after
+        the throw while the head keeps its heading. An untracked head is a
+        threat when close (blind) and otherwise waits one tick for a track
+        (pending). Hooks moving away or passing wide are ignored.
         """
         tick = self.tick
         seen: dict[int, tuple[int, float, float, str]] = {}
@@ -83,18 +85,12 @@ class BasePolicy:
                 dx, dy = hook["x"] - old[1], hook["y"] - old[2]
                 if math.hypot(dx, dy) >= 0.05:
                     source = "track"
-            if source == "none":
-                owner = next((p for p in units if p["id"] == owner_id), None)
-                if owner is not None:
-                    dx, dy = hook["x"] - owner["x"], hook["y"] - owner["y"]
-                    if math.hypot(dx, dy) >= 1.0:
-                        source = "owner"
             dist = distance(me, hook)
             cls = old[3] if old is not None else ""
             if dist <= 22:
                 along = perp = None
                 if source == "none":
-                    cls = "blind"
+                    cls = "blind" if dist <= 10 else "pending"
                 else:
                     length = math.hypot(dx, dy)
                     ux, uy = dx / length, dy / length
@@ -242,7 +238,7 @@ class BasePolicy:
         hold_x = west - 16 if team == 0 else east + 16
         home = [me["home_x"], me["home_y"]]
         rank = sum(p["id"] < me["id"] for p in allies)
-        threat = self.collision_threat(me, hooks, units, team)
+        threat = self.collision_threat(me, hooks, team)
         if threat is None:
             self.dodge_side = 0
         elif self.dodge_side == 0:
