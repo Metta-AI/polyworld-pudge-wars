@@ -362,6 +362,49 @@ class SupportOpportunityTest(unittest.TestCase):
             obs["rune_next"] = dict(soon=150, x=64, y=48)
             self.assertEqual(original.choose_action(obs), changed.choose_action(obs))
 
+    def test_hook_aimed_elsewhere_is_not_a_threat(self):
+        me = unit()
+        me["blink_ready"] = True
+        enemy = unit(4, 1, 60, 40)
+        # Owner is visible; the head flies from (60,40) through (52,50), passing ~19 tiles from us.
+        hook = dict(owner_id=4, team=1, x=52, y=50, flying=True, victim=0)
+        policy = BasePolicy(trace=True)
+        action = policy.choose_action(observation(me, [enemy], hooks=[hook]))
+        self.assertNotIn("blink_to", action)
+        classes = [e for e in policy.events if e["event"] == "threat_class"]
+        self.assertEqual([e["cls"] for e in classes], ["wide"])
+        self.assertEqual(classes[0]["src"], "owner")
+
+    def test_hook_moving_away_is_not_a_threat(self):
+        me = unit()
+        me["blink_ready"] = True
+        policy = BasePolicy(trace=True)
+        first = dict(owner_id=4, team=1, x=44, y=40, flying=True, victim=0)
+        second = dict(owner_id=4, team=1, x=46, y=40, flying=True, victim=0)
+        obs = observation(me, hooks=[first])
+        policy.choose_action(obs)
+        obs2 = observation(me, hooks=[second])
+        obs2["tick"] = 201
+        action = policy.choose_action(obs2)
+        self.assertNotIn("blink_to", action)
+        classes = [(e["cls"], e["src"]) for e in policy.events if e["event"] == "threat_class"]
+        self.assertEqual(classes, [("blind", "none"), ("away", "track")])
+
+    def test_hook_closing_on_us_keeps_the_dodge(self):
+        me = unit()
+        me["blink_ready"] = True
+        policy = BasePolicy(trace=True)
+        first = dict(owner_id=4, team=1, x=52, y=41, flying=True, victim=0)
+        second = dict(owner_id=4, team=1, x=50, y=41, flying=True, victim=0)
+        policy.choose_action(observation(me, hooks=[first]))
+        obs2 = observation(me, hooks=[second])
+        obs2["tick"] = 201
+        action = policy.choose_action(obs2)
+        self.assertIn("blink_to", action)
+        self.assertLess(action["blink_to"][0], me["x"])
+        blinks = [e for e in policy.events if e["event"] == "dodge_blink"]
+        self.assertEqual(blinks[-1]["cls"], "hit")
+
 
 if __name__ == "__main__":
     unittest.main()

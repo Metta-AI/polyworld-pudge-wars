@@ -38,11 +38,11 @@
     "note": "Current #1 (Aaron). Named-target comparison reference and top_n member; NOT our baseline."
   },
   "latest": {
-    "iteration": 0,
-    "policy_ref": "pudge-auto-optimizer:v1",
-    "policy_version_id": "a7afee99-e56f-40eb-ae64-6bc08f83ae71",
-    "source_commit": "d1f6d7c9a06c3a064fff1fd710e45703b62c77b8",
-    "status": "uploaded"
+    "iteration": 1,
+    "policy_ref": "pudge-auto-optimizer:v2",
+    "policy_version_id": "7ddf93a5-82f3-4bf4-be0b-0f50d9bef0a0",
+    "status": "uploaded; smoke xreq_8ca151a8 running",
+    "experiment": "experiments/2026-09-17-collision-threat.md"
   },
   "champion": {
     "policy_ref": "pudge-auto-optimizer:v1",
@@ -67,5 +67,9 @@
     "unit": "ACU",
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
+  },
+  "open_evals": {
+    "iter0-smoke": "xreq_8e48fa28-9057-4727-b626-8cef4770cd1e",
+    "iter1-smoke": "xreq_8ca151a8-8bde-4e1b-bfa2-cda1c44b96e1"
   }
 }

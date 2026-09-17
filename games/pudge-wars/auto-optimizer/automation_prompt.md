@@ -1,0 +1,26 @@
+You are continuing the Pudge Wars auto-optimizer research campaign in @Metta-AI/polyworld-pudge-wars. Methodology (doctrine to follow): @Metta-AI/optimizer-seed `AGENTS.md`. This is a recurring, unattended run: nobody is watching the chat, so work from disk, record everything on disk, and finish with a short report.
+
+Goal: improve the `pudge-auto-optimizer` policy so it would rise in the live Pudge Wars league ladder, one attributable change per iteration, on top of the previous latest policy — and record the LLM compute cost (this Devin session's ACUs) of every iteration.
+
+Setup (every run):
+1. `cd` into the polyworld-pudge-wars checkout. `git fetch origin`, check out the branch named in `games/pudge-wars/auto-optimizer/STATE.json` (`branch`), `git pull --ff-only`. All work is committed and pushed to that branch; never push to main; do not open new branches.
+2. Read `games/pudge-wars/auto-optimizer/README.md` fully and follow its "Resume procedure" exactly. It covers auth (`softmax set-token "$SOFTMAX_USER_API_TOKEN"` — never print the token), selecting the campaign player (`coworld player use <STATE.identity.player_id>`), `tools/hosted.py whoami` (must pass before any write), `tools/hosted.py budget` (respect `eval_protocol.budget_rule`), and `tools/ledger.py show`.
+3. Docker must be available (`docker info`). Builds use `--platform linux/amd64`.
+
+Iteration procedure (follow README; summary):
+- Close the previous iteration's books: if the last ledger row has `llm_cost_acus_final=false`, fetch that Devin session's final `acus_consumed` via the Devin MCP tool (`devin_session_interact action=get`, session id in the row) and run `tools/ledger.py cost --iteration N --acus X --final`. If its hosted eval(s) (`STATE.open_evals`) are still running, poll them (`tools/hosted.py xp poll`), then `xp summarize`, download and inspect policy stdout/stderr (`tools/hosted.py logs`) for tracebacks/malformed actions/nonparticipation, taint-filter, and write the verdict (`tools/ledger.py verdict`, experiment file verdict block, `STATE.latest`/`STATE.champion`, `games/pudge-wars/closed_levers.md` on reject). Decision rule and promotion rule are in `STATE.eval_protocol`; small N is "no signal", never a promotion.
+- Open iteration N+1 with `tools/ledger.py start --iteration N+1 --session <this Devin session id> --mode ultra --change "<one line>" --hypothesis games/pudge-wars/experiments/<date>-<slug>.md`. Record `spent_today_usd` before evals for the hosted-cost delta.
+- Hypothesize from evidence (previous eval readouts, hosted logs, replays, `docs/pudge-improvement-roadmap.md`), check `closed_levers.md` first, write the experiment file with the template in README (Observation / Causal guess / Evidence / Missing data / Change / Expected metric movement / Eval plan / Overfit risk / Rollback condition).
+- Change exactly one behavior in `coworld/player/` (plus instrumentation if the hypothesis needs a new signal). Keep `python3 -m unittest discover -s tests -p 'test_pw_coworld_policy.py'` green; add a unit test for the new decision.
+- Build (`docker build --platform linux/amd64 -f coworld/player/Dockerfile -t pudge-auto-optimizer:iterN coworld`), upload inert (`coworld upload-policy pudge-auto-optimizer:iterN --name pudge-auto-optimizer --run python --run -m --run coworld.examples.pudgewars.player.player`; one token per `--run`), then IMMEDIATELY write the row in `games/pudge-wars/players/pudge-auto-optimizer/VERSION_LOG.md`, `tools/ledger.py set ...`, and `STATE.latest`.
+- Smoke (`tools/hosted.py xp create --policy pudge-auto-optimizer:vN --top-n 3 --episodes 3 --label iterN-smoke`), poll, inspect logs (zero tracebacks, new trace events present). Then launch the matched directional eval at `eval_protocol.directional_n` for the candidate AND (if not already done in the same window) the current champion/baseline on the identical protocol, record both request ids in `STATE.open_evals`. Do not wait more than ~60 minutes for a long eval to finish; the next run harvests it.
+- Cost: before finishing, fetch this session's `acus_consumed` (Devin MCP `devin_session_interact action=get` on your own session id) and run `tools/ledger.py cost --iteration N+1 --acus X` (not `--final`; the next run finalizes it). Render with `tools/ledger.py render`.
+- Commit (source + experiments + auto-optimizer records + evals summaries; never tokens or `.runtime/`) and push the branch. If the branch has an open PR, leave it; otherwise do nothing PR-wise.
+
+Hard rules:
+- NEVER run `coworld submit` or anything that enters the public league; `STATE.submission.allowed` is false. Uploads and hosted evals are allowed without asking.
+- Never fabricate ACU→USD conversions or token counts; leave `usd` null unless `STATE.cost.usd_per_acu` is set.
+- One attributable change per uploaded version. Never modify tests to make them pass. Never use destructive git commands.
+- If `tools/hosted.py whoami` fails, the budget rule blocks, or Docker is unavailable, do the harvest/bookkeeping steps only, record the blocker in `STATE.json` under `blockers`, commit, push, and stop.
+
+Final message (finding-first, short): iteration number, one-line change, policy version ref/id, eval ids and their state, clean win rate with N and SE when available, verdict, this session's ACUs, and what the next run should do.
