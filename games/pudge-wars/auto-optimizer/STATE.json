@@ -1,0 +1,71 @@
+{
+  "campaign": "pudge-auto-optimizer",
+  "objective": "Raise a new Pudge Wars league entrant, derived from the repo's default Python policy (coworld/player), up the Competition division ladder by making one attributable, hosted-verified change per iteration.",
+  "branch": "devin/1789610104-pudge-auto-optimizer",
+  "league": {
+    "id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+    "name": "Pudge Wars",
+    "division_id": "div_471aedc1-00f7-41dd-971d-f0beff95a439",
+    "variant_id": "league-3v3",
+    "ladder_shape": "two entrants (slots 0 and 3) plus four league filler seats (1,2,4,5); Elo k=8, division score = mean round score",
+    "filler_policy_version_ids": [
+      "bede6fcf-245b-45a6-9dc2-7327e9b61fa6",
+      "5afb739c-d6bd-43b8-a354-49a3aaa493ff",
+      "7de12c3b-5de6-4015-8f5b-562fba4fe14c"
+    ]
+  },
+  "coworld": {
+    "id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
+    "name": "pudge-wars",
+    "game_version": "0.3.21"
+  },
+  "identity": {
+    "player_id": "ply_594ec24d-d7f3-4370-a000-468354ec41c9",
+    "player_name": "Aaron's Optimizer",
+    "policy_name": "pudge-auto-optimizer",
+    "note": "Select with `coworld player use <player_id>` and verify with `tools/hosted.py whoami` before any upload or eval."
+  },
+  "baseline": {
+    "description": "Repo default Python policy: coworld/player at the commit below, Dockerfile defaults PUDGE_PERSONALITY=rusher, POLICY_ARM=combined. Identical to the bundled 'Rusher' starter in the pudge-wars 0.3.21 manifest.",
+    "source_commit": "d1f6d7c9a06c3a064fff1fd710e45703b62c77b8",
+    "source_tree_sha256": "38cd7d149b02a010aa09e774a4bf04d275fe8fa8f7c81c1e7bb624f7c9cbc314",
+    "policy_ref": "pudge-auto-optimizer:v1",
+    "policy_version_id": "a7afee99-e56f-40eb-ae64-6bc08f83ae71"
+  },
+  "reference": {
+    "ladder_anchor_ref": "pudge-wars-rusher:v16",
+    "ladder_anchor_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+    "note": "Current #1 (Aaron). Named-target comparison reference and top_n member; NOT our baseline."
+  },
+  "latest": {
+    "iteration": 0,
+    "policy_ref": "pudge-auto-optimizer:v1",
+    "policy_version_id": "a7afee99-e56f-40eb-ae64-6bc08f83ae71",
+    "source_commit": "d1f6d7c9a06c3a064fff1fd710e45703b62c77b8",
+    "status": "uploaded"
+  },
+  "champion": {
+    "policy_ref": "pudge-auto-optimizer:v1",
+    "policy_version_id": "a7afee99-e56f-40eb-ae64-6bc08f83ae71",
+    "promoted_in_iteration": 0
+  },
+  "eval_protocol": {
+    "primary": "Experience request on the league target: roster = [our policy, top_n=3], slots auto (-1); the platform seats the league fillers like the ladder does. Report clean win rate with binomial SE, split by team side (west/east) and by opponent, taint-filtered. Baseline and candidate are run on this identical protocol at equal n in the same window; the delta between them is the verdict.",
+    "secondary": "Pairwise experience request vs reference.ladder_anchor_ref at equal n, same window, as a named-target check.",
+    "counterfactual_evals": "DISABLED for this league (API 409 'counterfactual eval is disabled for this league', 2026-09-17). Re-check occasionally with `hosted.py cf create --n 3`; if enabled it becomes the primary protocol.",
+    "smoke_n": 3,
+    "directional_n": 40,
+    "gate_n": 100,
+    "promotion_rule": "Promote over the champion only when candidate clean win rate exceeds the champion's on the same protocol/window by more than 2 pooled SE, taint rate is within background, no team-side or top-3 opponent regression beyond 1 SE, and zero tracebacks in policy logs.",
+    "budget_rule": "Read `tools/hosted.py budget` before launching. Do not launch if remaining_usd < 40; each 3v3 episode costs roughly the observed per-episode delta recorded in ledger hosted_compute_usd."
+  },
+  "submission": {
+    "allowed": false,
+    "note": "League submission is irreversible and needs explicit human go-ahead each time. Set allowed=true only when the user says so, and record the quote in user_preferences.md."
+  },
+  "cost": {
+    "unit": "ACU",
+    "usd_per_acu": null,
+    "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
+  }
+}
