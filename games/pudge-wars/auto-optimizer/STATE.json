@@ -92,7 +92,10 @@
     "change": "post-pull bank escape: on the enemy bank without the brawl HP edge (hp+40 < enemy hp, enemy hp > 120), enemy within 12, Blink ready -> blink_to home (fountain_escape landing in the mid strip, else 20 tiles toward our bank = river water) instead of the forced brawl; pull_landed + bank_escape trace events; v9/v10 add the engine gates: no escape inside an enemy Rot disk, own Rot switched off first (Blink cooldown tracked from accepted hops), bank_escape_refused{reason} from the host echo with a 32-tick hold (brawl as v4) after a refused hop",
     "eval_ids": {
       "smoke_v8": "xreq_700c9ae9-41e9-4b21-9992-70b841795a57",
-      "smoke_v9": "xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5"
+      "smoke_v9": "xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5",
+      "smoke": "xreq_e844ef81-349d-4861-8458-9c374ff1e6b1",
+      "directional_v4": "xreq_9071f4e6-f8ba-4609-8456-660557380b40",
+      "directional": "xreq_66cb8e23-e95d-4d4a-a1a7-18e28b2a9761"
     },
     "superseded_in_iteration": [
       {
@@ -150,6 +153,34 @@
       "status": "completed",
       "created": "2026-09-17T18:45Z",
       "result": "clean n=3, 0 tracebacks, pull_landed 58.3/game, bank_escape 13.7/game; 2 games clean, east game vs rusher:v16 still pinned twice with blink_ready=true (landing refusal, not Rot) -> v9 superseded by v10"
+    },
+    "iter7-smoke-v10": {
+      "id": "xreq_e844ef81-349d-4861-8458-9c374ff1e6b1",
+      "policy": "pudge-auto-optimizer:v10",
+      "episodes": 3,
+      "top_n": 3,
+      "status": "completed",
+      "created": "2026-09-17T19:17Z",
+      "result": "clean n=3, 0 tracebacks, no pinned runs, 0 bank_escape_refused; bank_escape 1.3/game (4 hops over 51 outgunned enemy-bank landings: 45 rot_locked at landing) -> mechanism correct but rarer than the preregistered >=3/game"
+    },
+    "iter7-directional-v4": {
+      "id": "xreq_9071f4e6-f8ba-4609-8456-660557380b40",
+      "policy": "pudge-auto-optimizer:v4",
+      "episodes": 40,
+      "top_n": 3,
+      "status": "completed",
+      "created": "2026-09-17T19:19Z",
+      "note": "matched baseline arm for the iteration-7 candidate (v10)",
+      "result": "clean 40/40, 0 tracebacks, win 0.550+-0.079; west 0.650 east 0.450; vs a-aron:v1 0.714 (14), blind-hook-richard:v7 0.583 (12), rusher:v16 0.357 (14)"
+    },
+    "iter7-directional": {
+      "id": "xreq_66cb8e23-e95d-4d4a-a1a7-18e28b2a9761",
+      "policy": "pudge-auto-optimizer:v10",
+      "episodes": 40,
+      "top_n": 3,
+      "status": "pending",
+      "created": "2026-09-17T20:05Z",
+      "note": "candidate arm; matched baseline iter7-directional-v4"
     }
   },
   "findings": [

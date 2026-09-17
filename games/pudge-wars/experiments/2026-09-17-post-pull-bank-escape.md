@@ -183,3 +183,30 @@ range).
   tick after the switch-off, the same 32-tick hold applies
   (`reason=rot_off_no_blink`). Unit test
   `test_refused_bank_escape_falls_back_to_the_brawl`.
+- 19:15:11Z v10 uploaded (`6cc36a18-5a4e-499d-8aca-75e21ca9bf07`, source
+  `92433f5`, image `sha256:33ecb0e7…`). Smoke `iter7-smoke-v10`
+  `xreq_e844ef81-349d-4861-8458-9c374ff1e6b1`: clean n=3, 0 tracebacks, 0
+  nonparticipating, 2/3 wins (smoke only). **Mechanism now clean**: 4
+  `bank_escape` hops in 3 games, every one a single tick (no pinned runs), 0
+  `bank_escape_refused` (no hop was refused, so the hold never had to fire).
+  **But the rate undershoots the preregistered ≥3/game: 1.3/game.** Of 101
+  `pull_landed`, 59 were on the enemy bank and 51 of those outgunned by the
+  HP rule; at landing 45/51 had an enemy Rot disk over us (`rot_locked`) and
+  only 4 had `blink_ready` — v4 spends Blink on `dodge_blink` ~70×/game, so
+  it is usually cooling when the pull lands. The escape can only fire in the
+  minority of brawls where the hooker's Rot is off and Blink is up.
+- Trust bar before reading the directional: with ~1.3 hops/game the
+  predicted deaths effect is small; n=40 per arm resolves ~±8pp only, so the
+  readout is *directional only* and the likely honest verdict is "no signal
+  at this N" unless the refusal hold or the rare hops move win rate a lot.
+  Launched anyway because the matched v4 arm was already in flight and the
+  pair is the only outcome readout for the change.
+- 19:19Z baseline `iter7-directional-v4`
+  `xreq_9071f4e6-f8ba-4609-8456-660557380b40` (v4, top-3, n=40) — completed
+  20:05Z: clean 40/40, 0 tracebacks, win rate **0.550 ± 0.079**; west 0.650
+  (n=20), east 0.450 (n=20); vs a-aron-pudge-rusher:v1 0.714 (n=14), vs
+  co-gas-pudge-blind-hook-richard:v7 0.583 (n=12), vs pudge-wars-rusher:v16
+  0.357 (n=14). `dodge_blink` 70.0/game, `recovery_start` 14.4/game.
+- 20:05Z candidate `iter7-directional`
+  `xreq_66cb8e23-e95d-4d4a-a1a7-18e28b2a9761` (v10, top-3, n=40) launched
+  on the identical protocol.
