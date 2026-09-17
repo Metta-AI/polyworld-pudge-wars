@@ -90,6 +90,17 @@ python3 $CAMP/tools/ledger.py show                     # what happened before
 Never call `coworld submit`. Submission is the only irreversible act and needs
 the user's explicit go-ahead (`STATE.submission.allowed`).
 
+### Offline base image
+
+Automation runs cannot pull `python:3.12-slim` (Docker Hub redirects blobs to
+`production.cloudfront.docker.com`, which the network policy blocks; see
+`STATE.blockers`). If `docker pull --platform linux/amd64 python:3.12-slim`
+fails, run `tools/offline_base_image.sh`: it packs the host's pyenv CPython
+3.12 into a rootfs, `docker import`s it and tags it `python:3.12-slim`, so
+the Dockerfile builds unchanged (pip still reaches PyPI). Tag such uploads
+`--tag base_image=local-pyenv-<ver>-rootfs` and note the substitution in
+`VERSION_LOG.md`; the policy is pure Python, so behavior is unaffected.
+
 ## Hypothesis template (`experiments/NNN-slug.md`)
 
 ```

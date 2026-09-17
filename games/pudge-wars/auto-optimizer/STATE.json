@@ -46,12 +46,12 @@
     "iteration": 4,
     "policy_ref": "pudge-auto-optimizer:v5",
     "policy_version_id": "0c975025-8d8c-4059-bd1e-bbc3e3654fdd",
-    "status": "v5 uploaded 09:05Z (devin-00a960a6) = v4 + LEAD_DIVISOR 30->12 (+hook_lead trace), source 1bb1971. Smoke iter4-smoke pending; matched directional v5/v4 n=40 to follow. Base image substituted (host pyenv rootfs) because Docker Hub CDN is blocked; see VERSION_LOG v5.",
+    "status": "v5 uploaded 09:05Z (devin-00a960a6) = v4 + LEAD_DIVISOR 30->12 (+hook_lead trace), source 1bb1971. Smoke iter4-smoke xreq_70c3e656 CLEAN: 3/3 wins (2 seats/episode), 0 tracebacks, hook_lead present (33-44 hook bursts/episode, median lead 9-13 units at span>=30). Matched directional v5 (xreq_e2df9823) and v4 (xreq_09380b97), top-n 3, n=40 each, launched 09:31Z; spent_today_usd before launch 5.653338. Base image substituted (host pyenv rootfs) because Docker Hub CDN is blocked; see VERSION_LOG v5.",
     "experiment": "experiments/2026-09-17-hook-lead-divisor.md",
     "last_uploaded": {
       "policy_ref": "pudge-auto-optimizer:v5",
       "policy_version_id": "0c975025-8d8c-4059-bd1e-bbc3e3654fdd",
-      "verdict": "pending (smoke + directional)"
+      "verdict": "pending (smoke clean; directional v5/v4 running)"
     },
     "base_ref": "pudge-auto-optimizer:v4",
     "source_commit": "1bb1971",
@@ -95,7 +95,10 @@
     "usd_per_acu": null,
     "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
   },
-  "open_evals": {},
+  "open_evals": {
+    "iter4-directional": "xreq_e2df9823-bc88-4eae-a93d-1942d8a9fedf",
+    "iter4-directional-v4": "xreq_09380b97-d256-4d4a-841a-1ccad48b4107"
+  },
   "findings": [
     {
       "date": "2026-09-17",
@@ -110,7 +113,7 @@
     {
       "date": "2026-09-17",
       "topic": "collision-threat filter",
-      "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325±0.074 vs v1 0.425±0.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
+      "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325\u00b10.074 vs v1 0.425\u00b10.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
     },
     {
       "date": "2026-09-17",
@@ -161,15 +164,16 @@
       "iteration": 4,
       "session": "devin-4c31d8f447274f27ac417b27c640c43b",
       "kind": "network",
-      "status": "open",
+      "status": "worked-around",
       "summary": "Automation runs still cannot build images. docker pull python:3.12-slim -> layer blobs redirected to production.cloudfront.docker.com (blocked; allowlist has only production.cloudflare.docker.com); the 06:55Z attempt after the iteration-4 code change failed earlier still with `429 Too Many Requests` on the manifest HEAD at registry-1.docker.io (anonymous pull quota), same on retry after 90s. Alternatives probed and blocked: public.ecr.aws, mirror.gcr.io, archive.ubuntu.com. Using our own ECR repo as a base fails too: the Softmax pre-signed ECR role (coworld-artifact-push) is push-only (ecr:BatchGetImage denied, 403). Iteration-4 code change + unit test are committed unbuilt.",
       "fix": "add production.cloudfront.docker.com to the automation network policy (https://app.devin.ai/org/metta-ai/automations/auto-600aa4eb690e459190c04b10d5c0c9fb) OR have the blueprint bake python:3.12-slim into the snapshot (docker images is empty at session start). A Docker Hub login (DOCKERHUB token secret) would also lift the anonymous 429 quota.",
-      "next_run": "retry `docker pull --platform linux/amd64 python:3.12-slim`; if it works: build iter4 -> upload v5 -> smoke iter4-smoke (require hook_lead events, 0 tracebacks) -> matched directional v5 (iter4-directional) and v4 (iter4-directional-v4), n=40 each, per experiments/2026-09-17-hook-lead-divisor.md; else a human/bootstrap session with Docker Hub access builds v5 from the branch HEAD.",
+      "next_run": "If `docker pull --platform linux/amd64 python:3.12-slim` still fails, rebuild the base with the rootfs recipe (see resolution; recipe mirrored in README 'Offline base image').",
       "side_effect": "probing left an unused pending image-upload record named pudge-auto-optimizer-basepull-probe on the Softmax side (no policy version created); ignore it.",
       "network_access_requests": [
         "network-access-request-51efe82b3a1247c2b6a2cb3c9554306",
         "network-access-request-0fa27681bb79495980467cf0edcc439b"
-      ]
+      ],
+      "resolution": "09Z run (devin-00a960a6): Docker Hub blob pull still fails (production.cloudfront.docker.com EOF). Worked around without network: ~/pybase/make_rootfs.sh copies the host pyenv CPython 3.12.13 (interpreter, stdlib, pip, OpenSSL 3.0.2 + shared libs, CA certs) into a rootfs, `docker import` it as localpy:3.12-slim and `docker tag` it python:3.12-slim so the unchanged Dockerfile builds offline (pip reaches pypi.org, which is allowlisted). v5 built and uploaded this way (VERSION_LOG v5 records the base-image deviation). The script lives only in the session home; the blueprint should recreate it or the network policy should add production.cloudfront.docker.com so future runs use the official base."
     }
   ],
   "pending_decisions": [

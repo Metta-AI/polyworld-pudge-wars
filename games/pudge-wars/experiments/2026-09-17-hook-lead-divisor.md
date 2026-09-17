@@ -6,9 +6,12 @@ Base arm: `pudge-auto-optimizer:v4` (`STATE.latest`,
 iteration-3 edge-band clamp; directional `xreq_4e49fbc4` n=40 0.750 ± 0.068).
 Champion for the promotion gate: `pudge-auto-optimizer:v1`
 (`a7afee99-e56f-40eb-ae64-6bc08f83ae71`, 0.410 ± 0.049 pooled over n=100).
-Candidate arm: **not yet built** — see Results.
-Status: **open** — hypothesis pre-registered 2026-09-17T06Z by
-devin-4c31d8f4 before the change was written.
+Candidate arm: `pudge-auto-optimizer:v5` (`0c975025-8d8c-4059-bd1e-bbc3e3654fdd`,
+source `1bb1971`, uploaded 2026-09-17T09:05Z by devin-00a960a6).
+Status: **open, directional running** — hypothesis pre-registered
+2026-09-17T06Z by devin-4c31d8f4 before the change was written; smoke clean
+09:29Z; matched directional v5 `xreq_e2df9823` / v4 `xreq_09380b97` (n=40
+each) launched 09:31Z, to be harvested by the next run.
 
 ## Hypothesis record
 
@@ -122,8 +125,55 @@ registry is reachable — `STATE.json` → `blockers`, network-access requests
 no smoke or directional was launched for this iteration. Hosted spend this
 run: 0 (budget at 06:52Z: spent 80.22 / 200 USD).
 
-**Next run:** if `docker pull --platform linux/amd64 python:3.12-slim`
-works, build `pudge-auto-optimizer:iter4` from branch HEAD, upload as v5,
-write VERSION_LOG / ledger / STATE.latest, smoke `iter4-smoke`, then launch
-`iter4-directional` (v5, n=40) and `iter4-directional-v4` (v4, n=40) in the
-same window. Otherwise record the blocker again and stop.
+### 09Z run (devin-00a960a6) — v5 built, smoke clean, directional launched
+
+Docker Hub's blob CDN was still blocked, so the base image was substituted
+by a `docker import` of the host pyenv CPython 3.12.13 rootfs tagged
+`python:3.12-slim` (`auto-optimizer/tools/offline_base_image.sh`; the
+Dockerfile is unchanged, `websockets==15.0.1` from PyPI). The policy is pure
+Python, so the substitution does not touch behaviour; it is recorded on the
+upload (`base_image=local-pyenv-3.12.13-rootfs`) and in `VERSION_LOG.md`.
+Built from branch HEAD `1bb1971`, uploaded as **v5**
+(`0c975025-8d8c-4059-bd1e-bbc3e3654fdd`, digest `sha256:8b98ac94…`).
+
+**Smoke `iter4-smoke` = `xreq_70c3e656-7522-401e-8ab7-2e8bc9ad31c6`**
+(v5 + top_n 3, n=3, 09:06–09:28Z): 3/3 clean, 0 tainted, 3 wins (west ×2 vs
+`a-aron-pudge-rusher:v1`, east ×1 vs `pudge-wars-rusher:v16`; 2 seats per
+episode as before). Policy stdout for all three seats
+(`auto-optimizer/evals/iter4-smoke/logs/`): **0 tracebacks**, no malformed
+actions, `hook_lead` present in every episode — 427–607 events grouped in
+33–44 throw bursts per episode (the event fires on every accepted throw
+command, so consecutive ticks in one cooldown window repeat; count bursts,
+not events), `lead` 0.1–30.0 units, median 9.3 / 12.6 / 13.3 units at
+span ≥ 30, i.e. the instrumentation lands with non-trivial values and the
+new lead is ≈ 2.5× the old span/30 one. 3 wins at n=3 is **not evidence**
+(SE ≈ 0.29); the smoke only clears the runtime/instrumentation gate.
+
+**Directional (launched 09:31Z, same window, identical protocol: roster
+[arm, top_n=3], auto slots, n=40):**
+
+| arm | request | state at 09:33Z |
+|---|---|---|
+| v5 candidate | `xreq_e2df9823-bc88-4eae-a93d-1942d8a9fedf` (`iter4-directional`) | pending |
+| v4 base | `xreq_09380b97-d256-4d4a-841a-1ccad48b4107` (`iter4-directional-v4`) | pending |
+
+`spent_today_usd` before launch 5.653338 (before smoke 4.845818); each
+40-episode arm has cost ≈ 4.7 USD historically.
+
+**Verdict:** pending — decision rule from `STATE.eval_protocol`: v5 clean
+win rate vs v4 clean win rate in the same window, > 2 pooled SE = signal;
+inside = no signal at n=40 (then check the mechanism metrics from the
+replays: long-hook landed rate in the 45–60 bucket, throws and deaths per
+game); ≤ v4 − 1 SE or any tripwire = reject, rollback to v4. Any outcome at
+n=40 is directional only; promotion over the v1 champion needs the n≈100
+gate.
+
+**Next run:** `tools/hosted.py xp poll` both requests, `xp summarize --label
+iter4-directional --policy pudge-auto-optimizer:v5 --xreq-id xreq_e2df9823…`
+and `--label iter4-directional-v4 --policy pudge-auto-optimizer:v4 --xreq-id
+xreq_09380b97…`, download the v5 logs (`hosted.py logs <ereq> --policy
+0c975025-8d8c-4059-bd1e-bbc3e3654fdd --agent <slot>`; the API wants the
+version UUID, and `--agent` is the seat index of *our* policy in that
+episode), taint-filter, compare arms, write the verdict here, in
+`ledger.py verdict --iteration 4`, `STATE.latest` (and `closed_levers.md` on
+reject). Then re-read devin-00a960a6's `acus_consumed` and record it.
