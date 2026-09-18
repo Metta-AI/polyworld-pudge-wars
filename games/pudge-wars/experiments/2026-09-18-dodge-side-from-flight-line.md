@@ -109,6 +109,18 @@ lower than v11's 9.5, or the toward-the-line share of hits not lower than
 57%, or kills −1.5/game — then revert to the head rule (v11 behaviour,
 `3bc6cbba-bb4e-444f-8fc8-c2b09459fa43`).
 
+## Status (2026-09-18T01:20Z, run devin-8a7b92c6)
+
+v12 uploaded inert at 00:35Z (`c161b426-ba59-45fe-b153-1faf6cb3ce22`, source
+`ee01f0d`). Smoke `iter9-smoke` = `xreq_042a1d0d-c97d-4468-915a-469398085d9e`
+created 00:37Z; after 43 min of polling all 3 episode requests were still
+`submitted` (never dispatched) — the hosted queue was still draining the 11
+undispatched iteration-8 episodes (v11 35/40, v10 36/40 completed by
+01:20Z). The smoke gate was therefore not evaluated and the matched
+directional pair was **not** launched. Next run: harvest the smoke, triage
+logs + `threat_seen.off/line`, then launch `iter9-directional` (v12) and
+`iter9-baseline-v11` (v11) back-to-back.
+
 ## Verdict
 
 Decision: pending
