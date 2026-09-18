@@ -1,0 +1,183 @@
+{
+  "decoder": "/home/ubuntu/repos/polyworld-pudge-wars/.runtime/pwheadless",
+  "episodes": 35,
+  "root": "/home/ubuntu/repos/polyworld-pudge-wars/games/pudge-wars/auto-optimizer/.runtime/replays/iter8-baseline-v10",
+  "rows": [
+    {
+      "bytes": 2177466,
+      "id": "ereq_3329f413-16e8-4ee1-af21-973ff4e0f27e",
+      "verified": true
+    },
+    {
+      "bytes": 2236725,
+      "id": "ereq_fe387fa6-cc82-4284-8885-90c144dd8cc3",
+      "verified": true
+    },
+    {
+      "bytes": 2256967,
+      "id": "ereq_98036f65-3af3-466b-9d4a-1f318351358f",
+      "verified": true
+    },
+    {
+      "bytes": 2216665,
+      "id": "ereq_17770564-7a4d-4f42-9f1d-e9b701115dcc",
+      "verified": true
+    },
+    {
+      "bytes": 2181885,
+      "id": "ereq_50623edd-5312-429b-b555-436ed655c772",
+      "verified": true
+    },
+    {
+      "bytes": 1823225,
+      "id": "ereq_fceeebda-2b21-4d66-9f16-b3d25e164d6a",
+      "verified": true
+    },
+    {
+      "bytes": 2160486,
+      "id": "ereq_03315e49-0c62-4afd-b810-8d80325a2d36",
+      "verified": true
+    },
+    {
+      "bytes": 2156507,
+      "id": "ereq_0be450ee-aea8-4b32-b085-84bc06ebd447",
+      "verified": true
+    },
+    {
+      "bytes": 2132607,
+      "id": "ereq_9f6b6d4b-e157-4a35-be9d-d57590315f9f",
+      "verified": true
+    },
+    {
+      "bytes": 2202525,
+      "id": "ereq_17d4eae8-1482-4821-be23-64f22b094470",
+      "verified": true
+    },
+    {
+      "bytes": 2186798,
+      "id": "ereq_6b29a89f-52d4-41fa-a528-54234cfd7535",
+      "verified": true
+    },
+    {
+      "bytes": 2206627,
+      "id": "ereq_3dc6239f-43f7-475c-b7c5-6bd9f8aaeefa",
+      "verified": true
+    },
+    {
+      "bytes": 2241105,
+      "id": "ereq_35214cee-95b0-45a4-8015-e0aa98a6eb83",
+      "verified": true
+    },
+    {
+      "bytes": 2185245,
+      "id": "ereq_4ff0b442-1a1d-4f36-ac26-6f4bcf90a216",
+      "verified": true
+    },
+    {
+      "bytes": 2230525,
+      "id": "ereq_81a2cfc0-e6de-46d0-bdcf-ef46091d9a8d",
+      "verified": true
+    },
+    {
+      "bytes": 1637706,
+      "id": "ereq_a6618861-2584-4bff-8126-76d6fe78fa2e",
+      "verified": true
+    },
+    {
+      "bytes": 2229506,
+      "id": "ereq_6e956f96-19a4-4390-b312-3cf59477196a",
+      "verified": true
+    },
+    {
+      "bytes": 2220785,
+      "id": "ereq_bad0d25c-409d-4e97-af7e-3728fd8ca297",
+      "verified": true
+    },
+    {
+      "bytes": 2207687,
+      "id": "ereq_612fe678-32b1-41e0-aebc-b45b6a509a20",
+      "verified": true
+    },
+    {
+      "bytes": 1849726,
+      "id": "ereq_afdcda88-4bce-4856-97c6-f8347c9715c4",
+      "verified": true
+    },
+    {
+      "bytes": 1826126,
+      "id": "ereq_251f9083-fcef-45b5-9f46-8654e94fa593",
+      "verified": true
+    },
+    {
+      "bytes": 2243227,
+      "id": "ereq_4ad63c8d-b60c-40b5-badd-57ff4b2c8b17",
+      "verified": true
+    },
+    {
+      "bytes": 2221365,
+      "id": "ereq_1e4fbbf7-5fb7-4cb1-9a58-a7d3393d4b61",
+      "verified": true
+    },
+    {
+      "bytes": 2202147,
+      "id": "ereq_eaab5987-9a45-429c-9470-5ab77a78987f",
+      "verified": true
+    },
+    {
+      "bytes": 1380846,
+      "id": "ereq_371ca2b6-72e9-4238-88d0-cf537725189e",
+      "verified": true
+    },
+    {
+      "bytes": 2179925,
+      "id": "ereq_6c399710-25e3-4769-9ba7-d963b1443732",
+      "verified": true
+    },
+    {
+      "bytes": 2214585,
+      "id": "ereq_de49f2cc-edee-4cfb-8d1a-589eec9bc0f9",
+      "verified": true
+    },
+    {
+      "bytes": 2169027,
+      "id": "ereq_5c978d56-281c-4f93-9b41-f2fac1528387",
+      "verified": true
+    },
+    {
+      "bytes": 2103565,
+      "id": "ereq_37761270-dfcb-4dda-8b80-15efd0980450",
+      "verified": true
+    },
+    {
+      "bytes": 2012466,
+      "id": "ereq_8cce0dc2-9e47-46cb-8e8c-2c59b2212769",
+      "verified": true
+    },
+    {
+      "bytes": 2169005,
+      "id": "ereq_7637f9b5-16b0-4b21-a517-1ef01d076287",
+      "verified": true
+    },
+    {
+      "bytes": 2166365,
+      "id": "ereq_0d97a18e-b92b-416a-b109-45344cc101e8",
+      "verified": true
+    },
+    {
+      "bytes": 2202106,
+      "id": "ereq_b5dcb5d9-e978-4890-8acd-c1071bfacc26",
+      "verified": true
+    },
+    {
+      "bytes": 2133427,
+      "id": "ereq_cf4ca0be-eda9-457d-a11e-6d3917640ea7",
+      "verified": true
+    },
+    {
+      "bytes": 2214087,
+      "id": "ereq_199f7f85-5bc0-458a-80f9-74ab9b6026e0",
+      "verified": true
+    }
+  ],
+  "verified": 35
+}

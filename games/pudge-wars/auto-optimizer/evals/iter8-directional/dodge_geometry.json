@@ -1,0 +1,296 @@
+{
+ "games": 34,
+ "hooks_per_game": 223.9,
+ "overall": {
+  "n": 7614,
+  "hits": 324,
+  "hit_rate": 0.043,
+  "by_lateral_run_at_end": {
+   "away_from_line": {
+    "n": 1954,
+    "hit_rate": 0.028
+   },
+   "toward_line": {
+    "n": 2734,
+    "hit_rate": 0.068
+   },
+   "still": {
+    "n": 2926,
+    "hit_rate": 0.029
+   }
+  },
+  "by_offset_at_launch": {
+   "|off0| 0-2": {
+    "n": 522,
+    "hit_rate": 0.14
+   },
+   "|off0| 2-5": {
+    "n": 512,
+    "hit_rate": 0.104
+   },
+   "|off0| 5-10": {
+    "n": 512,
+    "hit_rate": 0.088
+   },
+   "|off0| 10-1000": {
+    "n": 6068,
+    "hit_rate": 0.025
+   }
+  },
+  "hits_by_lateral_run_at_end": {
+   "away": 54,
+   "toward": 186,
+   "still": 84
+  },
+  "hits_casting_share": 0.154,
+  "hits_off1_q25_50_75": [
+   2.43,
+   5.64,
+   21.51
+  ]
+ },
+ "by_opponent": {
+  "a-aron-pudge-rusher:v1": {
+   "n": 2185,
+   "hits": 108,
+   "hit_rate": 0.049,
+   "by_lateral_run_at_end": {
+    "away_from_line": {
+     "n": 558,
+     "hit_rate": 0.038
+    },
+    "toward_line": {
+     "n": 780,
+     "hit_rate": 0.076
+    },
+    "still": {
+     "n": 847,
+     "hit_rate": 0.033
+    }
+   },
+   "by_offset_at_launch": {
+    "|off0| 0-2": {
+     "n": 135,
+     "hit_rate": 0.222
+    },
+    "|off0| 2-5": {
+     "n": 134,
+     "hit_rate": 0.134
+    },
+    "|off0| 5-10": {
+     "n": 151,
+     "hit_rate": 0.079
+    },
+    "|off0| 10-1000": {
+     "n": 1765,
+     "hit_rate": 0.027
+    }
+   },
+   "hits_by_lateral_run_at_end": {
+    "away": 21,
+    "toward": 59,
+    "still": 28
+   },
+   "hits_casting_share": 0.13,
+   "hits_off1_q25_50_75": [
+    2.08,
+    5.01,
+    15.71
+   ]
+  },
+  "co-gas-pudge-blind-hook-richard:v7": {
+   "n": 2970,
+   "hits": 136,
+   "hit_rate": 0.046,
+   "by_lateral_run_at_end": {
+    "away_from_line": {
+     "n": 676,
+     "hit_rate": 0.027
+    },
+    "toward_line": {
+     "n": 1140,
+     "hit_rate": 0.075
+    },
+    "still": {
+     "n": 1154,
+     "hit_rate": 0.029
+    }
+   },
+   "by_offset_at_launch": {
+    "|off0| 0-2": {
+     "n": 190,
+     "hit_rate": 0.084
+    },
+    "|off0| 2-5": {
+     "n": 185,
+     "hit_rate": 0.114
+    },
+    "|off0| 5-10": {
+     "n": 219,
+     "hit_rate": 0.119
+    },
+    "|off0| 10-1000": {
+     "n": 2376,
+     "hit_rate": 0.031
+    }
+   },
+   "hits_by_lateral_run_at_end": {
+    "away": 18,
+    "toward": 85,
+    "still": 33
+   },
+   "hits_casting_share": 0.176,
+   "hits_off1_q25_50_75": [
+    3.1,
+    5.92,
+    23.09
+   ]
+  },
+  "pudge-wars-rusher:v16": {
+   "n": 2459,
+   "hits": 80,
+   "hit_rate": 0.033,
+   "by_lateral_run_at_end": {
+    "away_from_line": {
+     "n": 720,
+     "hit_rate": 0.021
+    },
+    "toward_line": {
+     "n": 814,
+     "hit_rate": 0.052
+    },
+    "still": {
+     "n": 925,
+     "hit_rate": 0.025
+    }
+   },
+   "by_offset_at_launch": {
+    "|off0| 0-2": {
+     "n": 197,
+     "hit_rate": 0.137
+    },
+    "|off0| 2-5": {
+     "n": 193,
+     "hit_rate": 0.073
+    },
+    "|off0| 5-10": {
+     "n": 142,
+     "hit_rate": 0.049
+    },
+    "|off0| 10-1000": {
+     "n": 1927,
+     "hit_rate": 0.017
+    }
+   },
+   "hits_by_lateral_run_at_end": {
+    "toward": 42,
+    "away": 15,
+    "still": 23
+   },
+   "hits_casting_share": 0.15,
+   "hits_off1_q25_50_75": [
+    1.66,
+    5.64,
+    25.05
+   ]
+  }
+ },
+ "by_team": {
+  "west": {
+   "n": 3597,
+   "hits": 156,
+   "hit_rate": 0.043,
+   "by_lateral_run_at_end": {
+    "away_from_line": {
+     "n": 987,
+     "hit_rate": 0.028
+    },
+    "toward_line": {
+     "n": 1286,
+     "hit_rate": 0.067
+    },
+    "still": {
+     "n": 1324,
+     "hit_rate": 0.032
+    }
+   },
+   "by_offset_at_launch": {
+    "|off0| 0-2": {
+     "n": 229,
+     "hit_rate": 0.153
+    },
+    "|off0| 2-5": {
+     "n": 211,
+     "hit_rate": 0.114
+    },
+    "|off0| 5-10": {
+     "n": 228,
+     "hit_rate": 0.083
+    },
+    "|off0| 10-1000": {
+     "n": 2929,
+     "hit_rate": 0.027
+    }
+   },
+   "hits_by_lateral_run_at_end": {
+    "toward": 86,
+    "still": 42,
+    "away": 28
+   },
+   "hits_casting_share": 0.16,
+   "hits_off1_q25_50_75": [
+    1.9,
+    5.43,
+    23.08
+   ]
+  },
+  "east": {
+   "n": 4017,
+   "hits": 168,
+   "hit_rate": 0.042,
+   "by_lateral_run_at_end": {
+    "away_from_line": {
+     "n": 967,
+     "hit_rate": 0.027
+    },
+    "toward_line": {
+     "n": 1448,
+     "hit_rate": 0.069
+    },
+    "still": {
+     "n": 1602,
+     "hit_rate": 0.026
+    }
+   },
+   "by_offset_at_launch": {
+    "|off0| 0-2": {
+     "n": 293,
+     "hit_rate": 0.13
+    },
+    "|off0| 2-5": {
+     "n": 301,
+     "hit_rate": 0.096
+    },
+    "|off0| 5-10": {
+     "n": 284,
+     "hit_rate": 0.092
+    },
+    "|off0| 10-1000": {
+     "n": 3139,
+     "hit_rate": 0.024
+    }
+   },
+   "hits_by_lateral_run_at_end": {
+    "away": 26,
+    "toward": 100,
+    "still": 42
+   },
+   "hits_casting_share": 0.149,
+   "hits_off1_q25_50_75": [
+    2.71,
+    5.64,
+    20.78
+   ]
+  }
+ }
+}

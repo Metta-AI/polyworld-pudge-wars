@@ -1,7 +1,7 @@
 {
   "can_cancel": true,
   "completed_at": null,
-  "completed_count": 15,
+  "completed_count": 34,
   "cost_preview": null,
   "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
   "coworld_name": "pudge-wars",
@@ -16,7 +16,7 @@
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.633320Z",
-      "dispatched_at": "2026-09-17T22:44:22.906034Z",
+      "dispatched_at": "2026-09-17T23:31:40.216944Z",
       "episode_id": null,
       "error": null,
       "error_type": null,
@@ -38,7 +38,7 @@
         "tick_rate": 32
       },
       "id": "ereq_7ba0d9b5-c9c7-4464-bb10-7dcd5c3568a2",
-      "job_id": "54dcaee6-ee95-49fc-867e-9d6a8bb46b71",
+      "job_id": "52d41e1a-8cc7-4a10-ae48-4a172e3a27f2",
       "job_index": 0,
       "live_url": null,
       "max_steps": null,
@@ -154,14 +154,14 @@
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:21:14.009941Z",
+      "cost_usd": 0.412823,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.634724Z",
       "dispatched_at": "2026-09-17T21:50:48.900428Z",
-      "episode_id": null,
+      "episode_id": "834737a9-0a38-430a-9be2-46e0ba1e0327",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -186,7 +186,16 @@
       "job_index": 2,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -217,23 +226,32 @@
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
         "c053e572-5edb-4882-ba36-a001717f1167"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/e179d132-d3aa-4b8e-ad86-9dc489e2c80c.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T23:00:55.413539Z",
+      "scores": [
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "c053e572-5edb-4882-ba36-a001717f1167",
+          "score": 1.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:18:23.266447Z",
+      "cost_usd": 0.44305,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.635324Z",
       "dispatched_at": "2026-09-17T21:50:48.900428Z",
-      "episode_id": null,
+      "episode_id": "cf58329c-9819-4f98-a5bb-d78d7da73f2d",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -258,7 +276,16 @@
       "job_index": 3,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -289,23 +316,32 @@
         "c053e572-5edb-4882-ba36-a001717f1167",
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/185888dd-0caa-4374-99f9-9f88aa67e4ee.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:58:16.210006Z",
+      "scores": [
+        {
+          "policy_version_id": "c053e572-5edb-4882-ba36-a001717f1167",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:22:22.242938Z",
+      "cost_usd": 0.462668,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.635878Z",
       "dispatched_at": "2026-09-17T21:50:50.431092Z",
-      "episode_id": null,
+      "episode_id": "82a90ee8-771d-4886-8403-fc3f0bf385e9",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -330,7 +366,16 @@
       "job_index": 4,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -361,12 +406,21 @@
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
         "bdc7ac29-743d-4ace-b1cc-3b0529cef552"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/49e442df-4bb0-4f5c-bf41-db7238109441.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T23:02:11.514369Z",
+      "scores": [
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+          "score": 1.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
@@ -376,7 +430,7 @@
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.636467Z",
-      "dispatched_at": "2026-09-17T21:50:51.050038Z",
+      "dispatched_at": "2026-09-17T23:47:52.555624Z",
       "episode_id": null,
       "error": null,
       "error_type": null,
@@ -398,7 +452,7 @@
         "tick_rate": 32
       },
       "id": "ereq_a9b7d197-a5fb-4297-a6df-ed1d38e4a57c",
-      "job_id": "8d7b7efc-bebd-409f-b85a-0d6eb5ac316c",
+      "job_id": "22a7cf79-a713-489c-ba5f-d88f87558cbb",
       "job_index": 5,
       "live_url": null,
       "max_steps": null,
@@ -604,14 +658,14 @@
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:12:19.583372Z",
+      "cost_usd": 0.411533,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.638294Z",
       "dispatched_at": "2026-09-17T21:50:57.372468Z",
-      "episode_id": null,
+      "episode_id": "296be094-cecf-4d96-8d44-4249882ba630",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -636,7 +690,16 @@
       "job_index": 8,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 0.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -667,12 +730,21 @@
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
         "c053e572-5edb-4882-ba36-a001717f1167"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/ea24dd3d-9cf3-4276-8e91-c5fa9401c692.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:52:12.737886Z",
+      "scores": [
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "c053e572-5edb-4882-ba36-a001717f1167",
+          "score": 0.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
@@ -928,14 +1000,14 @@
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:17:25.890985Z",
+      "cost_usd": 0.434495,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.640506Z",
       "dispatched_at": "2026-09-17T21:51:28.274360Z",
-      "episode_id": null,
+      "episode_id": "0fe1abeb-7227-4c8e-87c4-6b9878ae0e44",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -960,7 +1032,16 @@
       "job_index": 12,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 1.0
+        },
+        {
+          "position": 1,
+          "score": 0.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -991,23 +1072,32 @@
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
         "c053e572-5edb-4882-ba36-a001717f1167"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/4e88fff8-e826-45e3-ba09-e51eaced70c7.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:57:13.408639Z",
+      "scores": [
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        },
+        {
+          "policy_version_id": "c053e572-5edb-4882-ba36-a001717f1167",
+          "score": 0.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:14:36.506703Z",
+      "cost_usd": 0.847063,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.641091Z",
       "dispatched_at": "2026-09-17T21:51:28.274360Z",
-      "episode_id": null,
+      "episode_id": "5cf6b0d7-81fa-4bcc-99d0-65491ef45d4f",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -1032,7 +1122,16 @@
       "job_index": 13,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 1.0
+        },
+        {
+          "position": 1,
+          "score": 0.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -1063,12 +1162,21 @@
         "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/f98cd568-71e3-46dc-9484-a557c07e1b1e.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:54:24.931195Z",
+      "scores": [
+        {
+          "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+          "score": 1.0
+        },
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 0.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
@@ -1252,14 +1360,14 @@
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:13:27.178555Z",
+      "cost_usd": 0.494601,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.642873Z",
       "dispatched_at": "2026-09-17T21:51:33.811519Z",
-      "episode_id": null,
+      "episode_id": "93bb28a7-6065-4828-9e83-79512e58559a",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -1284,7 +1392,16 @@
       "job_index": 16,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 0.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -1315,23 +1432,32 @@
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
         "bdc7ac29-743d-4ace-b1cc-3b0529cef552"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/beeb3500-158b-4ba4-ac99-d30a87eaeb73.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:53:22.136840Z",
+      "scores": [
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+          "score": 0.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:15:45.654456Z",
+      "cost_usd": 0.508101,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.643428Z",
       "dispatched_at": "2026-09-17T21:51:33.811519Z",
-      "episode_id": null,
+      "episode_id": "17d8b8f6-9065-42fa-a5a6-17d84f51875e",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -1356,7 +1482,16 @@
       "job_index": 17,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -1387,23 +1522,32 @@
         "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b",
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/43613a27-3cc6-44f4-8805-6d901cea8a48.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:55:33.006992Z",
+      "scores": [
+        {
+          "policy_version_id": "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:12:32.527799Z",
+      "cost_usd": 0.825212,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.644562Z",
       "dispatched_at": "2026-09-17T21:51:33.811519Z",
-      "episode_id": null,
+      "episode_id": "633127fd-c3b4-4662-bf85-d025de9197f0",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -1428,7 +1572,16 @@
       "job_index": 18,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -1459,12 +1612,21 @@
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
         "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/55b36e25-7ffd-4684-b189-0a47a30dcd7a.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:52:19.429395Z",
+      "scores": [
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b",
+          "score": 1.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
@@ -1630,14 +1792,14 @@
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:45:18.803558Z",
+      "cost_usd": 1.15569,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.646501Z",
       "dispatched_at": "2026-09-17T21:51:45.823615Z",
-      "episode_id": null,
+      "episode_id": "8ecad2d7-f49f-4eb0-80dd-707dab4a001a",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -1662,7 +1824,16 @@
       "job_index": 21,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -1693,23 +1864,32 @@
         "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b",
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/00e3f430-8c6e-410d-b4cd-9cd21fb69871.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T23:25:00.939171Z",
+      "scores": [
+        {
+          "policy_version_id": "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:09:49.704679Z",
+      "cost_usd": 0.39428,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.647337Z",
       "dispatched_at": "2026-09-17T21:51:45.823615Z",
-      "episode_id": null,
+      "episode_id": "85db4c1c-0bec-49a2-a321-acf7a8930c22",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -1734,7 +1914,16 @@
       "job_index": 22,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 1.0
+        },
+        {
+          "position": 1,
+          "score": 0.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -1765,23 +1954,32 @@
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
         "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/f28ca1c0-e5cc-426d-addc-429ed78d63b2.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:49:37.306631Z",
+      "scores": [
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        },
+        {
+          "policy_version_id": "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b",
+          "score": 0.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:16:09.547642Z",
+      "cost_usd": 0.86023,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.648142Z",
       "dispatched_at": "2026-09-17T21:51:45.823615Z",
-      "episode_id": null,
+      "episode_id": "e8d2cba5-0ba2-4ffe-887e-47e1a68d9ba1",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -1806,7 +2004,16 @@
       "job_index": 23,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 0.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -1837,12 +2044,21 @@
         "c053e572-5edb-4882-ba36-a001717f1167",
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/2b89bdac-3c69-4cbe-a429-84d91541dc1a.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:56:03.003171Z",
+      "scores": [
+        {
+          "policy_version_id": "c053e572-5edb-4882-ba36-a001717f1167",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 0.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
@@ -1936,14 +2152,14 @@
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:18:23.210780Z",
+      "cost_usd": 0.396048,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.649724Z",
       "dispatched_at": "2026-09-17T21:51:45.823615Z",
-      "episode_id": null,
+      "episode_id": "069a68ee-e35c-46ee-97d5-0e083664519e",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -1968,7 +2184,16 @@
       "job_index": 25,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -1999,12 +2224,21 @@
         "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b",
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/fa895505-88b8-4031-a912-df9f57925e4a.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:58:16.216519Z",
+      "scores": [
+        {
+          "policy_version_id": "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
@@ -2098,14 +2332,14 @@
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:20:53.457662Z",
+      "cost_usd": 0.583376,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.651264Z",
       "dispatched_at": "2026-09-17T21:51:46.460737Z",
-      "episode_id": null,
+      "episode_id": "4e0f6d56-c479-4434-9ea3-f15a94845323",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -2130,7 +2364,16 @@
       "job_index": 27,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -2161,23 +2404,32 @@
         "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/2ffbd2c0-efa2-46d7-b3c7-d6c829275309.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T23:00:48.324455Z",
+      "scores": [
+        {
+          "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:17:51.562118Z",
+      "cost_usd": 0.876612,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.652157Z",
       "dispatched_at": "2026-09-17T21:51:46.460737Z",
-      "episode_id": null,
+      "episode_id": "e88d3450-26c2-4534-aad6-3375c5e60623",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -2202,7 +2454,16 @@
       "job_index": 28,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 1.0
+        },
+        {
+          "position": 1,
+          "score": 0.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -2233,12 +2494,21 @@
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
         "c053e572-5edb-4882-ba36-a001717f1167"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/ca410253-7c41-420d-883b-5fd5a5c08fa3.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:57:39.714135Z",
+      "scores": [
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        },
+        {
+          "policy_version_id": "c053e572-5edb-4882-ba36-a001717f1167",
+          "score": 0.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
@@ -2332,14 +2602,14 @@
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:18:33.950365Z",
+      "cost_usd": 0.884262,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.653731Z",
       "dispatched_at": "2026-09-17T21:51:46.460737Z",
-      "episode_id": null,
+      "episode_id": "98065f52-0332-4c5e-b583-930278414cf3",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -2364,7 +2634,16 @@
       "job_index": 30,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 1.0
+        },
+        {
+          "position": 1,
+          "score": 0.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -2395,12 +2674,21 @@
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
         "bdc7ac29-743d-4ace-b1cc-3b0529cef552"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/bd7b6667-e196-44c9-8882-4f4d7cbc1b03.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:58:25.626573Z",
+      "scores": [
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        },
+        {
+          "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+          "score": 0.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
@@ -2584,14 +2872,14 @@
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:09:49.737295Z",
+      "cost_usd": 0.356155,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.656084Z",
       "dispatched_at": "2026-09-17T21:51:54.813267Z",
-      "episode_id": null,
+      "episode_id": "cc20e42a-b216-4f97-a10d-f056e50c182f",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -2616,7 +2904,16 @@
       "job_index": 33,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -2647,23 +2944,32 @@
         "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b",
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/2dc26a25-d559-4edf-a810-72cfb83252eb.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:49:42.603253Z",
+      "scores": [
+        {
+          "policy_version_id": "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:52:36.476711Z",
+      "cost_usd": 0.551067,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.657180Z",
       "dispatched_at": "2026-09-17T21:52:06.519656Z",
-      "episode_id": null,
+      "episode_id": "0440b3b5-35b7-45c7-a492-aba226b13326",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -2688,7 +2994,16 @@
       "job_index": 34,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 1.0
+        },
+        {
+          "position": 1,
+          "score": 0.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -2719,12 +3034,21 @@
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
         "bdc7ac29-743d-4ace-b1cc-3b0529cef552"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/200730fd-61c5-487f-88c0-8fe75a4245d4.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T23:32:30.069278Z",
+      "scores": [
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        },
+        {
+          "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+          "score": 0.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
@@ -2908,14 +3232,14 @@
       "variant_name": "League 3v3"
     },
     {
-      "completed_at": null,
-      "cost_usd": null,
+      "completed_at": "2026-09-17T23:10:57.161569Z",
+      "cost_usd": 0.792595,
       "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
       "coworld_name": "pudge-wars",
       "coworld_version": "0.3.21",
       "created_at": "2026-09-17T21:50:44.662364Z",
       "dispatched_at": "2026-09-17T21:53:08.674133Z",
-      "episode_id": null,
+      "episode_id": "fe3ee4d4-863e-440e-844b-23705220330f",
       "error": null,
       "error_type": null,
       "failed_agent_index": null,
@@ -2940,7 +3264,16 @@
       "job_index": 37,
       "live_url": null,
       "max_steps": null,
-      "participant_scores": [],
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 0.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        }
+      ],
       "participants": [
         {
           "is_filler": false,
@@ -2971,12 +3304,21 @@
         "c053e572-5edb-4882-ba36-a001717f1167",
         "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43"
       ],
-      "replay_url": null,
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/581c856b-93dc-4826-a5e9-6ceed26cb261.replay",
       "requester_user_id": "h0835grji1zfy5wakd4i56kn",
       "round_id": null,
-      "running_at": null,
-      "scores": [],
-      "status": "submitted",
+      "running_at": "2026-09-17T22:50:48.715089Z",
+      "scores": [
+        {
+          "policy_version_id": "c053e572-5edb-4882-ba36-a001717f1167",
+          "score": 0.0
+        },
+        {
+          "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+          "score": 1.0
+        }
+      ],
+      "status": "completed",
       "variant_name": "League 3v3"
     },
     {
@@ -3183,6 +3525,6 @@
   "running_count": 0,
   "started_at": "2026-09-17T21:50:48.240070Z",
   "status": "running",
-  "submitted_count": 25,
+  "submitted_count": 6,
   "variant_id": "league-3v3"
 }

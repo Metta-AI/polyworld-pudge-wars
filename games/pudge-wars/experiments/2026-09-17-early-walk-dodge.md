@@ -101,8 +101,58 @@ lower than v10's 19.9, or deaths/game not lower — then revert
 
 ## Verdict
 
-Decision: pending
-Numbers: pending (candidate w±se vs v10 w±se on the same protocol/window,
-clean n / tainted n, per-team, per-opponent, long-hits-on-us/game,
-stationary share, deaths/game)
-Reason: pending
+Decision: weak_evidence (v11 becomes the behaviour base for iteration 9;
+not promoted — promotion needs the n=100 gate against champion v1).
+
+Numbers (harvested 2026-09-18T00:5xZ, same protocol/window, league target +
+top_n=3; both requests still "running" 3 h after creation with the last
+6 / 5 episodes stuck in `submitted`, so the arms are read at 34 / 35):
+
+| arm | clean n | tainted | win rate ± SE | west | east | vs a-aron-pudge-rusher:v1 | vs co-gas-…-richard:v7 | vs pudge-wars-rusher:v16 |
+|---|---|---|---|---|---|---|---|---|
+| v11 candidate `xreq_f5666240` | 34 | 6 (never dispatched) | 0.735 ± 0.076 | 0.706 (17) | 0.765 (17) | 0.700 (10) | 0.846 (13) | 0.636 (11) |
+| v10 baseline `xreq_d3f7c348` | 35 | 5 (never dispatched) | 0.600 ± 0.083 | 0.778 (18) | 0.412 (17) | 0.600 (10) | 1.000 (10) | 0.333 (15) |
+
+Delta +0.135, pooled SE 0.113 → +1.2 SE (inside the 2-SE band: not a
+promotion-grade signal at n≈35). Log triage: 0 tracebacks in either arm;
+2 (v11) / 5 (v10) policy logs lost ("pod was deleted before log
+collection") — the decoded replays show those seats threw 134–424 hooks,
+so they are participating, clean episodes with no crash check. All 69
+replays decoded with the matching binary (`every tick matched`).
+
+Mechanism (replay_survey + hit_exposure over the decoded replays, per game):
+
+| metric | v11 | v10 | prereg. |
+|---|---|---|---|
+| long (≥45-tile) enemy hooks landing on us | 9.5 | 12.6 | ≤ 15 of the v10-directional 19.9-by-launch-target count (met on the matched measure: −25 %) |
+| all enemy hooks landing on us | 33.5 | 41.2 | — |
+| share of long hits while we stand still (< 2 tiles/s) | 21.7 % | 31.1 % | < 10 % (missed) |
+| share while accelerating (2–10 tiles/s) | 11.5 % | 25.4 % | — (the ramp-up window the change targets) |
+| share while still rooted by our own cast (cd ≥ 48) | 15.5 % | 14.1 % | — |
+| deaths / game | 9.15 | 12.03 | ≤ 10.5 (met) |
+| kills / game | 15.2 | 15.1 | tripwire −1.5 (pass) |
+| hooks thrown / game | 378 | 370 | — |
+| river seconds / game | 3.7 | 7.1 | tripwire +1 s (pass) |
+| runes / game | 30.5 | 32.1 | tripwire −3 (pass, −1.6) |
+| edge_clamp events / game | 438 | 432 | tripwire +20 % (pass) |
+
+threat_seen (v11 logs, 7450 events, 219/game): first sight at 38.7–39.6
+tiles (q25–q75), i.e. hooks are lit at the radius, and 56 % of first
+sights happen while we stand still — the early start does what it was
+meant to (deaths −2.9/game, hits on us −19 %, moving-share of hits up).
+
+Side-effect finding (dodge_geometry over the same replays): with the early
+start, *which way* we run now matters. Of the 324 long enemy hooks that
+landed on us in the v11 arm, 186 (57 %) hit while we were running
+*toward* the hook's flight line; hit rate 6.8 % when running toward the
+line vs 2.8 % away (v10: 7.3 % vs 6.5 %, no asymmetry because it barely
+moved). The side rule "away from the hook head's y" puts us on the aimed
+side whenever the thrower leads us → iteration 9 lever.
+
+Reason: the predicted mechanism is present and every tripwire passes, but
+the win-rate delta is +1.2 pooled SE at n≈35 and the 1v1 seating caveat
+still applies, so this is weak evidence, not a promotion. Consistent with
+iterations 3 and 7, the candidate becomes the behaviour base; the champion
+question is deferred to the n=100 gate (v11 vs v1) recorded in
+STATE.pending_decisions.
+Rollback: pudge-auto-optimizer:v10 (6cc36a18-5a4e-499d-8aca-75e21ca9bf07).

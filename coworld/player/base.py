@@ -46,6 +46,8 @@ class BasePolicy:
     last_enemy: dict | None = None
     last_seen: int = -1
     dodge_side: int = 0
+    threat_since: int = -1
+    hook_track: dict[int, tuple[int, float, float]] = field(default_factory=dict)
     rescue_until: int = 0
     was_hooked: bool = False
     escape_sent: int = -1
@@ -61,6 +63,8 @@ class BasePolicy:
         self.last_enemy = None
         self.last_seen = -1
         self.dodge_side = 0
+        self.threat_since = -1
+        self.hook_track.clear()
         self.rescue_until = 0
         self.was_hooked = False
         self.escape_sent = -1
@@ -123,6 +127,25 @@ class BasePolicy:
     def velocity(self, unit: dict) -> tuple[float, float]:
         sample = self.samples.get(unit["id"])
         return (sample[3], sample[4]) if sample else (0.0, 0.0)
+
+    def dodge_direction(self, me: dict, threat: dict) -> tuple[int, float] | None:
+        """Lateral side that increases our distance from the hook's flight line.
+
+        The line runs through the head's last two observed positions (hooks
+        fly straight while `flying`). None until the head has been seen twice;
+        0 when the line is dead-on or vertical, so the caller falls back.
+        """
+        seen = self.hook_track.get(threat["owner_id"])
+        if seen is None or self.tick - seen[0] > 4:
+            return None
+        dx, dy = threat["x"] - seen[1], threat["y"] - seen[2]
+        span = math.hypot(dx, dy)
+        if span < 0.05:
+            return None
+        off = ((me["x"] - threat["x"]) * -dy + (me["y"] - threat["y"]) * dx) / span
+        if abs(off) < 0.5 or abs(dx) < 0.05:
+            return 0, off
+        return (1 if off * dx > 0 else -1), off
 
     @staticmethod
     def fountain_escape(obs: dict, enemies: list[dict], retreat: bool) -> list[float] | None:
@@ -203,14 +226,23 @@ class BasePolicy:
         near_threat = threat is not None and distance(me, threat) <= BLINK_THREAT_RADIUS
         if threat is None:
             self.dodge_side = 0
+            self.threat_since = -1
         elif self.dodge_side == 0:
-            self.dodge_side = -1 if threat["y"] > me["y"] else 1
-            if me["y"] < 20:
-                self.dodge_side = 1
-            elif me["y"] > 108:
-                self.dodge_side = -1
-            self.record("threat_seen", dist=round(distance(me, threat), 1), side=self.dodge_side,
-                        speed=round(math.hypot(*self.velocity(me)), 1))
+            if self.threat_since < 0:
+                self.threat_since = tick
+            heading = self.dodge_direction(me, threat)
+            # The first lit tick has no heading yet: wait one tick for it.
+            if heading is not None or tick - self.threat_since >= 2:
+                side, off = heading if heading is not None else (0, None)
+                self.dodge_side = side or (-1 if threat["y"] > me["y"] else 1)
+                if me["y"] < 20:
+                    self.dodge_side = 1
+                elif me["y"] > 108:
+                    self.dodge_side = -1
+                self.record("threat_seen", dist=round(distance(me, threat), 1), side=self.dodge_side,
+                            speed=round(math.hypot(*self.velocity(me)), 1),
+                            off=None if off is None else round(off, 1), line=bool(side))
+        self.hook_track = {h["owner_id"]: (tick, h["x"], h["y"]) for h in hooks if h["team"] != team and h["flying"]}
         caught = next((p for p in enemies if p["hooked"]), None)
         swimming = next((p for p in enemies if p["layer"] == 2), None)
         foreign_rot = any(p["rot"] and distance(me, p) <= 8 for p in units if p["id"] != me["id"])
@@ -365,7 +397,7 @@ class BasePolicy:
                 action["blink_to"] = escape_to
                 self.record("bank_escape", hp=me["hp"], enemy_hp=target["hp"], dist=round(distance(me, target), 1),
                             destination=escape_to, via=escape_via)
-            elif near_threat:
+            elif near_threat and self.dodge_side:
                 # Keep the requested hop inside Blink's actual 20-tile disk.
                 x, y = point(me["x"] + (-16 if me["layer"] == 0 else 16), me["y"] + 16 * self.dodge_side)
                 scale = min(1.0, 20.0 / math.hypot(x - me["x"], y - me["y"]))
@@ -429,7 +461,7 @@ class BasePolicy:
         busy = True
         if flee_rot:
             action["walk_to"] = point(home[0], me["y"] + (((tick // 12) % 2) * 2 - 1) * 8)
-        elif threat is not None:
+        elif threat is not None and self.dodge_side:
             action["walk_to"] = point(me["x"] + (-2 if team == 0 else 2), me["y"] + self.dodge_side * 10)
         elif river:
             action["walk_to"] = [hold_x, me["y"]]
