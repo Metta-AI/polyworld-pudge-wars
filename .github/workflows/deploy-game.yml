@@ -89,24 +89,10 @@ jobs:
       - name: Install Nim dependencies
         run: |
           set -euo pipefail
-          # Nimby 0.2.1 will not auto-create a workspace inside a Git checkout.
+          cd ..
           nimby create
-          nimby sync nimby.lock -g
-          pkgs="$HOME/.nimby/pkgs"
-          {
-            echo '--path:"src"'
-            if [[ -d "$pkgs" ]]; then
-              find "$pkgs" -mindepth 1 -maxdepth 1 -type d -print | sort | while read -r dir; do
-                name=$(basename "$dir")
-                [[ "$name" == "packages" ]] && continue
-                if [[ -d "$dir/src" ]]; then
-                  echo "--path:\"$dir/src\""
-                else
-                  echo "--path:\"$dir\""
-                fi
-              done
-            fi
-          } > nim.cfg
+          nimby sync "$GITHUB_WORKSPACE/nimby.lock"
+          echo "--path:\"$GITHUB_WORKSPACE/src\"" >> nim.cfg
 
       - uses: emscripten-core/setup-emsdk@v16
         with:
