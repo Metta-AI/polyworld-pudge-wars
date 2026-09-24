@@ -1,5 +1,8 @@
 # Aaron's Base-derived rusher
 
+For Metta RL, PufferLib, and Metta post-training against the hosted simulation,
+see [the training bridge](../TRAINING.md).
+
 `base.py` implements the improved native Base strategy over the released
 Coworld JSON protocol. `player.py` selects it for `PUDGE_PERSONALITY=rusher`;
 the other personalities keep their existing implementations.
