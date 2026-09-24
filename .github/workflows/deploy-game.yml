@@ -14,9 +14,6 @@
 #                               NOT from this env var, so the workflow seeds it
 #                               headlessly via `softmax set-token`. Reuse the same
 #                               token as Metta-AI/coworld-crewrift.
-#   POLYWORLD_DATA_SSH_KEY    - private half of a read-only deploy key on
-#                               Metta-AI/polyworld-data (replay-viewer art).
-#                               GITHUB_TOKEN cannot clone a sibling private repo.
 #
 # The Coworld CLI is installed from the public package repo so deploys use the
 # current registry/version allocator without waiting for a PyPI release.
@@ -55,24 +52,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Require polyworld-data deploy key
-        env:
-          POLYWORLD_DATA_SSH_KEY: ${{ secrets.POLYWORLD_DATA_SSH_KEY }}
-        run: |
-          if [ -z "$POLYWORLD_DATA_SSH_KEY" ]; then
-            echo "::error::SOFTMAX_OBSERVATORY secret POLYWORLD_DATA_SSH_KEY is empty. Add a read-only deploy key on Metta-AI/polyworld-data and store the private key in that environment secret. GITHUB_TOKEN cannot clone that private repo."
-            exit 1
-          fi
-
-      - name: Checkout polyworld-data
-        uses: actions/checkout@v4
-        with:
-          repository: Metta-AI/polyworld-data
-          path: polyworld_data
-          ref: main
-          ssh-key: ${{ secrets.POLYWORLD_DATA_SSH_KEY }}
-          persist-credentials: false
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -82,35 +61,14 @@ jobs:
       - name: Install coworld CLI
         run: uvx --from "$COWORLD_CLI" coworld --help >/dev/null
 
-      - uses: treeform/setup-nim-action@v6
-        with:
-          nim-version: '2.2.10'
-
-      - name: Install Nim dependencies
+      # The pinned bundle is the certified 0.3.21 viewer for simulator 37.
+      - name: Check replay viewer simulator version
         run: |
-          set -euo pipefail
-          # Nimby 0.2.1 will not auto-create a workspace inside a Git checkout.
-          nimby create
-          nimby sync nimby.lock -g
-          pkgs="$HOME/.nimby/pkgs"
-          {
-            echo '--path:"src"'
-            if [[ -d "$pkgs" ]]; then
-              find "$pkgs" -mindepth 1 -maxdepth 1 -type d -print | sort | while read -r dir; do
-                name=$(basename "$dir")
-                [[ "$name" == "packages" ]] && continue
-                if [[ -d "$dir/src" ]]; then
-                  echo "--path:\"$dir/src\""
-                else
-                  echo "--path:\"$dir\""
-                fi
-              done
-            fi
-          } > nim.cfg
+          python3 - <<'PY'
+          from pathlib import Path
 
-      - uses: emscripten-core/setup-emsdk@v16
-        with:
-          version: 6.0.3
+          assert "ReplayGameVersion* = 37'u16" in Path("examples/pudge_wars/replays.nim").read_text()
+          PY
 
       - uses: docker/setup-buildx-action@v3
 
