@@ -12,7 +12,7 @@ RUN curl -fsSL -o /usr/local/bin/nimby \
       https://github.com/treeform/nimby/releases/download/0.2.1/nimby-Linux-X64 \
     && chmod +x /usr/local/bin/nimby
 WORKDIR /src/polyworld
-COPY --from=engine . /src/polyworld
+COPY --from=engine polyworld.nimble nimby.lock config.nims ./
 # Lockfile packages into ~/.nimby/pkgs, then a real nim.cfg. config.nims
 # `include "nimble.paths"` does not expose those --path lines to `nim c`.
 RUN nimby create \
@@ -28,11 +28,16 @@ RUN nimby create \
            done; \
          fi; \
        } > nim.cfg
+COPY --from=engine src ./src
+COPY --from=engine examples/pudge_wars ./examples/pudge_wars
 RUN nim c --threads:on -d:ssl -d:release -o:/out/pwcoworld \
       examples/pudge_wars/coworld_host.nim
+RUN nim c --threads:on -d:ssl -d:release -d:basicLeague \
+      --passC:-flto --passL:-flto -o:/out/pwleague \
+      examples/pudge_wars/coworld_host.nim
 
-FROM python:3.12-slim
-RUN apt-get update && apt-get install -y --no-install-recommends libssl3 \
+FROM python:3.12-slim AS platform-hosted
+RUN apt-get update && apt-get install -y --no-install-recommends libssl3 libcurl4 \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir websockets==15.0.1
 ENV PYTHONPATH=/app
@@ -44,3 +49,9 @@ COPY shared /app/coworld/examples/pudgewars/shared
 COPY player /app/coworld/examples/pudgewars/player
 COPY --from=nim /out/pwcoworld /usr/local/bin/pwcoworld
 CMD ["pwcoworld"]
+
+FROM ubuntu:24.04 AS league
+RUN apt-get update && apt-get install -y --no-install-recommends libssl3 libcurl4t64 ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=nim /out/pwleague /usr/local/bin/pwleague
+CMD ["pwleague"]

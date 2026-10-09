@@ -1,9 +1,9 @@
 # Build and deploy the source-owned Pudge Wars Coworld package.
 #
 # Lifecycle:
-#   1. `coworld next-version pudge-wars` allocates the next registry version.
+#   1. `coworld next-version pudge-wars-basic` allocates the next registry version.
 #   2. `coworld build` builds the linux/amd64 game image from coworld/compose.yaml,
-#      compiles the Emscripten replay viewer, pins source URLs to this checkout,
+#      reuses the certified simulator-37 replay viewer, pins source URLs,
 #      stamps the version, and writes the hydrated manifest.
 #   3. Upload that exact hydrated manifest. Upload queues hosted certification
 #      and does not patch an existing hosted Coworld.
@@ -17,15 +17,13 @@
 #
 # The Coworld CLI is installed from the public package repo so deploys use the
 # current registry/version allocator without waiting for a PyPI release.
-name: "Deploy Pudge Wars Game"
+name: "Deploy Pudge Wars BASIC Game"
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       version:
-        description: "Explicit pudge-wars version to publish. Leave blank to auto-resolve."
+        description: "Explicit pudge-wars-basic version to publish. Leave blank to auto-resolve."
         required: false
         default: ""
       skip_upload:
@@ -61,14 +59,34 @@ jobs:
       - name: Install coworld CLI
         run: uvx --from "$COWORLD_CLI" coworld --help >/dev/null
 
-      # The pinned bundle is the certified 0.3.21 viewer for simulator 37.
-      - name: Check replay viewer simulator version
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
+      - uses: treeform/setup-nim-action@v6
+        with:
+          nim-version: '2.2.10'
 
-          assert "ReplayGameVersion* = 37'u16" in Path("examples/pudge_wars/replays.nim").read_text()
-          PY
+      - name: Install Nim dependencies
+        run: |
+          set -euo pipefail
+          # Nimby 0.2.1 will not auto-create a workspace inside a Git checkout.
+          nimby create
+          nimby sync nimby.lock -g
+          pkgs="$HOME/.nimby/pkgs"
+          {
+            echo '--path:"src"'
+            if [[ -d "$pkgs" ]]; then
+              find "$pkgs" -mindepth 1 -maxdepth 1 -type d -print | sort | while read -r dir; do
+                name=$(basename "$dir")
+                [[ "$name" == "packages" ]] && continue
+                if [[ -d "$dir/src" ]]; then
+                  echo "--path:\"$dir/src\""
+                else
+                  echo "--path:\"$dir\""
+                fi
+              done
+            fi
+          } > nim.cfg
+
+      - name: Test BASIC league contracts
+        run: bash scripts/test_league.sh
 
       - uses: docker/setup-buildx-action@v3
 
@@ -103,10 +121,10 @@ jobs:
           if [ -n "$INPUT_VERSION" ]; then
             NEXT="$INPUT_VERSION"
           else
-            NEXT=$(uvx --from "$COWORLD_CLI" coworld --elevated next-version pudge-wars)
+            NEXT=$(uvx --from "$COWORLD_CLI" coworld --elevated next-version pudge-wars-basic)
           fi
           echo "version=${NEXT}" >> "$GITHUB_OUTPUT"
-          echo "Deploying pudge-wars:${NEXT}"
+          echo "Deploying pudge-wars-basic:${NEXT}"
 
       - name: Build hydrated Coworld manifest
         run: |
@@ -138,12 +156,12 @@ jobs:
           payload = json.load(open("/tmp/coworlds-after.json"))
           rows = payload["entries"] if isinstance(payload, dict) else payload
           match = next(
-              (row for row in rows if row.get("name") == "pudge-wars" and row.get("version") == expected),
+              (row for row in rows if row.get("name") == "pudge-wars-basic" and row.get("version") == expected),
               None,
           )
           if match is None:
-              raise SystemExit(f"::error::Uploaded pudge-wars:{expected} not found")
+              raise SystemExit(f"::error::Uploaded pudge-wars-basic:{expected} not found")
           if not match.get("canonical"):
-              raise SystemExit(f"::error::pudge-wars:{expected} is not canonical after hosted smoke")
-          print(f"pudge-wars:{expected} is canonical ({match['id']})")
+              raise SystemExit(f"::error::pudge-wars-basic:{expected} is not canonical after hosted smoke")
+          print(f"pudge-wars-basic:{expected} is canonical ({match['id']})")
           EOF

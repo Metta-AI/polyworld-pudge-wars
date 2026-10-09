@@ -51,10 +51,10 @@ if selfInShop = 1 then
 end if
 hookTiles = 56 + 4 * upgradeLevel(1) + upgradeLevel(3)
 if selfBuff = 4 then
-  hookTiles = hookTiles + hookTiles / 2
+  hookTiles = hookTiles + hookTiles \ 2
 end if
 reach2 = hookTiles * hookTiles
-woundMax = selfMaxHp / 2 + upgradeLevel(0) * 30
+woundMax = selfMaxHp \ 2 + upgradeLevel(0) * 30
 leadNow = 9 + upgradeLevel(2)
 if leadNow < 1 then
   leadNow = 1
@@ -176,8 +176,8 @@ end if
 if pdy > span then
   span = pdy
 end if
-aimX = pickX + evx * span / leadNow
-aimY = pickY + evy * span / leadNow
+aimX = pickX + evx * span \ leadNow
+aimY = pickY + evy * span \ leadNow
 if aimX < 8 then
   aimX = 8
 end if
@@ -191,11 +191,11 @@ if aimY > 119 then
   aimY = 119
 end if
 
-phase = (worldTick / 7 + selfId * 13) mod 24
+phase = (worldTick \ 7 + selfId * 13) mod 24
 if phase < 12 then
-  juke = phase / 4 - 1
+  juke = phase \ 4 - 1
 else
-  juke = 4 - phase / 4
+  juke = 4 - phase \ 4
 end if
 if selfTeam = 0 then
   lineX = riverWest
@@ -215,7 +215,7 @@ end if
 pokeY = lineY
 if lastEy <> 0 then
   age = worldTick - lastSeen
-  pokeY = lastEy + evy * age / 8
+  pokeY = lastEy + evy * age \ 8
   if pokeY < 16 then
     pokeY = 16
   end if
@@ -393,8 +393,8 @@ if dodgeFlash = 1 then
       mood = 2
     else
       if headId <> 0 then
-        hx = headX + (homeX - headX) / 2
-        hy = headY + (homeY - headY) / 2
+        hx = headX + (homeX - headX) \ 2
+        hy = headY + (homeY - headY) \ 2
         hookTo(hx, hy)
         mood = 1
       else
@@ -414,8 +414,8 @@ if hookReady = 1 then
       mood = 6
     else
       if headId <> 0 then
-        hx = headX + (homeX - headX) / 2
-        hy = headY + (homeY - headY) / 2
+        hx = headX + (homeX - headX) \ 2
+        hy = headY + (homeY - headY) \ 2
         hookTo(hx, hy)
         mood = 1
       else

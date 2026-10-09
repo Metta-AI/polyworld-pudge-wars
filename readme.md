@@ -8,6 +8,28 @@ join from a native client or the browser (WASM).
 
 Engine design: [docs/engine-design.md](docs/engine-design.md).
 
+The league package now supports **Bassy BASIC file players**, using Polyworld's
+pinned VM and GotA-style game-hosted execution. The migration includes private
+seat logs/annotations and mixed-team OpenSkill league settings. See
+[the migration guide](coworld/GAME_HOSTED_MIGRATION.md) for local tests, file
+uploads and rollout. The separate `coworld/platform-hosted/` package retains
+Docker players and human play. The 3v3 league runs `pudge-wars-basic:0.1.1`;
+the sibling 1v1 league retains its existing runtime.
+
+Run local BASIC episodes without Docker:
+
+```bash
+python3 scripts/run_episode.py base aggressive          # 1v1
+python3 scripts/run_episode.py base:3 sniper:3 --seed 29 # 3v3
+python3 scripts/run_episode.py ./my-policy.bas support  # custom policy
+```
+
+The runner builds the league host, runs to the kill goal or time limit, and
+saves results, replay, policy snapshots and per-seat logs under `tmp/episodes/`.
+Use `--binary tmp/pwleague` to reuse a build, `--ticks 1024` for a short episode,
+or `--list-policies` to see the bundled policies. See the
+[local episode guide](coworld/GAME_HOSTED_MIGRATION.md#run-local-basic-episodes-without-docker).
+
 ## What's here
 
 | Path | What it is |
@@ -180,3 +202,6 @@ nim c -d:release -r tests/bench_pw_netlag.nim   # prediction quality vs latency
 
 MIT. See [LICENSE](LICENSE). Art under `polyworld_data/` may carry additional
 notices next to the files.
+
+Neural ZIP policies and Jev judgments are supported through the shared GotA
+interfaces; see [inference setup and examples](coworld/INFERENCE.md).

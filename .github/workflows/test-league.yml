@@ -1,0 +1,33 @@
+name: Test Pudge Wars BASIC league
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: treeform/setup-nim-action@v6
+        with:
+          nim-version: '2.2.10'
+      - name: Install pinned dependencies
+        run: |
+          nimby create
+          nimby sync nimby.lock -g
+          {
+            echo '--path:"src"'
+            for dir in "$HOME"/.nimby/pkgs/*; do
+              [ -d "$dir" ] || continue
+              if [ -d "$dir/src" ]; then
+                echo "--path:\"$dir/src\""
+              else
+                echo "--path:\"$dir\""
+              fi
+            done
+          } > nim.cfg
+      - name: Test VM, simulation, replay and runner contracts
+        run: bash scripts/test_league.sh
