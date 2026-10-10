@@ -1,0 +1,83 @@
+{
+  "by_opponent": {
+    "a-aron-pudge-rusher:v1": {
+      "n": 2,
+      "se": 0.0,
+      "win_rate": 1.0
+    },
+    "pudge-wars-rusher:v16": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 1.0
+    }
+  },
+  "by_team": {
+    "east": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 1.0
+    },
+    "west": {
+      "n": 2,
+      "se": 0.0,
+      "win_rate": 1.0
+    }
+  },
+  "clean": 3,
+  "clean_rows": [
+    {
+      "cost_usd": 0.09302,
+      "episode_id": "b1386b27-658f-4f84-82a1-98de57350940",
+      "id": "ereq_121730b9-95af-4518-ba86-45911fe9c7b8",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/c49bcd81-5f33-42b8-8e75-fb17b9b0edae.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.064194,
+      "episode_id": "90d4f768-d55c-485d-8dbf-f191b025aec0",
+      "id": "ereq_143b28b4-afcb-45bb-a105-3bb5ca84e52b",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/c416caa8-8a2a-40b0-8f4a-f5b62fadc826.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.092867,
+      "episode_id": "f9435eb9-db5b-477a-8944-87cf4a6e394b",
+      "id": "ereq_51471440-42a6-4301-bb2b-fb9e2f8da3e5",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/867733ed-eb6f-40dc-a797-77015bc1c9ae.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    }
+  ],
+  "hosted_cost_usd": 0.2501,
+  "overall": {
+    "n": 3,
+    "se": 0.0,
+    "win_rate": 1.0
+  },
+  "policy": "pudge-auto-optimizer:v5",
+  "taint_rate": 0.0,
+  "taint_reasons": [],
+  "tainted": 0,
+  "tainted_rows": [],
+  "xreq_id": "xreq_70c3e656-7522-401e-8ab7-2e8bc9ad31c6"
+}

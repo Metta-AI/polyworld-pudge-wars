@@ -1,0 +1,83 @@
+{
+  "by_opponent": {
+    "a-aron-pudge-rusher:v1": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 0.0
+    },
+    "pudge-wars-rusher:v16": {
+      "n": 2,
+      "se": 0.3535533905932738,
+      "win_rate": 0.5
+    }
+  },
+  "by_team": {
+    "east": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 0.0
+    },
+    "west": {
+      "n": 2,
+      "se": 0.3535533905932738,
+      "win_rate": 0.5
+    }
+  },
+  "clean": 3,
+  "clean_rows": [
+    {
+      "cost_usd": 0.206578,
+      "episode_id": "be4519ed-6359-40ab-aeec-81f9c5997a8e",
+      "id": "ereq_ebeec41f-74d7-4f49-9fe1-13f87ad8f2c6",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/b70aacbf-f00f-4102-80b4-16c69a20ed0a.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.206578,
+      "episode_id": "e87f2f86-f922-4465-a452-feeacf9b5381",
+      "id": "ereq_2c5b886e-1d15-4c9e-a6ee-6d3a83aa7588",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/a5782529-1497-4af5-ae91-e2e7b1e6854d.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.206578,
+      "episode_id": "3cd57e82-4ba4-4351-a348-b90c9b3b67f2",
+      "id": "ereq_a44c0dcc-4b04-4250-8314-b184aa5ac7ad",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/078db258-4143-41f5-8487-361f6fe708eb.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    }
+  ],
+  "hosted_cost_usd": 0.6197,
+  "overall": {
+    "n": 3,
+    "se": 0.2721655269759087,
+    "win_rate": 0.3333333333333333
+  },
+  "policy": "pudge-auto-optimizer:v3",
+  "taint_rate": 0.0,
+  "taint_reasons": [],
+  "tainted": 0,
+  "tainted_rows": [],
+  "xreq_id": "xreq_4f8155c2-ca8c-4210-b245-d211fde7fb9f"
+}

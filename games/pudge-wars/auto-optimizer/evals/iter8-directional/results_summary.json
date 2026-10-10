@@ -1,0 +1,1338 @@
+{
+  "by_opponent": {
+    "a-aron-pudge-rusher:v1": {
+      "deaths": 10.5,
+      "end_tick": 37734.8,
+      "kills": 16.7,
+      "margin": 6.2,
+      "my_acc": 0.1528372591006424,
+      "my_thrown": 373.6,
+      "n": 10,
+      "opp_acc": 0.11842453079566481,
+      "opp_thrown": 378.3,
+      "time_limit": 0.9,
+      "win_rate": 0.7
+    },
+    "co-gas-pudge-blind-hook-richard:v7": {
+      "deaths": 11.307692307692308,
+      "end_tick": 38283.846153846156,
+      "kills": 19.53846153846154,
+      "margin": 8.23076923076923,
+      "my_acc": 0.17960673018447193,
+      "my_thrown": 379.46153846153845,
+      "n": 13,
+      "opp_acc": 0.13771394845563645,
+      "opp_thrown": 391.0,
+      "time_limit": 0.9230769230769231,
+      "win_rate": 0.8461538461538461
+    },
+    "pudge-wars-rusher:v16": {
+      "deaths": 5.363636363636363,
+      "end_tick": 38400.0,
+      "kills": 8.636363636363637,
+      "margin": 3.272727272727273,
+      "my_acc": 0.08527870414483087,
+      "my_thrown": 381.6363636363636,
+      "n": 11,
+      "opp_acc": 0.08589815332960268,
+      "opp_thrown": 324.90909090909093,
+      "time_limit": 1.0,
+      "win_rate": 0.6363636363636364
+    }
+  },
+  "by_outcome": {
+    "loss": {
+      "deaths": 11.333333333333334,
+      "end_tick": 38400.0,
+      "kills": 9.444444444444445,
+      "margin": -1.8888888888888888,
+      "my_acc": 0.11901913875598086,
+      "my_thrown": 371.55555555555554,
+      "n": 9,
+      "opp_acc": 0.11622047244094488,
+      "opp_thrown": 352.77777777777777,
+      "time_limit": 1.0,
+      "win_rate": 0.0
+    },
+    "win": {
+      "deaths": 8.36,
+      "end_tick": 38073.52,
+      "kills": 17.24,
+      "margin": 8.88,
+      "my_acc": 0.148797647800063,
+      "my_thrown": 380.92,
+      "n": 25,
+      "opp_acc": 0.1172153264975715,
+      "opp_thrown": 370.6,
+      "time_limit": 0.92,
+      "win_rate": 1.0
+    }
+  },
+  "by_team": {
+    "east": {
+      "deaths": 9.882352941176471,
+      "end_tick": 38400.0,
+      "kills": 15.588235294117647,
+      "margin": 5.705882352941177,
+      "my_acc": 0.14195772747713986,
+      "my_thrown": 392.4117647058824,
+      "n": 17,
+      "opp_acc": 0.1171344165435746,
+      "opp_thrown": 398.2352941176471,
+      "time_limit": 1.0,
+      "win_rate": 0.7647058823529411
+    },
+    "west": {
+      "deaths": 8.411764705882353,
+      "end_tick": 37919.882352941175,
+      "kills": 14.764705882352942,
+      "margin": 6.352941176470588,
+      "my_acc": 0.14009038089089734,
+      "my_thrown": 364.47058823529414,
+      "n": 17,
+      "opp_acc": 0.11675485008818343,
+      "opp_thrown": 333.52941176470586,
+      "time_limit": 0.8823529411764706,
+      "win_rate": 0.7058823529411765
+    }
+  },
+  "overall": {
+    "deaths": 9.147058823529411,
+    "end_tick": 38159.94117647059,
+    "kills": 15.176470588235293,
+    "margin": 6.029411764705882,
+    "my_acc": 0.14105852179995337,
+    "my_thrown": 378.44117647058823,
+    "n": 34,
+    "opp_acc": 0.11696141479099678,
+    "opp_thrown": 365.88235294117646,
+    "time_limit": 0.9411764705882353,
+    "win_rate": 0.7352941176470589
+  },
+  "rows": [
+    {
+      "cost_usd": 0.412823,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "834737a9-0a38-430a-9be2-46e0ba1e0327",
+      "id": "ereq_6c70df89-57fc-4b12-826f-f7bb08089b71",
+      "margin": -4.0,
+      "me": {
+        "deaths": 20,
+        "hooks_landed": 75,
+        "hooks_thrown": 376,
+        "kills": 16,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 16,
+          "hooks_landed": 63,
+          "hooks_thrown": 376,
+          "kills": 20,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/e179d132-d3aa-4b8e-ad86-9dc489e2c80c.replay",
+      "score": 0.0,
+      "seats": 2,
+      "seed": 832174923,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.44305,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "cf58329c-9819-4f98-a5bb-d78d7da73f2d",
+      "id": "ereq_9c9758a1-bef1-48bd-859d-d29056199b09",
+      "margin": 9.0,
+      "me": {
+        "deaths": 7,
+        "hooks_landed": 44,
+        "hooks_thrown": 402,
+        "kills": 16,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 16,
+          "hooks_landed": 29,
+          "hooks_thrown": 404,
+          "kills": 7,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/185888dd-0caa-4374-99f9-9f88aa67e4ee.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 832014023,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.462668,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "82a90ee8-771d-4886-8403-fc3f0bf385e9",
+      "id": "ereq_53d115b3-c8a3-4edd-876a-a72f1956cfa0",
+      "margin": -1.0,
+      "me": {
+        "deaths": 7,
+        "hooks_landed": 28,
+        "hooks_thrown": 385,
+        "kills": 6,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 6,
+          "hooks_landed": 27,
+          "hooks_thrown": 288,
+          "kills": 7,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/49e442df-4bb0-4f5c-bf41-db7238109441.replay",
+      "score": 0.0,
+      "seats": 2,
+      "seed": 832249387,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.425957,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "17eac92a-7617-469d-b0f2-38f37961eccd",
+      "id": "ereq_dff87a26-6e13-4eea-8c5f-b88419c44017",
+      "margin": 3.0,
+      "me": {
+        "deaths": 5,
+        "hooks_landed": 30,
+        "hooks_thrown": 393,
+        "kills": 8,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 8,
+          "hooks_landed": 22,
+          "hooks_thrown": 297,
+          "kills": 5,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/69d98f07-2770-4e28-9d03-d9a149aa0d5f.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829272116,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.411533,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "296be094-cecf-4d96-8d44-4249882ba630",
+      "id": "ereq_815f7349-8c0c-4f41-a8c0-e9ae6582a988",
+      "margin": 0.0,
+      "me": {
+        "deaths": 8,
+        "hooks_landed": 37,
+        "hooks_thrown": 257,
+        "kills": 8,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 8,
+          "hooks_landed": 35,
+          "hooks_thrown": 255,
+          "kills": 8,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/ea24dd3d-9cf3-4276-8e91-c5fa9401c692.replay",
+      "score": 0.0,
+      "seats": 2,
+      "seed": 831649040,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.160552,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "83a3041e-1f8f-4e69-b2fb-9010e9a17fbd",
+      "id": "ereq_1b468aa3-31a4-47b4-824a-c2a8b1e01f2f",
+      "margin": 3.0,
+      "me": {
+        "deaths": 11,
+        "hooks_landed": 53,
+        "hooks_thrown": 394,
+        "kills": 14,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 14,
+          "hooks_landed": 43,
+          "hooks_thrown": 378,
+          "kills": 11,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/89506f28-22b5-4f55-8bd7-b30ea0579491.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829274823,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.423593,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "34172a67-0eac-4b97-9926-dfc7e285c5a5",
+      "id": "ereq_a30185ea-8b11-4d6c-b62d-e8b9993cb8a6",
+      "margin": -2.0,
+      "me": {
+        "deaths": 10,
+        "hooks_landed": 30,
+        "hooks_thrown": 386,
+        "kills": 8,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 8,
+          "hooks_landed": 37,
+          "hooks_thrown": 360,
+          "kills": 10,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/c18d2b7e-3ea3-4e18-92c9-f5a1bedbd279.replay",
+      "score": 0.0,
+      "seats": 2,
+      "seed": 829293198,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.434495,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "0fe1abeb-7227-4c8e-87c4-6b9878ae0e44",
+      "id": "ereq_2b337128-9d38-41bd-a538-0c2934f5ab55",
+      "margin": 6.0,
+      "me": {
+        "deaths": 16,
+        "hooks_landed": 72,
+        "hooks_thrown": 374,
+        "kills": 22,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 22,
+          "hooks_landed": 62,
+          "hooks_thrown": 368,
+          "kills": 16,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/4e88fff8-e826-45e3-ba09-e51eaced70c7.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 831951735,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.847063,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "5cf6b0d7-81fa-4bcc-99d0-65491ef45d4f",
+      "id": "ereq_19c4c41d-edf5-4ed9-8300-1542f3bfed26",
+      "margin": -4.0,
+      "me": {
+        "deaths": 12,
+        "hooks_landed": 39,
+        "hooks_thrown": 407,
+        "kills": 8,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 8,
+          "hooks_landed": 49,
+          "hooks_thrown": 410,
+          "kills": 12,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/f98cd568-71e3-46dc-9484-a557c07e1b1e.replay",
+      "score": 0.0,
+      "seats": 2,
+      "seed": 831784712,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.251321,
+      "end_reason": "kill_goal",
+      "end_tick": 31748,
+      "episode_id": "aa6a013e-f8a4-4235-a4f0-88813b7b4f6d",
+      "id": "ereq_aaad4d3e-d935-4542-a99b-3d64680ab827",
+      "margin": 24.0,
+      "me": {
+        "deaths": 6,
+        "hooks_landed": 74,
+        "hooks_thrown": 313,
+        "kills": 30,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 30,
+          "hooks_landed": 43,
+          "hooks_thrown": 336,
+          "kills": 6,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/46efa396-be99-4f1d-bcc0-73ce894fcf94.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829326540,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.21622,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "ae7b3ff4-16aa-4e5c-806c-fc98bfe2bb88",
+      "id": "ereq_90f602f7-d286-42f6-bdd9-0d09fd5639af",
+      "margin": 5.0,
+      "me": {
+        "deaths": 14,
+        "hooks_landed": 78,
+        "hooks_thrown": 363,
+        "kills": 19,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 19,
+          "hooks_landed": 75,
+          "hooks_thrown": 377,
+          "kills": 14,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/d7c2a188-85a6-497a-878e-dcda0130b269.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829367829,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.494601,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "93bb28a7-6065-4828-9e83-79512e58559a",
+      "id": "ereq_bf212e19-76c4-46ed-b458-b8bccd181e74",
+      "margin": 0.0,
+      "me": {
+        "deaths": 3,
+        "hooks_landed": 16,
+        "hooks_thrown": 255,
+        "kills": 3,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 3,
+          "hooks_landed": 16,
+          "hooks_thrown": 234,
+          "kills": 3,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/beeb3500-158b-4ba4-ac99-d30a87eaeb73.replay",
+      "score": 0.0,
+      "seats": 2,
+      "seed": 831719294,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.508101,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "17d8b8f6-9065-42fa-a5a6-17d84f51875e",
+      "id": "ereq_0439a03a-3a13-4e75-9efa-684903de8912",
+      "margin": 17.0,
+      "me": {
+        "deaths": 5,
+        "hooks_landed": 62,
+        "hooks_thrown": 394,
+        "kills": 22,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 22,
+          "hooks_landed": 36,
+          "hooks_thrown": 415,
+          "kills": 5,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/43613a27-3cc6-44f4-8805-6d901cea8a48.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 831850915,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.825212,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "633127fd-c3b4-4662-bf85-d025de9197f0",
+      "id": "ereq_29d5da30-e49b-4a5e-b2a7-e2798536db32",
+      "margin": -3.0,
+      "me": {
+        "deaths": 20,
+        "hooks_landed": 72,
+        "hooks_thrown": 381,
+        "kills": 17,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 17,
+          "hooks_landed": 59,
+          "hooks_thrown": 385,
+          "kills": 20,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/55b36e25-7ffd-4684-b189-0a47a30dcd7a.replay",
+      "score": 0.0,
+      "seats": 2,
+      "seed": 831657667,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.165957,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "1d1490ef-8385-4803-8b61-832698bc5c0c",
+      "id": "ereq_89e240fa-c52a-418d-bd08-a8b635c40b4c",
+      "margin": 4.0,
+      "me": {
+        "deaths": 12,
+        "hooks_landed": 55,
+        "hooks_thrown": 388,
+        "kills": 16,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 16,
+          "hooks_landed": 39,
+          "hooks_thrown": 393,
+          "kills": 12,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/1ea86e68-914c-44a3-b38e-e8a327d6098a.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829382562,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 1.15569,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "8ecad2d7-f49f-4eb0-80dd-707dab4a001a",
+      "id": "ereq_7d4e49af-8629-40e4-b8b8-d2923846f726",
+      "margin": 3.0,
+      "me": {
+        "deaths": 15,
+        "hooks_landed": 69,
+        "hooks_thrown": 370,
+        "kills": 18,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 18,
+          "hooks_landed": 67,
+          "hooks_thrown": 380,
+          "kills": 15,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/00e3f430-8c6e-410d-b4cd-9cd21fb69871.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 833620923,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.39428,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "85db4c1c-0bec-49a2-a321-acf7a8930c22",
+      "id": "ereq_d7c2dc68-eb43-44b3-86b3-e9bbd48b4c38",
+      "margin": 18.0,
+      "me": {
+        "deaths": 3,
+        "hooks_landed": 59,
+        "hooks_thrown": 384,
+        "kills": 21,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 21,
+          "hooks_landed": 35,
+          "hooks_thrown": 421,
+          "kills": 3,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/f28ca1c0-e5cc-426d-addc-429ed78d63b2.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 831492820,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.86023,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "e8d2cba5-0ba2-4ffe-887e-47e1a68d9ba1",
+      "id": "ereq_fb8f6dc4-b388-4def-a80d-86a433bcf713",
+      "margin": 0.0,
+      "me": {
+        "deaths": 7,
+        "hooks_landed": 39,
+        "hooks_thrown": 494,
+        "kills": 7,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 7,
+          "hooks_landed": 32,
+          "hooks_thrown": 489,
+          "kills": 7,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/2b89bdac-3c69-4cbe-a429-84d91541dc1a.replay",
+      "score": 0.0,
+      "seats": 2,
+      "seed": 831881470,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.147351,
+      "end_reason": "kill_goal",
+      "end_tick": 36890,
+      "episode_id": "c950e25b-b288-4566-a6fd-2c81a043bb21",
+      "id": "ereq_f0a2c82d-5222-4656-b413-a1e2e7e2c745",
+      "margin": 17.0,
+      "me": {
+        "deaths": 13,
+        "hooks_landed": 91,
+        "hooks_thrown": 358,
+        "kills": 30,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 30,
+          "hooks_landed": 70,
+          "hooks_thrown": 356,
+          "kills": 13,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/ea0ec43d-6e8e-4076-a3c8-ff6e5f006a46.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829606180,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.396048,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "069a68ee-e35c-46ee-97d5-0e083664519e",
+      "id": "ereq_51dd014d-caf7-4078-bc43-21e2daf7f44f",
+      "margin": 18.0,
+      "me": {
+        "deaths": 1,
+        "hooks_landed": 43,
+        "hooks_thrown": 387,
+        "kills": 19,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 19,
+          "hooks_landed": 20,
+          "hooks_thrown": 430,
+          "kills": 1,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/fa895505-88b8-4031-a912-df9f57925e4a.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 832013320,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.139892,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "2592a42d-3ead-4b82-8aa4-97c2c14dc263",
+      "id": "ereq_e848cae6-9740-43b4-b88b-7040f4874f63",
+      "margin": 4.0,
+      "me": {
+        "deaths": 5,
+        "hooks_landed": 41,
+        "hooks_thrown": 388,
+        "kills": 9,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 9,
+          "hooks_landed": 34,
+          "hooks_thrown": 268,
+          "kills": 5,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/9e8176ca-1bf1-49c8-b10f-e208acb8ea5f.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829614080,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.583376,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "4e0f6d56-c479-4434-9ea3-f15a94845323",
+      "id": "ereq_f5b2c108-56bf-4ced-9db6-eb3d7da11365",
+      "margin": 16.0,
+      "me": {
+        "deaths": 5,
+        "hooks_landed": 70,
+        "hooks_thrown": 368,
+        "kills": 21,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 21,
+          "hooks_landed": 54,
+          "hooks_thrown": 375,
+          "kills": 5,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/2ffbd2c0-efa2-46d7-b3c7-d6c829275309.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 832163593,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.876612,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "e88d3450-26c2-4534-aad6-3375c5e60623",
+      "id": "ereq_a96a0336-d8e7-45e3-9fef-5530313a6804",
+      "margin": 12.0,
+      "me": {
+        "deaths": 12,
+        "hooks_landed": 66,
+        "hooks_thrown": 396,
+        "kills": 24,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 24,
+          "hooks_landed": 48,
+          "hooks_thrown": 377,
+          "kills": 12,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/ca410253-7c41-420d-883b-5fd5a5c08fa3.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 831976256,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.160248,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "b9c70644-3b66-4282-a56a-7d339acfdfa5",
+      "id": "ereq_1df61950-c780-49e9-8877-44060d7d956f",
+      "margin": 1.0,
+      "me": {
+        "deaths": 20,
+        "hooks_landed": 92,
+        "hooks_thrown": 381,
+        "kills": 21,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 21,
+          "hooks_landed": 99,
+          "hooks_thrown": 375,
+          "kills": 20,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/7e37acdb-b918-40e6-b364-0217005010d3.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829585770,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.884262,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "98065f52-0332-4c5e-b583-930278414cf3",
+      "id": "ereq_ede7132e-f6ba-4867-b422-f7670bc7037d",
+      "margin": 3.0,
+      "me": {
+        "deaths": 1,
+        "hooks_landed": 12,
+        "hooks_thrown": 414,
+        "kills": 4,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 4,
+          "hooks_landed": 7,
+          "hooks_thrown": 300,
+          "kills": 1,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/bd7b6667-e196-44c9-8882-4f4d7cbc1b03.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 832023113,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.480962,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "8b837385-76b0-4572-9159-57e10a111f6e",
+      "id": "ereq_b10414e3-f407-401c-8085-6b9cf74ebadd",
+      "margin": -3.0,
+      "me": {
+        "deaths": 15,
+        "hooks_landed": 62,
+        "hooks_thrown": 403,
+        "kills": 12,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 12,
+          "hooks_landed": 51,
+          "hooks_thrown": 378,
+          "kills": 15,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/cfabc44c-8ec6-4f34-ab61-5e8c8527d0fc.replay",
+      "score": 0.0,
+      "seats": 2,
+      "seed": 829658418,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.182776,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "b3e19255-9020-44f3-ab4c-71b725b89a35",
+      "id": "ereq_d15d178f-3d97-4d50-8a57-8aced88c8106",
+      "margin": 6.0,
+      "me": {
+        "deaths": 4,
+        "hooks_landed": 39,
+        "hooks_thrown": 358,
+        "kills": 10,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 10,
+          "hooks_landed": 33,
+          "hooks_thrown": 405,
+          "kills": 4,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/c0d5660f-e57d-41ed-946b-f783c758c0d4.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829667811,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.356155,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "cc20e42a-b216-4f97-a10d-f056e50c182f",
+      "id": "ereq_8982ca0f-ea9d-47d0-9182-3c2e7f36af79",
+      "margin": 5.0,
+      "me": {
+        "deaths": 11,
+        "hooks_landed": 66,
+        "hooks_thrown": 372,
+        "kills": 16,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 16,
+          "hooks_landed": 57,
+          "hooks_thrown": 396,
+          "kills": 11,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/2dc26a25-d559-4edf-a810-72cfb83252eb.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 831497883,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.551067,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "0440b3b5-35b7-45c7-a492-aba226b13326",
+      "id": "ereq_a007811f-c64d-4277-a5e7-cd10b8797b8f",
+      "margin": 10.0,
+      "me": {
+        "deaths": 3,
+        "hooks_landed": 43,
+        "hooks_thrown": 378,
+        "kills": 13,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 13,
+          "hooks_landed": 26,
+          "hooks_thrown": 331,
+          "kills": 3,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/200730fd-61c5-487f-88c0-8fe75a4245d4.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 834066254,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.183623,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "638f6b79-8e1a-4282-8e84-41d43ba34499",
+      "id": "ereq_4c9099fd-7112-44d4-807b-e427bb11ce69",
+      "margin": 5.0,
+      "me": {
+        "deaths": 2,
+        "hooks_landed": 17,
+        "hooks_thrown": 416,
+        "kills": 7,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 7,
+          "hooks_landed": 11,
+          "hooks_thrown": 419,
+          "kills": 2,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/3f652619-787c-4387-b28d-2e1d82ce54bd.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829753006,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.504955,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "3e630ea3-bb1a-4669-a102-94a41a58a302",
+      "id": "ereq_737d8dba-16da-4003-8e4a-03251734f5d7",
+      "margin": 2.0,
+      "me": {
+        "deaths": 6,
+        "hooks_landed": 32,
+        "hooks_thrown": 408,
+        "kills": 8,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 8,
+          "hooks_landed": 24,
+          "hooks_thrown": 292,
+          "kills": 6,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/137f738b-2511-4376-bdab-a7a11f904fb4.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829875602,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.792595,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "fe3ee4d4-863e-440e-844b-23705220330f",
+      "id": "ereq_f54e1fad-076d-4ac4-8f70-c5bc53348948",
+      "margin": 6.0,
+      "me": {
+        "deaths": 14,
+        "hooks_landed": 72,
+        "hooks_thrown": 372,
+        "kills": 20,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 20,
+          "hooks_landed": 60,
+          "hooks_thrown": 395,
+          "kills": 14,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/581c856b-93dc-4826-a5e9-6ceed26cb261.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 831567711,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.19735,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "11d3e61c-48b1-4c9e-92b0-6cf84d73ee2a",
+      "id": "ereq_ccddb729-00c1-4404-84ba-6db74834a63d",
+      "margin": 11.0,
+      "me": {
+        "deaths": 11,
+        "hooks_landed": 81,
+        "hooks_thrown": 378,
+        "kills": 22,
+        "slot": 0,
+        "team": 0
+      },
+      "opp": [
+        {
+          "deaths": 22,
+          "hooks_landed": 58,
+          "hooks_thrown": 381,
+          "kills": 11,
+          "slot": 1,
+          "team": 1
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/903d2d22-db06-4f0a-93ba-4ef7f883f10f.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 829967413,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.205728,
+      "end_reason": "time_limit",
+      "end_tick": 38400,
+      "episode_id": "135b9fa4-2668-4c9f-98f9-0085428343bd",
+      "id": "ereq_fc7a57db-05af-4eb9-a1e4-2fecf91ea7cd",
+      "margin": 14.0,
+      "me": {
+        "deaths": 7,
+        "hooks_landed": 56,
+        "hooks_thrown": 374,
+        "kills": 21,
+        "slot": 1,
+        "team": 1
+      },
+      "opp": [
+        {
+          "deaths": 21,
+          "hooks_landed": 34,
+          "hooks_thrown": 396,
+          "kills": 7,
+          "slot": 0,
+          "team": 0
+        }
+      ],
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/628eb1ff-18dc-4687-b5f1-50b6b2e5111a.replay",
+      "score": 1.0,
+      "seats": 2,
+      "seed": 830096796,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    }
+  ]
+}

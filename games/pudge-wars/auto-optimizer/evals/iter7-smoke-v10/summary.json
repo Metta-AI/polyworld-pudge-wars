@@ -1,0 +1,78 @@
+{
+  "by_opponent": {
+    "pudge-wars-rusher:v16": {
+      "n": 3,
+      "se": 0.2721655269759087,
+      "win_rate": 0.6666666666666666
+    }
+  },
+  "by_team": {
+    "east": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 1.0
+    },
+    "west": {
+      "n": 2,
+      "se": 0.3535533905932738,
+      "win_rate": 0.5
+    }
+  },
+  "clean": 3,
+  "clean_rows": [
+    {
+      "cost_usd": 0.248166,
+      "episode_id": "4665fca3-460f-46be-8fc4-2a19882cd0d4",
+      "id": "ereq_6644a463-0328-4b67-9bac-929f7bb2b726",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/14f7a0ad-784d-42da-94c1-f7495c4b7252.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.247826,
+      "episode_id": "2318fe26-5686-4671-be53-0cf8136f9656",
+      "id": "ereq_eb0263b6-2df7-4914-9441-b3a38835c8e4",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/639299c6-08cb-42c2-88ac-c7a2f0038a4e.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.08269,
+      "episode_id": "1d233a04-5d09-461e-9832-bcabfe78ee02",
+      "id": "ereq_7edb6d91-b087-419b-8e8a-785e434a86d1",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/954111bc-f3cd-4d39-8808-6282f7076f55.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    }
+  ],
+  "hosted_cost_usd": 0.5787,
+  "overall": {
+    "n": 3,
+    "se": 0.2721655269759087,
+    "win_rate": 0.6666666666666666
+  },
+  "policy": "pudge-auto-optimizer:v10",
+  "taint_rate": 0.0,
+  "taint_reasons": [],
+  "tainted": 0,
+  "tainted_rows": [],
+  "xreq_id": "xreq_e844ef81-349d-4861-8458-9c374ff1e6b1"
+}

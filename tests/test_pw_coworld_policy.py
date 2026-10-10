@@ -2,8 +2,9 @@
 
 import copy
 import unittest
+from collections import deque
 
-from coworld.player.base import BasePolicy
+from coworld.player.base import LEAD_DIVISOR, BasePolicy
 
 
 def unit(pid=1, team=0, x=36, y=40):
@@ -20,6 +21,15 @@ def observation(me=None, others=(), hooks=()):
     return dict(tick=200, self=me, play_west_max=52, play_east_min=76,
                 visible=dict(pudges=[me, *others], hooks=list(hooks), runes=[]),
                 ally_ping=None, rune_next=dict(soon=0, x=-1, y=-1))
+
+
+def seen_twice(policy, me, hook, step=(-0.8, 0.0), others=()):
+    """Feed the hook on two consecutive ticks (the live host reports every tick)."""
+    earlier = dict(hook, x=hook["x"] - step[0], y=hook["y"] - step[1])
+    before = observation(me, others, [earlier])
+    before["tick"] = 199
+    policy.choose_action(before)
+    return policy.choose_action(observation(me, others, [hook]))
 
 
 class BaseCoworldPolicyTest(unittest.TestCase):
@@ -90,8 +100,166 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         me = unit(x=85, y=40)
         me.update(layer=1, blink_ready=True)
         hook = dict(owner_id=4, team=1, x=77, y=40, flying=True, victim=0)
-        action = self.policy.choose_action(observation(me, hooks=[hook]))
+        action = seen_twice(self.policy, me, hook, step=(0.8, 0.0))
         self.assertGreater(action["blink_to"][0], me["x"])
+
+    def test_walking_dodge_starts_at_first_sight_but_blink_waits(self):
+        me = unit()
+        me["blink_ready"] = True
+        far = dict(owner_id=4, team=1, x=72, y=46, flying=True, victim=0)  # 36.5 tiles out, over the river
+        policy = BasePolicy(trace=True)
+        action = seen_twice(policy, me, far)  # flying due west along y=46: we are 6 tiles north of the line
+        self.assertEqual(action["walk_to"], [34, 30])
+        self.assertNotIn("blink_to", action)
+        self.assertEqual([(e["event"], e["tick"], e["dist"], e["side"], e["off"], e["line"]) for e in policy.events],
+                         [("threat_seen", 200, 36.5, -1, 6.0, True)])
+        beyond = dict(far, x=78)  # 42.4 tiles: not yet lit for us
+        self.assertEqual(seen_twice(BasePolicy(), me, beyond)["walk_to"][0], 36)
+        near = dict(far, x=54)
+        self.assertIn("blink_to", seen_twice(BasePolicy(), me, near))
+
+    def test_dodge_side_runs_away_from_the_flight_line(self):
+        me = unit()
+        # A led throw: the head is level with us but the line passes 5 tiles south of us.
+        led = dict(owner_id=4, team=1, x=72, y=40, flying=True, victim=0)
+        policy = BasePolicy(trace=True)
+        action = seen_twice(policy, me, led, step=(-0.8, 0.1))  # heading (-0.8, +0.1): line reaches y=44.5 at x=36
+        self.assertEqual(action["walk_to"], [34, 30])  # north, away from the line (head rule would also say north)
+        mirrored = seen_twice(BasePolicy(), me, led, step=(-0.8, -0.1))  # line passes north of us
+        self.assertEqual(mirrored["walk_to"], [34, 50])  # south, although the head rule says north (head.y == me.y)
+        self.assertEqual(policy.events[0]["line"], True)
+        self.assertAlmostEqual(policy.events[0]["off"], 4.5, places=1)
+        # Dead-on line: fall back to the head rule (hook slightly south of us -> run north).
+        dead_on = dict(led, y=40.3)
+        policy = BasePolicy(trace=True)
+        self.assertEqual(seen_twice(policy, me, dead_on)["walk_to"], [34, 30])
+        self.assertEqual(policy.events[0]["line"], False)
+        # The edge clamp still wins over the line.
+        low = unit(y=18)
+        self.assertEqual(seen_twice(BasePolicy(), low, dict(led, y=18), step=(-0.8, -0.1))["walk_to"], [34, 28])
+
+    def test_first_lit_tick_waits_for_a_heading(self):
+        me = unit()
+        me["blink_ready"] = True
+        far = dict(owner_id=4, team=1, x=72, y=46, flying=True, victim=0)
+        policy = BasePolicy(trace=True)
+        first = policy.choose_action(observation(me, hooks=[far]))
+        self.assertEqual(first["walk_to"][0], 36)  # not dodging yet: keeps the hold order
+        self.assertEqual(policy.events, deque(maxlen=256))
+        self.assertNotIn("blink_to", BasePolicy().choose_action(observation(me, hooks=[dict(far, x=54)])))
+        # A hook that never yields a heading (only seen once, then lost) falls back after two ticks.
+        policy = BasePolicy(trace=True)
+        for tick, hook in ((200, far), (201, dict(far, owner_id=5, x=70.4)), (202, dict(far, owner_id=6, x=69.6))):
+            obs = observation(me, hooks=[hook])
+            obs["tick"] = tick
+            action = policy.choose_action(obs)
+        self.assertEqual(action["walk_to"], [34, 30])
+        self.assertEqual((policy.events[0]["tick"], policy.events[0]["line"], policy.events[0]["off"]), (202, False, None))
+
+    def test_outgunned_on_the_enemy_bank_blinks_toward_home(self):
+        for team, x, enemy_x, landing in ((0, 92, 96, [72.0, 40.0]), (1, 36, 32, [56.0, 40.0])):
+            me = unit(team=team, x=x)
+            me.update(hp=600, layer=1 - team, blink_ready=True)
+            enemy = unit(4, 1 - team, enemy_x)
+            obs = observation(me, [enemy])
+            self.assertNotIn("blink_to", BasePolicy().choose_action(obs))
+            obs["game_version"] = 36
+            action = BasePolicy().choose_action(obs)
+            self.assertEqual(action["blink_to"], landing)
+            self.assertNotIn("attack_target", action)
+            self.assertFalse(action.get("rot", False))
+        me = unit(x=73, y=60)
+        me.update(hp=600, layer=1, blink_ready=True)
+        obs = observation(me, [unit(4, 1, 80, 60)])
+        obs["game_version"] = 36
+        policy = BasePolicy(trace=True)
+        self.assertEqual(policy.choose_action(obs)["blink_to"], [56.0, 60.0])
+        self.assertEqual([e["event"] for e in policy.events], ["bank_escape"])
+        self.assertEqual(policy.events[0]["via"], "fountain")
+
+    def test_bank_escape_respects_the_rot_blink_lock(self):
+        # An enemy Rot disk within 8 tiles makes Blink impossible: brawl as v4.
+        me = unit(x=92)
+        me.update(hp=600, layer=1, blink_ready=True)
+        enemy = unit(4, 1, 96)
+        enemy["rot"] = True
+        obs = observation(me, [enemy])
+        obs["game_version"] = 36
+        action = BasePolicy().choose_action(obs)
+        self.assertNotIn("blink_to", action)
+        self.assertEqual(action["attack_target"], 4)
+        # Our own Rot is switched off first (the host reports blink_ready
+        # false inside our own disk); the hop follows once it is off.
+        me.update(rot=True, blink_ready=False)
+        enemy["rot"] = False
+        obs = observation(me, [enemy])
+        obs["game_version"] = 36
+        policy = BasePolicy(trace=True)
+        action = policy.choose_action(obs)
+        self.assertNotIn("blink_to", action)
+        self.assertNotIn("attack_target", action)
+        self.assertIs(action["rot"], False)
+        me.update(rot=False, blink_ready=True)
+        obs = observation(me, [enemy])
+        obs.update(game_version=36, tick=201)
+        self.assertEqual(policy.choose_action(obs)["blink_to"], [72.0, 40.0])
+        # A Blink spent recently keeps Rot on (no pointless switch-off).
+        obs = observation(me, [enemy])
+        obs.update(game_version=36, tick=202, accepted={"blink_to": True})
+        me.update(rot=True, blink_ready=False, x=92)
+        action = policy.choose_action(obs)
+        self.assertNotIn("rot", action)
+        self.assertEqual(action["attack_target"], 4)
+        self.assertEqual([e["event"] for e in policy.events], ["bank_escape"])
+
+    def test_refused_bank_escape_falls_back_to_the_brawl(self):
+        me = unit(x=92)
+        me.update(hp=600, layer=1, blink_ready=True)
+        enemy = unit(4, 1, 96)
+        obs = observation(me, [enemy])
+        obs["game_version"] = 36
+        policy = BasePolicy(trace=True)
+        self.assertEqual(policy.choose_action(obs)["blink_to"], [72.0, 40.0])
+        # The host rejected the hop (e.g. a palisade on the ray): brawl for
+        # a second instead of re-sending it every tick.
+        obs = observation(me, [enemy])
+        obs.update(game_version=36, tick=201, accepted={"blink_to": "rejected"})
+        action = policy.choose_action(obs)
+        self.assertNotIn("blink_to", action)
+        self.assertEqual(action["attack_target"], 4)
+        self.assertIs(action["rot"], True)
+        self.assertEqual([e["event"] for e in policy.events], ["bank_escape", "bank_escape_refused"])
+        self.assertEqual(policy.events[1]["reason"], "rejected")
+        obs = observation(me, [enemy])
+        obs.update(game_version=36, tick=220)
+        self.assertNotIn("blink_to", policy.choose_action(obs))
+        obs = observation(me, [enemy])
+        obs.update(game_version=36, tick=234)
+        self.assertEqual(policy.choose_action(obs)["blink_to"], [72.0, 40.0])
+
+    def test_favourable_enemy_bank_brawl_is_kept(self):
+        for my_hp, enemy_hp in ((840, 840), (600, 100)):
+            me = unit(x=92)
+            me.update(hp=my_hp, layer=1, blink_ready=True)
+            enemy = unit(4, 1, 96)
+            enemy["hp"] = enemy_hp
+            obs = observation(me, [enemy])
+            obs["game_version"] = 36
+            action = BasePolicy().choose_action(obs)
+            self.assertNotIn("blink_to", action)
+            self.assertEqual(action["attack_target"], 4)
+        me = unit(x=92)
+        me.update(hp=600, layer=1, hooked=True)
+        enemy = unit(4, 1, 96)
+        policy = BasePolicy(trace=True)
+        policy.choose_action(observation(me, [enemy]))
+        me["hooked"] = False
+        obs = observation(me, [enemy])
+        obs["tick"] = 201
+        self.assertEqual(policy.choose_action(obs)["attack_target"], 4)
+        landed = [e for e in policy.events if e["event"] == "pull_landed"]
+        self.assertEqual(len(landed), 1)
+        self.assertEqual((landed[0]["blink_ready"], landed[0]["enemy_hp"], landed[0]["own_land"]), (False, 840, False))
 
     def test_spends_all_points_distance_then_speed(self):
         me = unit()
@@ -160,14 +328,30 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         enemy = unit(4, 1, 91, 40)
         self.assertEqual(self.policy.choose_action(observation(others=[enemy]))["hook_to"], [91, 40])
 
-    def test_shorter_velocity_prediction(self):
+    def test_long_hook_lead_is_applied_and_traced(self):
+        policy = BasePolicy(trace=True)
         enemy = unit(4, 1, 90, 40)
         obs = observation(others=[enemy])
-        self.policy.choose_action(obs)
+        policy.choose_action(obs)
         obs["tick"] += 8
         enemy["y"] += 4
-        aim = self.policy.choose_action(obs)["hook_to"]
-        self.assertAlmostEqual(aim[1], 44 + 4 * 54 / 30)
+        aim = policy.choose_action(obs)["hook_to"]
+        self.assertAlmostEqual(aim[1], 44 + 4 * 54 / LEAD_DIVISOR)
+        recorded = [e for e in policy.events if e["event"] == "hook_lead"]
+        self.assertEqual(recorded, [dict(event="hook_lead", tick=208, span=54.0, lead=round(4 * 54 / LEAD_DIVISOR, 1), v8=4.0)])
+        # The speed upgrade shortens the lead; a short brawl hook is not traced.
+        obs["self"]["upgrades"] = [0, 0, 3, 0]
+        obs["tick"] += 8
+        enemy["y"] += 4
+        self.assertAlmostEqual(policy.choose_action(obs)["hook_to"][1], 48 + 4 * 54 / (LEAD_DIVISOR + 3))
+        close = unit(4, 1, 50, 40)
+        obs = observation(others=[close])
+        obs["tick"] = 224
+        policy.choose_action(obs)
+        obs["tick"] += 8
+        close["y"] += 4
+        policy.choose_action(obs)
+        self.assertEqual(len([e for e in policy.events if e["event"] == "hook_lead"]), 2)
 
     def test_does_not_blink_to_chase_or_stretch_a_hook(self):
         me = unit()
@@ -181,7 +365,7 @@ class BaseCoworldPolicyTest(unittest.TestCase):
         me = unit()
         me["blink_ready"] = True
         hook = dict(owner_id=4, team=1, x=54, y=40, flying=True, victim=0)
-        hop = self.policy.choose_action(observation(me, hooks=[hook]))["blink_to"]
+        hop = seen_twice(self.policy, me, hook)["blink_to"]
         self.assertLessEqual((hop[0] - 36) ** 2 + (hop[1] - 40) ** 2, 400.00001)
         self.assertLess(hop[0], me["x"])
 
@@ -306,7 +490,7 @@ class SupportOpportunityTest(unittest.TestCase):
                                ([], [dict(owner_id=4, team=1, x=50, y=70, flying=True, victim=0)])]:
             policy = BasePolicy(heal_allies=True, trace=True)
             policy.choose_action(observation(me, [ally, *enemies], hooks))
-            self.assertFalse(policy.events)
+            self.assertFalse(any(e["event"] == "heal_request" for e in policy.events))
 
     def test_close_enemy_and_caught_enemy_keep_priority(self):
         me, ally = unit(), unit(2, x=36, y=56)
@@ -361,6 +545,22 @@ class SupportOpportunityTest(unittest.TestCase):
             obs["tick"] = tick
             obs["rune_next"] = dict(soon=150, x=64, y=48)
             self.assertEqual(original.choose_action(obs), changed.choose_action(obs))
+
+    def test_solo_hold_stays_out_of_the_edge_band(self):
+        policy = BasePolicy(trace=True)
+        # tick 224 puts player 1's juke at zero, so the solo hold mirrors the enemy's y exactly.
+        for enemy_y, expected in [(17, 30), (111, 98), (64, 64)]:
+            me = unit(y=max(30, min(98, enemy_y)))
+            obs = observation(me, [unit(4, 1, 100, enemy_y)])
+            obs["tick"] = 224
+            self.assertEqual(policy.choose_action(obs)["walk_to"], [36, expected])
+        recorded = [e for e in policy.events if e["event"] == "edge_clamp"]
+        self.assertEqual([(e["raw"], e["y"]) for e in recorded], [(17.0, 30.0), (111.0, 98.0)])
+        low = unit(y=40)
+        obs = observation(low)
+        obs["tick"] = 224
+        obs["rune_next"] = {"soon": 100, "x": 64, "y": 18}
+        self.assertEqual(BasePolicy().choose_action(obs)["walk_to"], [36, 30])
 
 
 if __name__ == "__main__":

@@ -13,6 +13,13 @@ from collections import deque
 from typing import Any
 
 
+HOLD_Y_MIN, HOLD_Y_MAX = 30.0, 98.0  # fishing hold keeps a two-sided dodge lane clear of the walls
+LEAD_DIVISOR = 30.0  # lead = v8 * span / (LEAD_DIVISOR + speed level); empirical, see closed_levers.md
+LEAD_TRACE_SPAN = 30.0
+DODGE_RADIUS = 40.0  # start walking as soon as the enemy hook is lit over the river
+BLINK_THREAT_RADIUS = 22.0  # the Blink hop, the counter-throw and the free gate keep the old neighbourhood
+
+
 def distance(a: dict, b: dict) -> float:
     return math.hypot(a["x"] - b["x"], a["y"] - b["y"])
 
@@ -39,7 +46,13 @@ class BasePolicy:
     last_enemy: dict | None = None
     last_seen: int = -1
     dodge_side: int = 0
+    threat_since: int = -1
+    hook_track: dict[int, tuple[int, float, float]] = field(default_factory=dict)
     rescue_until: int = 0
+    was_hooked: bool = False
+    escape_sent: int = -1
+    escape_hold_until: int = -1
+    blink_spent: int = -10_000
     team_roster: set[int] = field(default_factory=set)
     events: deque = field(default_factory=lambda: deque(maxlen=256))
 
@@ -50,7 +63,13 @@ class BasePolicy:
         self.last_enemy = None
         self.last_seen = -1
         self.dodge_side = 0
+        self.threat_since = -1
+        self.hook_track.clear()
         self.rescue_until = 0
+        self.was_hooked = False
+        self.escape_sent = -1
+        self.escape_hold_until = -1
+        self.blink_spent = -10_000
         self.team_roster.clear()
         self.events.clear()
 
@@ -109,6 +128,25 @@ class BasePolicy:
         sample = self.samples.get(unit["id"])
         return (sample[3], sample[4]) if sample else (0.0, 0.0)
 
+    def dodge_direction(self, me: dict, threat: dict) -> tuple[int, float] | None:
+        """Lateral side that increases our distance from the hook's flight line.
+
+        The line runs through the head's last two observed positions (hooks
+        fly straight while `flying`). None until the head has been seen twice;
+        0 when the line is dead-on or vertical, so the caller falls back.
+        """
+        seen = self.hook_track.get(threat["owner_id"])
+        if seen is None or self.tick - seen[0] > 4:
+            return None
+        dx, dy = threat["x"] - seen[1], threat["y"] - seen[2]
+        span = math.hypot(dx, dy)
+        if span < 0.05:
+            return None
+        off = ((me["x"] - threat["x"]) * -dy + (me["y"] - threat["y"]) * dx) / span
+        if abs(off) < 0.5 or abs(dx) < 0.05:
+            return 0, off
+        return (1 if off * dx > 0 else -1), off
+
     @staticmethod
     def fountain_escape(obs: dict, enemies: list[dict], retreat: bool) -> list[float] | None:
         """Return to our bank without clipping the hop into water or a body."""
@@ -144,6 +182,7 @@ class BasePolicy:
         if not me["alive"]:
             self.recovering = False
             self.rescue_until = 0
+            self.was_hooked = False
             return {}
         team = me["team"]
         if self.spread_fishing:
@@ -182,22 +221,73 @@ class BasePolicy:
         hold_x = west - 16 if team == 0 else east + 16
         home = [me["home_x"], me["home_y"]]
         rank = sum(p["id"] < me["id"] for p in allies)
-        threat = min((h for h in hooks if h["team"] != team and h["flying"] and distance(me, h) <= 22),
+        threat = min((h for h in hooks if h["team"] != team and h["flying"] and distance(me, h) <= DODGE_RADIUS),
                      key=lambda h: distance(me, h), default=None)
+        near_threat = threat is not None and distance(me, threat) <= BLINK_THREAT_RADIUS
         if threat is None:
             self.dodge_side = 0
+            self.threat_since = -1
         elif self.dodge_side == 0:
-            self.dodge_side = -1 if threat["y"] > me["y"] else 1
-            if me["y"] < 20:
-                self.dodge_side = 1
-            elif me["y"] > 108:
-                self.dodge_side = -1
+            if self.threat_since < 0:
+                self.threat_since = tick
+            heading = self.dodge_direction(me, threat)
+            # The first lit tick has no heading yet: wait one tick for it.
+            if heading is not None or tick - self.threat_since >= 2:
+                side, off = heading if heading is not None else (0, None)
+                self.dodge_side = side or (-1 if threat["y"] > me["y"] else 1)
+                if me["y"] < 20:
+                    self.dodge_side = 1
+                elif me["y"] > 108:
+                    self.dodge_side = -1
+                self.record("threat_seen", dist=round(distance(me, threat), 1), side=self.dodge_side,
+                            speed=round(math.hypot(*self.velocity(me)), 1),
+                            off=None if off is None else round(off, 1), line=bool(side))
+        self.hook_track = {h["owner_id"]: (tick, h["x"], h["y"]) for h in hooks if h["team"] != team and h["flying"]}
         caught = next((p for p in enemies if p["hooked"]), None)
         swimming = next((p for p in enemies if p["layer"] == 2), None)
-        brawl = target is not None and (me["hp"] + 40 >= target["hp"] or target["hp"] <= 120 or (not own_land and not river))
+        foreign_rot = any(p["rot"] and distance(me, p) <= 8 for p in units if p["id"] != me["id"])
+        if self.was_hooked and not me["hooked"]:
+            self.record("pull_landed", layer=me["layer"], own_land=own_land, blink_ready=me["blink_ready"], hp=me["hp"],
+                        enemy_hp=target["hp"] if target else None,
+                        dist=round(distance(me, target), 1) if target else None, rot_locked=foreign_rot)
+        self.was_hooked = me["hooked"]
+        # The host echoes last tick's verdict per action key: True or the
+        # engine's rejection reason. An accepted hop starts Blink's cooldown.
+        echo = (obs.get("accepted") or {}).get("blink_to")
+        if echo is True and 0 <= tick - self.escape_sent <= 2:
+            self.blink_spent = self.escape_sent
+        if (0 < tick - self.escape_sent <= 2 and self.blink_spent != self.escape_sent
+                and self.escape_hold_until < tick):
+            refused = echo if isinstance(echo, str) else (None if me["blink_ready"] else "rot_off_no_blink")
+            if refused is not None:
+                self.escape_hold_until = tick + 32
+                self.record("bank_escape_refused", reason=refused, hp=me["hp"], blink_ready=me["blink_ready"])
+        # Pulled onto the enemy bank without the HP edge: leave before the
+        # point-blank re-hook instead of trading. Blink covers the mid-strip
+        # crossing; on the side lanes it reaches river water short of our lip.
+        # The engine refuses Blink inside any live Rot disk (8 tiles, ours
+        # included) and the host folds that into blink_ready: an enemy Rot
+        # pins us to the brawl; our own is switched off first (cooldown
+        # tracked from the accepted hops) and the hop follows next tick. A
+        # refused hop holds the escape for a second so we brawl instead of
+        # standing still.
+        escape_to, escape_via = None, "river"
+        blink_clear = me["blink_ready"] or (me["rot"] and not me["hooked"] and not foreign_rot
+                                            and tick - self.blink_spent >= 256)
+        if (blink_clear and target is not None and not own_land and not river and not me["hooked"]
+                and caught is None and not foreign_rot and obs.get("game_version", 0) >= 35
+                and self.escape_hold_until < tick
+                and distance(me, target) <= 12 and me["hp"] + 40 < target["hp"] and target["hp"] > 120):
+            escape_to = self.fountain_escape(obs, enemies, True)
+            if escape_to is not None:
+                escape_via = "fountain"
+            else:
+                escape_to = point(me["x"] + (-20 if team == 0 else 20), me["y"])
+            self.escape_sent = tick
+        brawl = target is not None and (me["hp"] + 40 >= target["hp"] or target["hp"] <= 120
+                                        or (not own_land and not river and escape_to is None))
         rot = bool(target and any(distance(me, p) <= 8 for p in enemies)
                    and brawl and not river and not low and me["hp"] > 96)
-        foreign_rot = any(p["rot"] and distance(me, p) <= 8 for p in units if p["id"] != me["id"])
         flee_rot = foreign_rot and not rot
 
         action: dict[str, Any] = {}
@@ -280,7 +370,7 @@ class BasePolicy:
             if needs_help and not ally["shield"] and distance(me, ally) <= reach:
                 rescue.append(ally)
         rescue.sort(key=lambda p: distance(me, p))
-        free = own_land and not me["hooked"] and not low and threat is None and not flee_rot
+        free = own_land and not me["hooked"] and not low and not near_threat and not flee_rot
         own_rescue = any(h["owner_id"] == me["id"] and any(p["id"] == h["victim"] for p in allies) for h in hooks)
         if free and (own_rescue or tick < self.rescue_until):
             # halt is an exclusive wire action; do not drop shop purchases.
@@ -303,7 +393,11 @@ class BasePolicy:
                 self.record("fountain_escape", destination=crossing)
             elif river:
                 action["blink_to"] = point(west if team == 0 else east, me["y"])
-            elif threat is not None:
+            elif escape_to is not None and not me["rot"]:
+                action["blink_to"] = escape_to
+                self.record("bank_escape", hp=me["hp"], enemy_hp=target["hp"], dist=round(distance(me, target), 1),
+                            destination=escape_to, via=escape_via)
+            elif near_threat and self.dodge_side:
                 # Keep the requested hop inside Blink's actual 20-tile disk.
                 x, y = point(me["x"] + (-16 if me["layer"] == 0 else 16), me["y"] + 16 * self.dodge_side)
                 scale = min(1.0, 20.0 / math.hypot(x - me["x"], y - me["y"]))
@@ -335,9 +429,12 @@ class BasePolicy:
         if target is not None and distance(me, target) <= reach + radius:
             vx, vy = self.velocity(target)
             span = max(abs(me["x"] - target["x"]), abs(me["y"] - target["y"]))
-            aim = point(target["x"] + vx * span / (30 + levels[2]), target["y"] + vy * span / (30 + levels[2]))
-            if segment_distance([me["x"], me["y"]], aim, [64, 64]) > 5:
-                throw(aim)
+            lead = span / (LEAD_DIVISOR + levels[2])
+            aim = point(target["x"] + vx * lead, target["y"] + vy * lead)
+            if segment_distance([me["x"], me["y"]], aim, [64, 64]) > 5 and throw(aim):
+                v8 = math.hypot(vx, vy)
+                if span >= LEAD_TRACE_SPAN and v8 > 0:
+                    self.record("hook_lead", span=round(span, 1), lead=round(v8 * lead, 1), v8=round(v8, 2))
         if not river:
             for rune in obs["visible"]["runes"]:
                 if abs(me["x"] - rune["x"]) <= 36 and abs(me["y"] - rune["y"]) <= 36:
@@ -364,7 +461,7 @@ class BasePolicy:
         busy = True
         if flee_rot:
             action["walk_to"] = point(home[0], me["y"] + (((tick // 12) % 2) * 2 - 1) * 8)
-        elif threat is not None:
+        elif threat is not None and self.dodge_side:
             action["walk_to"] = point(me["x"] + (-2 if team == 0 else 2), me["y"] + self.dodge_side * 10)
         elif river:
             action["walk_to"] = [hold_x, me["y"]]
@@ -401,7 +498,10 @@ class BasePolicy:
                             self.record("fishing_formation", player=me["id"], y=y, collector=collector, lanes=lanes)
                     elif 0 < upcoming["soon"] <= 256:
                         y = upcoming["y"]
-                    action["walk_to"] = point(hold_x, y)
+                    hold_y = max(HOLD_Y_MIN, min(HOLD_Y_MAX, y))
+                    if hold_y != y and tick % 32 == 0:
+                        self.record("edge_clamp", raw=round(y, 1), y=hold_y)
+                    action["walk_to"] = point(hold_x, hold_y)
 
         # A purchase request may be refused by the live restock timer.
         # Start the ward trip only once a later observation confirms it.

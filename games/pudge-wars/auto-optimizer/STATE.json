@@ -1,0 +1,246 @@
+{
+ "campaign": "pudge-auto-optimizer",
+ "objective": "Raise a new Pudge Wars league entrant, derived from the repo's default Python policy (coworld/player), up the Competition division ladder by making one attributable, hosted-verified change per iteration.",
+ "branch": "devin/1789610104-pudge-auto-optimizer",
+ "league": {
+  "id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+  "name": "Pudge Wars",
+  "division_id": "div_471aedc1-00f7-41dd-971d-f0beff95a439",
+  "variant_id": "league-3v3",
+  "ladder_shape": "two entrants (slots 0 and 3) plus four league filler seats (1,2,4,5); Elo k=8, division score = mean round score",
+  "filler_policy_version_ids": [
+   "bede6fcf-245b-45a6-9dc2-7327e9b61fa6",
+   "5afb739c-d6bd-43b8-a354-49a3aaa493ff",
+   "7de12c3b-5de6-4015-8f5b-562fba4fe14c"
+  ]
+ },
+ "coworld": {
+  "id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
+  "name": "pudge-wars",
+  "game_version": "0.3.21"
+ },
+ "identity": {
+  "player_id": "ply_594ec24d-d7f3-4370-a000-468354ec41c9",
+  "player_name": "Aaron's Optimizer",
+  "policy_name": "pudge-auto-optimizer",
+  "note": "Select with `coworld player use <player_id>` and verify with `tools/hosted.py whoami` before any upload or eval."
+ },
+ "baseline": {
+  "description": "Repo default Python policy: coworld/player at the commit below, Dockerfile defaults PUDGE_PERSONALITY=rusher, POLICY_ARM=combined. Identical to the bundled 'Rusher' starter in the pudge-wars 0.3.21 manifest.",
+  "source_commit": "d1f6d7c9a06c3a064fff1fd710e45703b62c77b8",
+  "source_tree_sha256": "38cd7d149b02a010aa09e774a4bf04d275fe8fa8f7c81c1e7bb624f7c9cbc314",
+  "policy_ref": "pudge-auto-optimizer:v1",
+  "policy_version_id": "a7afee99-e56f-40eb-ae64-6bc08f83ae71",
+  "directional_eval": "xreq_3e9e30f4-d1af-4a46-9d93-45c1ef55a5ca",
+  "directional_win_rate": 0.425,
+  "directional_se": 0.078,
+  "directional_n_clean": 40,
+  "directional_n_tainted": 0
+ },
+ "reference": {
+  "ladder_anchor_ref": "pudge-wars-rusher:v16",
+  "ladder_anchor_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+  "note": "Current #1 (Aaron). Named-target comparison reference and top_n member; NOT our baseline."
+ },
+ "latest": {
+  "iteration": 9,
+  "policy_ref": "pudge-auto-optimizer:v12",
+  "policy_version_id": "c161b426-ba59-45fe-b153-1faf6cb3ce22",
+  "status": "iteration 9 open 2026-09-18T00:36Z: v12 uploaded inert (not submitted); smoke xreq_042a1d0d created 00:37Z but 0/3 dispatched by 01:20Z (queue behind iter8 leftovers) -> directional pair deferred to the next run (smoke gate first)",
+  "experiment": "experiments/2026-09-18-dodge-side-from-flight-line.md",
+  "last_uploaded": {
+   "policy_ref": "pudge-auto-optimizer:v12",
+   "policy_version_id": "c161b426-ba59-45fe-b153-1faf6cb3ce22",
+   "verdict": "pending"
+  },
+  "base_ref": "pudge-auto-optimizer:v11",
+  "source_commit": "ee01f0d",
+  "image_digest": "sha256:ba59d2446cd6c7c5ce3b455598d4a0300b61320810d7b2acf05fae582f7d35f4",
+  "base_image": "local-pyenv-3.12.13-rootfs (tools/offline_base_image.sh; Docker Hub CDN unreachable)",
+  "change": "dodge side from the enemy hook's flight line: heading tracked per owner_id over consecutive ticks (hook_track), side = away from the line (BasePolicy.dodge_direction); first lit tick waits one tick; head-rule fallback after 2 ticks / dead-on / vertical; threat_seen gains off and line",
+  "spent_today_usd_before_evals": 40.008132,
+  "previous_candidate": {
+   "iteration": 8,
+   "policy_ref": "pudge-auto-optimizer:v11",
+   "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+   "status": "iteration 8 closed 2026-09-18T00:5xZ: weak_evidence (v11 0.735\u00b10.076 n=34 vs matched v10 0.600\u00b10.083 n=35, +1.2 pooled SE; 0 tracebacks; replay mechanism confirmed: long hits on us 9.5 vs 12.6/game, deaths 9.15 vs 12.03, kills flat, tripwires pass). v11 = behaviour base for iteration 9; not promoted (gate n=100 vs champion v1 needed). Not submitted."
+  },
+  "base_for_next_iteration": "pudge-auto-optimizer:v11 (3bc6cbba-bb4e-444f-8fc8-c2b09459fa43, source e2af332)",
+  "accepted_behaviour": {
+   "policy_ref": "pudge-auto-optimizer:v11",
+   "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+   "note": "latest behaviour the next candidate builds on: v4 + post-pull bank escape (iter 7) + early walking dodge (iter 8), both weak_evidence. NOT promoted over champion v1; see pending_decisions."
+  },
+  "spent_today_usd_at_handoff": 42.453296,
+  "next_run": "1) poll+summarize iter9-smoke, triage logs, check threat_seen off/line; 2) if clean, xp create v12 iter9-directional n=40 and v11 iter9-baseline-v11 n=40 back-to-back, record both in open_evals; 3) if the smoke shows a traceback/malformed action, fix in coworld/player, rebuild iter9b, upload v13 as the same iteration-9 change (one behaviour), re-smoke; 4) iter8 leftovers: re-run xp summarize for iter8-directional/iter8-baseline-v10 and footnote the extra rows"
+ },
+ "champion": {
+  "policy_ref": "pudge-auto-optimizer:v1",
+  "policy_version_id": "a7afee99-e56f-40eb-ae64-6bc08f83ae71",
+  "promoted_in_iteration": 0,
+  "note": "v3 challenged in iteration 2 and was rejected (see ledger iteration 2 / experiments/2026-09-17-collision-threat.md); v1 remains champion. Every candidate builds on the champion's behavior, never on a rejected candidate."
+ },
+ "eval_protocol": {
+  "primary": "Experience request on the league target: roster = [our policy, top_n=3], slots auto (-1); the platform seats the league fillers like the ladder does. Report clean win rate with binomial SE, split by team side (west/east) and by opponent, taint-filtered. Baseline and candidate are run on this identical protocol at equal n in the same window; the delta between them is the verdict.",
+  "secondary": "Pairwise experience request vs reference.ladder_anchor_ref at equal n, same window, as a named-target check.",
+  "counterfactual_evals": "DISABLED for this league (API 409 'counterfactual eval is disabled for this league', 2026-09-17). Re-check occasionally with `hosted.py cf create --n 3`; if enabled it becomes the primary protocol.",
+  "smoke_n": 3,
+  "directional_n": 40,
+  "gate_n": 100,
+  "promotion_rule": "Promote over the champion only when candidate clean win rate exceeds the champion's on the same protocol/window by more than 2 pooled SE, taint rate is within background, no team-side or top-3 opponent regression beyond 1 SE, and zero tracebacks in policy logs.",
+  "budget_rule": "Read `tools/hosted.py budget` before launching. Do not launch if remaining_usd < 40; each 3v3 episode costs roughly the observed per-episode delta recorded in ledger hosted_compute_usd."
+ },
+ "submission": {
+  "allowed": false,
+  "note": "League submission is irreversible and needs explicit human go-ahead each time. Set allowed=true only when the user says so, and record the quote in user_preferences.md."
+ },
+ "cost": {
+  "unit": "ACU",
+  "usd_per_acu": null,
+  "note": "Devin bills sessions in ACUs; the per-ACU price is on the org's plan, not exposed by the API. Set usd_per_acu to fill LLM USD in LEDGER.md."
+ },
+ "open_evals": {
+  "iter9-smoke": {
+   "xreq_id": "xreq_042a1d0d-c97d-4468-915a-469398085d9e",
+   "policy_ref": "pudge-auto-optimizer:v12",
+   "policy_version_id": "c161b426-ba59-45fe-b153-1faf6cb3ce22",
+   "n": 3,
+   "kind": "smoke",
+   "protocol": "league target, candidate + top_n=3",
+   "created": "2026-09-18T00:37Z",
+   "progress_at_handoff": "0/3 completed; all 3 episode requests still `submitted` (never dispatched) at 2026-09-18T01:20Z after 43 min of polling. Hosted queue was still draining the 11 undispatched iter8 episodes (35+36 completed by 01:20Z), so the smoke sat behind them.",
+   "harvest": "tools/hosted.py xp poll xreq_042a1d0d-c97d-4468-915a-469398085d9e --label iter9-smoke; xp summarize --label iter9-smoke --policy pudge-auto-optimizer:v12; tools/hosted.py logs per episode; then games/pudge-wars/auto-optimizer/tools/threat_seen.py on the smoke replays: require 0 tracebacks, no malformed actions, all 3 episodes with our slot participating, threat_seen rows carrying off/line with line=True in the majority",
+   "gate": "matched directional pair (iter9-directional v12 n=40 + iter9-baseline-v11 v11 n=40, same window) NOT launched this run: launch only after the smoke passes the checks above"
+  }
+ },
+ "findings": [
+  {
+   "date": "2026-09-17",
+   "topic": "eval field shape",
+   "note": "XP request with roster [ours, top_n=3] seats 2 participants (1v1: position 0 west, 1 east) even though variant_name is 'League 3v3'. Ladder scheduler is team_pair/blocks with filler_policy, ranking elo k=8 mean. 1v1 XP results may not transfer to 3v3 ladder rounds; next run should probe a 6-slot roster (ours x3 vs top_n x3 or ours+fillers) and compare seat counts in episodes.json before trusting transfer."
+  },
+  {
+   "date": "2026-09-17",
+   "topic": "hook heading",
+   "note": "Owner position must not be used to infer a flying hook's heading: the owner may Blink after the throw while the head keeps its heading (examples/pudge_wars/human_play.md). Only head displacement between ticks is trustworthy; v2 used the owner fallback in ~1% of classifications and was superseded by v3."
+  },
+  {
+   "date": "2026-09-17",
+   "topic": "collision-threat filter",
+   "note": "v3 (ignore wide/away hooks by tracked heading) rejected: matched n=40 top-3 directional 0.325\u00b10.074 vs v1 0.425\u00b10.078 (-0.93 pooled SE), deaths 19.70 vs 18.33/game, vs a-aron-pudge-rusher:v1 0.231 vs 0.615 (n=13). ~101 'wide' classifications/game were hooks v1 would have dodged; hook accuracy did not improve (0.178 vs 0.181). Rollback to v1; see closed_levers.md."
+  },
+  {
+   "date": "2026-09-17",
+   "topic": "edge exposure",
+   "note": "v1 replays (40 clean): 31% of own-bank time within 8 tiles of top/bottom edge; long hooks aimed at us there land 16.4% vs 9.6% lane / 8.9% mid; 6.9 of 16.7 landed long hooks per game are caught in the edge band. pudge-wars-rusher:v16 spends 19% there. Basis for iteration 3 (hold y clamp)."
+  },
+  {
+   "date": "2026-09-17",
+   "topic": "long-hook lead",
+   "note": "Replay lead sweep on v1 (6507 hooks, fitted radius 6.1 tiles): modeled accuracy peaks at span/12 (0.471 vs 0.363 no-lead, current span/30 = 0.410) but target dodge was generated against the real hook so this is diagnostic only; a hosted A/B is needed before touching the lead. evals/iter0-directional/lead_sweep.json."
+  },
+  {
+   "date": "2026-09-17",
+   "topic": "concurrency",
+   "note": "The 03:00Z automation run (session devin-88e8709d) started iteration 3 on top of v3 while the bootstrap session was still finishing v3's directional verdict. Rule: an iteration's base_ref is STATE.champion at the time of upload; if a candidate's verdict is still open, wait for it or build on the champion. Unbuilt automation change was rebuilt here as v4 on v1."
+  },
+  {
+   "date": "2026-09-17",
+   "topic": "edge-band hold (v4)",
+   "note": "v4 (v1 + fishing-hold y clamp [30,98]) directional n=40 top-3: 0.750+-0.068 vs v1 0.425+-0.078 matched / 0.400+-0.063 fresh n=60; deaths 18.3->10.7/game, opponent hook accuracy 0.187->0.132, own throws unchanged (383/game), own accuracy 0.181->0.147. Replay decode (bootstrap session): own edge-time share 0.314->0.023, long hooks landed on us at the edge 6.92->0.38/game. Strongest lever found so far; the remaining death budget (10.7/game) is now mid-lane exposure, not edge pinning."
+  },
+  {
+   "date": "2026-09-17",
+   "topic": "seat prior (hosted v4 mirror)",
+   "note": "iter5-diag-mirror-v4 (xreq_9033037e, v4 vs v4, n=40 clean, taint 0, all time_limit): identical code wins 23 west / 12 east / 5 draws = west share 0.638 +- 0.076 (1.8 SE above 0.5); west kills 11.18 vs east 8.90 (+2.28 +- 0.99/game). Local base.bas native mirror (200 seeds) gave west +0.09. So roughly 0.1-0.14 of the optimizer's ~0.2 east deficit is a native/host seat prior (engine or a team-keyed code asymmetry such as the defensive Blink using layer==0), the rest is opponent interaction. hosted.py xp summarize is NOT meaningful for a mirror (both slots carry the same version id; platform score 0.5 on 35 episodes); read results/*.json winner_team instead. Cost 5.20 USD."
+  },
+  {
+   "date": "2026-09-17",
+   "finding": "Same v4 code scored 0.650\u00b10.076 (iter4 window) and 0.475\u00b10.079 (iter5 window) on the identical top-3 n=40 protocol: window-to-window drift \u22480.17 for identical code. Never compare across windows; always run the matched baseline arm."
+  },
+  {
+   "iteration": 7,
+   "date": "2026-09-17",
+   "finding": "Blink cannot be used to leave a Rot brawl: applyBlinkFine refuses while any live Rot disk (8 tiles, ours or theirs) covers us, and the host's blink_ready already folds that in. 89% of outgunned enemy-bank landings are Rot-locked at release; only 17/654 had Blink up (v4 dodge_blink ~70/game). The post-pull escape therefore fires ~2/game, mostly late (median 190 HP) and via the river, where 17/82 hops drowned. Host echoes each reply's verdict in obs.accepted (reason strings rot/casting/hooked/cooldown/rejected): use it instead of re-sending a refused command."
+  }
+ ],
+ "automation": {
+  "id": "auto-600aa4eb690e459190c04b10d5c0c9fb",
+  "url": "https://app.devin.ai/automations/600aa4eb690e459190c04b10d5c0c9fb",
+  "schedule": "every 3 hours (UTC, :00)",
+  "devin_mode": "ultra",
+  "max_concurrent_runs": 1,
+  "max_acu_per_run": 40,
+  "prompt": "automation_prompt.md",
+  "created_at": "2026-09-17T02:36:17Z"
+ },
+ "blockers": [
+  {
+   "recorded_at": "2026-09-17T03:45:00Z",
+   "iteration": 3,
+   "session": "devin-88e8709da3984dc1b96dd8cad5837b40",
+   "kind": "network",
+   "status": "worked-around",
+   "summary": "docker pull python:3.12-slim fails: Docker Hub redirects layer blobs to production.cloudfront.docker.com, which is not in the automation network allowlist (only production.cloudflare.docker.com is). v4 image could not be built; iteration-3 code change + unit test are committed unbuilt.",
+   "network_access_request": "network-access-request-c5e64ee0b2e84e1498897fe141520f8e",
+   "fix": "add production.cloudfront.docker.com to the automation network policy (https://app.devin.ai/org/metta-ai/automations/auto-600aa4eb690e459190c04b10d5c0c9fb); the blueprint's `docker pull python:3.12-slim` does not survive into the snapshot (docker images was empty at session start)",
+   "next_run": "retry `docker pull --platform linux/amd64 python:3.12-slim`; if it succeeds, build iter3 -> upload v4 -> smoke -> directional per experiments/2026-09-17-edge-band-hold.md",
+   "resolution": "v4 built+uploaded from the bootstrap session (devin-53dc4bed, Docker Hub reachable) at 03:39Z. Automation net_policy update proposed (add production.cloudfront.docker.com); until applied, automation runs cannot build images."
+  },
+  {
+   "recorded_at": "2026-09-17T06:30:00Z",
+   "iteration": 4,
+   "session": "devin-4c31d8f447274f27ac417b27c640c43b",
+   "kind": "network",
+   "status": "worked-around",
+   "summary": "Automation runs still cannot build images. docker pull python:3.12-slim -> layer blobs redirected to production.cloudfront.docker.com (blocked; allowlist has only production.cloudflare.docker.com); the 06:55Z attempt after the iteration-4 code change failed earlier still with `429 Too Many Requests` on the manifest HEAD at registry-1.docker.io (anonymous pull quota), same on retry after 90s. Alternatives probed and blocked: public.ecr.aws, mirror.gcr.io, archive.ubuntu.com. Using our own ECR repo as a base fails too: the Softmax pre-signed ECR role (coworld-artifact-push) is push-only (ecr:BatchGetImage denied, 403). Iteration-4 code change + unit test are committed unbuilt.",
+   "fix": "add production.cloudfront.docker.com to the automation network policy (https://app.devin.ai/org/metta-ai/automations/auto-600aa4eb690e459190c04b10d5c0c9fb) OR have the blueprint bake python:3.12-slim into the snapshot (docker images is empty at session start). A Docker Hub login (DOCKERHUB token secret) would also lift the anonymous 429 quota.",
+   "next_run": "If `docker pull --platform linux/amd64 python:3.12-slim` still fails, rebuild the base with the rootfs recipe (see resolution; recipe mirrored in README 'Offline base image').",
+   "side_effect": "probing left an unused pending image-upload record named pudge-auto-optimizer-basepull-probe on the Softmax side (no policy version created); ignore it.",
+   "network_access_requests": [
+    "network-access-request-51efe82b3a1247c2b6a2cb3c9554306",
+    "network-access-request-0fa27681bb79495980467cf0edcc439b"
+   ],
+   "resolution": "09Z run (devin-00a960a6): Docker Hub blob pull still fails (production.cloudfront.docker.com EOF). Worked around without network: auto-optimizer/tools/offline_base_image.sh (committed) copies the host pyenv CPython 3.12.13 (interpreter, stdlib, pip, OpenSSL 3.0.2 + shared libs, CA certs) into a rootfs, `docker import` it as localpy:3.12-slim and `docker tag` it python:3.12-slim so the unchanged Dockerfile builds offline (pip reaches pypi.org, which is allowlisted). v5 built and uploaded this way (VERSION_LOG v5 records the base-image deviation). The helper is committed in the branch; the blueprint should recreate it or the network policy should add production.cloudfront.docker.com so future runs use the official base."
+  }
+ ],
+ "pending_decisions": [
+  {
+   "recorded_at": "2026-09-17T06:30:00Z",
+   "topic": "v4 promotion gate",
+   "ask": "The v4 60-episode gate arm xreq_bc7bc25e was cancelled by a human at 04:36Z while the matched v1 arm xreq_c04fbf1e completed (0.400+-0.063, n=60). To close the gate, v4 needs >=60 more clean episodes in one window against a v1/v5 arm (~12 USD). Automation runs will not relaunch it without a go-ahead; iteration 4's v5-vs-v4 matched directional (n=40 each) adds v4 evidence as a side effect."
+  },
+  {
+   "raised": "2026-09-17T20:55Z",
+   "decision": "Run the promotion gate for v10 (n=100 v10 + n=100 champion v1, same window, ~$30 hosted) before or instead of a new iteration-8 change? Directional was +1.65 pooled SE only; v4 baseline varies 0.475-0.750 across windows at n=40.",
+   "default_if_unanswered": "next run opens iteration 8 on v10 and launches the v10/v1 gate arms alongside its own directional if budget allows"
+  }
+ ],
+ "closed_evals": {
+  "iter8-directional": {
+   "xreq_id": "xreq_f5666240-596d-44d0-b469-f682d0143a8a",
+   "policy_ref": "pudge-auto-optimizer:v11",
+   "policy_version_id": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43",
+   "n": 40,
+   "protocol": "league target, candidate + top_n=3",
+   "created": "2026-09-17T21:53Z",
+   "harvest": "tools/hosted.py xp poll <id> --label iter8-directional; xp summarize --label iter8-directional --policy pudge-auto-optimizer:v11; logs per episode (--policy <version id> --agent <seat>)",
+   "progress_at_handoff": "15/40 completed, 0 failed at 2026-09-17T22:52Z (60-min cap reached; leave running)",
+   "harvested": "2026-09-18T00:5xZ",
+   "result": "34 clean 0.735\u00b10.076; 6 episodes still `submitted` (never dispatched), API status running",
+   "residual": "if the request ever finishes, `xp summarize --label iter8-directional` again and append the extra rows to the experiment as a footnote; the verdict stands on the 34/35 rows"
+  },
+  "iter8-baseline-v10": {
+   "xreq_id": "xreq_d3f7c348-5818-4059-9b04-4185eb69c2e7",
+   "policy_ref": "pudge-auto-optimizer:v10",
+   "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+   "n": 40,
+   "protocol": "league target, candidate + top_n=3 (matched window)",
+   "created": "2026-09-17T21:53Z",
+   "progress_at_handoff": "18/40 completed, 0 failed at 2026-09-17T22:52Z (60-min cap reached; leave running)",
+   "harvested": "2026-09-18T00:5xZ",
+   "result": "35 clean 0.600\u00b10.083; 5 episodes still `submitted` (never dispatched), API status running",
+   "residual": "if the request ever finishes, `xp summarize --label iter8-baseline-v10` again and append the extra rows to the experiment as a footnote; the verdict stands on the 34/35 rows"
+  }
+ }
+}

@@ -1,0 +1,10 @@
+{
+  "baseline_label": "pudge-wars-rusher:v16",
+  "baseline_policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+  "candidate_label": "pudge-auto-optimizer:v1",
+  "candidate_policy_version_id": "a7afee99-e56f-40eb-ae64-6bc08f83ae71",
+  "idempotency_key": "pudge-auto-optimizer:iter0-smoke:a7afee99-e56f-40eb-ae64-6bc08f83ae71:bdc7ac29-743d-4ace-b1cc-3b0529cef552:3",
+  "league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+  "n": 3,
+  "source": "tournament"
+}

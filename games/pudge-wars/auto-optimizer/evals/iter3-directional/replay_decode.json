@@ -1,0 +1,208 @@
+{
+  "decoder": "/home/ubuntu/pwheadless",
+  "episodes": 40,
+  "root": "/home/ubuntu/repos/polyworld-pudge-wars/games/pudge-wars/auto-optimizer/.runtime/replays/iter3-directional",
+  "rows": [
+    {
+      "bytes": 2198202,
+      "id": "ereq_2a523569-51ea-4512-8a8b-a858ba0a10ff",
+      "verified": true
+    },
+    {
+      "bytes": 2231621,
+      "id": "ereq_7a1b8696-9996-498d-948d-25ff192b0e6d",
+      "verified": true
+    },
+    {
+      "bytes": 2206923,
+      "id": "ereq_979a3b0a-c4bc-40fb-a309-68186c75f9ae",
+      "verified": true
+    },
+    {
+      "bytes": 2114307,
+      "id": "ereq_018cd51f-79a8-4bae-8a63-adeb065aecbf",
+      "verified": true
+    },
+    {
+      "bytes": 2231662,
+      "id": "ereq_04b668aa-a951-40b2-bd0c-22a4390fbe77",
+      "verified": true
+    },
+    {
+      "bytes": 1857014,
+      "id": "ereq_6f0d48f1-2b2d-42cd-8f75-e691ee77f01e",
+      "verified": true
+    },
+    {
+      "bytes": 2194162,
+      "id": "ereq_221b829f-febe-41de-ad8a-a4d62d42a161",
+      "verified": true
+    },
+    {
+      "bytes": 2240103,
+      "id": "ereq_3186ddc5-c009-45ce-9db8-d98c8b55d507",
+      "verified": true
+    },
+    {
+      "bytes": 2186301,
+      "id": "ereq_cccd8e6d-229c-432f-9a83-0910dbed2070",
+      "verified": true
+    },
+    {
+      "bytes": 2205903,
+      "id": "ereq_08210a8f-3115-43f1-b352-4916b5a49b84",
+      "verified": true
+    },
+    {
+      "bytes": 2187622,
+      "id": "ereq_f3568f07-676f-468d-9b92-cc234c411827",
+      "verified": true
+    },
+    {
+      "bytes": 2209421,
+      "id": "ereq_7ccc8839-db9f-45e0-bfe4-f1c1bb1d07ca",
+      "verified": true
+    },
+    {
+      "bytes": 2226143,
+      "id": "ereq_a7e1d63f-6cd1-4fce-9c01-9a95cfb0e536",
+      "verified": true
+    },
+    {
+      "bytes": 2215981,
+      "id": "ereq_04768b4e-ccd7-4585-a101-73f0792efee2",
+      "verified": true
+    },
+    {
+      "bytes": 2182961,
+      "id": "ereq_39bc51ab-c75c-4d8c-bdfc-59e2f149afa1",
+      "verified": true
+    },
+    {
+      "bytes": 2227642,
+      "id": "ereq_c1c62ee1-af75-434b-b04a-2a9332ed0ebe",
+      "verified": true
+    },
+    {
+      "bytes": 2197601,
+      "id": "ereq_be273092-a535-47de-913e-91f94c7dd5f4",
+      "verified": true
+    },
+    {
+      "bytes": 2235941,
+      "id": "ereq_1129685a-6df0-4c15-adb8-e7a56a2f2eba",
+      "verified": true
+    },
+    {
+      "bytes": 2218481,
+      "id": "ereq_40becd5b-eb58-4b9d-905d-a4b9db79912c",
+      "verified": true
+    },
+    {
+      "bytes": 2167343,
+      "id": "ereq_d95938ac-8a3a-4fd2-b3b5-cc66df956378",
+      "verified": true
+    },
+    {
+      "bytes": 2221602,
+      "id": "ereq_88ce831d-3913-435f-b951-8ad5588fa5b4",
+      "verified": true
+    },
+    {
+      "bytes": 2241801,
+      "id": "ereq_5ba27438-f7ea-4a2b-908b-3959e515190a",
+      "verified": true
+    },
+    {
+      "bytes": 2206361,
+      "id": "ereq_4110944f-9523-4104-b98e-ed4258de139c",
+      "verified": true
+    },
+    {
+      "bytes": 1785415,
+      "id": "ereq_2a86b70d-a857-4262-a2d6-7736d9253ac0",
+      "verified": true
+    },
+    {
+      "bytes": 2179322,
+      "id": "ereq_fa022cd7-fb75-4432-b022-d8d633aa1c30",
+      "verified": true
+    },
+    {
+      "bytes": 2253801,
+      "id": "ereq_a251b609-9943-4857-9d63-f944bd5f8061",
+      "verified": true
+    },
+    {
+      "bytes": 2181162,
+      "id": "ereq_af6eb17f-565d-4d63-93b3-ccc8351a208c",
+      "verified": true
+    },
+    {
+      "bytes": 2250561,
+      "id": "ereq_cb15b515-677e-49de-82cf-998494f12e9a",
+      "verified": true
+    },
+    {
+      "bytes": 2170482,
+      "id": "ereq_e58764fc-b826-48ac-913e-71506ade64ee",
+      "verified": true
+    },
+    {
+      "bytes": 2230563,
+      "id": "ereq_b9e6ae6a-bfcc-4db2-8a26-1473e782fb44",
+      "verified": true
+    },
+    {
+      "bytes": 2244663,
+      "id": "ereq_ac096a81-996a-421a-a12e-fc1d9e7b308d",
+      "verified": true
+    },
+    {
+      "bytes": 2159282,
+      "id": "ereq_ca8c229b-13fb-487b-92f4-fba05fcb30c4",
+      "verified": true
+    },
+    {
+      "bytes": 2190423,
+      "id": "ereq_9e7fa8dd-1bb2-46d3-844d-efee41cb7f64",
+      "verified": true
+    },
+    {
+      "bytes": 2196142,
+      "id": "ereq_3556bb3e-501e-46be-a200-3c9c0825017d",
+      "verified": true
+    },
+    {
+      "bytes": 2206742,
+      "id": "ereq_54d936a2-4ff2-4052-8b21-a9714fd6491d",
+      "verified": true
+    },
+    {
+      "bytes": 2214422,
+      "id": "ereq_423c39bd-78fc-43bd-b519-348ae9ddb1b4",
+      "verified": true
+    },
+    {
+      "bytes": 2273282,
+      "id": "ereq_09a7daa0-1222-46bd-94ca-15fb0f0e19ef",
+      "verified": true
+    },
+    {
+      "bytes": 2227601,
+      "id": "ereq_fcca863f-6422-434f-9642-0d7ebbdbc32d",
+      "verified": true
+    },
+    {
+      "bytes": 2217923,
+      "id": "ereq_a6ead6c9-06dd-410b-aa77-bb90d79e3539",
+      "verified": true
+    },
+    {
+      "bytes": 2279482,
+      "id": "ereq_e72948b9-1dc3-46dc-9eed-1f2a381b8f11",
+      "verified": true
+    }
+  ],
+  "verified": 40
+}

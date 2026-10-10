@@ -1,0 +1,606 @@
+{
+  "by_opponent": {
+    "a-aron-pudge-rusher:v1": {
+      "n": 14,
+      "se": 0.1207363221040738,
+      "win_rate": 0.7142857142857143
+    },
+    "co-gas-pudge-blind-hook-richard:v7": {
+      "n": 12,
+      "se": 0.14231876063832777,
+      "win_rate": 0.5833333333333334
+    },
+    "pudge-wars-rusher:v16": {
+      "n": 14,
+      "se": 0.12806020814297073,
+      "win_rate": 0.35714285714285715
+    }
+  },
+  "by_team": {
+    "east": {
+      "n": 20,
+      "se": 0.11124297730643495,
+      "win_rate": 0.45
+    },
+    "west": {
+      "n": 20,
+      "se": 0.1066536450385077,
+      "win_rate": 0.65
+    }
+  },
+  "clean": 40,
+  "clean_rows": [
+    {
+      "cost_usd": 0.223916,
+      "episode_id": "a0c98e09-215f-495d-9025-c19fe2a20f38",
+      "id": "ereq_f41d6831-47c7-4adc-917a-6ae40d5ef18c",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/274166de-a623-41a8-ba90-14f1d8d7e7ab.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.224766,
+      "episode_id": "0576442a-cce9-43eb-9e09-46533c5b4ebb",
+      "id": "ereq_c8bf98bf-b3a8-48be-aca7-b1f5de99d610",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/22ffbba4-49fa-4274-83ab-ab501c4898d3.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.14481,
+      "episode_id": "ae0d734c-7e1e-4057-8864-1f500b582c89",
+      "id": "ereq_b4aee938-e639-466c-b18b-daf4cf8cbf0d",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/e84cf992-dcb4-4193-b4ae-4c57658e0e42.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.226976,
+      "episode_id": "230e9de5-6b77-4219-9976-d4045d7b73bb",
+      "id": "ereq_906ec6de-c47a-465e-a1ff-0535553dc2c8",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/367f3e47-1a79-4180-9b75-4ed4f7b4d337.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.109184,
+      "episode_id": "e6e0137e-0099-4867-bb14-279c7cfd243b",
+      "id": "ereq_788d2ce5-428f-49de-bbdb-d043b2eb90e4",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/39eb3b48-d10a-4cf6-81b7-64e3cb4be9b3.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.147542,
+      "episode_id": "0b9a6b02-9316-411f-8574-d1e8a66af76b",
+      "id": "ereq_7bfb81fa-3fa0-44af-9dec-990fc4cb3de8",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/29eb4796-1460-49b7-abf2-ec5140257b55.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.230546,
+      "episode_id": "1473e419-407a-4704-b18d-435ba784b79b",
+      "id": "ereq_98a53173-1389-4190-af86-bdaac7e32839",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/885dec08-1490-46ee-9a2d-8a45cfa65c4d.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.148525,
+      "episode_id": "db509127-ca59-4afe-bb09-972b8f88ff3e",
+      "id": "ereq_47fee4b0-c89b-4716-8f89-1c83132bc6c8",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/d1fd3c65-65d9-4e34-a789-fab602cc8f9b.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.150383,
+      "episode_id": "ca73ea4c-46e9-450f-a06c-b971682955b0",
+      "id": "ereq_db52e767-5c34-4f06-b27a-89c92184f8b7",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/16f22790-857d-42b9-8b9d-b4a8cb710180.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.232756,
+      "episode_id": "393ed941-e96e-4166-bb4c-f4410cf9708b",
+      "id": "ereq_ee2fe47a-2286-4464-aaa0-b6cb07da104d",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/efab1f1b-3624-4c0b-a8b1-b28e7842e9f4.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.150055,
+      "episode_id": "53b3a118-d1ff-4281-9d5b-7b85794ab38b",
+      "id": "ereq_9145bbc0-e696-4992-bc07-ca871c058281",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/f9283e24-8880-4a36-94b6-d1af15b89415.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.135354,
+      "episode_id": "7150c3f1-459d-4761-a526-9bec86ebd48c",
+      "id": "ereq_b2eb6db4-248d-4b78-ad6f-569d97d126c8",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/6decceed-3352-4803-bac5-f612fe8c78cf.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.241426,
+      "episode_id": "8e950330-35dd-45d6-8960-b4c14cdf15f8",
+      "id": "ereq_19503a9e-88f6-4573-a7a9-0d7b239a9631",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/e64ae9a6-0659-468c-88b5-8e47bb8b1cd9.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.136843,
+      "episode_id": "c273f016-0f08-48f4-8aef-2142f8893b03",
+      "id": "ereq_82651539-6a13-4e68-838e-0f03cee60657",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/e605738b-505a-4ba4-8578-aea9eec2dfc8.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.235476,
+      "episode_id": "3c7b06f6-76af-48cd-a4fe-5b21afc065e9",
+      "id": "ereq_65e0229f-d81f-43a1-8373-98d5901a158c",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/d7ddc4b2-c95a-4169-a03b-608f2e6092b1.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.236156,
+      "episode_id": "19f088a1-e978-4ec7-8298-f380a28dc80d",
+      "id": "ereq_a7023b5e-0a92-4f2d-b804-87e39d244e00",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/d99849c4-6613-47c7-9b18-e4cc426438a5.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.113698,
+      "episode_id": "e1cc88e1-1d30-4742-af99-2170481e3069",
+      "id": "ereq_012b5bc7-80fe-4749-9ebd-6e361aa6181e",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/8d54a80c-08cd-45ca-a01b-de06610d3b76.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.237516,
+      "episode_id": "6e5a19c8-adb8-4541-809d-abb4bcaa73e9",
+      "id": "ereq_d4afe86c-28e7-4920-b89f-7aff5c165f23",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/7f1f67ac-c91a-40ad-b5a8-3084c4ce5879.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.236666,
+      "episode_id": "19fa3176-c560-4142-a9f7-ec23942aa623",
+      "id": "ereq_4f7fb47a-8672-4bb4-8ba2-7aeeae78c92d",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/f410d106-1109-4fc1-9b30-6ee894a48acc.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.138629,
+      "episode_id": "2442f161-fa0b-4800-bd89-f8b71f0f1f08",
+      "id": "ereq_94eb1729-2192-444d-ad17-c0854c13727f",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/97075e0a-7613-4e92-8404-1e83e8e64fb0.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.239556,
+      "episode_id": "0371c41c-f6e1-42fd-925f-7f572640a1a1",
+      "id": "ereq_2e469fb2-8a80-42fc-9a88-de9344581929",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/ee96cb4b-f2a4-4772-9976-1b257c54928e.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.153224,
+      "episode_id": "82bf87de-998a-4b58-b652-8c5d62a0986c",
+      "id": "ereq_32b1bd25-add5-4777-8c33-d34b4b2687d6",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/6e9228a4-d189-4c86-919f-3b7f1dfd845d.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.139237,
+      "episode_id": "397b03cd-3eef-42ad-bfd1-f3f57c25f090",
+      "id": "ereq_cb064452-3069-4cfe-873a-f1a3bd6be0a7",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/e70c45c8-5ab7-4aa2-a229-ab7e79cd7b53.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.117146,
+      "episode_id": "fc5b8c29-848e-4199-bd82-f9c241a80b96",
+      "id": "ereq_ed76a47f-d299-4d88-b65a-cc1afe571f55",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/4e76bbdd-d89e-4f7f-8078-cb3f2e02fb40.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.245846,
+      "episode_id": "624128da-f8be-4c19-a61e-9ef3aeb1e295",
+      "id": "ereq_ca777358-7722-418b-b2ee-186a30df6acd",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/418745d8-750c-4538-ac3c-452df90c900b.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.157268,
+      "episode_id": "c8bbbe83-1154-41f8-aa8a-28a4050b47bd",
+      "id": "ereq_a119a354-0c1a-40f9-9886-48ff069b1499",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/ea085d7b-9788-43b8-a315-e9c1c2642225.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.244316,
+      "episode_id": "774f91a0-ec1f-456a-96f7-0cbed00a349a",
+      "id": "ereq_cec42fb8-aab0-40a8-8d0e-79d72846fc84",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/f7808035-cf7b-4602-b899-6afe10a72c82.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.142995,
+      "episode_id": "610bbbce-637c-48a2-b4ba-7c9a3e31f554",
+      "id": "ereq_faf53b55-cfca-4bbe-93e6-6960040bb2e7",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/ae4b9313-5d5c-4922-8452-bf45b9ff77d3.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.243126,
+      "episode_id": "29aa717e-1065-429c-b177-5379a59e213c",
+      "id": "ereq_5925d078-c87d-4c61-99de-8736849d1fc1",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/617c014f-e39a-4993-950d-099a34c9548c.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.251966,
+      "episode_id": "4869adbd-79aa-4b3b-882d-12c9c5fcdfc7",
+      "id": "ereq_eba5bc32-5df4-47bd-abce-4db37faab307",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/c9868a4a-dcaf-472a-bf30-55d907c3c1f3.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.253496,
+      "episode_id": "ca42c047-5d68-45c9-8378-63faec5d7278",
+      "id": "ereq_bd66f348-b7c1-47c4-8cb9-0d0770732b36",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/be4411a1-a6c8-44d3-bf49-77789dc74434.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.160109,
+      "episode_id": "d42a0ce3-99d5-41f3-aded-e379f1b4c703",
+      "id": "ereq_9cb66605-d3cb-4d2e-b3bd-057b76660fec",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/938937ab-69f5-4256-8683-5feae2523016.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.144086,
+      "episode_id": "db398083-2c70-4e1d-b2e9-8d28f698cef2",
+      "id": "ereq_278d2d78-5807-41f4-8ef7-fb57d221db2e",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/6360a180-2683-4ef1-8531-79471df7bca2.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.247886,
+      "episode_id": "9a43d06a-cf01-4a27-970d-cc003d28f9db",
+      "id": "ereq_5107029c-4797-4af2-90e6-44ee8790e670",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/da557122-17d4-4472-9923-203e5ac22dc7.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.144483,
+      "episode_id": "1345c2af-e132-40b2-9a97-8337a43212f3",
+      "id": "ereq_5d676e20-57f7-48f6-8020-9fe9437cf10c",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/32e32155-0722-499e-aa89-d4d4ac6fd025.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.249246,
+      "episode_id": "49e5c9ca-d90f-4c4b-bd0c-af02b6174bc3",
+      "id": "ereq_287888cc-01b7-4387-8b75-8b115d63c68b",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/a7e25374-7022-418d-b9a5-e55b94c922f8.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.249926,
+      "episode_id": "1fc1fe56-52c3-4757-8ea3-80cbfb3ae8b1",
+      "id": "ereq_ab589984-1a63-4485-87f6-f83141ddb8f1",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/a79f29de-2948-4a22-8362-bad9c616aa34.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.250606,
+      "episode_id": "291704b7-2d44-4e76-a0bf-dfbdf0848fca",
+      "id": "ereq_e46bc825-4f45-404b-849e-384040680693",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/f067c3b0-e137-4682-a551-1930c5f2628c.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.242956,
+      "episode_id": "0449eae2-9a13-4da3-8e60-a4f33c4b86fe",
+      "id": "ereq_d0f5e74e-1a5f-4eac-a436-045aff59b117",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/123c7176-6d79-4561-b04d-a33df14ca69b.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.251456,
+      "episode_id": "fb5e6a24-79c5-4ad9-83b1-c346e1c18e7a",
+      "id": "ereq_10cc171a-739d-4501-98e5-3117aa390ea4",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/9eed4baf-aa9f-4a99-90aa-ab99fa9164e5.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    }
+  ],
+  "hosted_cost_usd": 7.8302,
+  "overall": {
+    "n": 40,
+    "se": 0.07866066361276136,
+    "win_rate": 0.55
+  },
+  "policy": "pudge-auto-optimizer:v4",
+  "taint_rate": 0.0,
+  "taint_reasons": [],
+  "tainted": 0,
+  "tainted_rows": [],
+  "xreq_id": "xreq_9071f4e6-f8ba-4609-8456-660557380b40"
+}
