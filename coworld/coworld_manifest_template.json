@@ -18,6 +18,7 @@
       ],
       "env": {
         "COGAME_PLAYER_SEATS_SCHEMA": "coworld-player-seats/2",
+        "COGAME_PLAY_SEATS_SCHEMA": "coworld-play-seats/1",
         "PUDGE_WARS_CLIENT_URL": "https://pudge-wars-site-theta.vercel.app/play/bundles/a9f1bb92b7d54d0b/pw.html"
       },
       "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main"
