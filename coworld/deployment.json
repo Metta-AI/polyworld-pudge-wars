@@ -130,5 +130,16 @@
       "src/polyworld/timings.nim": "731717199cf6501c29a7aa68a9a7007bca61166bd738d1864fce801a9aa1b74e"
     }
   },
-  "last_policy_update_at": "2026-10-14T23:41:19.775513+00:00"
+  "last_policy_update_at": "2026-10-14T23:41:19.775513+00:00",
+  "hosted_play_release": {
+    "version": "0.1.2",
+    "coworld_id": "cow_f5f7b20b-db61-4f82-bd9e-16fcc74d4755",
+    "manifest_hash": "sha256:70c0229818ab3de5db532f122b7dc20f3de15e423791a281892199b86619f21e",
+    "image": "public.ecr.aws/q5f4m8t9/cogames@sha256:1d7b15b83f65f7e75e60637b84d0f05d60cec128559dc835de263e3a93c5c90e",
+    "replay_viewer": "sha256:6d690bfc900aadcf08ad8937f2b37baf0964d659eb224453e12e5f64b56011ce",
+    "simulator_version": 38,
+    "certification": "certified",
+    "uploaded_at": "2026-10-21T06:17:57.543245Z",
+    "platform_pr": "https://app.graphite.dev/github/pr/Metta-AI/metta/28141"
+  }
 }
