@@ -1,0 +1,162 @@
+{
+  "status": "complete",
+  "decision": "retain_baseline",
+  "selected": "parent",
+  "session_reference": "session-reference.json",
+  "protocol": "protocol.json",
+  "ledger": "ledger.jsonl",
+  "evidence_review": "evidence-review.md",
+  "baseline_sha256": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "total_valid_games": 48,
+  "total_valid_decisions": 2268558,
+  "total_finite_cases": 3864,
+  "semantic_mismatches": 0,
+  "roundtrip_mismatches": 0,
+  "evaluations": {
+    "engagement": {
+      "games": 24,
+      "seed_blocks": 12,
+      "wins": 12,
+      "draws": 0,
+      "win_rate": 0.5,
+      "win_rate_wilson_95": [
+        0.31427425819573795,
+        0.685725741804262
+      ],
+      "mean_paired_bank_margin": 0.0,
+      "margin_seed_bootstrap_95": [
+        -4.625,
+        4.958333333333333
+      ],
+      "counts": {
+        "checked_decisions": 1152627,
+        "changed_decisions": 7307,
+        "changed_hook_requests": 7307,
+        "candidate_hook_requests": 147210,
+        "parent_hook_requests": 141983,
+        "accepted_walk_to": 954737,
+        "accepted_hook_to": 12376,
+        "accepted_place_ward": 317,
+        "accepted_blink_to": 2383,
+        "accepted_rot": 2430,
+        "accepted_attack_target": 43076,
+        "eligible_pairs": 44351,
+        "engagement_requests": 7307
+      },
+      "interpretation": "Local deterministic engine comparison. Win interval is descriptive across games; the primary margin interval resamples seed blocks. No claim of a hosted leaderboard improvement.",
+      "identities": {
+        "baseline.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+        "candidate.py": "427da005db3ba969be4378415b5eecc3c0ff0d49bdd757f7df36452a6034289a",
+        "regenerated.py": "427da005db3ba969be4378415b5eecc3c0ff0d49bdd757f7df36452a6034289a",
+        "json_match": "159adb7f51faae999d6b47c120db69f8ebe4fffe20c7c4c464b4badd769c7850"
+      },
+      "semantic_mismatches": 0,
+      "roundtrip_mismatches": 0,
+      "bank_results": {
+        "0": {
+          "games": 12,
+          "wins": 6,
+          "mean_margin": -1.4166666666666667
+        },
+        "1": {
+          "games": 12,
+          "wins": 6,
+          "mean_margin": 1.4166666666666667
+        }
+      },
+      "screen_gate_passed": false
+    },
+    "fountain": {
+      "games": 24,
+      "seed_blocks": 12,
+      "wins": 11,
+      "draws": 0,
+      "win_rate": 0.4583333333333333,
+      "win_rate_wilson_95": [
+        0.278913337312114,
+        0.6492513464108005
+      ],
+      "mean_paired_bank_margin": -1.5416666666666667,
+      "margin_seed_bootstrap_95": [
+        -6.333333333333333,
+        3.7083333333333335
+      ],
+      "counts": {
+        "checked_decisions": 1115931,
+        "changed_decisions": 40455,
+        "changed_hook_requests": 40455,
+        "candidate_hook_requests": 118652,
+        "parent_hook_requests": 158645,
+        "accepted_walk_to": 916533,
+        "accepted_hook_to": 11503,
+        "accepted_place_ward": 284,
+        "accepted_blink_to": 2229,
+        "accepted_rot": 2145,
+        "accepted_attack_target": 44411,
+        "blocked_fountain_attempts": 44199
+      },
+      "interpretation": "Local deterministic engine comparison. Win interval is descriptive across games; the primary margin interval resamples seed blocks. No claim of a hosted leaderboard improvement.",
+      "identities": {
+        "baseline.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+        "candidate.py": "eb428749ffb86be0a7a2ac1a7f09acf248416efea1a301be4634b420332b1c1d",
+        "regenerated.py": "eb428749ffb86be0a7a2ac1a7f09acf248416efea1a301be4634b420332b1c1d",
+        "json_match": "159adb7f51faae999d6b47c120db69f8ebe4fffe20c7c4c464b4badd769c7850"
+      },
+      "semantic_mismatches": 0,
+      "roundtrip_mismatches": 0,
+      "bank_results": {
+        "0": {
+          "games": 12,
+          "wins": 7,
+          "mean_margin": 0.3333333333333333
+        },
+        "1": {
+          "games": 12,
+          "wins": 4,
+          "mean_margin": -3.4166666666666665
+        }
+      },
+      "screen_gate_passed": false
+    }
+  },
+  "verification": {
+    "engagement": {
+      "cases": 1904,
+      "geometry_cases": 6,
+      "changed": 36,
+      "scoped_agreement": 1.0,
+      "semantic_mismatches": 0,
+      "roundtrip_mismatches": 0,
+      "reference_counts": {
+        "eligible_pairs": 108,
+        "engagement_requests": 36
+      },
+      "scope": "Finite E04/E05 decision regions and unchanged source context; inherited prose and goal rationale not empirically lifted."
+    },
+    "fountain": {
+      "cases": 1960,
+      "geometry_cases": 6,
+      "changed": 18,
+      "scoped_agreement": 1.0,
+      "semantic_mismatches": 0,
+      "roundtrip_mismatches": 0,
+      "reference_counts": {
+        "blocked_fountain_attempts": 211
+      },
+      "scope": "Finite E04/E05 decision regions and unchanged source context; inherited prose and goal rationale not empirically lifted."
+    }
+  },
+  "curve_hook": "Reviewed and left inactive. Unconditional cast-time perpendicular movement is unsupported; prior bounded E02 did not pass its gate.",
+  "confirmation": "Not triggered: neither screen passed. Reserved confirmation seeds remain unused.",
+  "hosted": "Not run; no local behavioral improvement retained or league promotion claimed.",
+  "invalid_attempts": [
+    "Initial center64 compilations and engagement run archived in discarded-coordinate-approximation and duels/*-invalid-center64. Not included in 48 games.",
+    "Reference quadratic tangent cancellation corrected; policies unchanged. Initial runtime verifier was stricter; every valid completed game passed. Both verifier versions archived."
+  ],
+  "measurement_limits": [
+    "Native synchronous 3v3 mirror comparison against frozen v14 only.",
+    "Twelve map blocks per candidate, directional evidence; lack of improvement is not proof of no small effect.",
+    "Counts describe decision requests, not unique engine-accepted skills or measured healing.",
+    "Inherited full-policy prose and goal rationale are not empirically recovered from action agreement."
+  ]
+}

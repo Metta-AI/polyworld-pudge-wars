@@ -14,6 +14,8 @@ function showError(error) { text($("error"), error.message || String(error)); }
 function actionText(trace) { const action = trace?.action || {}; return Object.keys(action).length ? JSON.stringify(action) : "No new action"; }
 function render(s) {
   state = s;
+  renderHumanGuide(s);
+  renderTactical(s);
   if (typeof renderReasoning === "function") renderReasoning(s);
   text($("status"), {ready:"Ready to play",starting:"Joining arena",playing:"Match live",finished:"Match complete"}[s.phase] || s.phase);
   text($("revision"), `v${s.policy.revision}${s.pending_revision ? ` → v${s.pending_revision}` : ""}`);
@@ -42,7 +44,6 @@ function render(s) {
   }
   if (s.observation) {
     const o = s.observation; text($("tick"), `Tick ${o.tick}`);
-    text($("score"), `West ${o.score.west ?? o.score[0] ?? 0} / East ${o.score.east ?? o.score[1] ?? 0}`);
     $("decision").replaceChildren();
     for (const [channel, rule] of Object.entries(s.trace.selected || {})) {
       const row = node("div", null, "decision-row"); row.append(node("strong", channel + " · "), node("span", rule)); $("decision").append(row);
@@ -85,7 +86,7 @@ function render(s) {
 }
 async function poll() {
   try { const response = await fetch("/api/state", {cache:"no-store"}); if (!response.ok) throw new Error("Local server unavailable"); render(await response.json()); }
-  catch (error) { showError(error); }
+  catch (error) { expireHumanGuide(); showError(error); }
   setTimeout(poll, 300);
 }
 $("start").onclick = async () => {
@@ -93,6 +94,12 @@ $("start").onclick = async () => {
   try { await disconnectVoice(); render(await api("/api/start", {})); }
   catch (error) { showError(error); } finally { busy = false; $("start").disabled = false; }
 };
+$("welcome-start").onclick = () => $("start").click();
+$("lab-open").onclick = () => $("lab-dialog").showModal();
+$("lab-close").onclick = () => $("lab-dialog").close();
+$("lab-dialog").addEventListener("close", () => {
+  if (!$("game").hidden) $("game").focus();
+});
 async function lesson(value) {
   if (!state?.context_id) { text($("reply"), "Start the match first; Loom needs gameplay context."); return; }
   text($("error"), "");

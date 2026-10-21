@@ -52,7 +52,7 @@ if selfInShop = 1 then
 end if
 reachNow = 52 + 4 * upgradeLevel(1) + upgradeLevel(3)
 if selfBuff = 4 then
-  reachNow = reachNow + reachNow / 2
+  reachNow = reachNow + reachNow \ 2
 end if
 leadNow = 9 + upgradeLevel(2)
 if leadNow < 1 then
@@ -182,8 +182,8 @@ end if
 if dy > span then
   span = dy
 end if
-aimX = bestX + evx * span / leadNow
-aimY = bestY + evy * span / leadNow
+aimX = bestX + evx * span \ leadNow
+aimY = bestY + evy * span \ leadNow
 if aimX < 8 then
   aimX = 8
 end if
@@ -215,7 +215,7 @@ end if
 pokeY = lineY
 if lastEy <> 0 then
   age = worldTick - lastSeen
-  pokeY = lastEy + evy * age / 8
+  pokeY = lastEy + evy * age \ 8
   if pokeY < 16 then
     pokeY = 16
   end if
@@ -224,12 +224,12 @@ if lastEy <> 0 then
   end if
   if bestId = 0 then
     if selfTeam = 0 then
-      pokeX = riverEast + 2 + evx * age / 16
+      pokeX = riverEast + 2 + evx * age \ 16
       if pokeX < riverEast + 1 then
         pokeX = riverEast + 2
       end if
     else
-      pokeX = riverWest - 2 + evx * age / 16
+      pokeX = riverWest - 2 + evx * age \ 16
       if pokeX > riverWest - 1 then
         pokeX = riverWest - 2
       end if
@@ -424,8 +424,8 @@ if fleeRot = 0 and closeId <> 0 then
 else
   if hookReady = 1 then
     if headId <> 0 then
-      hx = headX + (homeX - headX) / 2
-      hy = headY + (homeY - headY) / 2
+      hx = headX + (homeX - headX) \ 2
+      hy = headY + (homeY - headY) \ 2
       hookTo(hx, hy)
       mood = 2
     else

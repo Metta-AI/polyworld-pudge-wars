@@ -65,7 +65,7 @@ fi
 cp "${src}/pw.html" "${output_dir}/index.html"
 cp "${src}/pw.js" "${output_dir}/pw.js"
 cp "${src}/pw.wasm" "${output_dir}/pw.wasm"
-for asset in recap-overlay.js boot-scene.js; do
+for asset in recap-overlay.js boot-scene.js touch-input.js; do
   cp "${polyworld_root}/examples/pudge_wars/${asset}" "${output_dir}/${asset}"
   cp "${polyworld_root}/examples/pudge_wars/${asset}" "${src}/${asset}"
 done

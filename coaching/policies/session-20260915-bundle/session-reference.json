@@ -1,0 +1,26 @@
+{
+  "session": "/Users/aaln/Documents/Policy Loops/sessions/2026-09-15t21-41-17-535zc09870",
+  "session_id": "2026-09-15t21-41-17-535zc09870",
+  "created_at": "2026-09-15T23:47:58.940931+00:00",
+  "repository_head": "d1f6d7c9a06c3a064fff1fd710e45703b62c77b8",
+  "initial_git_status": " M docs/hosted-release-0.3.21-2026-09-15.md\n M examples/pudge_wars/ui.nim\n M games/pudge-wars/instruments/compare_campaign.py\n M games/pudge-wars/skills/eval-design/README.md\n M tests/test_pw_support_analysis.py\n?? coaching/alternate_verify.py\n?? coaching/hosted_evaluate.py\n?? coaching/policies/session-20260915/\n?? coaching/policies/v14/\n?? coaching/return_verify.py\n?? coaching/session_common.py\n?? coaching/session_compile.py\n?? coaching/session_evaluate.py\n?? coaching/session_verify.py\n?? coaching/symbolic/session_match.nim\n?? coaching/test_v14_protocol.py\n?? coaching/v14_compile.py\n?? coaching/v14_evaluate.py\n?? coaching/v14_rune_verify.py\n?? coaching/v14_verify.py\n?? docs/hosted-release-0.3.19-2026-09-15.md\n?? examples/pudge_wars/hudlayout.nim\n?? games/pudge-wars/experiments/2026-09-15-session-coaching.md\n?? games/pudge-wars/experiments/2026-09-15-v14-coaching-results.json\n?? games/pudge-wars/experiments/2026-09-15-v14-coaching.md\n?? games/pudge-wars/instruments/replay_observations.nim\n?? scripts/coaching_player.py\n?? tests/test_pw_coaching_session.py\n?? tests/test_pw_coaching_stream.nim\n?? tests/test_pw_hudlayout.nim\n",
+  "captured_input_bytes": {
+    "input.ir.md": 0,
+    "input.policy.txt": 0
+  },
+  "source_hashes": {
+    "notes.md": "46e3a90e0228e99b51e8b00fa4b242dfde690046a75d99a8aef33b98b835b218",
+    "session.json": "9d98f2586415e27c96466c98ed166b8e156d8e39060a49b8f483071bd7aacbf6",
+    "input.ir.md": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "input.policy.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "analysis/transcript.json": "fef30664c6921640636c8813c9cb0757e8a5e9c4c08126a051478dd581199606",
+    "analysis/index.json": "aea27aec1b88fb1bb044ed8c66aee967c1abaa6f01c6af9cb7368453f31a05bd",
+    "analysis/audio.ogg": "9977c587699c1c46a9098e9c22d9ffc2be19332ac9a5b6b1a3670f3abd49bea7",
+    "recording.webm": "92615b9aa2b3b5249ea56f1a40e1d931cd6d54f003ba05211ab1f6987bf2a75b",
+    "interactions.jsonl": "c68d4f8835572f6a42372fe5ef3d182ed7ee1c03a1288ae575e1d5f10860203d",
+    "synthesis/13d8b670-9bb1-4792-a560-dbc7d7231a7d/report.md": "9d142ad028e2b91e40129ef275550df2f5b133cd00ed999f44be4a634c7bad78"
+  },
+  "baseline": "coworld/player/base.py",
+  "baseline_sha256": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "execution_verified": false
+}

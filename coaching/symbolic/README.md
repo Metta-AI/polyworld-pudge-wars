@@ -48,3 +48,10 @@ python3 -m unittest discover -s tests -p 'test_symbolic_roundtrip.py' -v
 They check that executable parameter edits survive extraction and shift aim, a text health threshold changes only its intended immediate decision region, rescue commitment terminates selection, unknown behavior is rejected, and altered skill bindings fail at load time. Game trajectories can diverge after a successful coaching edit; immediate non-interference tests are not a claim that all future events stay unchanged.
 
 This is assistant-authored grounding plus a deterministic compiler/extractor and a bounded parameter search. It does not yet infer arbitrary ontologies from existing Python, synthesize new skills using an API model, or test whether human coaching beats an equally resourced automated research loop.
+
+## Competitive BASIC policy
+
+The [v16-derived BASIC rusher](../policies/basic-rusher/README.md) is now the
+default Base. Its seven-layer semantic contract round-trips through
+`python3 -m coaching.symbolic.rusher_basic_ir`; this is a separate registered
+family from the small teaching lessons in `basic_coaching_ir.py`.

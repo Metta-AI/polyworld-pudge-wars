@@ -1,0 +1,79 @@
+{
+  "passed": true,
+  "episodes": 10,
+  "policy_processes": 30,
+  "criterion": "All requests completed, exact roster/game/config, every candidate seat threw hooks, every candidate process logged combined startup and clean final exit, no traceback.",
+  "competitive_evidence": false,
+  "rows": [
+    {
+      "episode_id": "ereq_cd0db9b8-8ddd-4bfc-9474-7081fe715b92",
+      "end_tick": 960,
+      "seed": 670329047,
+      "candidate_hooks": 29,
+      "clean_policy_logs": 3
+    },
+    {
+      "episode_id": "ereq_0f7aba6f-d438-466c-af14-0f508ae54d52",
+      "end_tick": 960,
+      "seed": 670328222,
+      "candidate_hooks": 31,
+      "clean_policy_logs": 3
+    },
+    {
+      "episode_id": "ereq_6377082f-1a99-4ded-aece-6d4167652862",
+      "end_tick": 960,
+      "seed": 670328947,
+      "candidate_hooks": 28,
+      "clean_policy_logs": 3
+    },
+    {
+      "episode_id": "ereq_9dac4a38-6a67-46c3-8aeb-a391ccaf0253",
+      "end_tick": 960,
+      "seed": 670327937,
+      "candidate_hooks": 27,
+      "clean_policy_logs": 3
+    },
+    {
+      "episode_id": "ereq_cb8e2874-6a4f-4f7e-8c00-9bc04b45b90b",
+      "end_tick": 960,
+      "seed": 670328988,
+      "candidate_hooks": 28,
+      "clean_policy_logs": 3
+    },
+    {
+      "episode_id": "ereq_c6cbce7e-ed57-4315-a5f4-7468b6820af0",
+      "end_tick": 960,
+      "seed": 670330210,
+      "candidate_hooks": 31,
+      "clean_policy_logs": 3
+    },
+    {
+      "episode_id": "ereq_db0e39b2-3103-4de2-b30f-db0001af5eb0",
+      "end_tick": 960,
+      "seed": 670329281,
+      "candidate_hooks": 31,
+      "clean_policy_logs": 3
+    },
+    {
+      "episode_id": "ereq_b2077810-b23a-4268-a648-0a3b65398d38",
+      "end_tick": 960,
+      "seed": 670330435,
+      "candidate_hooks": 26,
+      "clean_policy_logs": 3
+    },
+    {
+      "episode_id": "ereq_243c8177-0e63-4fb9-b343-65a3282e0626",
+      "end_tick": 960,
+      "seed": 670329810,
+      "candidate_hooks": 34,
+      "clean_policy_logs": 3
+    },
+    {
+      "episode_id": "ereq_44f01e29-57c2-4fbf-a542-bba94754f24c",
+      "end_tick": 960,
+      "seed": 670329890,
+      "candidate_hooks": 30,
+      "clean_policy_logs": 3
+    }
+  ]
+}

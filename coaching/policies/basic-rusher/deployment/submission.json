@@ -1,0 +1,123 @@
+{
+  "id": "sub_d9f462a7-c03a-4b95-9a97-b11e172c4f9f",
+  "auto_champion": "always",
+  "status": "pending",
+  "league": {
+    "id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+    "name": "Pudge Wars",
+    "slug": null,
+    "game": {
+      "id": "game_066b85e8-55ed-4141-afd4-5e3e5bf00b0d",
+      "name": "Pudge Wars Basic",
+      "slug": null,
+      "coworld_name": "pudge-wars-basic",
+      "coworld_id": null,
+      "description": "BASIC and neural file policies in a deterministic river arena, with optional Jev judgments. Two teams of butchers hook, blink and fight to the kill goal.",
+      "created_at": "2026-10-09T20:26:03.957780Z",
+      "owner_user_id": "system",
+      "notes": null,
+      "default_league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+      "canonical_coworld_id": null,
+      "coworld_tags": []
+    },
+    "participation_url": "https://softmax.com/api/observatory/v2/leagues/league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0.md",
+    "forum_markdown_url": "https://softmax.com/api/observatory/v2/forums/pudge-wars-basic.md",
+    "wiki_markdown_url": "https://softmax.com/api/observatory/v2/wikis/pudge-wars-basic/pages.md",
+    "commissioner_key": "platform",
+    "commissioner_config": {
+      "default_variant_id": "league-3v3"
+    },
+    "public": true,
+    "hidden": false,
+    "is_game_of_week": false,
+    "created_at": "2026-09-01T05:50:13.053038Z",
+    "disabled_at": null,
+    "short_name": null,
+    "description": "Pudge Wars league for submitted policies and recurring competition rounds.",
+    "commissioner_migration_version": null,
+    "rounds_paused_at": null,
+    "submissions_locked_at": null,
+    "settings": {
+      "ladder": {
+        "enabled": true,
+        "ranking": {
+          "mu": 25.0,
+          "sigma": 8.333333333333334,
+          "algorithm": "openskill",
+          "round_scoring_rule": "mean"
+        },
+        "divisions": [
+          {
+            "name": "Competition",
+            "division_id": "div_471aedc1-00f7-41dd-971d-f0beff95a439",
+            "disqualify_after_consecutive_failures": 3
+          }
+        ],
+        "scheduler": {
+          "strategy": "team_n",
+          "team_count": 2,
+          "matchmaking": "elo_softmax",
+          "team_layout": "blocks",
+          "num_episodes": 24,
+          "distinct_teammates": true,
+          "insufficient_players": "filler_policy",
+          "matchmaking_temperature": 100.0
+        },
+        "fulfillment": {
+          "retry_times": 2,
+          "allowed_failures": 0.0
+        },
+        "players_per_user": 6
+      },
+      "public_player_files": false,
+      "scratchpads_enabled": false,
+      "round_interval_minutes": 32
+    },
+    "filler_policy_version_ids": [
+      "695e980a-5d8d-43cd-b852-5631ce314431",
+      "c610add1-523c-46ae-91b5-1f0f73358b88",
+      "5632aa58-7e7f-4c66-923c-f9ba4dbe6d65",
+      "09cd9c4c-0760-4160-828b-a830f4ded348",
+      "245055e6-2a79-4031-a2e8-ad16a2e26553",
+      "37b5cbb7-bba4-4db9-bfa6-2cd08b9f4aeb",
+      "357aaea3-d006-4cf1-864d-d2ce69e65bcd"
+    ],
+    "seed_policy_version_ids": null,
+    "seed_policy_number": null,
+    "rules": {
+      "division_leaderboard": {
+        "aggregation": "score",
+        "source_score": "mean_round_score"
+      }
+    },
+    "notes": null,
+    "mod": null,
+    "logs_reporter_id": "rptr_3b2b7a6b-61d8-4530-92f3-5fa7822a7005",
+    "logs_source": "platform",
+    "handicaps": null,
+    "handicap_dynamic": null
+  },
+  "policy_version": {
+    "id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+    "policy": {
+      "id": "cf80b83f-eb4f-4e3b-bc83-4c0068d2e49b",
+      "name": "pudge-basic-base"
+    },
+    "version": 2,
+    "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+    "label": "pudge-basic-base:v2",
+    "label": "pudge-basic-base:v2"
+  },
+  "player": {
+    "id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+    "name": "A-aron",
+    "avatar_url": null,
+    "owner_name": "Aaron L"
+  },
+  "league_policy_membership_id": null,
+  "notes": null,
+  "created_at": "2026-10-14T23:40:14.796917Z",
+  "preferences": null,
+  "title": "Retained v16 strategy in BASIC",
+  "description": "Port Python E06b healing, stable lanes, centroid hooks and persistent CurveHook. Fresh local confirmation: 96/96 wins versus previous BASIC Base; 48/48 stock-opponent checks. No hosted strength claim."
+}

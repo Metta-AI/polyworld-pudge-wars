@@ -1,0 +1,50 @@
+{
+  "idempotency_key": "coaching-20260915-bundle-hosted-runtime-smoke",
+  "private": true,
+  "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
+  "variant_id": "league-3v3",
+  "num_episodes": 10,
+  "game_config_overrides": {
+    "max_ticks": 960,
+    "kill_goal": 30
+  },
+  "roster": [
+    {
+      "slot": 0,
+      "player": {
+        "policy_ref": "bdc7ac29-743d-4ace-b1cc-3b0529cef552"
+      }
+    },
+    {
+      "slot": 1,
+      "player": {
+        "policy_ref": "bdc7ac29-743d-4ace-b1cc-3b0529cef552"
+      }
+    },
+    {
+      "slot": 2,
+      "player": {
+        "policy_ref": "bdc7ac29-743d-4ace-b1cc-3b0529cef552"
+      }
+    },
+    {
+      "slot": 3,
+      "player": {
+        "policy_ref": "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b"
+      }
+    },
+    {
+      "slot": 4,
+      "player": {
+        "policy_ref": "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b"
+      }
+    },
+    {
+      "slot": 5,
+      "player": {
+        "policy_ref": "43bf1d57-9ef0-4c86-9e4e-476969fd8f2b"
+      }
+    }
+  ],
+  "notes": "E06b exact uploaded image runtime smoke only: ten 30-second matches; not competitive validation. User requested league update after completed native confirmation."
+}

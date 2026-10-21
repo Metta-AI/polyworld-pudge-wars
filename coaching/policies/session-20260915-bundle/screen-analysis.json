@@ -1,0 +1,37 @@
+{
+  "games": 48,
+  "team_counter_totals": {
+    "candidate": {
+      "kills": 1376,
+      "deaths": 1018,
+      "headshots": 484,
+      "hooks_landed": 10539,
+      "runes_taken": 864
+    },
+    "baseline": {
+      "kills": 1016,
+      "deaths": 1379,
+      "headshots": 317,
+      "hooks_landed": 7667,
+      "runes_taken": 755
+    }
+  },
+  "mean_team_counters_per_game": {
+    "candidate": {
+      "kills": 28.666666666666668,
+      "deaths": 21.208333333333332,
+      "headshots": 10.083333333333334,
+      "hooks_landed": 219.5625,
+      "runes_taken": 18.0
+    },
+    "baseline": {
+      "kills": 21.166666666666668,
+      "deaths": 28.729166666666668,
+      "headshots": 6.604166666666667,
+      "hooks_landed": 159.72916666666666,
+      "runes_taken": 15.729166666666666
+    }
+  },
+  "interpretation": "Descriptive complete-screen engine counters from the full package versus baseline. Not component effect attribution or hosted evidence.",
+  "counter_scope": "hooks_landed includes unit contacts and mine latches; it is not a count of damaging enemy hits or successful ally heals."
+}

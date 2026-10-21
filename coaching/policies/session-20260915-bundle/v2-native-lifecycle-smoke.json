@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "seed": 918001,
+  "ticks": 2500,
+  "purpose": "Native lifecycle fidelity only; not a competitive comparison",
+  "counts": {
+    "engagement_pairs": 339,
+    "engagement_requests": 33,
+    "fountain_rejections": 2508,
+    "curve_starts": 153,
+    "curve_steps": 5914,
+    "curve_flying_steps": 4067,
+    "curve_return_steps": 483
+  }
+}

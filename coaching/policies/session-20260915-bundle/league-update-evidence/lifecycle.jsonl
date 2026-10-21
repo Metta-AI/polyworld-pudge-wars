@@ -1,0 +1,3 @@
+{"at": "2026-09-16T02:05:36.435330+00:00", "event": "submitted", "data": {"submission_id": "sub_5008e920-16db-42cc-b073-91bf584ce914", "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552", "auto_champion": "never"}}
+{"at": "2026-09-16T02:05:57.072414+00:00", "event": "membership", "data": {"id": "lpm_9ea237d9-25d6-4578-a8a3-7a3620c36a25", "status": "competing", "substatus": null, "is_champion": false}}
+{"at": "2026-09-16T02:05:57.776684+00:00", "event": "champion-verified", "data": {"id": "lpm_9ea237d9-25d6-4578-a8a3-7a3620c36a25", "policy": "pudge-wars-rusher:v16", "status": "competing", "substatus": "active", "is_champion": true, "duel_champion_unchanged": true}}

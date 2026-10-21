@@ -19,11 +19,13 @@ import time
 from urllib.parse import urlencode
 
 from aiohttp import ClientSession, ClientTimeout, WSMsgType, web
+from dotenv import load_dotenv
 
 from .policy import (CAPABILITIES, GUARDS, INTENTS, SELECTORS, PolicyError,
                      compile_policy, decide, facts, initial_policy, interpret, readable)
 from .realtime import DEFAULT_MODEL, RealtimeCall
 from .reasoning import ReasoningLab, evaluate_candidate, reference_candidate
+from .human_guide import HumanGuide
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "examples/pudge_wars/emscripten"
@@ -73,6 +75,7 @@ class Demo:
         self.active_tick = None
         self.agent_id = None
         self.coach_id = None
+        self.human_guide = HumanGuide()
 
     def log(self, kind, **data):
         event = {"kind": kind, "at": time.time(), "match_id": self.match_id, **data}
@@ -115,6 +118,7 @@ class Demo:
     async def start(self):
         await self.stop_match()
         self.match_id = secrets.token_hex(8)
+        self.human_guide.reset(self.match_id)
         self.run_dir = ROOT / "tmp/coaching" / self.match_id
         self.run_dir.mkdir(parents=True)
         # A rematch preserves explicit durable strategy; transient references expire.
@@ -141,7 +145,7 @@ class Demo:
         config_path = self.run_dir / "config.json"
         config_path.write_text(json.dumps(config))
         config_path.chmod(0o600)
-        env = {k: v for k, v in os.environ.items() if not k.startswith(("OPENAI_", "COGAME_"))}
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("OPENAI_", "TYPESAFE_", "COGAME_"))}
         env.update(COGAME_HOST="127.0.0.1", COGAME_PORT=str(self.engine_port),
                    COGAME_CONFIG_URI=config_path.as_uri(),
                    COGAME_RESULTS_URI=(self.run_dir / "results.json").as_uri(),
@@ -170,6 +174,7 @@ class Demo:
             raise PolicyError("Game host did not become ready.")
         for slot in range(0 if self.autopilot else 1, 4):
             self.spawn(self.player(slot, tokens[slot], self.match_id))
+        self.spawn(self.human_guide.run(self.client))
         params = {"join": f"ws://127.0.0.1:{self.port}/engine/ws", "token": tokens[0], "slot": "0", "name": "You"}
         self.game_url = "/play/pw.html?" + urlencode(params)
         self.log("match_started", policy_hash=self.policy.fingerprint)
@@ -208,6 +213,7 @@ class Demo:
                     context = {"id": f"{match_id}:{obs['tick']}", "obs": obs, "trace": trace,
                                "selected_id": self.selected_id}
                     self.contexts.append(context)
+                    self.human_guide.observe(obs, match_id)
                     if obs["tick"] % 8 == 0:
                         with (self.run_dir / "decisions.jsonl").open("a") as out:
                             out.write(json.dumps(context) + "\n")
@@ -431,6 +437,7 @@ class Demo:
                 "context_id": self.latest_context_id(), "observation": latest["obs"] if latest else None,
                 "trace": self.trace, "timeline": list(self.timeline)[:25], "jobs": self.jobs,
                 "selected_id": self.selected_id, "voice_status": self.voice_status,
+                "human_guide": self.human_guide.view(self.phase),
                 "reasoning": self.reasoning.view(self.policy, self.match_id),
                 "realtime_model": os.environ.get("OPENAI_REALTIME_MODEL", DEFAULT_MODEL),
                 "voice_configured": bool(os.environ.get("OPENAI_API_KEY"))}
@@ -449,7 +456,13 @@ def create_app(demo):
     app = web.Application(middlewares=[guard], client_max_size=128 * 1024)
 
     async def state(request):
+        demo.human_guide.viewer_at = demo.human_guide.clock()
         return web.json_response(demo.state(), headers={"Cache-Control": "no-store"})
+
+    async def human_guide(request):
+        args = await request.json()
+        demo.human_guide.set_enabled(args["enabled"])
+        return web.json_response(demo.state())
 
     async def start(request):
         await demo.start()
@@ -567,6 +580,7 @@ def create_app(demo):
     app.router.add_get("/", index)
     app.router.add_get("/api/state", state)
     app.router.add_post("/api/start", start)
+    app.router.add_post("/api/human-guide", human_guide)
     app.router.add_post("/api/coach", coach)
     app.router.add_post("/api/reasoning", reasoning)
     app.router.add_get("/api/reasoning/export", reasoning_export)
@@ -581,6 +595,7 @@ def create_app(demo):
 
 
 def main():
+    load_dotenv(ROOT / ".env.local", override=False)
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8787)
     parser.add_argument("--autopilot", action="store_true", help="Use a bot for the human seat during automated checks.")

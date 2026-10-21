@@ -1,0 +1,28 @@
+{
+  "user_id": "h0835grji1zfy5wakd4i56kn",
+  "user": {
+    "id": "h0835grji1zfy5wakd4i56kn",
+    "name": "Aaron Landy",
+    "email": null,
+    "is_softmax_team_member": null,
+    "discord_id": null,
+    "created_at": null
+  },
+  "owner_coworld_name": null,
+  "id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+  "policy_id": "cf80b83f-eb4f-4e3b-bc83-4c0068d2e49b",
+  "name": "pudge-basic-base",
+  "version": 2,
+  "created_at": "2026-10-14T23:38:02.567036Z",
+  "policy_created_at": "2026-10-09T20:23:14.122680Z",
+  "tags": {
+    "purpose": "v16-e06b-basic-transfer",
+    "title": "Retained v16 strategy in BASIC",
+    "description": "Port Python E06b healing, stable lanes, centroid hooks and persistent CurveHook. Fresh local confirmation: 96/96 wins versus previous BASIC Base; 48/48 stock-opponent checks. No hosted strength claim."
+  },
+  "attributes": {},
+  "internal_id": null,
+  "container_image_id": null,
+  "player_file_content_hash": null,
+  "player_file_size_bytes": null
+}

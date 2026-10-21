@@ -100,6 +100,10 @@ class CampaignComparisonTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'same game version'):
             comparison.compare(dict(game_version='0.3.21'), dict(game_version='0.3.13'))
 
+    def test_margin_interval_has_the_candidate_minus_baseline_sign(self):
+        self.assertEqual(comparison.margin_difference_interval([3] * 20, [5] * 20), [2, 2])
+        self.assertEqual(comparison.margin_difference_interval([5] * 20, [3] * 20), [-2, -2])
+
 
 if __name__ == '__main__':
     unittest.main()

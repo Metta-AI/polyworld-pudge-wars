@@ -189,6 +189,9 @@ suite "Base combat policy":
     game.world.runeClock = 140
     for i, y in [40, 64, 100]:
       game.world.pudges[i].placePudge(36, y)
+      # Isolate formation: the v16 curve option intentionally overrides it
+      # while a hook is being cast, flying or returning.
+      game.world.pudges[i].hookCooldown = HookCooldownTicks
     game.step()
     check game.world.pudges[0].moveZ == game.world.nextRuneZTile
     check game.world.pudges[1].moveZ >= game.world.nextRuneZTile + 24

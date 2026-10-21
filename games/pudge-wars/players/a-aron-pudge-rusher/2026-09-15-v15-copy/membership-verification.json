@@ -1,0 +1,106 @@
+[
+  {
+    "membership_id": "lpm_ce960440-8b4d-4586-befe-f5d9d7cebbd1",
+    "player": {
+      "id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+      "name": "a-aron",
+      "avatar_url": null
+    },
+    "policy": "a-aron-pudge-rusher:v1",
+    "policy_version_id": "c053e572-5edb-4882-ba36-a001717f1167",
+    "status": "competing",
+    "substatus": "active",
+    "is_champion": true
+  },
+  {
+    "membership_id": "lpm_9ea237d9-25d6-4578-a8a3-7a3620c36a25",
+    "player": {
+      "id": "ply_630a768f-d623-44b2-80fa-36968d6fa75a",
+      "name": "Aaron",
+      "avatar_url": null
+    },
+    "policy": "pudge-wars-rusher:v16",
+    "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+    "status": "competing",
+    "substatus": "active",
+    "is_champion": true
+  },
+  {
+    "membership_id": "lpm_81a028a4-e811-43cc-8a4b-3590b3ef931c",
+    "player": {
+      "id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+      "name": "a-aron",
+      "avatar_url": null
+    },
+    "policy": "pudge-wars-sniper:v3",
+    "policy_version_id": "bdb51abd-dabe-4107-82fd-aaeff96ec706",
+    "status": "competing",
+    "substatus": "benched",
+    "is_champion": false
+  },
+  {
+    "membership_id": "lpm_fbc7b2f3-ddac-47e7-a0b9-2ebb8571054f",
+    "player": {
+      "id": "ply_2357645a-143f-41b8-ad97-610c0d73f4e6",
+      "name": "Aaron's Optimizer Jr",
+      "avatar_url": null
+    },
+    "policy": "pudge-wars-camper:v9",
+    "policy_version_id": "15664e4f-0b81-45a8-be3f-142d8de18a0f",
+    "status": "competing",
+    "substatus": "active",
+    "is_champion": true
+  },
+  {
+    "membership_id": "lpm_b329ee6c-50cb-4d78-9892-1f1d80597e47",
+    "player": {
+      "id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+      "name": "a-aron",
+      "avatar_url": null
+    },
+    "policy": "pudge-wars-sniper:v1",
+    "policy_version_id": "d7a228c2-fa26-4969-abf3-c9473578de3c",
+    "status": "competing",
+    "substatus": "benched",
+    "is_champion": false
+  },
+  {
+    "membership_id": "lpm_ea41b2f4-f2bd-450f-be3c-53ffd741005e",
+    "player": {
+      "id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+      "name": "a-aron",
+      "avatar_url": null
+    },
+    "policy": "pudge-wars-idle:v5",
+    "policy_version_id": "60cbbc82-81b9-452f-8367-d8abe5e7ad5c",
+    "status": "disqualified",
+    "substatus": "inactive",
+    "is_champion": false
+  },
+  {
+    "membership_id": "lpm_7b53a6ab-5cf8-48a1-9b9e-a0f241477b25",
+    "player": {
+      "id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+      "name": "a-aron",
+      "avatar_url": null
+    },
+    "policy": "pudge-wars-idle:v3",
+    "policy_version_id": "bbf36c56-f5df-435d-935d-13c1d35f6628",
+    "status": "disqualified",
+    "substatus": "inactive",
+    "is_champion": false
+  },
+  {
+    "membership_id": "lpm_5131bc90-032d-413c-b645-0e6f2c085d72",
+    "player": {
+      "id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+      "name": "a-aron",
+      "avatar_url": null
+    },
+    "policy": "pudge-wars-idle:v1",
+    "policy_version_id": "f9562035-0ee4-4dd1-bd55-d0f7695a0272",
+    "status": "disqualified",
+    "substatus": "inactive",
+    "is_champion": false
+  }
+]

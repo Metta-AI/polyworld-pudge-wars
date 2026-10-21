@@ -4,11 +4,13 @@ import
   std/[json, os, strformat, strutils, times, unicode],
   chroma, pixie, silky, vmath, windy,
   polyworld/[
-    actioncam, bottomhud, chrome, commandcard, gameuis, hudchips, pathing,
+    actioncam, chrome, commandcard, gameuis, hudchips, pathing,
     player, profiles, rtscameras
   ],
   content, maps, netproto, netclient, netsim, netpredict, sim, game, human,
-  keybinds, replays
+  keybinds, practice, replays, hudlayout
+
+from polyworld/bottomhud import transportStripHeight, compactTransportPanel
 
 when not defined(emscripten):
   import hosting
@@ -28,7 +30,6 @@ const
   KillFeedSeconds = 6.0
   KillFeedMax = 6
   StingerSeconds = 3.8
-  ChatPanelSize = vec2(380, 200)
   ChatLineH = 16.0'f32
   ChatInputH = 22.0'f32
   ChatTitleH = 22.0'f32
@@ -91,11 +92,8 @@ const
   CmdBlink = 5
   CmdRot = 6
   KillFeedW = 300.0'f32
-  ShopPanelSize = vec2(400, 360)
   PermanentShopCols = 3
   PermanentShopRows = 2
-  PanelInventory = vec2(252, 243)
-    ## Gods of the Arena bag plate: title, 3×2 of 72px wells, gold.
   InventoryWellSize = 72.0'f32
   InventoryBagCols = 3
   InventoryBagRows = 2
@@ -127,7 +125,7 @@ type
     layout: GameUiLayout
     west: GameUiPanel
     east: GameUiPanel
-    bottom: BottomHudLayout
+    bottom: PudgeHudLayout
     inventory: GameUiPanel
     transport: GameUiPanel
 
@@ -166,7 +164,7 @@ var
   alliesOpen = false
   menuOpen = false
   controlsOpen = false
-  chatVisible = true
+  chatVisible = false
   chatTab = ChatTabChat
   chatComposing = false
   chatDraft = ""
@@ -405,6 +403,9 @@ proc matchPhaseName(): string =
       return "dropped"
     of NcReconnecting:
       return "reconnecting"
+    of NcFinished:
+      if run.world.tick >= int32(run.replayPlayer.data.hashes.len):
+        return "over"
     of NcPlaying:
       discard
   if run.world.tick <= 0:
@@ -444,6 +445,8 @@ proc publishMatchState() =
   lastStateTick = tick
   echo "pw-state:", matchStateJson()
 
+proc butcherDisplayName*(index: int): string
+
 proc matchRecapJson(): string =
   let heroSlot = if humanControlActive(): heroIndex() else: -1
   let winner = run.world.winner
@@ -452,10 +455,12 @@ proc matchRecapJson(): string =
     headline =
       if run.world.pudges[heroSlot].team == winner: "victory" else: "defeat"
   var players = newJArray()
-  for pudge in run.world.pudges:
+  for index, pudge in run.world.pudges:
     players.add %*{
       "id": int(pudge.id),
+      "seat": index,
       "slot": pudge.slot,
+      "name": butcherDisplayName(index),
       "team": if pudge.team == WestTeam: "west" else: "east",
       "kills": int(pudge.kills),
       "deaths": int(pudge.deaths),
@@ -464,7 +469,7 @@ proc matchRecapJson(): string =
       "headshots": int(pudge.headshotCount),
       "denies": int(pudge.denyCount),
       "gold": int(pudge.gold),
-      "you": heroSlot >= 0 and pudge.slot == heroSlot
+      "you": index == heroSlot
     }
   $(%*{
     "winner": if winner == WestTeam: "west" else: "east",
@@ -486,27 +491,99 @@ proc publishMatchRecap() =
 
 proc inventoryPanelOf(layout: GameUiLayout): GameUiPanel
 
+proc transportHeight(): float32
+
+proc rosterSize(layoutSize: Vec2): Vec2 =
+  ## Full rosters on a desktop layout. A phone or tablet splits the width
+  ## so the two banks sit side by side instead of covering the arena.
+  vec2(
+    min(PanelRoster.x, max((layoutSize.x - 28) * 0.48'f32, 96)),
+    min(PanelRoster.y, max(layoutSize.y * 0.30'f32, 96))
+  )
+
 proc placeChrome(layout: GameUiLayout): HudChrome =
-  let transportH = transportStripHeight(transportBarOpen())
+  let
+    transportH = transportHeight()
+    roster = rosterSize(layout.size)
   HudChrome(
     layout: layout,
-    west: layout.panel(GameUiRegion.TopLeft, PanelRoster),
-    east: layout.panel(GameUiRegion.TopRight, PanelRoster),
-    bottom: placeBottomHud(layout.size, transportH, 2, int(InventorySlots)),
+    west: layout.panel(GameUiRegion.TopLeft, roster),
+    east: layout.panel(GameUiRegion.TopRight, roster),
+    bottom: placePudgeHud(layout.size, transportH),
     inventory: inventoryPanelOf(layout),
     transport: compactTransportPanel(layout.size, transportH)
   )
 
-proc hudLayoutFits(layoutSize: Vec2): bool =
-  let layout = initGameUiLayout(layoutSize, 0, 10, 0)
-  layout.size.x >= BottomHudMinWidth and
-    layout.gameAreaSize.y >= BottomHudMinGameHeight
-
 proc hudUiScale*(windowSize: Vec2): float32 =
-  fitUiScale(windowSize, hudLayoutFits, UiCrispSteps)
+  pudgeHudScale(windowSize)
+
+const
+  TouchTransportHeight = 76'f32
+    ## HUD units (CSS pixels in the browser). The 20-unit replay strip is
+    ## a mouse target, too small for a thumb. Touch gets two rows: a
+    ## full-width scrubber over ~40-pixel buttons.
+
+var
+  touchHud*: bool
+    ## The viewer is on a touch screen. Set once per frame.
+  touchHudApplied: bool
+
+when defined(emscripten):
+  proc emscripten_run_script_int(script: cstring): cint {.importc,
+      header: "<emscripten.h>".}
+
+  var coarsePointerCache = -1
+
+  proc coarsePointer(): bool =
+    ## A phone or tablet: the primary pointer is a finger.
+    if coarsePointerCache < 0:
+      coarsePointerCache = emscripten_run_script_int(
+        "+!!(window.matchMedia && matchMedia('(pointer: coarse)').matches)"
+      ).int
+    coarsePointerCache == 1
+else:
+  proc coarsePointer(): bool = false
+
+proc updateTouchHud*(window: Window) =
+  ## Touch screens cannot type into chat, so its panel only covers the
+  ## arena there. Hide it once; the chat toggle still brings it back.
+  touchHud = coarsePointer()
+  if touchHud and not touchHudApplied:
+    touchHudApplied = true
+    chatVisible = false
 
 proc hudUiScale*(window: Window): float32 =
-  hudUiScale(vec2(window.size.x.float32, window.size.y.float32))
+  ## The browser viewer follows the display density, same as the other
+  ## Polyworld games, so a HUD point is a CSS pixel on iPhone and iPad.
+  ## Native windows stay on the height-driven scale.
+  let px = vec2(window.size.x.float32, window.size.y.float32)
+  when defined(emscripten):
+    screenHudScale(px, window.contentScale)
+  else:
+    pudgeHudScale(px)
+
+proc transportHeight(): float32 =
+  ## Replay strip height for the current window, or 0 when hidden.
+  if transportBarOpen() and touchHud: TouchTransportHeight
+  else: transportStripHeight(transportBarOpen())
+
+var pointerProbeWindow*: Window
+  ## The game window, for touch-input.js's HUD hit test.
+
+proc mouseOverUi*(window: Window, mouse: Vec2): bool
+
+when defined(emscripten):
+  {.emit: "/*INCLUDESECTION*/\n#include <emscripten.h>".}
+
+  proc pwPointerOverUi(x, y: cdouble): cint {.exportc,
+      codegenDecl: "EMSCRIPTEN_KEEPALIVE $# $#$#".} =
+    ## True when a CSS-pixel point sits over a HUD widget, so a touch
+    ## drag there scrubs or drags the minimap instead of panning.
+    let window = pointerProbeWindow
+    if window == nil:
+      return 0
+    let px = vec2(x.float32, y.float32) * window.contentScale
+    cint(mouseOverUi(window, px / hudUiScale(window)))
 
 proc currentLayout*(window: Window): GameUiLayout =
   initGameUiLayout(
@@ -552,18 +629,7 @@ proc clampCameraDistance*(distance: float32): float32 =
   clamp(distance, zoomMinDistance, zoomMaxDistance)
 
 proc shopPanelOf(layout: GameUiLayout): GameUiPanel =
-  ## Left of play, sitting just above the hero cluster so it never
-  ## covers the pad or the command card.
-  let
-    transportH = transportStripHeight(transportBarOpen())
-    hud = placeBottomHud(layout.size, transportH, 2, int(InventorySlots))
-  GameUiPanel(
-    origin: vec2(
-      HudMargin,
-      max(hud.bar.origin.y - ShopPanelSize.y - 8, 8)
-    ),
-    size: ShopPanelSize
-  )
+  placePudgeHud(layout.size, transportHeight()).shop
 
 proc heroWantsShop(): bool =
   if not humanControlActive() or heroIndex() < 0:
@@ -572,24 +638,15 @@ proc heroWantsShop(): bool =
   hero.state != Dying and hero.inOwnShop
 
 proc inventoryPanelOf(layout: GameUiLayout): GameUiPanel =
-  ## GOTA-style 3×2 bag, sitting just above the action plate.
-  let
-    transportH = transportStripHeight(transportBarOpen())
-    hud = placeBottomHud(layout.size, transportH, 2, int(InventorySlots))
-  GameUiPanel(
-    origin: vec2(
-      hud.actions.origin.x,
-      max(hud.actions.origin.y - PanelInventory.y - 8, 8)
-    ),
-    size: PanelInventory
-  )
+  placePudgeHud(layout.size, transportHeight()).inventory
 
 proc spectatorChromeVisible(): bool =
   ## Replay and idle spectators get the POV banner; a live seat does not.
   not humanControlActive()
 
 proc spectatorBannerPanel(layout: GameUiLayout): GameUiPanel =
-  layout.panel(GameUiRegion.TopCenter, SpectatorBannerSize)
+  let width = min(SpectatorBannerSize.x, max(layout.size.x - 16, 140))
+  layout.panel(GameUiRegion.TopCenter, vec2(width, SpectatorBannerSize.y))
 
 proc spectatorAllPanel(banner: GameUiPanel): GameUiPanel =
   GameUiPanel(
@@ -631,18 +688,7 @@ proc pudgeHpColor*(pudge: Pudge): ColorRGBX =
   else: EastColor
 
 proc chatPanelOf(layout: GameUiLayout): GameUiPanel =
-  ## Bottom-left chat / events plate, above the hero cluster / shop / strip.
-  let transportH = transportStripHeight(transportBarOpen())
-  var floorY = layout.size.y - transportH - HudMargin
-  if commandCardVisible():
-    let hud = placeBottomHud(layout.size, transportH, 2, int(InventorySlots))
-    floorY = min(floorY, hud.bar.origin.y)
-  if heroWantsShop():
-    floorY = min(floorY, shopPanelOf(layout).origin.y)
-  GameUiPanel(
-    origin: vec2(HudMargin, max(floorY - ChatPanelSize.y - 8, 8)),
-    size: ChatPanelSize
-  )
+  placePudgeHud(layout.size, transportHeight()).chat
 
 proc mouseOverUi*(window: Window, mouse: Vec2): bool =
   ## True over floating HUD widgets that should eat camera and world
@@ -666,9 +712,7 @@ proc mouseOverUi*(window: Window, mouse: Vec2): bool =
       chrome.bottom.buttons.contains(mouse) or
       scorePlatePanel(layout).contains(mouse):
     return true
-  if commandCardVisible() and (
-      chrome.bottom.profile.contains(mouse) or
-      chrome.bottom.actions.contains(mouse)):
+  if commandCardVisible() and chrome.bottom.bar.contains(mouse):
     return true
   if transportBarOpen() and chrome.transport.contains(mouse):
     return true
@@ -678,7 +722,7 @@ proc mouseOverUi*(window: Window, mouse: Vec2): bool =
   chatVisible and chatPanelOf(layout).contains(mouse)
 
 proc minimapArea(window: Window): GameUiPanel =
-  ## Circular map well inside the bottom-right compass plate.
+  ## Square map well inside the bottom-left panel.
   placeChrome(currentLayout(window)).bottom.minimap.minimapMap()
 
 proc updateMinimapCamera*(
@@ -688,7 +732,7 @@ proc updateMinimapCamera*(
     minimapPanning: var bool,
     followSelection: var bool
 ) =
-  ## Pans the camera while the primary button drags on the compass well.
+  ## Pans the camera while the primary button drags on the map.
   ## Option+click issues a team ping at that tile instead of panning.
   if menuOpen:
     minimapPanning = false
@@ -696,12 +740,12 @@ proc updateMinimapCamera*(
   let area = minimapArea(window)
   if altModifierDown(window):
     minimapPanning = false
-    if window.buttonPressed[MouseLeft] and insideMinimapCircle(area, mouse):
+    if window.buttonPressed[MouseLeft] and area.contains(mouse):
       let world = minimapWorldPoint(mouse, area.origin, area.size, HalfGrid)
       let (tileX, tileY) = tileOfGround(vec3(world.x, 0, world.y))
       discard issueMapPing(tileX, tileY)
     return
-  if window.buttonPressed[MouseLeft] and insideMinimapCircle(area, mouse):
+  if window.buttonPressed[MouseLeft] and area.contains(mouse):
     minimapPanning = true
     followSelection = false
   if not window.buttonDown[MouseLeft]:
@@ -734,8 +778,8 @@ proc drawMinimapPip(
     color: ColorRGBX,
     ring = false
 ) =
-  ## Square pip clipped to the circular well.
-  if not insideMinimapCircle(area, point):
+  ## Square pip clipped to the map bounds.
+  if not area.contains(point):
     return
   if ring:
     sk.drawRect(point - vec2(pipSize * 0.5'f32 + 2), vec2(pipSize + 4), rgbx(255, 248, 220, 255))
@@ -744,11 +788,11 @@ proc drawMinimapPip(
 proc drawMinimap(
     sk: Silky,
     window: Window,
-    hud: BottomHudLayout,
+    hud: PudgeHudLayout,
     cameraTarget: Vec3,
     cameraDistance: float32
 ) =
-  ## Circular compass: banks, river, fountain, pips, then the bronze ring.
+  ## Square minimap: banks, river, fountain, pips and camera bounds.
   let
     panel = hud.minimap
     area = panel.minimapMap()
@@ -982,8 +1026,8 @@ proc drawKillFeed(sk: Silky, layout: GameUiLayout) =
       )
     sk.drawLabel(
       entry.text,
-      vec2(layout.size.x - layout.margin - KillFeedW, y),
-      vec2(KillFeedW, 18),
+      vec2(layout.size.x - layout.margin - min(KillFeedW, layout.size.x * 0.72'f32), y),
+      vec2(min(KillFeedW, max(layout.size.x * 0.72'f32, 80)), 18),
       color,
       "Hud",
       RightAlign
@@ -1034,7 +1078,10 @@ proc drawEndScreen(sk: Silky, window: Window, layout: GameUiLayout) =
   ## Victory or defeat plate with the match stat recap.
   publishMatchRecap()
   let
-    panel = layout.panel(GameUiRegion.Center, PanelEndScreen)
+    panel = layout.panel(GameUiRegion.Center, vec2(
+      min(PanelEndScreen.x, max(layout.size.x - 24, 160)),
+      min(PanelEndScreen.y, max(layout.size.y - 24, 160))
+    ))
     winner = run.world.winner
     inner = sk.beginPanel(
       panel,
@@ -1180,6 +1227,8 @@ proc drawRoster(
       origin: inner.origin + vec2(0, y),
       size: vec2(inner.size.x, 48)
     )
+    if y + row.size.y > inner.size.y:
+      break
     if spectatePudgeId == pudge.id:
       sk.drawRect(row.origin, row.size, rgbx(240, 218, 128, 50))
     if not humanControlActive() and window.clicked(sk, row):
@@ -1353,15 +1402,28 @@ proc carriedShopItems(hero: Pudge): seq[ShopItem] =
     if item.isPermanent:
       result.add item
 
-proc bagWell(origin: Vec2, col, row: int): GameUiPanel =
-  ## One 72px GOTA inventory tile.
+proc bagWell(origin: Vec2, col, row: int, well = InventoryWellSize): GameUiPanel =
+  ## One inventory tile. Desktop wells stay 72px; a narrow plate shrinks them.
   GameUiPanel(
     origin: origin + vec2(
-      col.float32 * (InventoryWellSize + InventoryWellGap.x),
-      row.float32 * (InventoryWellSize + InventoryWellGap.y)
+      col.float32 * (well + InventoryWellGap.x),
+      row.float32 * (well + InventoryWellGap.y)
     ),
-    size: vec2(InventoryWellSize)
+    size: vec2(well)
   )
+
+proc inventoryWellSize(
+    panelWidth, panelHeight: float32,
+    reserved = 61.0'f32
+): float32 =
+  ## Three columns inside the plate padding; the shop can use larger wells.
+  ## `reserved` is the chrome above and below the two rows, so a short plate
+  ## shrinks the tiles instead of drawing them past the frame.
+  let
+    inner = panelWidth - 28
+    fromW = (inner - InventoryWellGap.x * 2) / 3
+    fromH = (panelHeight - reserved) / 2
+  min(InventoryWellSize, max(min(fromW, fromH), 20))
 
 proc inventoryChrome(panel: GameUiPanel): tuple[
     title, contents, gold: GameUiPanel,
@@ -1371,23 +1433,26 @@ proc inventoryChrome(panel: GameUiPanel): tuple[
   const
     padX = 14.0'f32
     padY = 10.0'f32
-  let innerW = panel.size.x - padX * 2
+  let
+    innerW = panel.size.x - padX * 2
+    well = inventoryWellSize(panel.size.x, panel.size.y)
   result.title = GameUiPanel(
     origin: panel.origin + vec2(padX, padY),
-    size: vec2(innerW, 28)
+    size: vec2(innerW, 18)
   )
   result.contents = GameUiPanel(
-    origin: vec2(result.title.origin.x, result.title.origin.y + 28 + 12),
-    size: vec2(innerW, InventoryWellSize * 2 + InventoryWellGap.y)
+    origin: vec2(result.title.origin.x, result.title.origin.y + 18 + 6),
+    size: vec2(innerW, well * 2 + InventoryWellGap.y)
   )
   result.gold = GameUiPanel(
     origin: vec2(result.contents.origin.x, result.contents.origin.y +
       result.contents.size.y + 1),
-    size: vec2(innerW, 31)
+    size: vec2(innerW, 23)
   )
   for i in 0 ..< InventoryBagCols * InventoryBagRows:
     result.slots[i] = bagWell(
-      result.contents.origin, i mod InventoryBagCols, i div InventoryBagCols
+      result.contents.origin, i mod InventoryBagCols, i div InventoryBagCols,
+      well
     )
 
 proc itemSlotSpec(
@@ -1419,11 +1484,10 @@ proc beginUseBagItem(item: ShopItem) =
 proc drawBottomUnit(
     sk: Silky,
     window: Window,
-    hud: BottomHudLayout,
+    hud: PudgeHudLayout,
     inHistory: bool
 ) =
-  ## Fills the Call to Adventure plates: portrait and vitals on the
-  ## profile card, abilities/items/upgrades in the action wells.
+  ## One compact hero card: portrait, identity, meters and grouped actions.
   let index = inspectIndex()
   if index < 0:
     return
@@ -1532,7 +1596,7 @@ proc drawBottomUnit(
     )
 
   for i in 0 ..< ActionSlotCount:
-    let well = hud.actions.actionWell(i)
+    let well = hud.actions[i]
     if actionSpecs[i].icon.len > 0:
       sk.drawSlotIcon(well, actionSpecs[i])
     else:
@@ -1570,14 +1634,14 @@ proc drawBottomUnit(
       RuneColors[hero.buffKind], "Small", CenterAlign
     )
 
-  sk.drawBar(
-    hud.hpBar.origin,
-    hud.hpBar.size,
-    max(hero.hp, 0).float32,
-    max(hero.maxHp, 1).float32,
-    hpColor
+  writeRatio(hudScratch, max(hero.hp, 0).int, int(hero.maxHp))
+  sk.drawValueBar(
+    hud.hpBar.origin, hud.hpBar.size,
+    max(hero.hp, 0).float32, max(hero.maxHp, 1).float32,
+    hpColor, hudScratch
   )
-  sk.drawSprite("health", hud.hpBar.origin + vec2(2, 2), vec2(16), hpColor)
+  let hpIcon = min(18.0'f32, max(hud.hpBar.size.y - 4, 8))
+  sk.drawSprite("health", hud.hpBar.origin + vec2(3, 3), vec2(hpIcon), hpColor)
   hudScratch.setLen(0)
   hudScratch.add butcherDisplayName(index)
   if not owned:
@@ -1587,20 +1651,23 @@ proc drawBottomUnit(
       hudScratch.add "  ALLY"
     elif heroIdx >= 0:
       hudScratch.add "  ENEMY"
+  let metaW = min(124.0'f32, max(hud.title.size.x * 0.34'f32, 0))
   sk.drawLabel(
     hudScratch,
-    hud.hpBar.origin + vec2(20, 0),
-    vec2(hud.hpBar.size.x - 78, hud.hpBar.size.y),
+    hud.title.origin,
+    vec2(max(hud.title.size.x - metaW - 4, 0), hud.title.size.y),
     HudName,
     "Small"
   )
   hudScratch.setLen(0)
   hudScratch.add "Lv "
   hudScratch.addHudInt(int(hero.kills) + 1)
+  hudScratch.add "   KO "
+  hudScratch.addHudInt(int(hero.kills))
   sk.drawLabel(
     hudScratch,
-    hud.hpBar.origin + vec2(hud.hpBar.size.x - 54, 0),
-    vec2(52, hud.hpBar.size.y),
+    hud.title.origin + vec2(max(hud.title.size.x - metaW, 0), 0),
+    vec2(metaW, hud.title.size.y),
     HudMuted,
     "Small",
     RightAlign
@@ -1635,54 +1702,52 @@ proc drawBottomUnit(
     1.0'f32,
     HookBarColor
   )
+  let
+    mana = min(16.0'f32, max(hud.resourceBar.size.y - 4, 8))
+    manaY =
+      if hud.resourceBar.size.y >= 20: 4.0'f32
+      else: max((hud.resourceBar.size.y - mana) * 0.5'f32, 0)
   sk.drawSprite(
     "mana",
-    hud.resourceBar.origin + vec2(2, 4),
-    vec2(16),
+    hud.resourceBar.origin + vec2(2, manaY),
+    vec2(mana),
     rgbx(186, 214, 255, 255)
   )
   sk.drawLabel(
     hookCaption,
-    hud.resourceBar.origin + vec2(20, 0),
-    vec2(hud.resourceBar.size.x - 24, hud.resourceBar.size.y),
+    hud.resourceBar.origin + vec2(mana + 4, 0),
+    vec2(max(hud.resourceBar.size.x - mana - 8, 0), hud.resourceBar.size.y),
     rgbx(255, 255, 255, 255),
     "Small",
     CenterAlign
   )
 
-  writeRatio(hudScratch, max(hero.hp, 0).int, int(hero.maxHp))
-  sk.drawValueBar(
-    hud.xpBar.origin,
-    hud.xpBar.size,
-    max(hero.hp, 0).float32,
-    max(hero.maxHp, 1).float32,
-    hpColor,
-    hudScratch
-  )
-  sk.drawSprite("health", hud.xpBar.origin + vec2(2, 1), vec2(18), hpColor)
-  hudScratch.setLen(0)
-  hudScratch.add "KO "
-  hudScratch.addHudInt(int(hero.kills))
   sk.drawLabel(
-    hudScratch,
-    hud.xpBar.origin + vec2(hud.xpBar.size.x - 88, 0),
-    vec2(84, hud.xpBar.size.y),
-    ReadyGold,
-    "Small",
-    RightAlign
+    "ABILITIES / ITEMS", hud.abilitiesTitle.origin, hud.abilitiesTitle.size,
+    HudMuted, "Small"
+  )
+  sk.drawLabel(
+    "UPGRADES", hud.upgradesTitle.origin, hud.upgradesTitle.size,
+    HudMuted, "Small"
+  )
+  let attackLine = max(hud.attackCaption.size.y * 0.5'f32, 1)
+  sk.drawLabel(
+    "ATTACK", hud.attackCaption.origin,
+    vec2(hud.attackCaption.size.x, attackLine), ReadyGold, "Small"
+  )
+  hudScratch.setLen(0)
+  hudScratch.addHudInt(int(hero.meleeDamage))
+  hudScratch.add " damage"
+  sk.drawLabel(
+    hudScratch, hud.attackCaption.origin + vec2(0, attackLine),
+    vec2(hud.attackCaption.size.x, max(hud.attackCaption.size.y - attackLine, 1)),
+    HudMuted, "Small"
   )
 
-  sk.drawSprite("gold", hud.goldBox.origin + vec2(0, -2), vec2(22))
-  writeAmount(hudScratch, int(hero.gold))
-  sk.drawLabel(
-    hudScratch,
-    hud.goldBox.origin + vec2(22, 0),
-    vec2(hud.goldBox.size.x - 22, hud.goldBox.size.y),
-    ReadyGold,
-    "Small"
-  )
-  sk.drawSprite("essence", hud.gemBox.origin + vec2(-2, -2), vec2(22))
+  let gem = min(22.0'f32, max(hud.gemBox.size.y, 8))
+  sk.drawSprite("essence", hud.gemBox.origin, vec2(gem))
   writeInt(hudScratch, int(hero.points))
+  hudScratch.add " pts"
   sk.drawLabel(
     hudScratch,
     hud.gemBox.origin + vec2(20, 0),
@@ -1694,14 +1759,14 @@ proc drawBottomUnit(
   for i in 0 ..< ActionSlotCount:
     if actionSpecs[i].icon.len == 0:
       continue
-    sk.drawSlotLabels(hud.actions.actionWell(i), actionSpecs[i])
+    sk.drawSlotLabels(hud.actions[i], actionSpecs[i])
 
   if owned:
     for i in 0 ..< ActionSlotCount:
       let spec = actionSpecs[i]
       if spec.id < 0 or not spec.enabled:
         continue
-      if not window.clicked(sk, hud.actions.actionWell(i)):
+      if not window.clicked(sk, hud.actions[i]):
         continue
       case spec.id
       of CmdAttack: beginAttackCommand()
@@ -1719,7 +1784,7 @@ proc drawBottomUnit(
           beginUseBagItem(ShopWard)
 
     if window.buttonPressed[MouseRight]:
-      let hookWell = hud.actions.actionWell(1)
+      let hookWell = hud.actions[1]
       if hookWell.contains(sk.mousePos):
         toggleHookAutocast()
 
@@ -1740,7 +1805,7 @@ proc drawBottomUnit(
     for i in 0 ..< ActionSlotCount:
       if actionSpecs[i].icon.len == 0:
         continue
-      let slot = hud.actions.actionWell(i)
+      let slot = hud.actions[i]
       if slot.contains(sk.mousePos):
         hovered = i
         well = slot
@@ -1810,9 +1875,11 @@ proc drawInventoryPanel(
     layout: GameUiLayout,
     inHistory: bool
 ) =
-  ## Six-well bag matching Gods of the Arena: 3×2 of 72px tiles.
+  ## Compact six-well bag in the bottom corner, matching Gods of the Arena.
   ## Shop families occupy a well while owned; a planted ward leaves it.
   if not commandCardVisible():
+    return
+  if inventoryPanelOf(layout).size.x < 100:
     return
   let index = inspectIndex()
   if index < 0:
@@ -1924,6 +1991,12 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
   )
   let
     gridOrigin = panel.origin + vec2(14, 30)
+    shopWell = inventoryWellSize(panel.size.x, panel.size.y, 199)
+    shopPowerY = 30.0'f32 + shopWell * 2 + InventoryWellGap.y + 16
+    powerRoom = max(panel.size.y - shopPowerY - 8, 1)
+    powerPitch =
+      if panel.size.y >= ShopPanelSize.y - 0.5'f32: 26.0'f32
+      else: max(powerRoom / 5.0'f32, 14.0'f32)
   var
     hoveredPerm = ShopFlask
     foundPerm = false
@@ -1933,7 +2006,7 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
     let
       col = i mod PermanentShopCols
       row = i div PermanentShopCols
-      well = bagWell(gridOrigin, col, row)
+      well = bagWell(gridOrigin, col, row, shopWell)
       rank = hero.itemRank[item]
       restock =
         if item == ShopWard and rank <= 0:
@@ -1960,13 +2033,12 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
     inc i
   while i < PermanentShopCols * PermanentShopRows:
     sk.drawSlot(bagWell(
-      gridOrigin, i mod PermanentShopCols, i div PermanentShopCols
+      gridOrigin, i mod PermanentShopCols, i div PermanentShopCols, shopWell
     ))
     inc i
-  const ShopPowerupsY = 30.0'f32 + InventoryWellSize * 2 + InventoryWellGap.y + 16
   sk.drawLabel(
     "POWERUPS",
-    panel.origin + vec2(10, ShopPowerupsY),
+    panel.origin + vec2(10, shopPowerY),
     vec2(200, 16),
     ReadyGold,
     "Small"
@@ -1982,10 +2054,12 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
   for i, item in Powerups:
     let
       row = GameUiPanel(
-        origin: panel.origin + vec2(8, ShopPowerupsY + 20 + float32(i) * 26),
-        size: vec2(panel.size.x - 16, 24)
+        origin: panel.origin + vec2(8, shopPowerY + 20 + float32(i) * powerPitch),
+        size: vec2(panel.size.x - 16, min(24.0'f32, max(powerPitch - 2, 12)))
       )
       afford = live and hero.canBuyShopRow(item)
+    if row.origin.y + row.size.y > panel.origin.y + panel.size.y:
+      break
     sk.drawRect(
       row.origin, row.size,
       if afford: rgbx(24, 28, 36, 220) else: rgbx(16, 18, 24, 220)
@@ -2232,7 +2306,7 @@ proc drawMenuOverlay(
     ReadyGold
   )
   sk.drawLabel(
-    "MENU",
+    (if run.humanPaced and not run.replayMode: "MENU - 87.5% SPEED" else: "MENU"),
     inner.origin,
     vec2(inner.size.x, 28),
     ReadyGold,
@@ -2620,6 +2694,8 @@ proc drawChatPanel(sk: Silky, window: Window, layout: GameUiLayout) =
     cancelChatTyping()
     return
   let panel = chatPanelOf(layout)
+  if panel.size.x < 40 or panel.size.y < 36:
+    return
   handleLogTabs(sk, window, panel)
   handleChatInput(sk, window, panel)
   if not chatVisible:
@@ -2872,7 +2948,7 @@ proc drawDebugMenu(
       text &"eye {cameraEye.x:.1f} {cameraEye.y:.1f} {cameraEye.z:.1f}"
       text &"view px {playPx.origin.x:.0f},{playPx.origin.y:.0f} " &
         &"{playPx.size.x:.0f}x{playPx.size.y:.0f}"
-      text &"widgets: cluster {ClusterWidth:.0f}x{ClusterHeight:.0f}  " &
+      text &"widgets: hero {HeroPanelSize.x:.0f}x{HeroPanelSize.y:.0f}  " &
         &"map {MinimapSize:.0f}"
       if debugHoverFound:
         text &"hover tile {debugHoverX}, {debugHoverZ}"
@@ -2932,7 +3008,7 @@ proc drawFpsDebugger(sk: Silky, window: Window) =
 proc centerCameraOnInspect(
     window: Window,
     sk: Silky,
-    hud: BottomHudLayout,
+    hud: PudgeHudLayout,
     cameraTarget: var Vec3,
     actionCam: var ActionCam,
     followSelection: var bool
@@ -2999,6 +3075,131 @@ proc drawSpectatorBanner(
     CenterAlign
   )
 
+
+const
+  CoachPanelW = 300.0'f32
+  CoachPanelPad = 10.0'f32
+  CoachLineSmall = 15.0'f32
+  CoachLineHud = 19.0'f32
+  CoachUrgent = rgbx(236, 92, 70, 255)
+
+proc coachText(
+    sk: Silky, text: string, x: var float32, y: var float32,
+    width: float32, color: ColorRGBX, font: string, maxLines: int
+) =
+  ## Word-wrapped paragraph that advances `y` by what it actually used.
+  let line = if font == "Small": CoachLineSmall else: CoachLineHud
+  let used = sk.drawText(
+    font, text, vec2(x, y), color,
+    maxWidth = width, maxHeight = line * float32(maxLines),
+    wordWrap = true
+  )
+  y += max(line, min(used.y, line * float32(maxLines))) + 2
+
+proc coachPanelTop(layout: GameUiLayout): float32 =
+  ## Below the spectator banner row so the two never collide.
+  layout.margin + 28.0'f32
+
+proc drawPracticePanel*(sk: Silky, layout: GameUiLayout) =
+  ## Jev practice cue plate in the top-left corner: the next move, the
+  ## plan, and how your decisions have lined up with the coach so far.
+  ## P hides it; the trace keeps recording.
+  let p = hudPractice()
+  if p == nil or not p.enabled or not p.visible or debugMenuOpen:
+    return
+  if p.actor == "human" and not humanControlActive():
+    return
+  let
+    width = min(CoachPanelW, layout.size.x * 0.4'f32)
+    inner = width - 2 * CoachPanelPad
+    origin = vec2(layout.margin, coachPanelTop(layout))
+  var
+    x = origin.x + CoachPanelPad
+    y = origin.y + CoachPanelPad
+  # Measure first so the plate hugs its text; draw text after the plate.
+  var lines: seq[tuple[text: string, color: ColorRGBX, font: string, max: int]]
+  let cue = p.cue
+  let model =
+    if p.provider == "liquid": "D1"
+    elif p.provider == "local": "LOCAL D1"
+    else: "JEV"
+  var eyebrow = if p.actor == "pilot": "PILOT SEAT " & $(p.slot + 1)
+    else: "COACH"
+  if p.status == "connected" and cue.source == "jev":
+    eyebrow.add " / " & model & " " & $(cue.confidence div 10) & "%"
+  elif p.status == "connected":
+    eyebrow.add " / " & model & " LIVE"
+  elif p.status == "finished":
+    eyebrow.add " / MATCH COMPLETE"
+  elif p.status == "local":
+    eyebrow.add " / LOCAL"
+  elif p.status == "auth_error":
+    eyebrow.add " / KEY REJECTED"
+  elif p.status == "unavailable":
+    eyebrow.add " / RECONNECTING"
+  else:
+    eyebrow.add " / READY"
+  lines.add((eyebrow, HudGoldDim, "Small", 1))
+  if p.status == "finished":
+    let agree = agreementPercent(p.stats)
+    lines.add(("One more round?", HudText, "Hud", 1))
+    var recap = $p.stats.samples & " reads"
+    if agree >= 0:
+      recap.add ", " & $agree & "% with " & model
+    recap.add ", hooks landed " & $p.stats.hooksLanded & " of " &
+      $p.stats.hooksThrown & ", " & $p.stats.kills & " kills, " &
+      $p.stats.deaths & " deaths"
+    lines.add((recap, HudMuted, "Small", 3))
+    lines.add(("Press R on the end screen to rematch.", HudMuted, "Small", 1))
+  elif cue.source.len == 0:
+    lines.add(("Let's find an opening", HudText, "Hud", 1))
+    lines.add(("One suggestion at a time, as the fight unfolds.", HudMuted,
+      "Small", 2))
+  else:
+    let title = (if cue.tentative: "Consider: " else: "") & cue.option.title
+    lines.add((title, (if cue.option.urgent: CoachUrgent else: HudText),
+      "Hud", 2))
+    lines.add((cue.option.why, HudMuted, "Small", 3))
+    if cue.option.control.len > 0:
+      lines.add((cue.option.control, HudHotkey, "Small", 1))
+    let aim = coachAim(p, run.world)
+    if aim.targetId != 0 and aim.primary:
+      lines.add((aimAdvice(aim),
+        (if aim.ok: HudGold else: HudMuted), "Small", 2))
+    if p.plan.source.len > 0:
+      lines.add(("PLAN / " & p.plan.option.title, HudGoldDim, "Small", 2))
+    if p.stats.samples > 0:
+      let agree = agreementPercent(p.stats)
+      var tally = $p.stats.samples & " reads"
+      if agree >= 0:
+        tally.add ", " & $agree & "% with " & model
+      tally.add ", hooks landed " & $p.stats.hooksLanded & " of " &
+        $p.stats.hooksThrown
+      lines.add((tally, HudMuted, "Small", 2))
+    if p.hasLast and p.last.humanId.len > 0 and p.last.humanId != "none":
+      var verdict = (if p.actor == "pilot": "Last: it chose "
+        else: "Last: you chose ") & p.last.humanId.replace("_", " ")
+      if p.last.agreed == 1:
+        verdict.add ", with " & model
+      elif p.last.agreed == 0:
+        verdict.add ", " & model & " said " & p.last.jevAction.replace("_", " ")
+      lines.add((verdict, HudMuted, "Small", 2))
+  if p.status in ["local", "auth_error", "unavailable"]:
+    lines.add((p.hint, HudMuted, "Small", 3))
+  # Height from the same wrap pass drawText will make, by drawing
+  # transparently first.
+  var probe = y
+  let clear = rgbx(0, 0, 0, 0)
+  for item in lines:
+    sk.coachText(item.text, x, probe, inner, clear, item.font, item.max)
+  let height = probe - origin.y + CoachPanelPad - 2
+  sk.drawEtched(
+    origin, vec2(width, height), HudChipFill,
+    if cue.option.urgent and cue.source.len > 0: CoachUrgent else: HudGold
+  )
+  for item in lines:
+    sk.coachText(item.text, x, y, inner, item.color, item.font, item.max)
+
 proc drawUi*(
     sk: Silky,
     window: Window,
@@ -3034,9 +3235,13 @@ proc drawUi*(
   sk.drawRunePlate(layout)
   sk.drawSpectatorBanner(window, layout, followSelection)
   let clusterVisible = commandCardVisible()
-  sk.drawBottomChrome(chrome.bottom, clusterVisible)
+  if clusterVisible:
+    sk.drawPanel(chrome.bottom.bar)
+    sk.drawFrame(chrome.bottom.bar.inset(2))
+  sk.drawPanel(chrome.bottom.minimap)
+  sk.drawFrame(chrome.bottom.minimap.inset(2))
   sk.drawMinimap(window, chrome.bottom, cameraTarget, cameraDistance)
-  # Menu, auto-lock, and director on the compass nameplate.
+  # Menu, auto-lock, and director beneath the minimap.
   # Allies, Chat, Replay, and Debug stay on the pause menu; F10 / F11
   # still toggle Allies / the chat-and-events plate.
   let clicked = sk.drawChipRow(
@@ -3083,18 +3288,24 @@ proc drawUi*(
   )
   if transportBarOpen():
     var follow = followSelection
-    drawTransport(
-      transport,
-      sk,
-      window,
-      chrome.transport,
-      actionCam,
-      follow
-    )
+    if touchHud:
+      drawTouchTransport(
+        transport, sk, window, chrome.transport, actionCam, follow
+      )
+    else:
+      drawTransport(
+        transport,
+        sk,
+        window,
+        chrome.transport,
+        actionCam,
+        follow
+      )
     followSelection = follow
   sk.drawChatPanel(window, layout)
   sk.drawKillStinger(layout)
   sk.drawKillFeed(layout)
+  sk.drawPracticePanel(layout)
   let index = heroIndex()
   if humanControlActive() and isOwnedInspect() and index >= 0 and
       run.world.pudges[index].state == Dying and not run.world.gameOver:

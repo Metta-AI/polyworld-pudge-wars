@@ -15,6 +15,10 @@ another policy change. The [improvement investigation](../../docs/pudge-improvem
 records the current findings and next experiments. No automatic deployment or
 XP spending is implied by this manifest.
 
+The newer [gameplay skill-gradient investigation](../../docs/gameplay-skill-gradient.md)
+covers the current BASIC runtime, local paired-bank evaluation, threat selection,
+replay verification and concrete next gameplay experiments.
+
 Build/upload surface: `coworld/player/Dockerfile`, documented in
 [the player README](../../coworld/player/README.md). Build linux/amd64 and
 select the experimental arm with the `POLICY_ARM` build argument. The image

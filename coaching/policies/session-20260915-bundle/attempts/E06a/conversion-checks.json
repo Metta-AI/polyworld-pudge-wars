@@ -1,0 +1,6 @@
+{
+  "unknown_ir_rejected": true,
+  "unknown_symbolic_behavior_rejected": true,
+  "parent_byte_identical": true,
+  "bundle_byte_exact_roundtrip": true
+}

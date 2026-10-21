@@ -1,0 +1,12 @@
+{
+  "cases": 1960,
+  "geometry_cases": 6,
+  "changed": 18,
+  "scoped_agreement": 1.0,
+  "semantic_mismatches": 0,
+  "roundtrip_mismatches": 0,
+  "reference_counts": {
+    "blocked_fountain_attempts": 211
+  },
+  "scope": "Finite E04/E05 decision regions and unchanged source context; inherited prose and goal rationale not empirically lifted."
+}

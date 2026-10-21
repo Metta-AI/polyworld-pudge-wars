@@ -1,0 +1,20 @@
+{
+  "parent.ir.md": "9832a5d48bf4ec9da3fd97e5f16c9ab629bb2602b6b5c2cfaf20d96f52359c95",
+  "bundle_skills_v1.py": "a5c5dcc19ffa4bf9f41d8cc0224df01a41d373266cced2291f2e244d24739477",
+  "compiler-contract.json": "67174de660e3710dc1de32aeeb87c77ebbf6215babfc4ba3ee02d59362e88e13",
+  "session-reference.json": "e0471c9b7b2ff2b805aefddb8a2439a82806f6810594db535bbe39791d07969b",
+  "README.md": "d30feb6608fcdcb74d9adeaf67c6406675e45a7d54288ae573a9a355724d5c50",
+  "ledger.jsonl": "f87bc8f32975687d815a3bde81f739d473ca0192a4dec8110b0627a9f2fd4b30",
+  "input-preservation.json": "9bf1897b468d3330a07fd2c61d64119ba7b48db6793add4879c355b72cb50879",
+  "geometry-checks.json": "7a4fa0cebe1da03ce8ab2585ba7bbe3ae2a8be37c4be994c368563c80ce4a2b6",
+  "bundle.ir.md": "064d5945645055f98df98b16ea918c22cfbc9adeeda35d5d63366330a586bb9b",
+  "engine-reference.json": "e10dd87c1edc69e957999c79f22f0aa27ff2715daae9d7a33fe83cbe94934664",
+  "protocol.json": "dbedf2c986c6e14e666b665285489573b3546b629c0b688defd411824fa40c18",
+  "start-state.json": "35d1cc54dbbc9a2aef2f0bca97acdd49387bb5c8a4e3b79bead52fe5b283a5d6",
+  "oracle.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "v2-conversion-checks.json": "e5fec22e19b3acb1ff5882ddc6c23bbe76bd3c4b7b365f6bf89cf0aa52cc4354",
+  "symbolic.patch": "7e3de9e835fa19ff9988a227d98a6c47afe736a3646c66922cfe1ede655b2ac1",
+  "evidence-review.md": "1434837410c89b8f078b3f5239f1de99ff6ceb9ef6b4989c886639b3f58abf60",
+  "bundle_skills_v2.py": "bc069d4e350cf0d8eb06799d641915b6c3e4dee08447e2ebddf9c30df3a26a1a",
+  "evaluated_candidate": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea"
+}

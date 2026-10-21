@@ -1,0 +1,13 @@
+{
+  "cases": 1904,
+  "geometry_cases": 6,
+  "changed": 36,
+  "scoped_agreement": 1.0,
+  "semantic_mismatches": 0,
+  "roundtrip_mismatches": 0,
+  "reference_counts": {
+    "eligible_pairs": 108,
+    "engagement_requests": 36
+  },
+  "scope": "Finite E04/E05 decision regions and unchanged source context; inherited prose and goal rationale not empirically lifted."
+}

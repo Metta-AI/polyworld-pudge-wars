@@ -18,8 +18,16 @@ Clicking Play on the public site loaded the new 3D WASM client and advanced beyo
 
 ## Observatory episode lobbies
 
-Episode lobbies (`lby_...`) use a different backend proxy from hosted-play sessions (`ps_...`). Their proxy needs two platform fixes: allow the game-owned binary `/ws` endpoint, and avoid requiring hosted-play artifact settings in the episode sidecar. The separate Metta branch `aaln/pudge-observatory-wasm` contains these fixes and 218 passing tests.
+Episode lobbies (`lby_...`) use a different backend proxy from hosted-play sessions (`ps_...`). Their proxy needed two platform fixes: allow the game-owned binary `/ws` endpoint, and avoid requiring hosted-play artifact settings in the episode sidecar. [Metta PR #23216](https://app.graphite.dev/github/pr/Metta-AI/metta/23216) contains these fixes, 218 passing focused tests, and 514 passing repository lint/type checks. It merged as `97bb09f5adbbd121fe58e45e75585a88393a5d07`; production deployment `35032756125` succeeded.
 
 Local Observatory verification used the full Postgres/Floci/OrbStack stack at port offset 400. The fixed pod reached 3/3 Ready, and two human clients connected through the episode job proxy. The embedded game advanced beyond 4,032 ticks. The exact WASM assets were mirrored locally because Chromium blocks a public HTTPS page from opening a local WebSocket.
 
-Production Observatory verification remains dependent on deploying that Metta change. An already-failed lobby cannot be restarted; create a fresh lobby after deployment.
+Production lobby `lby_4b39eef1-2184-4bb9-a79f-a8cadd41bc0d` loaded the 3D WASM arena through the live episode proxy. Job `5e2b17f3-9384-436f-a0db-90214b301b2f` reported all containers ready, human seat 0 joined, and both players connected. Two browser movement commands reached the server at ticks 1,086 and 1,482; screenshots confirmed movement. Browser verification used the local Observatory frontend authenticated against production, with the game iframe served directly from the production Observatory API. No WASM, WebSocket, or hash-mismatch errors appeared.
+
+The 3,200-tick match completed successfully with no episode error. Observatory transitioned to Replay and stored `https://softmax-public.s3.amazonaws.com/replays/5e2b17f3-9384-436f-a0db-90214b301b2f.replay`.
+
+An already-failed lobby cannot be restarted; create a fresh lobby to use the deployed fixes.
+
+## Source integration
+
+The game-side changes merged as `d1f6d7c9a06c3a064fff1fd710e45703b62c77b8` ([PR #2](https://app.graphite.dev/github/pr/Metta-AI/polyworld-pudge-wars/2)). Its automatic follow-up release did not upload: the remote art repository lacks the four `characters/butcher/butcher_game*` GLB/profile assets. The successful local 0.3.21 build contains these assets; its canonical registry entry and Vercel deployment remain live.

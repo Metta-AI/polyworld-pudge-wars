@@ -4,7 +4,7 @@ import
   std/[math, os, strutils, tables, times],
   chroma, opengl, pixie, silky, vmath, windy,
   audio, butcherhook, butcherknife, content, director, fog, maps, sim, game, human, keybinds, netclient, netsim,
-  netpredict, replays, ui,
+  netpredict, pacing, practice, replays, ui,
   polyworld/[
     actioncam, characters, chrome, common, gameuis, particles, particleshaders,
     pathing, player, profiles, quadterrain, rtscameras, shadows, shapes,
@@ -1029,6 +1029,7 @@ proc applyArenaTerrain(mapSeed: int) =
 
 proc runGraphics*() =
   startProfileTrace()
+  beginPractice()
   profileBlock "atlas":
     let builder = newHudAtlas(4096)
     proc placeholderIcon(): Image =
@@ -1075,6 +1076,9 @@ proc runGraphics*() =
       options.vsync,
       iconPath = AppIconPath
     )
+    # A client that docks beside the game asks for an exact spot on screen.
+    if options.windowX >= 0 and options.windowY >= 0:
+      window.pos = ivec2(options.windowX, options.windowY)
   profileBlock "audio":
     initGameAudio(options.mute)
     let keysFile =
@@ -2141,7 +2145,9 @@ proc runGraphics*() =
     if netRole == NetClient:
       return
     flushBugTapeIfArmed()
+    practiceFinish(run)
     restartMatch()
+    beginPractice()
     if netRole == NetHost:
       applyHostedSeats()
     transport = initPlayer(
@@ -2256,6 +2262,7 @@ proc runGraphics*() =
   # stay MENU/TEAM. Auto-open when --netsim already turned the sim on.
   var netDebugPanel = netSimConfig().enabled
   var lastClipOverride = clipOverride
+  pointerProbeWindow = window
   window.onFrame = proc() =
     # Start/stop Fluffy before profileBlock "frame". startTrace clears
     # the span stack; a matching measurePop of a skipped push is IndexDefect.
@@ -2271,6 +2278,7 @@ proc runGraphics*() =
       hostLobbyOpen = netLobbyOpen
       if window.buttonPressed[KeyLeftBracket]:
         toggleTransportBar()
+      updateTouchHud(window)
       sk.uiScale = hudUiScale(window)
       sk.mousePos = window.mousePos.vec2 / sk.uiScale
       worldViewRect = worldPixelPanel(window)
@@ -2280,6 +2288,8 @@ proc runGraphics*() =
         toggleGameAudioMute()
       if window.buttonPressed[KeyF3]:
         toggleDebugMenu()
+      if window.buttonPressed[KeyP] and not chatTyping():
+        practiceToggle()
       if window.buttonPressed[KeyF8]:
         toggleBugRecording()
       if netRole == NetClient:
@@ -2357,13 +2367,22 @@ proc runGraphics*() =
         cancelChatTyping()
       else:
         chatInputEnabled = true
-      transport.startFrame(dt, TickRate)
-      if not transport.inHistory and not run.replayMode and
+      if netRole == NetClient:
+        run.humanPaced = netHumanPaced()
+      elif netRole == NetOff and not run.replayMode and
+          (humanControlActive() or run.humanSlots.len > 0):
+        run.humanPaced = true
+      let liveHumanPace = run.humanPaced and not run.replayMode and
+        (netRole == NetClient or not transport.inHistory)
+      let clockRate = wallTickRate(liveHumanPace)
+      if (netRole == NetClient or not transport.inHistory) and not run.replayMode and
           (humanControlActive() or run.humanSlots.len > 0 or
             netRole != NetOff):
-        # Live human seats play at 1x; faster speeds are for
-        # spectating and catching back up to the live tick.
+        # Keep the transport multiplier at 1; the host clock supplies the
+        # human slowdown. Faster speeds are for bot-only spectating;
+        # seeking still catches back up to the live tick at full speed.
         transport.setSpeed(0)
+      transport.startFrame(dt, clockRate)
       if not netLobbyOpen and not menuIsOpen() and not chatTyping():
         # Replay and live spectators get the same LMB pass: click a
         # butcher to lock fog to their eyes. A seated human still
@@ -2429,7 +2448,7 @@ proc runGraphics*() =
             # Size the lead for the worst-case RTT (ping + jitter), so a
             # jittery link keeps a stable lead instead of bouncing frame to
             # frame — fewer timing-miss snaps.
-            let lead = leadFromRttMs(netPingMs() + netPingJitterMs())
+            let lead = leadFromRttMs(netPingMs() + netPingJitterMs(), clockRate)
             if not predictor.enabled or predictor.seat != netClientSeat():
               predictor.enable(netClientSeat(), lead)
             else:
@@ -2441,7 +2460,7 @@ proc runGraphics*() =
         netReportDesync(run.hashCheck.firstTick)
       let active = simulationActive(transport)
       if active:
-        renderAlpha = clamp(transport.accumulator / Step, 0.0'f32, 1.0'f32)
+        renderAlpha = clamp(transport.accumulator * clockRate.float32, 0.0'f32, 1.0'f32)
         animationAlpha = renderAlpha
       else:
         renderAlpha = 1
@@ -2908,7 +2927,11 @@ proc runGraphics*() =
           if screen.x < -4000:
             continue
           let
-            plate = vec2(NamePlateW, NamePlateH)
+            layoutW = window.size.x.float32 / max(sk.uiScale, 0.001'f32)
+            plate = vec2(
+              min(NamePlateW, max(layoutW * 0.46'f32, 96)),
+              NamePlateH
+            )
             origin = screen - plate * 0.5'f32
             textColor =
               if pudge.shieldTicks > 0: SpawnShieldName
@@ -3061,7 +3084,7 @@ proc runGraphics*() =
           hudScratch.add "ms jit "
           hudScratch.addHudInt(netPingJitterMs())
           hudScratch.add "  sim "
-          hudScratch.addHudInt(int(TickRate))
+          hudScratch.addHudInt(int(clockRate))
           hudScratch.add "Hz fps "
           hudScratch.addHudInt(fpsNow)
           row(hudScratch)
@@ -3154,6 +3177,7 @@ proc runGraphics*() =
   if netRole == NetClient:
     netShutdown()
   flushBugTapeIfArmed()
+  practiceFinish(run)
   closeDuelLogging()
   if not run.replayMode:
     saveRecording()

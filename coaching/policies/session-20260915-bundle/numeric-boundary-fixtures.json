@@ -1,0 +1,26 @@
+[
+  {
+    "start": [
+      34.797,
+      32.259
+    ],
+    "end": [
+      64.5,
+      61.0
+    ],
+    "computed_distance": 3.5,
+    "literal_result": true
+  },
+  {
+    "start": [
+      36.494,
+      31.243
+    ],
+    "end": [
+      64.5,
+      61.0
+    ],
+    "computed_distance": 3.5000000000000036,
+    "literal_result": false
+  }
+]

@@ -1,0 +1,51 @@
+{
+  "idempotency_key": "pudge-basic-base-v2-deploy-smoke-20261014",
+  "private": true,
+  "coworld_id": "cow_f1a7b216-46e0-487d-bf06-03a54e813210",
+  "variant_id": "league-3v3",
+  "game_config_overrides": {
+    "max_ticks": 2048,
+    "seed": 1014701
+  },
+  "num_episodes": 1,
+  "roster": [
+    {
+      "slot": 0,
+      "player": {
+        "policy_ref": "2e7567f3-e290-4fe2-aa68-775dfab623d5"
+      }
+    },
+    {
+      "slot": 1,
+      "player": {
+        "policy_ref": "2e7567f3-e290-4fe2-aa68-775dfab623d5"
+      }
+    },
+    {
+      "slot": 2,
+      "player": {
+        "policy_ref": "2e7567f3-e290-4fe2-aa68-775dfab623d5"
+      }
+    },
+    {
+      "slot": 3,
+      "player": {
+        "policy_ref": "695e980a-5d8d-43cd-b852-5631ce314431"
+      }
+    },
+    {
+      "slot": 4,
+      "player": {
+        "policy_ref": "695e980a-5d8d-43cd-b852-5631ce314431"
+      }
+    },
+    {
+      "slot": 5,
+      "player": {
+        "policy_ref": "695e980a-5d8d-43cd-b852-5631ce314431"
+      }
+    }
+  ],
+  "title": "BASIC v16 transfer deployment smoke",
+  "notes": "Short runtime validation of exact locally confirmed BASIC v2 against previous Base on pinned live game. No hosted competitive-strength claim."
+}

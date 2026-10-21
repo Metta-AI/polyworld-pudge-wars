@@ -1,0 +1,134 @@
+{
+  "deployed_at": "2026-10-09",
+  "league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+  "league_seed_id": "lseed_44f5072a-3066-4542-9fbd-b52cfa2e225c",
+  "division_id": "div_471aedc1-00f7-41dd-971d-f0beff95a439",
+  "coworld_name": "pudge-wars-basic",
+  "version": "0.1.1",
+  "coworld_id": "cow_f1a7b216-46e0-487d-bf06-03a54e813210",
+  "manifest_hash": "sha256:6f06c9ae276d02f518039a6cf7411b896a9e6c28dc98b3bd24e8bb1d95f790bc",
+  "retired_container_memberships": 37,
+  "replaced_container_fillers": 3,
+  "rounds_reset": {
+    "league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+    "rounds_hidden": 1155,
+    "competition_events_deleted": 1152,
+    "divisions_cleared": 1
+  },
+  "first_basic_round": "round_422030b6-6aef-4fd1-9c3f-f3c55aff74a7",
+  "first_basic_round_completed_episodes": 24,
+  "inference_validation_episode": "ereq_3789063f-8d50-444e-a5fe-af775829fff0",
+  "policies": {
+    "base": {
+      "id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+      "name": "pudge-basic-base",
+      "version": 2,
+      "pools": null,
+      "submit_error": null,
+      "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511",
+      "source": "examples/pudge_wars/players/base.bas",
+      "uploaded_at": "2026-10-14T23:38:03.310936+00:00",
+      "membership_id": "lpm_9bcc9096-a938-4748-a801-4da4b7a05855",
+      "is_champion": true,
+      "deployment_record": "coaching/policies/basic-rusher/deployment/release.json"
+    },
+    "aggressive": {
+      "id": "c610add1-523c-46ae-91b5-1f0f73358b88",
+      "name": "pudge-basic-aggressive",
+      "version": 1,
+      "pools": null,
+      "submit_error": null,
+      "sha256": "58225fd7bf422fbc618d70247120ebc68c097d57d07823316e43b131aea20b86",
+      "source": "examples/pudge_wars/players/aggressive.bas",
+      "uploaded_at": "2026-10-09T20:23:15.420797+00:00"
+    },
+    "sniper": {
+      "id": "5632aa58-7e7f-4c66-923c-f9ba4dbe6d65",
+      "name": "pudge-basic-sniper",
+      "version": 1,
+      "pools": null,
+      "submit_error": null,
+      "sha256": "550d5d0d22754d58becdc11bde21b9d0e97cd4aa73d2fd5326975e741339bc90",
+      "source": "examples/pudge_wars/players/sniper.bas",
+      "uploaded_at": "2026-10-09T20:23:16.668948+00:00"
+    },
+    "challenger": {
+      "id": "09cd9c4c-0760-4160-828b-a830f4ded348",
+      "name": "pudge-basic-challenger",
+      "version": 1,
+      "pools": null,
+      "submit_error": null,
+      "sha256": "3b624b0bfeeabcd540b221cbbc583a46a424d66f64914c44a6dab53e8e0ed181",
+      "source": "examples/pudge_wars/players/challenger.bas",
+      "uploaded_at": "2026-10-09T20:23:17.951897+00:00"
+    },
+    "denier": {
+      "id": "245055e6-2a79-4031-a2e8-ad16a2e26553",
+      "name": "pudge-basic-denier",
+      "version": 1,
+      "pools": null,
+      "submit_error": null,
+      "sha256": "93637edaaf7fc8a991cbfaf5f836941814873f6c2b2b1125a0f36d9f1725141d",
+      "source": "examples/pudge_wars/players/denier.bas",
+      "uploaded_at": "2026-10-09T20:23:19.204729+00:00"
+    },
+    "patient": {
+      "id": "37b5cbb7-bba4-4db9-bfa6-2cd08b9f4aeb",
+      "name": "pudge-basic-patient",
+      "version": 1,
+      "pools": null,
+      "submit_error": null,
+      "sha256": "c1e48890c62ce74e33eb23d7c4609e1654fda681fb6caa1b82a9783d9380d8c1",
+      "source": "examples/pudge_wars/players/patient.bas",
+      "uploaded_at": "2026-10-09T20:23:20.463365+00:00"
+    },
+    "support": {
+      "id": "357aaea3-d006-4cf1-864d-d2ce69e65bcd",
+      "name": "pudge-basic-support",
+      "version": 1,
+      "pools": null,
+      "submit_error": null,
+      "sha256": "bae5063a2476150947fecd2470055bd9f58ddd90225d5ad1189da05ba0fd053d",
+      "source": "examples/pudge_wars/players/support.bas",
+      "uploaded_at": "2026-10-09T20:23:21.903547+00:00"
+    },
+    "neural": {
+      "id": "65d3c055-fc13-4c93-bcf2-ad03202d8098",
+      "name": "pudge-basic-neural",
+      "version": 1,
+      "pools": null,
+      "submit_error": null,
+      "sha256": "60533fa6caeb948378edcf4cee35d3bc2ffe4180f91fc35d21b38e3cc36891ad",
+      "uploaded_at": "2026-10-09T20:37:38.439682+00:00",
+      "source": "coworld/players/neural.zip"
+    },
+    "jev": {
+      "id": "b8e7463c-21d5-458a-9a00-740ba1f52fe3",
+      "name": "pudge-basic-jev",
+      "version": 1,
+      "pools": null,
+      "submit_error": null,
+      "sha256": "58bd94bd282b266f9fc5d5461eeb69321527782666463a99be46a4636a9e780d",
+      "uploaded_at": "2026-10-09T20:37:40.082579+00:00",
+      "source": "examples/pudge_wars/players/jev.bas"
+    }
+  },
+  "source": {
+    "head": "40931476f46044e29ce65e96926286776158712b",
+    "working_tree": "uncommitted migration; image includes working-tree sources",
+    "polyworld_reference": "743f108091ca20b78f7e3fdc1a42f59ddb4ac795",
+    "sha256": {
+      "examples/pudge_wars/bots.nim": "951da491c9424bb51e512099b315e006ce020799182401de5926b0f8a269fd8d",
+      "examples/pudge_wars/coworld_host.nim": "8b6d0aaaa6ce7948a8d2c6a975d24b29686bb93e56936664b5ceb656de9e1b41",
+      "examples/pudge_wars/fileplayers.nim": "a6fda2b250f88bf73ab52f1a6232a073b05fa5c02c71fdaba0a8a095d69fe6ae",
+      "nimby.lock": "fa172f21555152f365639e41cd984527fd5d8db175f6249f7182c8e223746712",
+      "coworld/Dockerfile": "e9e68b169cf261e823c6eb23695b728006def615b177ca8e87301f4e340ed281",
+      "src/polyworld/policies.nim": "b7237571096bcb735925c6ac19f439819d00810a6d7eebee938e37a552fd67bb",
+      "src/polyworld/tensors.nim": "acc821a39adea983090a928e484344f3045a925788664dfe959beabd86f2f19e",
+      "src/polyworld/llms.nim": "651ffb2fcfc25dc1d162f6e1045e093af96447c623b34d794158e09e6b590a71",
+      "src/polyworld/oracles.nim": "46c4c160ce1fe758b8a872db8049848b14539a85a1f65a38df9a7fc82b43901a",
+      "src/polyworld/timings.nim": "731717199cf6501c29a7aa68a9a7007bca61166bd738d1864fce801a9aa1b74e"
+    }
+  },
+  "last_policy_update_at": "2026-10-14T23:41:19.775513+00:00"
+}

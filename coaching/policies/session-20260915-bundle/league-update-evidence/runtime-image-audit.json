@@ -1,0 +1,14 @@
+{
+  "python": "3.12.14 (main, Sep  1 2026, 00:10:07) [GCC 14.2.0]",
+  "websockets": "15.0.1",
+  "environment": {
+    "PUDGE_PERSONALITY": "rusher",
+    "PUDGE_POLICY_ARM": "combined",
+    "PYTHONPATH": "/app"
+  },
+  "sources": {
+    "player/base.py": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea",
+    "player/player.py": "3fbce119738aa235f9c73b3be728136cedc8f70cdf794340092b5b30e1f2a17b",
+    "shared/log_shipper.py": "41af6c252283ee81395b78f52ead844ddadf206b87d2cc5d5b59631b95790472"
+  }
+}

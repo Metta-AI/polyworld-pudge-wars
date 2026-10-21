@@ -126,8 +126,8 @@ block:
   doAssert game.world.pudges[0].position.x != origin.x or
       game.world.pudges[0].position.z != origin.z,
     "the dodge hop must actually move"
-  doAssert game.world.pudges[0].windupTicks > 0,
-    "base bot must hook in the same tick as the dodge blink"
+  # No exposed enemy is visible in this opening-shield fixture. Dodging
+  # must not require firing a speculative shot at a protected target.
 
 echo "Testing the default bot blinks out of the river"
 block:
@@ -260,17 +260,18 @@ block:
   doAssert game.world.pudges[0].points == 0,
     "base bot must dump every unspent kill point the same think"
   doAssert game.world.pudges[0].upgrades[UpgradeDistance] == 3,
-    "base bot fills Hook Distance before the other skills"
+    "v16 spends points on range before the other skills"
   doAssert game.world.pudges[0].upgrades[UpgradeRadius] == 0
   doAssert game.world.pudges[0].upgrades[UpgradeSpeed] == 0
   doAssert game.world.pudges[0].upgrades[UpgradeDamage] == 0
 
-echo "Testing the default bot rolls into speed once distance is maxed"
+echo "Testing the default bot rolls into speed once radius and distance are maxed"
 block:
   var game = newGame(map, 100, false, ReplayData())
   loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   game.world.pudges[0].upgrades[UpgradeDistance] = MaxUpgradeLevel
+  game.world.pudges[0].upgrades[UpgradeRadius] = MaxUpgradeLevel
   game.world.pudges[0].points = 2
   tickWorld(game, proc() = runBotDecisions(game))
   doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
@@ -314,6 +315,17 @@ block:
     game.world.pudges[i].windupTicks = 0
     game.world.pudges[i].blinkCooldown = BlinkCooldownTicks
   game.world.pudges[3].hookedBy = game.world.pudges[1].id
+  # The observation identifies the actual reeler through the visible chain.
+  game.world.hooks.add Hook(
+    id: game.world.nextHookId, ownerId: game.world.pudges[1].id,
+    team: WestTeam, phase: HookReeling, victimId: game.world.pudges[3].id,
+    position: game.world.pudges[3].position,
+    prior: game.world.pudges[3].position,
+    origin: game.world.pudges[1].position,
+    heading: heading(WorldScale, 0), range: BaseHookRange,
+    speed: BaseHookSpeed, peakSpeed: BaseHookSpeed,
+    radius: BaseHookRadius, damage: BaseHookDamage)
+  inc game.world.nextHookId
   tickWorld(game, proc() = runBotDecisions(game))
   doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
   doAssert game.world.pudges[0].windupTicks > 0,

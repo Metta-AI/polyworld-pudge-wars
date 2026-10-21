@@ -1,0 +1,36 @@
+--- duels/coaching-20260915-scrum/engagement/baseline.py	2026-09-15 16:47:58
++++ duels/coaching-20260915-scrum/engagement/candidate.py	2026-09-15 17:01:31
+@@ -332,6 +332,10 @@
+                     action["walk_to"] = [me["x"], me["y"]]
+                     self.record("heal_request", healer=me["id"], recipient=recipient["id"], hp=recipient["hp"], max_hp=recipient["max_hp"], at=[recipient["x"], recipient["y"]])
+                     return action
++        if free and not foreign_rot and "hook_to" not in action:
++            for _, _, recipient_id, _, aim in coaching_engagements(me, allies, enemies, reach):
++                if throw(aim, recipient_id):
++                    break
+         if target is not None and distance(me, target) <= reach + radius:
+             vx, vy = self.velocity(target)
+             span = max(abs(me["x"] - target["x"]), abs(me["y"] - target["y"]))
+@@ -413,3 +417,22 @@
+             elif not busy:
+                 action["walk_to"] = [west - 5 if team == 0 else east + 5, ward_y]
+         return action
++
++
++def coaching_engagements(me, allies, enemies, reach):
++    """Ordered visible melee pairs; an ally hit must have healing utility."""
++    pairs = []
++    for ally in allies:
++        if ally["shield"] or ally["hooked"] or ally["max_hp"] - ally["hp"] < 120:
++            continue
++        for enemy in enemies:
++            if enemy["hooked"] or ally["layer"] != enemy["layer"] or distance(ally, enemy) > 5.5:
++                continue
++            aim = [(ally[k] + enemy[k]) / 2 for k in ("x", "y")]
++            if math.dist([me["x"], me["y"]], aim) > reach:
++                continue
++            if segment_distance([me["x"], me["y"]], aim, [64.5, 64.5]) <= 3.5:
++                continue
++            pairs.append((ally["hp"] / ally["max_hp"], distance(me, ally),
++                          ally["id"], enemy["id"], aim))
++    return sorted(pairs)

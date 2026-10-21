@@ -1,17 +1,18 @@
-## Coworld game host: native Pudge Wars sim, JSON player sockets, .pwr tape.
+## Coworld game host: native simulation, BASIC league or JSON human play.
 ##
-## The 32 Hz clock lives here. League policies speak walk_to / hook_to /
+## Build with -d:basicLeague for runner-staged BASIC seats. Otherwise policies
+## speak walk_to / hook_to /
 ## blink_to JSON; those become human intents on the same record-then-apply
 ## path as ./pw. Player observations are fog-clipped like BASIC bots.
 
 import
   std/[
     httpclient, json, locks, math, monotimes, os, sequtils, strutils, tables,
-    times, uri
+    times, uri, posix
   ],
   mummy, mummy/routers,
   polyworld/pathing,
-  content, maps, sim, bots, replays, fog, netproto
+  content, maps, sim, bots, replays, fog, netproto, fileplayers, pacing
 
 const
   PlayerHtml = staticRead("coworld_player.html")
@@ -19,6 +20,7 @@ const
   ArenaJs = staticRead("coworld_arena.js")
   UserAgent = "coworld-pudgewars/0.3"
   HttpTimeoutMs = 60_000
+  LeagueRuntime = defined(basicLeague)
 
 type
   SessionKind = enum
@@ -71,6 +73,7 @@ var
   killGoal: int32
   seed: int32
   fogOn* = true
+  waitForLlm = true
   connectTimeoutSec = 180.0
   resultsUri = ""
   replayUri = ""
@@ -79,6 +82,8 @@ var
   started = false
   done = false
   replayMode = false
+  humanPlay = false
+  fileSeats: FilePlayers
   lastAccepted: seq[JsonNode]
     ## Per-seat echo of the intents just applied. Sent on the next
     ## observation so a JSON policy can trust hookTo/blinkTo.
@@ -511,6 +516,7 @@ proc globalSnapshot(): JsonNode =
     "started": started,
     "paused": false,
     "tick_rate": TickRate,
+    "wall_tick_rate": wallTickRate(game.humanPaced),
     "done": done or world.gameOver,
     "winner": winnerName(world),
     "seed": seed
@@ -693,6 +699,8 @@ proc seatForToken(token: string): int =
     return
   for i in 0 ..< tokens.len:
     if tokens[i] == token:
+      if humanPlay and i notin fileSeats.humanSlots:
+        return -1
       return i
 
 proc netSetup(): Setup =
@@ -707,11 +715,12 @@ proc netSeatRoster(): seq[NetSeat] =
   ## human driver and whether that driver's socket is currently up.
   result.setLen(game.world.pudges.len)
   for i in 0 ..< result.len:
-    let human = i < gameConnected.len and gameConnected[i]
+    let connected = i < gameConnected.len and gameConnected[i]
+    let human = if humanPlay: i in fileSeats.humanSlots else: connected
     result[i] = NetSeat(
       name: if i < playerNames.len: playerNames[i] else: "",
       human: human,
-      connected: human
+      connected: connected or (humanPlay and not human)
     )
 
 proc sendBinary(ws: WebSocket, body: string) =
@@ -725,7 +734,7 @@ proc sendGameStartAndBacklog(ws: WebSocket, session: var Session) =
   ## far, so its follower fast-forwards to the live tick and then tracks.
   if not started or game.recorder == nil:
     return
-  sendBinary(ws, packStart(netSetup()))
+  sendBinary(ws, packStart(netSetup(), game.humanPaced))
   session.started = true
   session.sentActions = game.recorder.data.actions.len
   session.sentHashes = game.recorder.data.hashes.len
@@ -751,6 +760,14 @@ proc bindGameSeat(ws: WebSocket, session: var Session, slot: int) =
       gameSockets[slot] = ws
       gameConnected[slot] = true
   session.slot = slot
+  if not game.humanPaced:
+    game.humanPaced = true
+    # Existing spectators/players must change pace too when a human joins
+    # an already-running policy match. Keep this flag through disconnects.
+    withLock sessionLock:
+      for peer, other in sessions:
+        if other.kind == SkGame:
+          sendBinary(peer, packLobby(netSeatRoster(), started, game.humanPaced))
   # A live human seat overrides any sticky bot order; a policy pod and a
   # WASM human never hold the same seat token, so this cannot fight one.
   discard applyTakeOver(game, game.world.worldIndexOfSeat(slot), true)
@@ -787,7 +804,7 @@ proc handleGameFrame(ws: WebSocket, session: var Session, data: string) =
     else:
       sendBinary(ws, packSlotGrant(SpectatorSlot, "", "unknown seat token"))
     sendGameStartAndBacklog(ws, session)
-    sendBinary(ws, packLobby(netSeatRoster(), started))
+    sendBinary(ws, packLobby(netSeatRoster(), started, game.humanPaced))
   of NmIntent:
     if started and session.slot >= 0:
       var intent = message.intent.intent
@@ -880,7 +897,7 @@ proc announceGameStart() =
       session = sessions[ws]
     session.started = false
     sendGameStartAndBacklog(ws, session)
-    sendBinary(ws, packLobby(netSeatRoster(), started))
+    sendBinary(ws, packLobby(netSeatRoster(), started, game.humanPaced))
     withLock sessionLock:
       if ws in sessions:
         sessions[ws] = session
@@ -944,6 +961,8 @@ proc drainInbound() =
 proc connectedPlayerCount(): int =
   ## Seats held by either a JSON policy pod or a WASM human. The match
   ## starts once every seat has one driver, regardless of protocol.
+  if humanPlay:
+    result = tokens.len - fileSeats.humanSlots.len
   withLock sessionLock:
     for i in 0 ..< tokens.len:
       if (i < playerConnected.len and playerConnected[i]) or
@@ -1084,16 +1103,26 @@ proc finishMatch() =
   if done:
     return
   done = true
-  writeReplayArtifact()
-  try:
-    writeBytes(
-      resultsUri,
-      $resultsJson(),
-      "application/json",
-      resultsMethod
-    )
-  except CatchableError as error:
-    echo "results write failed: ", error.msg
+  if LeagueRuntime:
+    # Artifacts must be complete before results become visible to collection.
+    if game.recordingError.len > 0:
+      raise newException(FilePlayerError, "Replay recording failed")
+    let replay = encodeCoworldReplay(game.recorder.data)
+    fileSeats.finish(game)
+    writeAtomic(localPath(replayUri), replay)
+    writeAtomic(localPath(resultsUri), $resultsJson())
+    if not humanPlay: return
+  else:
+    writeReplayArtifact()
+    try:
+      writeBytes(
+        resultsUri,
+        $resultsJson(),
+        "application/json",
+        resultsMethod
+      )
+    except CatchableError as error:
+      echo "results write failed: ", error.msg
   # Flush the last hashed ticks, then say goodbye so followers end on
   # the same final hash instead of a dropped-connection error.
   streamGameTicks()
@@ -1114,13 +1143,16 @@ proc healthzHandler(request: Request) {.gcsafe.} =
   request.respond(200, jsonHeaders(), "{\"ok\":true}")
 
 proc playerPageHandler(request: Request) {.gcsafe.} =
-  let clientUrl = getEnv("PUDGE_WARS_CLIENT_URL")
-  doAssert clientUrl.len > 0, "PUDGE_WARS_CLIENT_URL must point to the matching WASM build"
-  request.respond(200, htmlHeaders(), PlayerHtml.replace("__WASM_CLIENT_URL__", $(%clientUrl)))
+  if LeagueRuntime and not humanPlay:
+    request.respond(200, htmlHeaders(), GlobalHtml)
+  else:
+    let clientUrl = getEnv("PUDGE_WARS_CLIENT_URL")
+    doAssert clientUrl.len > 0, "PUDGE_WARS_CLIENT_URL must point to the matching WASM build"
+    request.respond(200, htmlHeaders(), PlayerHtml.replace("__WASM_CLIENT_URL__", $(%clientUrl)))
 
 proc globalPageHandler(request: Request) {.gcsafe.} =
   {.gcsafe.}:
-    if replayMode:
+    if replayMode or (LeagueRuntime and not humanPlay):
       request.respond(200, htmlHeaders(), GlobalHtml)
     else:
       playerPageHandler(request)
@@ -1208,6 +1240,20 @@ proc serveThread() {.thread.} =
       echo "coworld host stopped: ", error.msg
 
 proc parseConfig(node: JsonNode) =
+  if LeagueRuntime:
+    if node.kind != JObject or not node.hasKey("tokens") or
+        node["tokens"].kind != JArray or not node.hasKey("players") or
+        node["players"].kind != JArray or
+        node["players"].len != node["tokens"].len or
+        not node.hasKey("seed") or node["seed"].kind != JInt or
+        node["seed"].getBiggestInt < low(int32) or
+        node["seed"].getBiggestInt > high(int32) or
+        not node.hasKey("max_ticks") or node["max_ticks"].kind != JInt or
+        node["max_ticks"].getBiggestInt notin 1'i64 .. 40000'i64 or
+        not node.hasKey("kill_goal") or node["kill_goal"].kind != JInt or
+        node["kill_goal"].getBiggestInt notin 1'i64 .. 40'i64 or
+        not node{"fog"}.getBool(true):
+      raise newException(FilePlayerError, "Invalid BASIC league configuration")
   tokens.setLen(0)
   for token in node["tokens"]:
     tokens.add token.getStr
@@ -1220,6 +1266,7 @@ proc parseConfig(node: JsonNode) =
   maxTicks = int32(node["max_ticks"].getInt)
   killGoal = int32(node{"kill_goal"}.getInt(int(KillGoal)))
   fogOn = node{"fog"}.getBool(true)
+  waitForLlm = node{"wait_for_llm"}.getBool(true)
   connectTimeoutSec = node{"player_connect_timeout_seconds"}.getFloat(180.0)
   if node.hasKey("seed") and node["seed"].kind != JNull:
     seed = int32(node["seed"].getInt)
@@ -1242,8 +1289,12 @@ proc bootGame() =
     duel
   )
   game.humanSlots.setLen(0)
-  for i in 0 ..< game.world.pudges.len:
-    game.humanSlots.add i
+  if humanPlay:
+    game.humanSlots = fileSeats.humanSlots
+    game.humanPaced = true
+  elif not LeagueRuntime:
+    for i in 0 ..< game.world.pudges.len:
+      game.humanSlots.add i
   applySeatLabels(game, playerNames)
   playerSockets.setLen(tokens.len)
   playerConnected.setLen(tokens.len)
@@ -1254,6 +1305,11 @@ proc bootGame() =
 
 proc loadEnv() =
   replayMode = existsEnv("COGAME_LOAD_REPLAY_URI")
+  # People join a league host two ways: a hosted play session, or a league
+  # lobby episode whose runner staged a play-seats roster with human seats
+  # (a ranked match a person plays in). Either way the host runs the human
+  # clock and opens /ws.
+  humanPlay = LeagueRuntime and getEnv("COGAME_PLAY_SESSION_ID").len > 0
   if replayMode:
     tokens = @[]
     playerNames = @[]
@@ -1270,6 +1326,17 @@ proc loadEnv() =
   replayMethod = envMethod("COGAME_SAVE_REPLAY_METHOD", "PUT")
   if resultsUri.len == 0 or replayUri.len == 0:
     raise newException(CatchableError, "results and replay URIs are required")
+  if LeagueRuntime:
+    discard localPath(resultsUri)
+    discard localPath(replayUri)
+    fileSeats = openFilePlayers(parseJson(readFile(localPath(
+      getEnv("COGAME_PLAYER_SEATS_URI")))), tokens.len,
+      getEnv("COGAME_PLAYER_FAILURE_URI"), allowHumans = true)
+    if fileSeats.humanSlots.len > 0:
+      humanPlay = true
+
+proc completedSignal(signal: cint) {.noconv.} =
+  exitnow(QuitSuccess)
 
 proc main() =
   initLock(inboundLock)
@@ -1282,9 +1349,11 @@ proc main() =
   router.get("/client/player", playerPageHandler)
   router.get("/client/global", globalPageHandler)
   router.get("/client/arena.js", arenaHandler)
-  router.get("/player", upgradePlayer)
+  if not LeagueRuntime:
+    router.get("/player", upgradePlayer)
   router.get("/global", upgradeGlobal)
-  router.get("/ws", upgradeGame)
+  if not LeagueRuntime or humanPlay:
+    router.get("/ws", upgradeGame)
   hostServer = newServer(
     router, websocketHandler, maxMessageLen = WsMaxMessageLen
   )
@@ -1294,6 +1363,31 @@ proc main() =
   if replayMode:
     joinThread(thread)
     return
+  if LeagueRuntime:
+    let loaded = fileSeats.load(game)
+    if humanPlay and not loaded:
+      quit(QuitFailure)
+    if loaded and not humanPlay:
+      started = true
+      game.recorder = initReplayRecorder(currentSetup(game, uint32(maxTicks)))
+      game.replayPlayer = ReplayPlayer(data: game.recorder.data)
+      while game.world.tick < maxTicks and not game.world.gameOver and
+          game.recordingError.len == 0:
+        tickWorld(game, proc() = runBotDecisions(game))
+        if waitForLlm:
+          game.waitForBotRequests()
+        fileSeats.captureErrors(game)
+        if game.world.tick mod 32 == 0:
+          drainInbound()
+          broadcastGlobal()
+      finishMatch()
+    if not loaded or not humanPlay:
+      # Collection probes health and reads artifacts before stopping the host.
+      discard posix.signal(SIGTERM, completedSignal)
+      while true:
+        drainInbound()
+        sleep(50)
+      return
   let deadline = epochTime() + connectTimeoutSec
   while connectedPlayerCount() < tokens.len and epochTime() < deadline:
     drainInbound()
@@ -1306,7 +1400,6 @@ proc main() =
   announceGameStart()
   broadcastPlayers()
   broadcastGlobal()
-  let step = initDuration(nanoseconds = 1_000_000_000 div int(TickRate))
   var nextAt = getMonoTime()
   var steps = 0
   while steps < int(maxTicks) and not game.world.gameOver and
@@ -1314,19 +1407,22 @@ proc main() =
     drainInbound()
     tickWorld(game, proc() = runBotDecisions(game))
     inc steps
+    if humanPlay:
+      if waitForLlm: game.waitForBotRequests()
+      fileSeats.captureErrors(game)
     # WASM humans first: they follow the tape and predict locally, so
     # the confirmed slice must leave the moment a tick is hashed. Never
-    # let a late browser stall the 32 Hz clock (the sleep below is fixed).
+    # let a late browser stall the clock. Human matches run at 28 ticks per second.
     streamGameTicks()
     snapshotAccepted()
     forwardGameResults()
     broadcastPlayers()
     if steps mod 4 == 0:
       broadcastGlobal()
-    nextAt = nextAt + step
+    nextAt = nextAt + initDuration(nanoseconds = wallTickNanoseconds(game.humanPaced))
     let now = getMonoTime()
     if now < nextAt:
-      # Spend the rest of the 32 Hz slice draining JSON replies, so an
+      # Spend the rest of the clock slice draining JSON replies, so an
       # answer to this tick's observation is queued before the next
       # tick runs: the documented fixed 1-tick apply latency. A late
       # reply just misses the window (sticky last order); the clock

@@ -19,12 +19,15 @@
 
 import
   polyworld/[
-    basic, bodies, fixed, hashes, noises, pathing, profiles, rngs, tapes
+    bodies, fixed, hashes, noises, pathing, profiles, rngs, tapes
   ],
   cheats,
   content,
   maps,
   replays
+
+from bassy import Runtime, Limits, PrintProc
+from polyworld/timings import RequestPoll
 
 const
   runClip* = 0
@@ -66,6 +69,16 @@ type
     lastError*: string
     decisions*: int
     lastWork*, lastInstructions*: int64
+    prepareDecision*: proc(tick: int32)
+    pollRequests*: RequestPoll
+    closeServices*: proc()
+    output*: PrintProc
+      ## Hosted seats write only to their private log.
+    tactical*: bool
+    policyFingerprint*: string
+    tacticTarget*, tacticLane*, tacticAggression*: int32
+    tacticUntil*, tacticDeaths*: int32
+      ## Optional tactical preferences; never physics or replay state.
 
   Pudge* = object
     id*: int32
@@ -384,6 +397,9 @@ type
     maximumTicks*: int32
     humanSlots*: seq[int]
       ## Roster indexes currently driven by humans instead of scripts.
+    humanPaced*: bool
+      ## Wall-clock only, never hashed. Latched for a match once a human
+      ## joins so disconnect/reconnect cannot unexpectedly accelerate play.
     humanIntents*: seq[HumanIntent]
       ## Client-queued commands drained at each human slot's hero turn.
     intentResults*: seq[IntentResult]
@@ -3155,14 +3171,14 @@ proc runHumanIntents*(game: Game, slot: int) =
         if recorder != nil:
           recorder.recordPlaceWard(tick, pudgeId, intent.a, intent.b)
         accepted = applyPlaceWard(game.world, pudgeId, intent.a, intent.b)
-      of IntentCheat:
-        if recorder != nil:
-          recorder.recordCheat(tick, pudgeId, intent.a, intent.b)
-        accepted = applyCheat(game.world, pudgeId, intent.a, intent.b)
       of IntentRot:
         if recorder != nil:
           recorder.recordRotToggle(tick, pudgeId)
         accepted = applyRotToggle(game.world, pudgeId)
+      of IntentCheat:
+        if recorder != nil:
+          recorder.recordCheat(tick, pudgeId, intent.a, intent.b)
+        accepted = applyCheat(game.world, pudgeId, intent.a, intent.b)
     except ReplayError as error:
       game.recordingError = error.msg
     if game.intentResults.len >= MaxQueuedIntents:

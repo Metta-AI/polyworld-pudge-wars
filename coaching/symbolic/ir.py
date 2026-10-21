@@ -1,3 +1,4 @@
+
 """A bounded textual semantic IR with generation and code-derived extraction.
 
 Extraction reads executable calls/branches, then validates the entire AST against

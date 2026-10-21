@@ -1,0 +1,52 @@
+{
+  "games": 24,
+  "seed_blocks": 12,
+  "wins": 11,
+  "draws": 0,
+  "win_rate": 0.4583333333333333,
+  "win_rate_wilson_95": [
+    0.278913337312114,
+    0.6492513464108005
+  ],
+  "mean_paired_bank_margin": -1.5416666666666667,
+  "margin_seed_bootstrap_95": [
+    -6.333333333333333,
+    3.7083333333333335
+  ],
+  "counts": {
+    "checked_decisions": 1115931,
+    "changed_decisions": 40455,
+    "changed_hook_requests": 40455,
+    "candidate_hook_requests": 118652,
+    "parent_hook_requests": 158645,
+    "accepted_walk_to": 916533,
+    "accepted_hook_to": 11503,
+    "accepted_place_ward": 284,
+    "accepted_blink_to": 2229,
+    "accepted_rot": 2145,
+    "accepted_attack_target": 44411,
+    "blocked_fountain_attempts": 44199
+  },
+  "interpretation": "Local deterministic engine comparison. Win interval is descriptive across games; the primary margin interval resamples seed blocks. No claim of a hosted leaderboard improvement.",
+  "identities": {
+    "baseline.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+    "candidate.py": "eb428749ffb86be0a7a2ac1a7f09acf248416efea1a301be4634b420332b1c1d",
+    "regenerated.py": "eb428749ffb86be0a7a2ac1a7f09acf248416efea1a301be4634b420332b1c1d",
+    "json_match": "159adb7f51faae999d6b47c120db69f8ebe4fffe20c7c4c464b4badd769c7850"
+  },
+  "semantic_mismatches": 0,
+  "roundtrip_mismatches": 0,
+  "bank_results": {
+    "0": {
+      "games": 12,
+      "wins": 7,
+      "mean_margin": 0.3333333333333333
+    },
+    "1": {
+      "games": 12,
+      "wins": 4,
+      "mean_margin": -3.4166666666666665
+    }
+  },
+  "screen_gate_passed": false
+}

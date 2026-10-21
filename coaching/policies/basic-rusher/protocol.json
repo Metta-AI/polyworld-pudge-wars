@@ -1,0 +1,52 @@
+{
+  "candidate_sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511",
+  "baseline_sha256": "96fd425a95c6284bb97bd97e4154338e976c51d97565a71f38a52abf1985ec90",
+  "python_source": "coaching/policies/session-20260915-bundle/retained.policy.py",
+  "python_sha256": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea",
+  "confirmation": {
+    "seeds": [
+      1014301,
+      1014348
+    ],
+    "banks": [
+      "west",
+      "east"
+    ],
+    "team_size": 3,
+    "kill_goal": 30,
+    "minutes": 20,
+    "difficulty": "pro",
+    "record_and_verify": true,
+    "gate": "Mean paired-bank kill margin >= 1, seed-block bootstrap 95% lower bound > 0, no VM or replay errors; no tuning on confirmation."
+  },
+  "secondary": {
+    "seeds": [
+      1014401,
+      1014404
+    ],
+    "opponents": [
+      "aggressive",
+      "challenger",
+      "denier",
+      "patient",
+      "sniper",
+      "support"
+    ],
+    "difficulty": "pro",
+    "banks": [
+      "west",
+      "east"
+    ],
+    "team_size": 3
+  },
+  "duels": {
+    "seeds": [
+      1014501,
+      1014512
+    ],
+    "opponent": "frozen current Base",
+    "difficulty": "pro",
+    "kill_goal": 10
+  },
+  "initial_fair_screen": "Earlier candidate before rescue/respawn/landing correctness fixes; diagnostic only."
+}

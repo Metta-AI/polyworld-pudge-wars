@@ -243,8 +243,8 @@ const
     ## Fight at the collision standoff, not inside the opponent.
   AutoAcquireRange* = MeleeRange + WorldScale * 2
     ## Idle human butchers pick up enemies this close and walk into melee.
-  MovePerTick* = 27_000'i32
-    ## 14.4 tiles/s at 32 Hz. 25% faster than the prior 21_600 default.
+  MovePerTick* = 32_400'i32
+    ## 17.3 tiles/s at 32 Hz. 20% faster than the prior 27_000 default.
   MoveAccel* = MovePerTick div 8
     ## Momentum: per-tick speed gained toward the ordered direction
     ## (~0.25 s from rest to top speed at 32 Hz).

@@ -371,8 +371,8 @@ else
             mood = 5
           else
             if headId <> 0 then
-              hx = headX + (homeX - headX) / 2
-              hy = headY + (homeY - headY) / 2
+              hx = headX + (homeX - headX) \ 2
+              hy = headY + (homeY - headY) \ 2
               hookTo(hx, hy)
               mood = 6
             else

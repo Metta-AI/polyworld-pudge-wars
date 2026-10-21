@@ -1,0 +1,15 @@
+{
+  "player-policy-readback.json": "0aa3a58120546638527a70bcea744a542f4f5b2f430e4834cc76200fd6bed846",
+  "requested-policy.json": "5b696869d2be1e6e2879b5477b44ca7ff58571257679e047c9cc858353e8f1b0",
+  "final-policy-readback.json": "b65dd0f151b8a59a6d3f15d2c67caa1dd54a5a843a8b3dd05c799c8b1cf76c7e",
+  "player-owned-image.json": "587c313533931fec994df3439b61367d561c3b546ac480e0b44cb0cc6dec1e85",
+  "final-image-readback.json": "0f6d6ca3d84adc2f41b408827a1bef2876f959a8627340064a284c92157679da",
+  "player-submission.json": "d93dbdda843130179ee2eeefe7242c8dc9880252883e1746f3886bc2d5a6533d",
+  "source-image-readback.json": "38a4a4b72b130a95df2176a831f136db706a5974831cfd77dfcf24becd5fafd2",
+  "README.md": "2dadfdd5d736aa17a253be6596f51b8fe4a4d0c03b6ac28892a7159a17450a89",
+  "player-submission-request.json": "9d3312a162c95f44cf4c15efc9fda48f5de45a85540dd7215b1ef817e3d2b110",
+  "lifecycle.jsonl": "4d627a3985ebf6fd7599bfb00e177420fdec23d0ea88c9a276dcd004dac753ed",
+  "membership-verification.json": "e1126f118cd1684b26fe08bf4f40b78b85a2869b97fdc8f8d2472ff7192f3d30",
+  "decision.json": "1c2fcc3482eab06d9111499d2d7eb4f390523785133bb3cb55ef33ea4ff512ae",
+  "player-policy.json": "39385fdc75f96dff9fb86bcb35550c429b139bedf50893a3eba0c305244b1cc1"
+}

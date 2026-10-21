@@ -3,8 +3,9 @@
 ## hash coverage, and replay round-trip.
 
 import
+  bassy,
   std/os,
-  polyworld/[basic, cli, tapes],
+  polyworld/[cli, tapes],
   ../examples/pudge_wars/bots,
   ../examples/pudge_wars/content,
   ../examples/pudge_wars/maps,

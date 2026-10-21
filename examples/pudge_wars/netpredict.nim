@@ -97,13 +97,13 @@ proc setSmoothDecay*(v: float32) =
 proc newPredictor*(): Predictor =
   Predictor(enabled: false, seat: -1, lead: MinLead)
 
-proc leadFromRttMs*(rttMs: int): int =
-  ## One-way lag in ticks at 32 Hz, clamped. A -1 (no sample yet) keeps
+proc leadFromRttMs*(rttMs: int, tickRate = TickRate): int =
+  ## One-way lag in ticks at the host's wall-clock rate. A -1 keeps
   ## the floor so prediction still hides in-process latency.
   if rttMs < 0:
     return MinLead
   # Predict roughly half the round trip ahead (one-way), min one tick.
-  let ticks = (rttMs * int(TickRate)) div 2000
+  let ticks = (rttMs * int(tickRate)) div 2000
   clamp(max(ticks, MinLead), MinLead, MaxLead)
 
 proc enable*(pred: Predictor, seat, lead: int) =

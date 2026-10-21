@@ -10,11 +10,13 @@
 ## action is recorded.
 
 import
-  std/[os, strutils],
-  polyworld/[basic, cli, pathing, profiles, rngs, tapes],
+  bassy,
+  std/[os, sha1, strutils],
+  polyworld/[annotations, cli, llms, policies, tensors, timings, pathing, profiles, rngs, tapes],
   content,
   maps,
   sim,
+  tactics,
   teammates,
   replays
 
@@ -96,7 +98,7 @@ proc bindPudgeData(program: Program) =
     pudgeDataIds[slot] = program.hostDataIndex(name)
     doAssert pudgeDataIds[slot] >= 0, "missing host data " & name
 
-proc pudgeVmLimits(): Limits =
+proc pudgeVmLimits*(): Limits =
   result = defaultLimits()
   result.maxSourceBytes = 64 * 1024
   result.maxCodeInstructions = 20_000
@@ -104,22 +106,49 @@ proc pudgeVmLimits(): Limits =
   result.maxArrayElements = 4096
   result.maxGlobals = 256
   result.maxHostData = 32
-  result.maxHostFunctions = 40
+  result.maxHostFunctions = 160
   result.maxRoutines = 64
   result.maxParameters = 16
   result.maxRegisters = 256
   result.maxSyntaxDepth = 32
   result.maxCallDepth = 16
   result.maxMemoryBytes = 2 * 1024 * 1024
-  result.maxInstructions = 20_000
-  result.maxWorkUnits = 50_000
+  result.maxInstructions = 100_000
+  result.maxWorkUnits = 250_000
+  result.maxNativeMemoryBytes = 32 * 1024 * 1024
+  result.maxStrings = 1024
+  result.maxStringBytes = 256 * 1024
+  result.maxStringLength = 64 * 1024
   result.maxPrintBytes = 1024
   result.maxPrintEvents = 128
 
-proc initPudgeHost(pudgeId: int32): Host =
+proc initPudgeHost(pudgeId: int32, annotations: AnnotationSink = nil,
+                   policy: Policy = nil, llm: LlmClient = nil): Host =
   result = initHost()
+  result.addAnnotationFunctions(annotations)
+  result.addBufferFunctions()
+  result.addTensorFunctions(policy)
+  let services = if llm == nil: newLlmClient(0, LlmConfig()) else: llm
+  services.addFunctions(result)
   for name in PudgeDataNames:
     discard result.addData(name)
+
+  proc tacticalField(field: int): int32 =
+    for slot, me in activeGame.world.pudges:
+      if me.id == pudgeId and slot < activeGame.heroVms.len:
+        let vm = activeGame.heroVms[slot]
+        if vm == nil or not vm.tactical: return 0
+        activeGame.validateTactics(slot)
+        case field
+        of 0: return vm.tacticTarget
+        of 1: return vm.tacticLane
+        else: return vm.tacticAggression
+  discard result.addFunction("tacticalTarget", 0,
+    proc(args: openArray[int32]): int32 = tacticalField(0), 4)
+  discard result.addFunction("tacticalLane", 0,
+    proc(args: openArray[int32]): int32 = tacticalField(1), 4)
+  discard result.addFunction("tacticalAggression", 0,
+    proc(args: openArray[int32]): int32 = tacticalField(2), 4)
 
   let objectCountProc: HostProc = proc(
       arguments: openArray[int32]
@@ -611,7 +640,7 @@ proc applySeatLabels*(game: Game, names: openArray[string]) =
     game.seatLabels[i] = names[i]
   uniquifySeatLabels(game.seatLabels)
 
-proc loadBots*(game: Game, groups: openArray[BotGroup]) =
+proc loadBots*(game: Game, groups: openArray[BotGroup], hybridSlots: seq[int] = @[]) =
   ## Compiles bot programs into seats. With one program per seat, human
   ## seats get a VM too, so releasing control falls back to script
   ## autopilot. With one program per non-human seat, human seats stay
@@ -622,11 +651,14 @@ proc loadBots*(game: Game, groups: openArray[BotGroup]) =
   var
     programs: seq[Program]
     programPaths: seq[string]
+    policies: seq[Policy]
   for group in groups:
-    let program = compile(readFile(group.path), schema, limits)
+    let policy = readPolicy(group.path)
+    let program = compile(policy.source, schema, limits)
     for _ in 0 ..< group.count:
       programs.add program
       programPaths.add group.path
+      policies.add policy
   let
     total = game.world.pudges.len
     humans = game.humanSlots.len
@@ -642,16 +674,44 @@ proc loadBots*(game: Game, groups: openArray[BotGroup]) =
     if programs.len < total and i in game.humanSlots:
       game.heroVms[i] = nil
       continue
-    var host = initPudgeHost(game.world.pudges[i].id)
+    let llm = newLlmClient(i)
+    var host = initPudgeHost(game.world.pudges[i].id, policy = policies[next], llm = llm)
+    let program = if i in hybridSlots:
+        compile(tacticalSource(policies[next].source), schema, limits)
+      else: programs[next]
     game.heroVms[i] = HeroVm(
-      runtime: initRuntime(programs[next], host, limits),
+      runtime: initRuntime(program, host, limits),
+      tactical: i in hybridSlots,
+      policyFingerprint: "sha1:" & $secureHash(policies[next].source),
       limits: limits,
+      prepareDecision: llm.decisionCallback(),
+      pollRequests: llm.requestPoller(),
+      closeServices: proc() = llm.close(),
       ready: true
     )
+    llm.bindRuntime(game.heroVms[i].runtime)
     if i notin game.humanSlots:
       game.seatLabels[i] = botScriptLabel(programPaths[next])
     inc next
   uniquifySeatLabels(game.seatLabels)
+
+proc loadBotSource*(game: Game, slot: int, source: string,
+                    output: PrintProc, annotations: AnnotationSink) =
+  ## Each staged source compiles and executes in its own bounded VM.
+  activeGame = game
+  let limits = pudgeVmLimits()
+  let policy = loadPolicy(source)
+  let llm = newLlmClient(slot)
+  let host = initPudgeHost(game.world.pudges[slot].id, annotations, policy, llm)
+  let program = compile(policy.source, host, limits)
+  bindPudgeData(program)
+  game.heroVms.setLen(game.world.pudges.len)
+  game.heroVms[slot] = HeroVm(runtime: initRuntime(program, host, limits),
+    limits: limits, ready: true, output: output,
+    policyFingerprint: "sha1:" & $secureHash(policy.source),
+    prepareDecision: llm.decisionCallback(), pollRequests: llm.requestPoller(),
+    closeServices: proc() = llm.close())
+  llm.bindRuntime(game.heroVms[slot].runtime)
 
 proc runPudgeScript(game: Game, index: int) {.measure.} =
   if index < 0 or index >= game.heroVms.len:
@@ -666,11 +726,16 @@ proc runPudgeScript(game: Game, index: int) {.measure.} =
   # world shows a nameplate, not the printed line.
   var spokenLine = ""
   let speak: PrintProc = proc(event: PrintEvent) =
+    if vm.output != nil:
+      vm.output(event)
+      return
     case event.kind
     of TextPrint:
       spokenLine.add event.text
     of ValuePrint:
       spokenLine.add $event.value
+    of FixedPrint:
+      spokenLine.add $event.fixedValue
     of NewlinePrint:
       if spokenLine.len > 0 and index < game.botSpeech.len:
         game.botSpeech[index] = BotSpeech(
@@ -678,6 +743,8 @@ proc runPudgeScript(game: Game, index: int) {.measure.} =
         )
       spokenLine.setLen(0)
   try:
+    if vm.prepareDecision != nil:
+      vm.prepareDecision(game.world.tick)
     vm.runtime.setData(pudgeDataIds[DataSelfId], pudge.id)
     vm.runtime.setData(pudgeDataIds[DataSelfTeam], int32(pudge.team.ord))
     vm.runtime.setData(pudgeDataIds[DataSelfX], mapCoordinate(pudge.position.x))
@@ -760,7 +827,8 @@ proc runPudgeScript(game: Game, index: int) {.measure.} =
   except BasicError as error:
     vm.failed = true
     vm.lastError = error.msg
-    echo "pudge ", pudge.id, " BASIC error: ", error.msg
+    if vm.output == nil:
+      echo "pudge ", pudge.id, " BASIC error: ", error.msg
   vm.lastWork = vm.runtime.workUsed
   vm.lastInstructions = vm.runtime.instructionsUsed
 
@@ -784,3 +852,16 @@ proc runBotDecisions*(game: Game) {.measure.} =
       runPudgeScript(game, index)
   game.world.heroTurnStart =
     (game.world.heroTurnStart + 1) mod game.world.pudges.len
+
+proc waitForBotRequests*(game: Game) =
+  ## Poll all seats together without rerunning a decision or advancing the world.
+  var pollers: seq[RequestPoll]
+  for vm in game.heroVms:
+    if vm != nil:
+      pollers.add vm.pollRequests
+  waitForRequests(pollers)
+
+proc closeBotServices*(game: Game) =
+  for vm in game.heroVms:
+    if vm != nil and vm.closeServices != nil:
+      vm.closeServices()

@@ -1,0 +1,28 @@
+{
+  "verified_at": "2026-10-14T23:41:19.775513+00:00",
+  "league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+  "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+  "policy_name": "pudge-basic-base",
+  "version": 2,
+  "policy_version_id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+  "membership_id": "lpm_9bcc9096-a938-4748-a801-4da4b7a05855",
+  "status": "competing",
+  "is_champion": true,
+  "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511",
+  "submission_id": "sub_d9f462a7-c03a-4b95-9a97-b11e172c4f9f",
+  "coworld_id": "cow_f1a7b216-46e0-487d-bf06-03a54e813210",
+  "smoke_episode_id": "ereq_34dc7f33-169f-41f1-b00d-601f1cf14769",
+  "smoke_ticks": 2048,
+  "smoke_candidate_seats": 3,
+  "replay_verified": true,
+  "replay_actions": 26881,
+  "artifact_hashes": {
+    "policy-1.log": "92a0f71e175c6bf61f21fce6b016d52b6c1900f59cac4da0e95a516a1107aa2b",
+    "policy-0.log": "42a2d3a2c4c7ffe13d052ac536f1721c515e62f6b5aa4e244e4aaad72727c108",
+    "policy-2.log": "8a6da46897183495059d0ef56040f6c73d6340fe898f0a32fa7bfb18eb479dac",
+    "replay.pwr": "8fb0c8abc3a1e55e634a9e1fd7cea6083c9d4c619cda124a80834533674f91f2",
+    "replay-verification.log": "f4a4f8d0287e0260578acc2b50206749ec02c5243c40d4383311e515e6db04ac"
+  },
+  "hosted_competitive_strength": "unmeasured",
+  "rollback_membership_id": "lpm_23d2f18c-6133-4139-b5fd-cac3ed7afa52"
+}

@@ -37,4 +37,15 @@ block:
   doAssert equals.windowWidth == 1280
   doAssert equals.windowHeight == 720
 
+echo "Testing --windowPos places the window"
+block:
+  let unset = parseCommon(@[])
+  doAssert unset.windowX == -1 and unset.windowY == -1
+  let colon = parseCommon(@["--windowPos:400,80"])
+  doAssert colon.windowX == 400 and colon.windowY == 80
+  let split = parseCommon(@["--windowPos", "0,25"])
+  doAssert split.windowX == 0 and split.windowY == 25
+  let equals = parseCommon(@["--windowPos=1200,600"])
+  doAssert equals.windowX == 1200 and equals.windowY == 600
+
 echo "test_pw_cli: all checks passed"

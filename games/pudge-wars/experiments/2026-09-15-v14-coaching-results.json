@@ -1,0 +1,923 @@
+{
+  "v14-blink-001": {
+    "screen": {
+      "games": 24,
+      "seed_blocks": 12,
+      "wins": 10,
+      "draws": 0,
+      "win_rate": 0.4166666666666667,
+      "win_rate_wilson_95": [
+        0.2446760260981215,
+        0.6116533413477077
+      ],
+      "mean_paired_bank_margin": -3.2916666666666665,
+      "margin_seed_bootstrap_95": [
+        -5.0,
+        -1.5833333333333333
+      ],
+      "counts": {
+        "checked_decisions": 1221687,
+        "changed_decisions": 13178,
+        "parent_blink_requests": 15577,
+        "candidate_blink_requests": 2399,
+        "clear_blink_withheld": 13178,
+        "accepted_walk_to": 1007868,
+        "accepted_hook_to": 12989,
+        "accepted_place_ward": 324,
+        "accepted_blink_to": 2043,
+        "accepted_rot": 2354,
+        "accepted_attack_target": 46080
+      },
+      "interpretation": "Local deterministic engine comparison. Win interval is descriptive across games; the primary margin interval resamples seed blocks. No claim of a hosted leaderboard improvement.",
+      "identities": {
+        "baseline.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+        "candidate.py": "a7b317e8d43274dc192b6218dbaf8965fbc9b880bd65a31e864e96e398db2cca",
+        "json_match": "d7e142e851bddb44b228c04cab25cb0c95ea7ff9c3e153b231c54b307364ede3"
+      }
+    },
+    "seed_block_metrics": {
+      "metrics": {
+        "margin": {
+          "value": -3.2916666666666665,
+          "CI_95": [
+            -5.0,
+            -1.5833333333333333
+          ],
+          "n_games": 24,
+          "seed_blocks": 12
+        },
+        "win": {
+          "value": 0.4166666666666667,
+          "CI_95": [
+            0.25,
+            0.5833333333333334
+          ],
+          "n_games": 24,
+          "seed_blocks": 12
+        }
+      },
+      "blocks": [
+        {
+          "seed": 915101,
+          "margin": -2.0,
+          "win": 0.5
+        },
+        {
+          "seed": 915102,
+          "margin": 3.0,
+          "win": 1.0
+        },
+        {
+          "seed": 915103,
+          "margin": 0.0,
+          "win": 0.5
+        },
+        {
+          "seed": 915104,
+          "margin": -3.0,
+          "win": 0.5
+        },
+        {
+          "seed": 915105,
+          "margin": -2.5,
+          "win": 0.5
+        },
+        {
+          "seed": 915106,
+          "margin": -8.0,
+          "win": 0.5
+        },
+        {
+          "seed": 915107,
+          "margin": -6.5,
+          "win": 0.0
+        },
+        {
+          "seed": 915108,
+          "margin": -1.0,
+          "win": 0.5
+        },
+        {
+          "seed": 915109,
+          "margin": -2.5,
+          "win": 0.5
+        },
+        {
+          "seed": 915110,
+          "margin": -7.5,
+          "win": 0.0
+        },
+        {
+          "seed": 915111,
+          "margin": -4.0,
+          "win": 0.0
+        },
+        {
+          "seed": 915112,
+          "margin": -5.5,
+          "win": 0.5
+        }
+      ],
+      "scope": "Candidate versus oracle in the same games. Rune differences are head-to-head, not an independently controlled same-opponent ablation."
+    },
+    "decision": "revert",
+    "rows": [
+      {
+        "seed": 915101,
+        "side": 0,
+        "ours": 18,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915101,
+        "side": 1,
+        "ours": 30,
+        "theirs": 22,
+        "win": true
+      },
+      {
+        "seed": 915102,
+        "side": 0,
+        "ours": 30,
+        "theirs": 29,
+        "win": true
+      },
+      {
+        "seed": 915102,
+        "side": 1,
+        "ours": 30,
+        "theirs": 25,
+        "win": true
+      },
+      {
+        "seed": 915103,
+        "side": 0,
+        "ours": 24,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915103,
+        "side": 1,
+        "ours": 30,
+        "theirs": 24,
+        "win": true
+      },
+      {
+        "seed": 915104,
+        "side": 0,
+        "ours": 19,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915104,
+        "side": 1,
+        "ours": 30,
+        "theirs": 25,
+        "win": true
+      },
+      {
+        "seed": 915105,
+        "side": 0,
+        "ours": 30,
+        "theirs": 21,
+        "win": true
+      },
+      {
+        "seed": 915105,
+        "side": 1,
+        "ours": 16,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915106,
+        "side": 0,
+        "ours": 10,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915106,
+        "side": 1,
+        "ours": 30,
+        "theirs": 26,
+        "win": true
+      },
+      {
+        "seed": 915107,
+        "side": 0,
+        "ours": 26,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915107,
+        "side": 1,
+        "ours": 21,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915108,
+        "side": 0,
+        "ours": 30,
+        "theirs": 28,
+        "win": true
+      },
+      {
+        "seed": 915108,
+        "side": 1,
+        "ours": 26,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915109,
+        "side": 0,
+        "ours": 30,
+        "theirs": 27,
+        "win": true
+      },
+      {
+        "seed": 915109,
+        "side": 1,
+        "ours": 22,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915110,
+        "side": 0,
+        "ours": 27,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915110,
+        "side": 1,
+        "ours": 18,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915111,
+        "side": 0,
+        "ours": 25,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915111,
+        "side": 1,
+        "ours": 27,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915112,
+        "side": 0,
+        "ours": 30,
+        "theirs": 28,
+        "win": true
+      },
+      {
+        "seed": 915112,
+        "side": 1,
+        "ours": 17,
+        "theirs": 30,
+        "win": false
+      }
+    ]
+  },
+  "v14-rune-002": {
+    "screen": {
+      "games": 24,
+      "seed_blocks": 12,
+      "wins": 11,
+      "draws": 0,
+      "win_rate": 0.4583333333333333,
+      "win_rate_wilson_95": [
+        0.278913337312114,
+        0.6492513464108005
+      ],
+      "mean_paired_bank_margin": 0.041666666666666664,
+      "margin_seed_bootstrap_95": [
+        -3.7916666666666665,
+        3.6666666666666665
+      ],
+      "counts": {
+        "checked_decisions": 1188420,
+        "changed_decisions": 3534,
+        "parent_blink_requests": 3183,
+        "candidate_blink_requests": 3183,
+        "rune_priority_changes": 3534,
+        "accepted_walk_to": 977090,
+        "accepted_hook_to": 12514,
+        "accepted_blink_to": 2456,
+        "accepted_place_ward": 325,
+        "accepted_rot": 2443,
+        "accepted_attack_target": 48069
+      },
+      "interpretation": "Local deterministic engine comparison. Win interval is descriptive across games; the primary margin interval resamples seed blocks. No claim of a hosted leaderboard improvement.",
+      "identities": {
+        "baseline.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+        "candidate.py": "881ace06d2ece134960d65dd65993dffa3594aa17be8fca72c26c30a73a98d18",
+        "json_match": "bf139c6a3e35af6044e09c8fa041b87b993d8f78630cd4fbcbd29dff2e7e752e"
+      }
+    },
+    "seed_block_metrics": {
+      "metrics": {
+        "margin": {
+          "value": 0.041666666666666664,
+          "CI_95": [
+            -3.7916666666666665,
+            3.6666666666666665
+          ],
+          "n_games": 24,
+          "seed_blocks": 12
+        },
+        "win": {
+          "value": 0.4583333333333333,
+          "CI_95": [
+            0.25,
+            0.6666666666666666
+          ],
+          "n_games": 24,
+          "seed_blocks": 12
+        },
+        "rune_difference": {
+          "value": 1.9583333333333333,
+          "CI_95": [
+            0.125,
+            3.7083333333333335
+          ],
+          "n_games": 24,
+          "seed_blocks": 12
+        }
+      },
+      "blocks": [
+        {
+          "seed": 915301,
+          "margin": 4.0,
+          "win": 1.0,
+          "rune_difference": -5.0
+        },
+        {
+          "seed": 915302,
+          "margin": 7.5,
+          "win": 0.5,
+          "rune_difference": 8.5
+        },
+        {
+          "seed": 915303,
+          "margin": -9.5,
+          "win": 0.0,
+          "rune_difference": 2.0
+        },
+        {
+          "seed": 915304,
+          "margin": 2.0,
+          "win": 0.5,
+          "rune_difference": 4.5
+        },
+        {
+          "seed": 915305,
+          "margin": -2.0,
+          "win": 0.5,
+          "rune_difference": 3.5
+        },
+        {
+          "seed": 915306,
+          "margin": -2.0,
+          "win": 0.0,
+          "rune_difference": 0.0
+        },
+        {
+          "seed": 915307,
+          "margin": -11.0,
+          "win": 0.0,
+          "rune_difference": 1.0
+        },
+        {
+          "seed": 915308,
+          "margin": 2.0,
+          "win": 0.5,
+          "rune_difference": -1.5
+        },
+        {
+          "seed": 915309,
+          "margin": 9.5,
+          "win": 1.0,
+          "rune_difference": 3.0
+        },
+        {
+          "seed": 915310,
+          "margin": 8.0,
+          "win": 1.0,
+          "rune_difference": 0.5
+        },
+        {
+          "seed": 915311,
+          "margin": -8.0,
+          "win": 0.0,
+          "rune_difference": 3.5
+        },
+        {
+          "seed": 915312,
+          "margin": 0.0,
+          "win": 0.5,
+          "rune_difference": 3.5
+        }
+      ],
+      "scope": "Candidate versus oracle in the same games. Rune differences are head-to-head, not an independently controlled same-opponent ablation."
+    },
+    "decision": "revert",
+    "rows": [
+      {
+        "seed": 915301,
+        "side": 0,
+        "ours": 30,
+        "theirs": 23,
+        "win": true
+      },
+      {
+        "seed": 915301,
+        "side": 1,
+        "ours": 30,
+        "theirs": 29,
+        "win": true
+      },
+      {
+        "seed": 915302,
+        "side": 0,
+        "ours": 30,
+        "theirs": 9,
+        "win": true
+      },
+      {
+        "seed": 915302,
+        "side": 1,
+        "ours": 24,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915303,
+        "side": 0,
+        "ours": 17,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915303,
+        "side": 1,
+        "ours": 24,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915304,
+        "side": 0,
+        "ours": 30,
+        "theirs": 22,
+        "win": true
+      },
+      {
+        "seed": 915304,
+        "side": 1,
+        "ours": 26,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915305,
+        "side": 0,
+        "ours": 30,
+        "theirs": 29,
+        "win": true
+      },
+      {
+        "seed": 915305,
+        "side": 1,
+        "ours": 25,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915306,
+        "side": 0,
+        "ours": 29,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915306,
+        "side": 1,
+        "ours": 27,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915307,
+        "side": 0,
+        "ours": 16,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915307,
+        "side": 1,
+        "ours": 22,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915308,
+        "side": 0,
+        "ours": 18,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915308,
+        "side": 1,
+        "ours": 30,
+        "theirs": 14,
+        "win": true
+      },
+      {
+        "seed": 915309,
+        "side": 0,
+        "ours": 30,
+        "theirs": 24,
+        "win": true
+      },
+      {
+        "seed": 915309,
+        "side": 1,
+        "ours": 30,
+        "theirs": 17,
+        "win": true
+      },
+      {
+        "seed": 915310,
+        "side": 0,
+        "ours": 30,
+        "theirs": 22,
+        "win": true
+      },
+      {
+        "seed": 915310,
+        "side": 1,
+        "ours": 30,
+        "theirs": 22,
+        "win": true
+      },
+      {
+        "seed": 915311,
+        "side": 0,
+        "ours": 28,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915311,
+        "side": 1,
+        "ours": 16,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915312,
+        "side": 0,
+        "ours": 30,
+        "theirs": 16,
+        "win": true
+      },
+      {
+        "seed": 915312,
+        "side": 1,
+        "ours": 16,
+        "theirs": 30,
+        "win": false
+      }
+    ]
+  },
+  "v14-rune-003": {
+    "screen": {
+      "games": 24,
+      "seed_blocks": 12,
+      "wins": 13,
+      "draws": 0,
+      "win_rate": 0.5416666666666666,
+      "win_rate_wilson_95": [
+        0.3507486535891995,
+        0.721086662687886
+      ],
+      "mean_paired_bank_margin": 0.9166666666666666,
+      "margin_seed_bootstrap_95": [
+        -2.4583333333333335,
+        4.25
+      ],
+      "counts": {
+        "checked_decisions": 1229550,
+        "changed_decisions": 3342,
+        "parent_blink_requests": 3276,
+        "candidate_blink_requests": 3276,
+        "rune_priority_changes": 3342,
+        "accepted_walk_to": 1012367,
+        "accepted_hook_to": 12951,
+        "accepted_place_ward": 359,
+        "accepted_blink_to": 2563,
+        "accepted_rot": 2507,
+        "accepted_attack_target": 49617
+      },
+      "interpretation": "Local deterministic engine comparison. Win interval is descriptive across games; the primary margin interval resamples seed blocks. No claim of a hosted leaderboard improvement.",
+      "identities": {
+        "baseline.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+        "candidate.py": "baf1e48988e7772e61e020873247498c487ac5a4d0712c966bb2a214763bcc2e",
+        "json_match": "bf139c6a3e35af6044e09c8fa041b87b993d8f78630cd4fbcbd29dff2e7e752e"
+      }
+    },
+    "seed_block_metrics": {
+      "metrics": {
+        "margin": {
+          "value": 0.9166666666666666,
+          "CI_95": [
+            -2.4583333333333335,
+            4.25
+          ],
+          "n_games": 24,
+          "seed_blocks": 12
+        },
+        "win": {
+          "value": 0.5416666666666666,
+          "CI_95": [
+            0.3333333333333333,
+            0.75
+          ],
+          "n_games": 24,
+          "seed_blocks": 12
+        },
+        "rune_difference": {
+          "value": 0.625,
+          "CI_95": [
+            -1.2916666666666667,
+            2.5833333333333335
+          ],
+          "n_games": 24,
+          "seed_blocks": 12
+        }
+      },
+      "blocks": [
+        {
+          "seed": 915501,
+          "margin": -8.0,
+          "win": 0.0,
+          "rune_difference": -5.5
+        },
+        {
+          "seed": 915502,
+          "margin": 4.5,
+          "win": 0.5,
+          "rune_difference": 6.5
+        },
+        {
+          "seed": 915503,
+          "margin": 8.5,
+          "win": 1.0,
+          "rune_difference": 0.5
+        },
+        {
+          "seed": 915504,
+          "margin": -6.5,
+          "win": 0.0,
+          "rune_difference": 1.0
+        },
+        {
+          "seed": 915505,
+          "margin": 10.0,
+          "win": 1.0,
+          "rune_difference": -4.0
+        },
+        {
+          "seed": 915506,
+          "margin": -6.0,
+          "win": 0.5,
+          "rune_difference": 1.0
+        },
+        {
+          "seed": 915507,
+          "margin": 4.5,
+          "win": 1.0,
+          "rune_difference": 6.5
+        },
+        {
+          "seed": 915508,
+          "margin": 3.0,
+          "win": 0.5,
+          "rune_difference": 1.5
+        },
+        {
+          "seed": 915509,
+          "margin": -1.5,
+          "win": 0.5,
+          "rune_difference": -2.0
+        },
+        {
+          "seed": 915510,
+          "margin": 3.0,
+          "win": 1.0,
+          "rune_difference": -1.0
+        },
+        {
+          "seed": 915511,
+          "margin": -6.0,
+          "win": 0.0,
+          "rune_difference": 2.0
+        },
+        {
+          "seed": 915512,
+          "margin": 5.5,
+          "win": 0.5,
+          "rune_difference": 1.0
+        }
+      ],
+      "scope": "Head-to-head screen, not separate fixed-opponent arms"
+    },
+    "decision": "revert",
+    "rows": [
+      {
+        "seed": 915501,
+        "side": 0,
+        "ours": 24,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915501,
+        "side": 1,
+        "ours": 20,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915502,
+        "side": 0,
+        "ours": 26,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915502,
+        "side": 1,
+        "ours": 30,
+        "theirs": 17,
+        "win": true
+      },
+      {
+        "seed": 915503,
+        "side": 0,
+        "ours": 30,
+        "theirs": 22,
+        "win": true
+      },
+      {
+        "seed": 915503,
+        "side": 1,
+        "ours": 30,
+        "theirs": 21,
+        "win": true
+      },
+      {
+        "seed": 915504,
+        "side": 0,
+        "ours": 18,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915504,
+        "side": 1,
+        "ours": 29,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915505,
+        "side": 0,
+        "ours": 30,
+        "theirs": 22,
+        "win": true
+      },
+      {
+        "seed": 915505,
+        "side": 1,
+        "ours": 30,
+        "theirs": 18,
+        "win": true
+      },
+      {
+        "seed": 915506,
+        "side": 0,
+        "ours": 15,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915506,
+        "side": 1,
+        "ours": 30,
+        "theirs": 27,
+        "win": true
+      },
+      {
+        "seed": 915507,
+        "side": 0,
+        "ours": 30,
+        "theirs": 25,
+        "win": true
+      },
+      {
+        "seed": 915507,
+        "side": 1,
+        "ours": 30,
+        "theirs": 26,
+        "win": true
+      },
+      {
+        "seed": 915508,
+        "side": 0,
+        "ours": 30,
+        "theirs": 23,
+        "win": true
+      },
+      {
+        "seed": 915508,
+        "side": 1,
+        "ours": 29,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915509,
+        "side": 0,
+        "ours": 24,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915509,
+        "side": 1,
+        "ours": 30,
+        "theirs": 27,
+        "win": true
+      },
+      {
+        "seed": 915510,
+        "side": 0,
+        "ours": 30,
+        "theirs": 27,
+        "win": true
+      },
+      {
+        "seed": 915510,
+        "side": 1,
+        "ours": 30,
+        "theirs": 27,
+        "win": true
+      },
+      {
+        "seed": 915511,
+        "side": 0,
+        "ours": 26,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915511,
+        "side": 1,
+        "ours": 22,
+        "theirs": 30,
+        "win": false
+      },
+      {
+        "seed": 915512,
+        "side": 0,
+        "ours": 30,
+        "theirs": 16,
+        "win": true
+      },
+      {
+        "seed": 915512,
+        "side": 1,
+        "ours": 27,
+        "theirs": 30,
+        "win": false
+      }
+    ]
+  }
+}

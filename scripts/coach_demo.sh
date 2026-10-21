@@ -22,7 +22,7 @@ else
   echo "emcc is required to build a browser client matching this engine."
   exit 1
 fi
-for asset in cover.webp recap-overlay.js boot-scene.js; do
+for asset in cover.webp recap-overlay.js boot-scene.js touch-input.js; do
   cp "examples/pudge_wars/$asset" "examples/pudge_wars/emscripten/$asset"
 done
 if [[ "$coach_use_softmax_key" == true ]]; then

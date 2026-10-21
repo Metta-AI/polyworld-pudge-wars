@@ -94,9 +94,10 @@ block:
   block lobby:
     var seats = newSeq[NetSeat](PudgeCount)
     seats[1] = NetSeat(name: "Bo", human: true, connected: true)
-    let msg = decodeNetMessage(packLobby(seats, started = true))
+    let msg = decodeNetMessage(packLobby(seats, started = true, humanPaced = true))
     doAssert msg.kind == NmLobby
     doAssert msg.lobby.started
+    doAssert msg.lobby.humanPaced
     doAssert msg.lobby.seats[1].name == "Bo"
     doAssert not msg.lobby.seats[0].human
   block slotGrant:
@@ -432,9 +433,10 @@ block:
   discard netClientPump(client)
   doAssert netClientPhase() == NcLobby
   netTestPush(packSlotGrant(0'i32, "tok", ""))
-  netTestPush(packStart(setup))
+  netTestPush(packStart(setup, humanPaced = true))
   let events = netClientPump(client)
   doAssert events.restarted, "reconnect Start must rebuild the follower world"
+  doAssert netHumanPaced(), "reconnect must restore the host clock"
   doAssert netClientPhase() == NcPlaying
   doAssert netClientSeat() == 0
   doAssert netTestReconnectAttempt() == 0

@@ -10,6 +10,7 @@ from collections import Counter
 import json
 import math
 from pathlib import Path
+import random
 from statistics import mean
 
 
@@ -64,7 +65,15 @@ def describe(rows):
         margin = result['west_kills'] - result['east_kills']
         margins.append(margin if row['candidate_side'] == 0 else -margin)
     return dict(games=len(rows), **{key: outcomes[key] for key in ['wins', 'losses', 'draws']},
-                banks=banks, win_rate=outcomes['wins'] / len(rows), mean_kill_margin=mean(margins))
+                banks=banks, win_rate=outcomes['wins'] / len(rows), mean_kill_margin=mean(margins), kill_margins=margins)
+
+
+def margin_difference_interval(baseline, candidate):
+    """Descriptive independent-episode bootstrap; never pair generated seeds."""
+    rng = random.Random(9152026)
+    draws = sorted(mean(rng.choices(candidate, k=len(candidate))) -
+                   mean(rng.choices(baseline, k=len(baseline))) for _ in range(10000))
+    return [draws[249], draws[9749]]
 
 
 def summarize(study, prefix, repeated_seeds='reject', game_version='0.3.13'):
@@ -121,10 +130,11 @@ def compare(baseline, candidate, minimum_unique=0):
     return dict(baseline=baseline, candidate=candidate, win_rate_difference=c - b,
                 win_rate_difference_95ci=[c - b - math.hypot(c - cl, bu - b), c - b + math.hypot(cu - c, b - bl)],
                 mean_kill_margin_difference=margin, fisher_exact_two_sided_p=p,
+                mean_kill_margin_difference_95ci=margin_difference_interval(baseline['kill_margins'], candidate['kill_margins']),
                 all_games_mean_kill_margin_difference=all_margin, minimum_unique=minimum_unique,
                 adequate_distinct_seeds=adequate,
                 meets_confirmation_outcome_rule=adequate and c > b and p < 0.05 and margin > 0 and all_margin > 0,
-                methods='One episode per distinct generated seed; Wilson 95% win-rate intervals; Newcombe difference interval; two-sided Fisher exact wins vs non-wins. All games also reported descriptively. Mechanism and guardrails assessed separately.')
+                methods='One episode per distinct generated seed; Wilson 95% win-rate intervals; Newcombe difference interval; two-sided Fisher exact wins vs non-wins. Score-margin difference uses 10000 independent-episode bootstrap resamples, RNG seed 9152026. All games also reported descriptively. Mechanism and guardrails assessed separately.')
 
 
 def support_rates(paths, expected_ids):

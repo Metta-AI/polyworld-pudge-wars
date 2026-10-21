@@ -1,0 +1,7 @@
+{
+  "unregistered_ir_rejected": true,
+  "unregistered_code_rejected": true,
+  "parent_lowering_byte_identical": true,
+  "engagement_byte_exact_roundtrip": true,
+  "fountain_byte_exact_roundtrip": true
+}
