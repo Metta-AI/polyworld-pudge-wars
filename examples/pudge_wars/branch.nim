@@ -75,13 +75,14 @@ proc rolloutGame(source: Game, world: World, slot: int,
   loadBots(result, [BotGroup(path: botPath, count: total - 1)])
 
 proc rollout*(source: Game, base: World, slot: int, option: string,
-    horizon: int32, seed: int, botPath: string): JsonNode =
+    horizon: int32, seed: int, botPath: string,
+    sighting = Sighting()): JsonNode =
   ## Runs one counterfactual from `base` and reports the deltas.
   let world = cloneWorld(base)
   if seed > 0:
     world.rng = initRng(source.map.seed, salt = uint64(seed) * 0x9E3779B97F4A7C15'u64)
   let game = rolloutGame(source, world, slot, botPath)
-  let pilot = rolloutPilot(game, slot, forced = option)
+  let pilot = rolloutPilot(game, slot, forced = option, sighting = sighting)
   let before = snapshot(world, slot)
   var steps = 0'i32
   while steps < horizon and not world.gameOver:
@@ -154,7 +155,7 @@ proc windowOptions*(world: World, slot: int): seq[string] =
 
 proc scoreWindow*(source: Game, slot: int, options: seq[string],
     horizon: int32, seeds: int, botPath: string,
-    teachers: seq[string] = @[]): seq[JsonNode] =
+    teachers: seq[string] = @[], sighting = Sighting()): seq[JsonNode] =
   ## Scores one window at the replay game's current tick, then asks each
   ## teacher script what it would do there. The game is left untouched:
   ## every rollout runs on a clone.
@@ -162,7 +163,8 @@ proc scoreWindow*(source: Game, slot: int, options: seq[string],
   let ids = if options.len > 0: options else: windowOptions(base, slot)
   for id in ids:
     for seed in 0 ..< max(seeds, 1):
-      result.add rollout(source, base, slot, id, horizon, seed, botPath)
+      result.add rollout(source, base, slot, id, horizon, seed, botPath,
+        sighting)
   for path in teachers:
     result.add %*{"tick": base.tick, "slot": slot,
       "teacher": teacherName(path),
@@ -183,10 +185,13 @@ proc runBranch*(game: Game, opts: BranchOptions) =
   var next = 0
   let last = if targets.len > 0: targets[^1] else: 0'i32
   var scored = 0
+  # What the seat had seen by each tick, as its own pilot would remember it.
+  var sighting: Sighting
   while next < targets.len and game.world.tick <= last:
+    sighting.noteSighting(game.world, opts.slot)
     if game.world.tick == targets[next]:
       for row in scoreWindow(game, opts.slot, opts.options, opts.horizon,
-          opts.seeds, opts.botPath, opts.teachers):
+          opts.seeds, opts.botPath, opts.teachers, sighting):
         if toFile:
           output.writeLine($row)
         else:

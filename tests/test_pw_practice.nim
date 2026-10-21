@@ -454,6 +454,24 @@ block:
   doAssert sample["cue"]["id"].getStr in sample["options"].mapIt(it.getStr)
 
 removeDir(traceRoot)
+echo "Testing a speculative hook aims the way the league script does"
+block:
+  # Nothing seen: straight across from our row, on the enemy bank.
+  let (x0, z0) = speculativeAim(Sighting(), 100, west = true, mz = 40.0)
+  let lip40 = float(RiverCenterX + riverHalfWidthAt(40) + 1)
+  doAssert x0 == max(float(RiverCenterX + 10), lip40) and z0 == 40.0, $x0 & "," & $z0
+  # A fresh sighting leads by the enemy's speed.
+  let moving = Sighting(seen: true, tick: 90, id: 3, x: 90.0, z: 50.0, vx: 0.5, vz: -0.25)
+  let (x1, z1) = speculativeAim(moving, 100, west = true, mz = 40.0)
+  doAssert abs(x1 - 95.0) < 1e-6 and abs(z1 - 47.5) < 1e-6, $x1 & "," & $z1
+  # A stale one keeps the row but throws just past the lip; never our bank.
+  let stale = Sighting(seen: true, tick: 0, id: 3, x: 90.0, z: 50.0)
+  let (x2, _) = speculativeAim(stale, 200, west = true, mz = 40.0)
+  let lip = float(RiverCenterX + riverHalfWidthAt(50) + 1)
+  doAssert x2 == max(float(RiverCenterX + 2), lip), $x2
+  let (x3, _) = speculativeAim(stale, 200, west = false, mz = 40.0)
+  doAssert x3 <= float(RiverCenterX - riverHalfWidthAt(50) - 1), $x3
+
 echo "practice tests passed"
 
 echo "Testing fitted thresholds replace the constants per option class"

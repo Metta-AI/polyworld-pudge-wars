@@ -67,6 +67,15 @@ const
   RecoverHpPercent = 85'i32
 
 type
+  Sighting* = object
+    ## The last enemy a seat saw through its own fog, and how fast it was
+    ## moving (tiles per tick), the memory a speculative hook leads from.
+    seen*: bool
+    tick*: int32
+    id*: int32
+    x*, z*, vx*, vz*: float
+
+type
   PracticeOption* = object
     id*, title*, why*, control*: string
     targetId*: int32
@@ -185,6 +194,8 @@ type
     forced*: string
       ## Rollouts: the option id the pilot must execute at its first
       ## window ("none" acts on nothing), before local guidance resumes.
+    sighting*: Sighting
+      ## The last enemy this seat saw, for speculative hooks.
     forcedQueued*: bool
       ## Whether the forced option translated into an intent.
     noise*: int32
@@ -197,6 +208,10 @@ type
     prevAllyHooked: int
     actionIndex: int
       ## Shadow seats: tape actions consumed so far.
+    prevObs: JsonNode
+    prevTick: int32
+      ## Shadow seats: the previous tick's observation, the state a script
+      ## decided in before the tick that carried out its action.
     forcedDone*: bool
       ## Whether the forced option has been executed.
 
@@ -285,6 +300,49 @@ proc enemies(view: HumanView): seq[Pudge] =
         dec j
       else:
         break
+
+proc noteSighting*(s: var Sighting, world: World, slot: int) =
+  ## Remembers the nearest enemy `slot` can see this tick, with its speed
+  ## from the previous sighting of the same enemy. Fog-fair: only what the
+  ## seat's own view shows.
+  if s.seen and s.tick == world.tick:
+    return
+  let seen = enemies(humanView(world, slot))
+  if seen.len == 0:
+    return
+  let
+    e = seen[0]
+    x = tileX(e.position)
+    z = tileZ(e.position)
+    dt = world.tick - s.tick
+  if s.seen and s.id == e.id and dt > 0 and dt <= 16:
+    s.vx = (x - s.x) / float(dt)
+    s.vz = (z - s.z) / float(dt)
+  else:
+    s.vx = 0
+    s.vz = 0
+  s = Sighting(seen: true, tick: world.tick, id: e.id, x: x, z: z,
+    vx: s.vx, vz: s.vz)
+
+proc speculativeAim*(s: Sighting, tick: int32, west: bool,
+    mz: float): (float, float) =
+  ## Where the league script throws a speculative hook: the last sighting
+  ## led by its speed, or straight across from our row when nothing has
+  ## been seen; just past the lip once the sighting is three seconds old.
+  ## Kept on the enemy bank and inside the arena margins.
+  var x = if west: float(RiverCenterX + 10) else: float(RiverCenterX - 10)
+  var z = mz
+  if s.seen:
+    let age = float(tick - s.tick)
+    z = s.z + s.vz * age
+    x = if age <= 96: s.x + s.vx * age
+        elif west: float(RiverCenterX + 2)
+        else: float(RiverCenterX - 2)
+  let row = int(clamp(z, 0.0, float(GridTiles - 1)))
+  let lip = riverHalfWidthAt(row) + 1
+  if west: x = clamp(x, float(RiverCenterX + lip), 113.0)
+  else: x = clamp(x, 14.0, float(RiverCenterX - lip))
+  (x, clamp(z, 16.0, 111.0))
 
 proc allies(view: HumanView): seq[Pudge] =
   for p in view.pudges:
@@ -1133,14 +1191,17 @@ proc closeSample(p: Practice, tick: int32) =
   p.hasOpen = false
   p.open = PracticeSample()
 
-proc openSample(p: Practice, world: World, tick: int32, trigger = "periodic") =
+proc openSample(p: Practice, world: World, tick: int32, trigger = "periodic",
+    observed: JsonNode = nil) =
+  ## Opens a window on the current options. `observed` replaces the live
+  ## observation when the window describes an earlier state.
   p.closeSample(tick)
   var optionIds, strategyIds: seq[string]
   for item in p.options:
     optionIds.add item.id
   for item in p.strategies:
     strategyIds.add item.id
-  let obs = observationJson(world, p.slot)
+  let obs = if observed != nil: observed else: observationJson(world, p.slot)
   if p.drafter == nil:
     p.drafter = newOracle()
   p.drafter.beginTick(tick)
@@ -1482,8 +1543,10 @@ proc consumeTapeActions(p: Practice, game: Game, tick: int32) =
       continue
     if id notin p.open.optionIds:
       # The window opened before this became possible (the hook came
-      # back, a point landed). Label the state the script decided in.
-      p.openSample(game.world, tick, "action")
+      # back, a point landed). Label the state the script decided in: the
+      # previous tick, whose options these are; this tick already carried
+      # the action out.
+      p.openSample(game.world, p.prevTick, "action", p.prevObs)
     p.open.humanId = id
     p.open.humanIntent = record
     p.closeSample(tick)
@@ -1698,10 +1761,10 @@ proc pilotIntent*(p: Practice, world: World, tick: int32,
     intent.b = int32(clamp(aim.aimZ, 0.0, float(GridTiles - 1)) * 256.0)
   let id = option.id
   if id == "hook_blind":
-    let across = if west: float(RiverCenterX + 10) else: float(RiverCenterX - 10)
+    let (ax, az) = speculativeAim(p.sighting, tick, west, mz)
     intent.kind = IntentHookFine
-    intent.a = int32(clamp(across, 0.0, float(GridTiles - 1)) * 256.0)
-    intent.b = int32(clamp(mz, 0.0, float(GridTiles - 1)) * 256.0)
+    intent.a = int32(clamp(ax, 0.0, float(GridTiles - 1)) * 256.0)
+    intent.b = int32(clamp(az, 0.0, float(GridTiles - 1)) * 256.0)
     return true
   if id.startsWith("hook_") or id.startsWith("follow_") or
       id.startsWith("rescue_"):
@@ -1851,6 +1914,7 @@ proc tickOne(p: Practice, game: Game) =
     me = world.pudges[p.slot]
   if p.client != nil:
     p.client.beginTick(tick)
+  p.sighting.noteSighting(world, p.slot)
   if p.actor == "bot":
     p.consumeTapeActions(game, tick)
   else:
@@ -1860,6 +1924,9 @@ proc tickOne(p: Practice, game: Game) =
     practiceFinish(game)
     return
   (p.options, p.strategies) = practiceOptions(world, p.slot)
+  if p.actor == "bot":
+    p.prevObs = observationJson(world, p.slot)
+    p.prevTick = tick
   p.trackOutcomes(world, me)
   p.pollJev(tick)
   if p.hasOpen and tick - p.open.tick >= AskEveryTicks:
@@ -1887,13 +1954,16 @@ proc practiceTick*(game: Game) =
   if game != nil and game.world.gameOver:
     pilotsEnd()
 
-proc rolloutPilot*(game: Game, slot: int, forced = ""): Practice =
+proc rolloutPilot*(game: Game, slot: int, forced = "",
+    sighting = Sighting()): Practice =
   ## A silent pilot for counterfactual rollouts: no model, no trace files,
-  ## local guidance after the forced first option. It is not registered
-  ## with the match; drive it with `rolloutTick`.
+  ## local guidance after the forced first option. `sighting` carries what
+  ## the seat remembered at the branch, so speculative hooks aim as they
+  ## would have. It is not registered with the match; drive it with
+  ## `rolloutTick`.
   result = Practice(enabled: true, visible: false, slot: slot,
     actor: "rollout", acts: true, status: "local", provider: "local",
-    model: "local", forced: forced)
+    model: "local", forced: forced, sighting: sighting)
   let me = game.world.pudges[slot]
   result.prevAlive = me.state == Alive
   result.prevKills = me.kills
