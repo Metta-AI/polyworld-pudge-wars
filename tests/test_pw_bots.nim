@@ -259,18 +259,19 @@ block:
   doAssert not game.heroVms[0].failed, game.heroVms[0].lastError
   doAssert game.world.pudges[0].points == 0,
     "base bot must dump every unspent kill point the same think"
-  doAssert game.world.pudges[0].upgrades[UpgradeDistance] == 3,
-    "base bot fills Hook Distance before the other skills"
-  doAssert game.world.pudges[0].upgrades[UpgradeRadius] == 0
+  doAssert game.world.pudges[0].upgrades[UpgradeRadius] == 3,
+    "base bot fills Hook Radius before the other skills"
+  doAssert game.world.pudges[0].upgrades[UpgradeDistance] == 0
   doAssert game.world.pudges[0].upgrades[UpgradeSpeed] == 0
   doAssert game.world.pudges[0].upgrades[UpgradeDamage] == 0
 
-echo "Testing the default bot rolls into speed once distance is maxed"
+echo "Testing the default bot rolls into speed once radius and distance are maxed"
 block:
   var game = newGame(map, 100, false, ReplayData())
   loadBots(game, [BotGroup(path: basePolicyPath, count: PudgeCount)])
   parkBots(game)
   game.world.pudges[0].upgrades[UpgradeDistance] = MaxUpgradeLevel
+  game.world.pudges[0].upgrades[UpgradeRadius] = MaxUpgradeLevel
   game.world.pudges[0].points = 2
   tickWorld(game, proc() = runBotDecisions(game))
   doAssert not game.heroVms[0].failed, game.heroVms[0].lastError

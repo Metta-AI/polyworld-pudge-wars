@@ -19,12 +19,15 @@
 
 import
   polyworld/[
-    basic, bodies, fixed, hashes, noises, pathing, profiles, rngs, tapes
+    bodies, fixed, hashes, noises, pathing, profiles, rngs, tapes
   ],
   cheats,
   content,
   maps,
   replays
+
+from bassy import Runtime, Limits, PrintProc
+from polyworld/timings import RequestPoll
 
 const
   runClip* = 0
@@ -66,6 +69,11 @@ type
     lastError*: string
     decisions*: int
     lastWork*, lastInstructions*: int64
+    prepareDecision*: proc(tick: int32)
+    pollRequests*: RequestPoll
+    closeServices*: proc()
+    output*: PrintProc
+      ## Hosted seats write only to their private log.
 
   Pudge* = object
     id*: int32

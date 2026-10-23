@@ -1,17 +1,18 @@
-## Coworld game host: native Pudge Wars sim, JSON player sockets, .pwr tape.
+## Coworld game host: native simulation, BASIC league or JSON human play.
 ##
-## The 32 Hz clock lives here. League policies speak walk_to / hook_to /
+## Build with -d:basicLeague for runner-staged BASIC seats. Otherwise policies
+## speak walk_to / hook_to /
 ## blink_to JSON; those become human intents on the same record-then-apply
 ## path as ./pw. Player observations are fog-clipped like BASIC bots.
 
 import
   std/[
     httpclient, json, locks, math, monotimes, os, sequtils, strutils, tables,
-    times, uri
+    times, uri, posix
   ],
   mummy, mummy/routers,
   polyworld/pathing,
-  content, maps, sim, bots, replays, fog, netproto
+  content, maps, sim, bots, replays, fog, netproto, fileplayers
 
 const
   PlayerHtml = staticRead("coworld_player.html")
@@ -19,6 +20,7 @@ const
   ArenaJs = staticRead("coworld_arena.js")
   UserAgent = "coworld-pudgewars/0.3"
   HttpTimeoutMs = 60_000
+  LeagueRuntime = defined(basicLeague)
 
 type
   SessionKind = enum
@@ -71,6 +73,7 @@ var
   killGoal: int32
   seed: int32
   fogOn* = true
+  waitForLlm = true
   connectTimeoutSec = 180.0
   resultsUri = ""
   replayUri = ""
@@ -79,6 +82,7 @@ var
   started = false
   done = false
   replayMode = false
+  fileSeats: FilePlayers
   lastAccepted: seq[JsonNode]
     ## Per-seat echo of the intents just applied. Sent on the next
     ## observation so a JSON policy can trust hookTo/blinkTo.
@@ -1084,6 +1088,15 @@ proc finishMatch() =
   if done:
     return
   done = true
+  if LeagueRuntime:
+    # Artifacts must be complete before results become visible to collection.
+    if game.recordingError.len > 0:
+      raise newException(FilePlayerError, "Replay recording failed")
+    let replay = encodeCoworldReplay(game.recorder.data)
+    fileSeats.finish(game)
+    writeAtomic(localPath(replayUri), replay)
+    writeAtomic(localPath(resultsUri), $resultsJson())
+    return
   writeReplayArtifact()
   try:
     writeBytes(
@@ -1114,13 +1127,16 @@ proc healthzHandler(request: Request) {.gcsafe.} =
   request.respond(200, jsonHeaders(), "{\"ok\":true}")
 
 proc playerPageHandler(request: Request) {.gcsafe.} =
-  let clientUrl = getEnv("PUDGE_WARS_CLIENT_URL")
-  doAssert clientUrl.len > 0, "PUDGE_WARS_CLIENT_URL must point to the matching WASM build"
-  request.respond(200, htmlHeaders(), PlayerHtml.replace("__WASM_CLIENT_URL__", $(%clientUrl)))
+  when defined(basicLeague):
+    request.respond(200, htmlHeaders(), GlobalHtml)
+  else:
+    let clientUrl = getEnv("PUDGE_WARS_CLIENT_URL")
+    doAssert clientUrl.len > 0, "PUDGE_WARS_CLIENT_URL must point to the matching WASM build"
+    request.respond(200, htmlHeaders(), PlayerHtml.replace("__WASM_CLIENT_URL__", $(%clientUrl)))
 
 proc globalPageHandler(request: Request) {.gcsafe.} =
   {.gcsafe.}:
-    if replayMode:
+    if replayMode or LeagueRuntime:
       request.respond(200, htmlHeaders(), GlobalHtml)
     else:
       playerPageHandler(request)
@@ -1208,6 +1224,20 @@ proc serveThread() {.thread.} =
       echo "coworld host stopped: ", error.msg
 
 proc parseConfig(node: JsonNode) =
+  if LeagueRuntime:
+    if node.kind != JObject or not node.hasKey("tokens") or
+        node["tokens"].kind != JArray or not node.hasKey("players") or
+        node["players"].kind != JArray or
+        node["players"].len != node["tokens"].len or
+        not node.hasKey("seed") or node["seed"].kind != JInt or
+        node["seed"].getBiggestInt < low(int32) or
+        node["seed"].getBiggestInt > high(int32) or
+        not node.hasKey("max_ticks") or node["max_ticks"].kind != JInt or
+        node["max_ticks"].getBiggestInt notin 1'i64 .. 40000'i64 or
+        not node.hasKey("kill_goal") or node["kill_goal"].kind != JInt or
+        node["kill_goal"].getBiggestInt notin 1'i64 .. 40'i64 or
+        not node{"fog"}.getBool(true):
+      raise newException(FilePlayerError, "Invalid BASIC league configuration")
   tokens.setLen(0)
   for token in node["tokens"]:
     tokens.add token.getStr
@@ -1220,6 +1250,7 @@ proc parseConfig(node: JsonNode) =
   maxTicks = int32(node["max_ticks"].getInt)
   killGoal = int32(node{"kill_goal"}.getInt(int(KillGoal)))
   fogOn = node{"fog"}.getBool(true)
+  waitForLlm = node{"wait_for_llm"}.getBool(true)
   connectTimeoutSec = node{"player_connect_timeout_seconds"}.getFloat(180.0)
   if node.hasKey("seed") and node["seed"].kind != JNull:
     seed = int32(node["seed"].getInt)
@@ -1242,8 +1273,9 @@ proc bootGame() =
     duel
   )
   game.humanSlots.setLen(0)
-  for i in 0 ..< game.world.pudges.len:
-    game.humanSlots.add i
+  if not LeagueRuntime:
+    for i in 0 ..< game.world.pudges.len:
+      game.humanSlots.add i
   applySeatLabels(game, playerNames)
   playerSockets.setLen(tokens.len)
   playerConnected.setLen(tokens.len)
@@ -1270,6 +1302,15 @@ proc loadEnv() =
   replayMethod = envMethod("COGAME_SAVE_REPLAY_METHOD", "PUT")
   if resultsUri.len == 0 or replayUri.len == 0:
     raise newException(CatchableError, "results and replay URIs are required")
+  if LeagueRuntime:
+    discard localPath(resultsUri)
+    discard localPath(replayUri)
+    fileSeats = openFilePlayers(parseJson(readFile(localPath(
+      getEnv("COGAME_PLAYER_SEATS_URI")))), tokens.len,
+      getEnv("COGAME_PLAYER_FAILURE_URI"))
+
+proc completedSignal(signal: cint) {.noconv.} =
+  exitnow(QuitSuccess)
 
 proc main() =
   initLock(inboundLock)
@@ -1282,9 +1323,11 @@ proc main() =
   router.get("/client/player", playerPageHandler)
   router.get("/client/global", globalPageHandler)
   router.get("/client/arena.js", arenaHandler)
-  router.get("/player", upgradePlayer)
+  if not LeagueRuntime:
+    router.get("/player", upgradePlayer)
   router.get("/global", upgradeGlobal)
-  router.get("/ws", upgradeGame)
+  if not LeagueRuntime:
+    router.get("/ws", upgradeGame)
   hostServer = newServer(
     router, websocketHandler, maxMessageLen = WsMaxMessageLen
   )
@@ -1293,6 +1336,27 @@ proc main() =
   echo "coworld listening"
   if replayMode:
     joinThread(thread)
+    return
+  if LeagueRuntime:
+    if fileSeats.load(game):
+      started = true
+      game.recorder = initReplayRecorder(currentSetup(game, uint32(maxTicks)))
+      game.replayPlayer = ReplayPlayer(data: game.recorder.data)
+      while game.world.tick < maxTicks and not game.world.gameOver and
+          game.recordingError.len == 0:
+        tickWorld(game, proc() = runBotDecisions(game))
+        if waitForLlm:
+          game.waitForBotRequests()
+        fileSeats.captureErrors(game)
+        if game.world.tick mod 32 == 0:
+          drainInbound()
+          broadcastGlobal()
+      finishMatch()
+    # Collection probes health and reads artifacts before stopping the host.
+    discard posix.signal(SIGTERM, completedSignal)
+    while true:
+      drainInbound()
+      sleep(50)
     return
   let deadline = epochTime() + connectTimeoutSec
   while connectedPlayerCount() < tokens.len and epochTime() < deadline:

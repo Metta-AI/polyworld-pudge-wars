@@ -257,7 +257,7 @@ end if
 
 engageNow = engageDist + 4 * upgradeLevel(1) + upgradeLevel(3)
 if selfBuff = 4 then
-  engageNow = engageNow + engageNow / 2
+  engageNow = engageNow + engageNow \ 2
 end if
 leadNow = leadDiv + upgradeLevel(2)
 if leadNow < 1 then
@@ -615,8 +615,8 @@ if dodgeBlink = 1 then
       if dy > span then
         span = dy
       end if
-      aimX = ex + evx * span / leadNow
-      aimY = ey + evy * span / leadNow
+      aimX = ex + evx * span \ leadNow
+      aimY = ey + evy * span \ leadNow
       if aimX < 8 then
         aimX = 8
       end if
@@ -649,8 +649,8 @@ if hookReady = 1 then
   if headIdx >= 0 then
     hx = objectX(headIdx)
     hy = objectY(headIdx)
-    hx = hx + (allyX - hx) / 2
-    hy = hy + (allyY - hy) / 2
+    hx = hx + (allyX - hx) \ 2
+    hy = hy + (allyY - hy) \ 2
     thrown = hookTo(hx, hy)
     if thrown = 1 then
       mood = 2
@@ -679,8 +679,8 @@ else
         if headIdx >= 0 then
           hx = objectX(headIdx)
           hy = objectY(headIdx)
-          hx = hx + (allyX - hx) / 2
-          hy = hy + (allyY - hy) / 2
+          hx = hx + (allyX - hx) \ 2
+          hy = hy + (allyY - hy) \ 2
           thrown = hookTo(hx, hy)
           mood = 2
         end if
@@ -711,8 +711,8 @@ else
                 if dy > span then
                   span = dy
                 end if
-                aimX = ex + evx * span / leadNow
-                aimY = ey + evy * span / leadNow
+                aimX = ex + evx * span \ leadNow
+                aimY = ey + evy * span \ leadNow
                 if aimX < 8 then
                   aimX = 8
                 end if
@@ -760,7 +760,7 @@ else
     end if
     ' Movement stacks under the throw.
     if escaping = 1 then
-      zig = ((worldTick / 12) mod 2) * 2 - 1
+      zig = ((worldTick \ 12) mod 2) * 2 - 1
       ezY = selfY + zig * 8
       if ezY < 8 then
         ezY = 8
@@ -830,11 +830,11 @@ else
           end if
         else
         if mood <> 1 then
-          phase = (worldTick / 6 + selfId * 7) mod 24
+          phase = (worldTick \ 6 + selfId * 7) mod 24
           if phase < 12 then
-            juke = phase / 3 - 2
+            juke = phase \ 3 - 2
           else
-            juke = 6 - phase / 3
+            juke = 6 - phase \ 3
           end if
           standoff = holdBack
           if cutterMode = 1 then
@@ -847,7 +847,7 @@ else
             lineX = edgeX + standoff
           end if
           if laneAllies <= 1 then
-            lineY = pokeY + juke * jukeAmp / 2 + islandSide * 14
+            lineY = pokeY + juke * jukeAmp \ 2 + islandSide * 14
           else
             lineY = 40 + laneRank * 24 + juke + islandSide * 10
           end if

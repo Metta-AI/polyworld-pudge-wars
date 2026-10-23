@@ -1,86 +1,225 @@
 {
   "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
-  "tags": ["strategy", "real-time", "multiplayer", "team"],
+  "tags": [
+    "strategy",
+    "real-time",
+    "multiplayer",
+    "team"
+  ],
   "game": {
-    "name": "pudge-wars",
-    "description": "Two banks split by a river, six butchers, one hook. First team to 30 wins. Fog on the enemy bank. Platform-ladder 3v3 clone teams, plus a sibling 1v1 duel league.",
+    "name": "pudge-wars-basic",
+    "description": "BASIC and neural file policies in a deterministic river arena, with optional Jev judgments. Two teams of butchers hook, blink and fight to the kill goal.",
     "owner": "coworld@softmax.com",
     "runnable": {
       "type": "game",
       "image": "{{PUDGEWARS_IMAGE}}",
-      "run": ["pwcoworld"],
-      "env": { "PUDGE_WARS_CLIENT_URL": "https://pudge-wars-site-theta.vercel.app/play/bundles/16ee23ead8a7ca64/pw.html" },
+      "run": [
+        "pwleague"
+      ],
+      "env": {
+        "COGAME_PLAYER_SEATS_SCHEMA": "coworld-player-seats/2"
+      },
       "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main"
     },
     "replay_viewer": {
-      "bundle": "static-replay-viewer",
+      "bundle": "sha256:bbbd87e990e2779988f308dc3300ab97527923ccc2786d7226606524a6880a12",
       "replay_compression": "gzip"
     },
     "config_schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "additionalProperties": false,
-      "required": ["tokens", "players", "max_ticks", "tick_rate", "kill_goal"],
+      "required": [
+        "tokens",
+        "players",
+        "seed",
+        "max_ticks",
+        "kill_goal"
+      ],
       "properties": {
         "tokens": {
           "type": "array",
           "minItems": 2,
-          "maxItems": 6,
-          "items": { "type": "string", "minLength": 1 }
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "anyOf": [
+            {
+              "minItems": 2,
+              "maxItems": 2
+            },
+            {
+              "minItems": 4,
+              "maxItems": 4
+            },
+            {
+              "minItems": 6,
+              "maxItems": 6
+            },
+            {
+              "minItems": 8,
+              "maxItems": 8
+            },
+            {
+              "minItems": 10,
+              "maxItems": 10
+            }
+          ]
         },
         "players": {
           "type": "array",
           "minItems": 2,
-          "maxItems": 6,
+          "maxItems": 10,
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
-              "name": { "type": "string", "minLength": 1 }
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
             }
-          }
+          },
+          "anyOf": [
+            {
+              "minItems": 2,
+              "maxItems": 2
+            },
+            {
+              "minItems": 4,
+              "maxItems": 4
+            },
+            {
+              "minItems": 6,
+              "maxItems": 6
+            },
+            {
+              "minItems": 8,
+              "maxItems": 8
+            },
+            {
+              "minItems": 10,
+              "maxItems": 10
+            }
+          ]
         },
-        "max_ticks": { "type": "integer", "minimum": 1, "maximum": 40000 },
-        "tick_rate": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
-        "kill_goal": { "type": "integer", "minimum": 1, "maximum": 40 },
-        "seed": { "type": "integer" },
-        "fog": { "type": "boolean", "default": true },
-        "player_connect_timeout_seconds": { "type": "number", "minimum": 0, "default": 180 }
+        "max_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 40000
+        },
+        "kill_goal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 40
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        },
+        "fog": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "wait_for_llm": {
+          "type": "boolean",
+          "default": true,
+          "description": "Wait for all seats\u2019 concurrent LLM/Jev requests between simulation ticks."
+        }
       }
     },
     "results_schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "additionalProperties": false,
-      "required": ["scores", "winner_team", "west_kills", "east_kills", "end_tick", "end_reason", "seed", "kill_goal", "per_seat"],
+      "required": [
+        "scores",
+        "winner_team",
+        "west_kills",
+        "east_kills",
+        "end_tick",
+        "end_reason",
+        "seed",
+        "kill_goal",
+        "per_seat"
+      ],
       "properties": {
         "scores": {
           "type": "array",
           "minItems": 2,
-          "maxItems": 6,
-          "items": { "type": "number" }
+          "maxItems": 10,
+          "items": {
+            "type": "number"
+          }
         },
-        "winner_team": { "type": "string", "enum": ["west", "east", "draw"] },
-        "west_kills": { "type": "integer", "minimum": 0 },
-        "east_kills": { "type": "integer", "minimum": 0 },
-        "end_tick": { "type": "integer", "minimum": 0 },
-        "end_reason": { "type": "string" },
-        "seed": { "type": "integer" },
-        "kill_goal": { "type": "integer" },
+        "winner_team": {
+          "type": "string",
+          "enum": [
+            "west",
+            "east",
+            "draw"
+          ]
+        },
+        "west_kills": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "east_kills": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_reason": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "kill_goal": {
+          "type": "integer"
+        },
         "per_seat": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["slot", "team", "kills", "deaths", "hooks_thrown", "hooks_landed"],
+            "required": [
+              "slot",
+              "team",
+              "kills",
+              "deaths",
+              "hooks_thrown",
+              "hooks_landed"
+            ],
             "properties": {
-              "slot": { "type": "integer" },
-              "team": { "type": "integer" },
-              "kills": { "type": "integer" },
-              "deaths": { "type": "integer" },
-              "hooks_thrown": { "type": "integer" },
-              "hooks_landed": { "type": "integer" }
+              "slot": {
+                "type": "integer"
+              },
+              "team": {
+                "type": "integer"
+              },
+              "kills": {
+                "type": "integer"
+              },
+              "deaths": {
+                "type": "integer"
+              },
+              "hooks_thrown": {
+                "type": "integer"
+              },
+              "hooks_landed": {
+                "type": "integer"
+              }
             }
           }
         }
@@ -89,114 +228,156 @@
     "protocols": {
       "player": {
         "type": "text",
-        "value": "Connect to COWORLD_PLAYER_WS_URL. One observation per tick after the sim step; the reply is applied on the next tick (fixed 1-tick latency) before that tick's observation is built. Reply with {walk_to, hook_to, blink_to, attack_target, rot, place_wall, place_mine, place_ward, halt, ping, buy_upgrade, buy_power, print}. rot is a set (true|false), not a toggle; rot_toggle still works. buy_upgrade is 0 damage / 1 distance / 2 speed / 3 radius (int or array). buy_power is the shop catalog 0-9 (own pad); self.items / self.item_ranks are the five permanent ranks (treads, longflight, palisade, hooktrap, ward) occupying a six-well bag (a planted ward frees its well). self.upgrades, self.rot, self.shield (ticks), self.buff (kind+1), and self.blink_ready (cooldown, windup, hooked, and rot) match the in-engine checks. accepted echoes only what the previous reply asked ({hook_to: true, blink_to: \"cooldown\", buy_upgrade: [true, \"points\"]}; arrays echo as arrays). print is the intent bubble, echoed on self.say/say_tick. river_west/river_east are inclusive water columns; play_west_max/play_east_min are the land lips BASIC riverWest/riverEast use. objects is the flat fog-clipped BASIC list (roster pudges then props; kind 1 butcher, 2 wall, 3 mine, 4 ward). ally_ping carries age in ticks. Coordinates are tiles on the 128 map. game_version is the replay/simulator version (37 in this release). Base HP is 1200. Blink has a 20-tile range and may cross the river near the fountain when its destination is clear land; only the landing point is collision-tested, and landing on the fountain remains blocked. Empty action is sticky. visible.pudges/hooks/runes/props are fog-clipped (home bank + river always; enemy bank needs a living teammate within 20 tiles). Seats 0-2 West, 3-5 East (team_pair blocks). Final message type=final. Farwatch Ward (shop item 9) is now a free consumable charge: at most one carried, 60-second shop restock exposed as self.ward_restock, 32-tile Chebyshev placement on either bank, and a 45-second lifetime. Planting consumes the charge. visible.fires contains public Lightning fire patches with owner_id, team, x, y and ticks; hostile trails deal periodic damage. Lightning throws fly and reel at double hook speed. Fire trails come from the charged hook only (not walking or blink) and light the thrower's team through fog. Existing player action keys remain supported."
+        "value": "Upload raw UTF-8 BASIC source (up to 64 KiB) or a ZIP package (up to 16 MiB, 256 files) containing exactly one .bas entry and read-only model resources. Files are detected by content, including extensionless staged uploads. One isolated Bassy VM per seat: persistent variables and tensors, 100,000 instructions and 250,000 work units per decision, 2 MiB BASIC memory and 32 MiB native tensor memory. Use GotA-compatible tensor operations and tensors.json to implement feed-forward or recurrent neural networks in BASIC. The policy constructs fog-clipped observations and issues ordinary game actions; model outputs never bypass game rules. Host action arguments require exact integers; / is Q16.16 division and \\ is integer division. Optional LLM and Jev oracle functions use the host-configured sidecar, with X-Coworld-Player-Slot attribution. No credentials or arbitrary filesystem/network access are exposed to BASIC. wait_for_llm defaults to true: all seats submit concurrently, then the host waits between ticks for replies or timeouts. With async requests or external inference, live runs need not reproduce identical actions; action replays remain verifiable. PRINT, diagnostics and annotations are private to the seat. Compilation/package errors fail the attributed seat; runtime errors disable only that VM. See the bundled BASIC, neural ZIP and Jev examples and coworld/INFERENCE.md."
       },
       "global": {
         "type": "text",
-        "value": "GET /client/player and /client/global open the version-pinned WASM game (native 3D renderer) over the binary /ws endpoint. The browser launcher preserves Softmax proxy paths and player seat credentials from address=. JSON policies still connect to /player. Observatory replays use the same WASM bundle with index.html?replay=<url>. The public replay copy is gzip; the viewer sniffs 1f 8b."
+        "value": "GET /healthz reports readiness. /global is the global spectator WebSocket with Ping/Pong. /client/global serves the global snapshot viewer. Completed episodes use the bundled WASM replay viewer. League episodes do not accept human or JSON policy actions."
       }
     },
     "docs": {
       "readme": {
         "type": "text",
-        "value": "# Pudge Wars\n\nTwo banks, a river, six butchers, one hook. League 3v3 is first to 30 kills within twenty minutes at 32 Hz; Duel 1v1 is first to 10 within eight minutes. A base hook deals 200 damage against 1,200 HP. Use walk_to, hook_to, blink_to, rot, buy_upgrade and buy_power. Fog hides the enemy bank until an ally or ward supplies vision.\n\nThis release is simulator 37. Lightning throws fly and reel at double hook speed. Fire trails come from the charged hook only, pulse hostile damage, and light the thrower's team through fog. It keeps 1,200 HP, 20-tile fountain Blink crossings (landing on the fountain stays blocked), red/blue butcher models, stone terrain and lava visuals, policy nameplates, the six-slot inventory, free consumable Farwatch Wards, and chain-clash shocks. A ward is picked up at the shop, plants up to 32 tiles away, lasts 45 seconds, and restocks after 60 seconds.\n\nBundled Rusher uses the improved Base Python policy with deliberate ally healing, separated fishing lanes, team recovery from below 40% HP until 75%, and guarded fountain escapes toward its home bank; Camper and Sniper retain their own strategies. Docker policy hosting and the existing JSON action protocol remain supported. The WASM replay and human client is built with the same simulator as the game image."
+        "value": "# Pudge Wars BASIC and neural policies\n\nUpload raw UTF-8 BASIC source (up to 64 KiB) or a ZIP package (up to 16 MiB, 256 files) containing exactly one .bas entry and read-only model resources. Files are detected by content, including extensionless staged uploads. One isolated Bassy VM per seat: persistent variables and tensors, 100,000 instructions and 250,000 work units per decision, 2 MiB BASIC memory and 32 MiB native tensor memory. Use GotA-compatible tensor operations and tensors.json to implement feed-forward or recurrent neural networks in BASIC. The policy constructs fog-clipped observations and issues ordinary game actions; model outputs never bypass game rules. Host action arguments require exact integers; / is Q16.16 division and \\ is integer division. Optional LLM and Jev oracle functions use the host-configured sidecar, with X-Coworld-Player-Slot attribution. No credentials or arbitrary filesystem/network access are exposed to BASIC. wait_for_llm defaults to true: all seats submit concurrently, then the host waits between ticks for replies or timeouts. With async requests or external inference, live runs need not reproduce identical actions; action replays remain verifiable. PRINT, diagnostics and annotations are private to the seat. Compilation/package errors fail the attributed seat; runtime errors disable only that VM. See the bundled BASIC, neural ZIP and Jev examples and coworld/INFERENCE.md.\n\nSlots are contiguous banks: first half West, second half East. league-3v3 uses six seats, first to 30 within 38,400 ticks; duel-1v1 uses two seats, first to 10 within 15,360 ticks. Each winning seat scores 1; losses and draws score 0. At the time limit the bank ahead wins. BASIC can use integer, fixed-point or float32 tensors; float32 is confined to tensor operations. Uploaded native or Python code is never executed. Existing container policies must be rewritten as BASIC or a BASIC-plus-weights package. Game authors can read uploaded policy files."
       }
-    }
+    },
+    "player_runtime": "game-hosted"
   },
   "player": [
     {
-      "id": "pudge-camper",
-      "name": "Camper",
+      "id": "base",
+      "name": "Base",
       "type": "player",
-      "image": "{{PUDGEWARS_IMAGE}}",
-      "run": ["python", "-m", "coworld.examples.pudgewars.player.player"],
-      "env": { "PUDGE_PERSONALITY": "camper" },
-      "description": "Holds 16 tiles off the waterline. Spends kill points into damage then reach, blinks to dodge and stretch, and hooks the most likely far-bank ghost when fogged.",
-      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/player"
+      "file": "players/base.bas",
+      "description": "Editable base BASIC policy.",
+      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/players"
     },
     {
-      "id": "pudge-rusher",
-      "name": "Rusher",
+      "id": "aggressive",
+      "name": "Aggressive",
       "type": "player",
-      "image": "{{PUDGEWARS_IMAGE}}",
-      "run": ["python", "-m", "coworld.examples.pudgewars.player.player"],
-      "env": { "PUDGE_PERSONALITY": "rusher", "PUDGE_POLICY_ARM": "combined" },
-      "description": "Base-derived policy with predictive hooks, defensive Blink, ally-safe throws and rescues, deliberate healing, stable fishing lanes, one rune collector, sustained team recovery, safe fountain escapes, and shop upgrades.",
-      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/player"
+      "file": "players/aggressive.bas",
+      "description": "Editable aggressive BASIC policy.",
+      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/players"
     },
     {
-      "id": "pudge-sniper",
+      "id": "sniper",
       "name": "Sniper",
       "type": "player",
-      "image": "{{PUDGEWARS_IMAGE}}",
-      "run": ["python", "-m", "coworld.examples.pudgewars.player.player"],
-      "env": { "PUDGE_PERSONALITY": "sniper" },
-      "description": "Standoff thrower. Spends kill points into hook distance, saves the hook for wounded or high-likelihood ghosts, blinks inland off inbound chains, never dives.",
-      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/player"
+      "file": "players/sniper.bas",
+      "description": "Editable sniper BASIC policy.",
+      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/players"
+    },
+    {
+      "id": "neural",
+      "name": "Neural",
+      "type": "player",
+      "file": "players/neural.zip",
+      "description": "Illustrative tensor MLP policy (hand-authored weights).",
+      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/examples/pudge_wars/players"
     }
   ],
   "variants": [
     {
       "id": "league-3v3",
       "name": "League 3v3",
-      "description": "Canonical ladder board. Six seats, first to 30, up to twenty minutes at 32 Hz.",
+      "description": "Two contiguous teams of three BASIC seats.",
       "game_config": {
+        "players": [
+          {
+            "name": "Seat 0"
+          },
+          {
+            "name": "Seat 1"
+          },
+          {
+            "name": "Seat 2"
+          },
+          {
+            "name": "Seat 3"
+          },
+          {
+            "name": "Seat 4"
+          },
+          {
+            "name": "Seat 5"
+          }
+        ],
+        "seed": 2026,
         "max_ticks": 38400,
-        "tick_rate": 32,
         "kill_goal": 30,
         "fog": true,
-        "player_connect_timeout_seconds": 180,
-        "players": [
-          { "name": "West 1" },
-          { "name": "West 2" },
-          { "name": "West 3" },
-          { "name": "East 1" },
-          { "name": "East 2" },
-          { "name": "East 3" }
-        ]
+        "wait_for_llm": true
       }
     },
     {
       "id": "duel-1v1",
       "name": "Duel 1v1",
-      "description": "One butcher a side on the middle lane.",
+      "description": "One BASIC seat per bank.",
       "game_config": {
+        "players": [
+          {
+            "name": "West"
+          },
+          {
+            "name": "East"
+          }
+        ],
+        "seed": 2026,
         "max_ticks": 15360,
-        "tick_rate": 32,
         "kill_goal": 10,
         "fog": true,
-        "player_connect_timeout_seconds": 180,
-        "players": [
-          { "name": "West" },
-          { "name": "East" }
-        ]
+        "wait_for_llm": true
       }
     }
   ],
   "certification": {
     "game_config": {
-      "max_ticks": 160,
-      "tick_rate": 32,
-      "kill_goal": 3,
-      "seed": 7,
-      "fog": true,
-      "player_connect_timeout_seconds": 30,
       "players": [
-        { "name": "Camper A" },
-        { "name": "Rusher A" },
-        { "name": "Sniper A" },
-        { "name": "Camper B" },
-        { "name": "Rusher B" },
-        { "name": "Sniper B" }
-      ]
+        {
+          "name": "Seat 0"
+        },
+        {
+          "name": "Seat 1"
+        },
+        {
+          "name": "Seat 2"
+        },
+        {
+          "name": "Seat 3"
+        },
+        {
+          "name": "Seat 4"
+        },
+        {
+          "name": "Seat 5"
+        }
+      ],
+      "seed": 2026,
+      "max_ticks": 38400,
+      "kill_goal": 30,
+      "fog": true,
+      "wait_for_llm": true
     },
     "players": [
-      { "player_id": "pudge-camper" },
-      { "player_id": "pudge-rusher" },
-      { "player_id": "pudge-sniper" },
-      { "player_id": "pudge-camper" },
-      { "player_id": "pudge-rusher" },
-      { "player_id": "pudge-sniper" }
+      {
+        "player_id": "base"
+      },
+      {
+        "player_id": "aggressive"
+      },
+      {
+        "player_id": "sniper"
+      },
+      {
+        "player_id": "base"
+      },
+      {
+        "player_id": "aggressive"
+      },
+      {
+        "player_id": "neural"
+      }
     ]
   }
 }

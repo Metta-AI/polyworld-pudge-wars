@@ -51,7 +51,7 @@ if selfInShop = 1 then
 end if
 reachNow = 36 + 4 * upgradeLevel(1) + upgradeLevel(3)
 if selfBuff = 4 then
-  reachNow = reachNow + reachNow / 2
+  reachNow = reachNow + reachNow \ 2
 end if
 
 headId = 0
@@ -383,8 +383,8 @@ else
           mood = 9
         else
           if headId <> 0 then
-            hx = headX + (homeX - headX) / 2
-            hy = headY + (homeY - headY) / 2
+            hx = headX + (homeX - headX) \ 2
+            hy = headY + (homeY - headY) \ 2
             hookTo(hx, hy)
             mood = 4
           else

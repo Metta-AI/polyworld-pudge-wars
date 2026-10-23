@@ -1,0 +1,34 @@
+{
+  "round_interval_minutes": 32,
+  "ladder": {
+    "enabled": true,
+    "scheduler": {
+      "strategy": "team_n",
+      "insufficient_players": "filler_policy",
+      "num_episodes": 24,
+      "team_count": 2,
+      "matchmaking": "elo_softmax",
+      "matchmaking_temperature": 100.0,
+      "team_layout": "blocks",
+      "distinct_teammates": true
+    },
+    "fulfillment": {
+      "allowed_failures": 0.0,
+      "retry_times": 2
+    },
+    "ranking": {
+      "algorithm": "openskill",
+      "mu": 25.0,
+      "sigma": 8.333333333333334,
+      "round_scoring_rule": "mean"
+    },
+    "divisions": [
+      {
+        "division_id": "div_471aedc1-00f7-41dd-971d-f0beff95a439",
+        "name": "Competition",
+        "disqualify_after_consecutive_failures": 3
+      }
+    ],
+    "players_per_user": 6
+  }
+}

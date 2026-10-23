@@ -1,9 +1,9 @@
 # Build and deploy the source-owned Pudge Wars Coworld package.
 #
 # Lifecycle:
-#   1. `coworld next-version pudge-wars` allocates the next registry version.
+#   1. `coworld next-version pudge-wars-basic` allocates the next registry version.
 #   2. `coworld build` builds the linux/amd64 game image from coworld/compose.yaml,
-#      compiles the Emscripten replay viewer, pins source URLs to this checkout,
+#      reuses the certified simulator-37 replay viewer, pins source URLs,
 #      stamps the version, and writes the hydrated manifest.
 #   3. Upload that exact hydrated manifest. Upload queues hosted certification
 #      and does not patch an existing hosted Coworld.
@@ -14,21 +14,16 @@
 #                               NOT from this env var, so the workflow seeds it
 #                               headlessly via `softmax set-token`. Reuse the same
 #                               token as Metta-AI/coworld-crewrift.
-#   POLYWORLD_DATA_SSH_KEY    - private half of a read-only deploy key on
-#                               Metta-AI/polyworld-data (replay-viewer art).
-#                               GITHUB_TOKEN cannot clone a sibling private repo.
 #
 # The Coworld CLI is installed from the public package repo so deploys use the
 # current registry/version allocator without waiting for a PyPI release.
-name: "Deploy Pudge Wars Game"
+name: "Deploy Pudge Wars BASIC Game"
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       version:
-        description: "Explicit pudge-wars version to publish. Leave blank to auto-resolve."
+        description: "Explicit pudge-wars-basic version to publish. Leave blank to auto-resolve."
         required: false
         default: ""
       skip_upload:
@@ -54,24 +49,6 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-
-      - name: Require polyworld-data deploy key
-        env:
-          POLYWORLD_DATA_SSH_KEY: ${{ secrets.POLYWORLD_DATA_SSH_KEY }}
-        run: |
-          if [ -z "$POLYWORLD_DATA_SSH_KEY" ]; then
-            echo "::error::SOFTMAX_OBSERVATORY secret POLYWORLD_DATA_SSH_KEY is empty. Add a read-only deploy key on Metta-AI/polyworld-data and store the private key in that environment secret. GITHUB_TOKEN cannot clone that private repo."
-            exit 1
-          fi
-
-      - name: Checkout polyworld-data
-        uses: actions/checkout@v4
-        with:
-          repository: Metta-AI/polyworld-data
-          path: polyworld_data
-          ref: main
-          ssh-key: ${{ secrets.POLYWORLD_DATA_SSH_KEY }}
-          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -108,9 +85,8 @@ jobs:
             fi
           } > nim.cfg
 
-      - uses: emscripten-core/setup-emsdk@v16
-        with:
-          version: 6.0.3
+      - name: Test BASIC league contracts
+        run: bash scripts/test_league.sh
 
       - uses: docker/setup-buildx-action@v3
 
@@ -145,10 +121,10 @@ jobs:
           if [ -n "$INPUT_VERSION" ]; then
             NEXT="$INPUT_VERSION"
           else
-            NEXT=$(uvx --from "$COWORLD_CLI" coworld --elevated next-version pudge-wars)
+            NEXT=$(uvx --from "$COWORLD_CLI" coworld --elevated next-version pudge-wars-basic)
           fi
           echo "version=${NEXT}" >> "$GITHUB_OUTPUT"
-          echo "Deploying pudge-wars:${NEXT}"
+          echo "Deploying pudge-wars-basic:${NEXT}"
 
       - name: Build hydrated Coworld manifest
         run: |
@@ -180,12 +156,12 @@ jobs:
           payload = json.load(open("/tmp/coworlds-after.json"))
           rows = payload["entries"] if isinstance(payload, dict) else payload
           match = next(
-              (row for row in rows if row.get("name") == "pudge-wars" and row.get("version") == expected),
+              (row for row in rows if row.get("name") == "pudge-wars-basic" and row.get("version") == expected),
               None,
           )
           if match is None:
-              raise SystemExit(f"::error::Uploaded pudge-wars:{expected} not found")
+              raise SystemExit(f"::error::Uploaded pudge-wars-basic:{expected} not found")
           if not match.get("canonical"):
-              raise SystemExit(f"::error::pudge-wars:{expected} is not canonical after hosted smoke")
-          print(f"pudge-wars:{expected} is canonical ({match['id']})")
+              raise SystemExit(f"::error::pudge-wars-basic:{expected} is not canonical after hosted smoke")
+          print(f"pudge-wars-basic:{expected} is canonical ({match['id']})")
           EOF
