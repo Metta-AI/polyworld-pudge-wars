@@ -215,6 +215,9 @@ proc aimingHookNow*(): bool =
 proc aimingBlinkNow*(): bool =
   aimingBlink
 
+proc aimingGrappleNow*(): bool =
+  aimingGrapple
+
 proc cancelPendingMine() =
   pendingMine = false
 
@@ -737,6 +740,25 @@ proc beginHookCommand*() =
   aimingWard = false
   cancelPendingPlace()
   aimingHook = true
+
+proc beginGrappleCommand*() =
+  ## Enters Grapple targeting, matching the E button without quickcast.
+  if not canIssueFromHud():
+    return
+  let hero = run.world.pudges[heroIndex()]
+  let reason = grappleBlockReason(hero)
+  if reason.len > 0:
+    setHumanError(reason)
+    return
+  aimingMove = false
+  aimingAttack = false
+  aimingHook = false
+  aimingBlink = false
+  aimingWall = false
+  aimingMine = false
+  aimingWard = false
+  cancelPendingPlace()
+  aimingGrapple = true
 
 proc beginBlinkCommand*() =
   ## Enters Blink targeting from the command card. F itself hops at

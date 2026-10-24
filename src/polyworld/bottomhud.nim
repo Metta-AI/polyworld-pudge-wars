@@ -2,81 +2,78 @@
 ##
 ## The 3D world renders edge to edge; chrome floats over it in the
 ## corners (treeform's "Strategy Game Battle UI": widgets, not bars).
-## The hero cluster uses Call to Adventure's textured plates: a profile
-## card (portrait + vitals) beside the action bar (ability wells, items,
-## upgrades, and a long status well). The minimap uses CTA's circular
-## bronze compass plate. A single Menu control sits on the nameplate;
-## Debug, Allies, Log, and Replay live on the pause menu.
-## A thin replay transport strip overlays the very bottom edge only
-## while open; the floating widgets lift by its height.
+## The hero bar is one compact plate bottom-center: portrait, name, HP
+## and gold, four round ability wells with big key badges and names,
+## labelled upgrade buttons, and any carried items. The minimap uses
+## CTA's circular bronze compass plate. A thin replay transport strip
+## overlays the very bottom edge only while open; the floating widgets
+## lift by its height.
 
 import
-  chroma, silky, vmath,
+  chroma, pixie, silky, vmath,
   chrome, gameuis
 
 const
   CompactTransportHeight* = 20.0'f32
-  BottomHudMinWidth* = 1640.0'f32
-    ## Profile card + action plate + circular compass at 1×.
-    ## 1920×1080 stays 1×; 1280×800 steps down to 0.5×.
-  BottomHudMinGameHeight* = 430.0'f32
+  BottomHudMinWidth* = 1360.0'f32
+    ## Hero bar (with a full bag) + compass at 1×. 1920×1080 is 1×,
+    ## a full-screen 3024-wide retina window is 2×.
+  BottomHudMinGameHeight* = 720.0'f32
+    ## Room for the chat, the shop, and the hero bar stacked on the left.
   BottomHudFill* = rgbx(10, 10, 14, 250)
   HudMargin* = 8.0'f32
   MinimapPanelSize* = vec2(334, 338)
   MinimapSize* = MinimapPanelSize.x
     ## Cropped compass: ring, title, and nameplate. No quest well.
   MiniButtonH* = 28.0'f32
-  ProfilePanelSize* = vec2(316, 104)
-  ActionsPanelSize* = vec2(947, 157)
-  ClusterGap = 10.0'f32
   MinimapClusterGap = 12.0'f32
-  ClusterWidth* = ProfilePanelSize.x + ClusterGap + ActionsPanelSize.x
-  ClusterHeight* = ActionsPanelSize.y
   MinimapMapSlot = (x: 66.0'f32, y: 40.0'f32, w: 252.0'f32, h: 252.0'f32)
   MinimapTitleSlot = (x: 102.0'f32, y: 4.0'f32, w: 186.0'f32, h: 24.0'f32)
   MinimapNameSlot = (x: 140.0'f32, y: 304.0'f32, w: 114.0'f32, h: 28.0'f32)
-  AbilitySlotXs = [
-    30.0'f32, 127, 222, 315, 409, 503, 620, 702, 784, 863
-  ]
-  AbilitySlotYs = [
-    15.0'f32, 15, 15, 15, 15, 15, 23, 23, 23, 23
-  ]
-  AbilitySlotWs = [
-    79.0'f32, 76, 75, 77, 76, 76, 62, 63, 61, 61
-  ]
-  AbilitySlotHs = [
-    82.0'f32, 82, 82, 82, 82, 82, 64, 64, 64, 64
-  ]
-  AbilityIconGrow* = 8.0'f32
-  PortraitSlot = (x: 6.0'f32, y: 7.0'f32, w: 86.0'f32, h: 91.0'f32)
-  HpSlot = (x: 111.0'f32, y: 44.0'f32, w: 193.0'f32, h: 20.0'f32)
-  ResourceSlot = (x: 111.0'f32, y: 67.0'f32, w: 193.0'f32, h: 25.0'f32)
-  XpSlot = (x: 29.0'f32, y: 124.0'f32, w: 741.0'f32, h: 21.0'f32)
-  GoldSlot = (x: 783.0'f32, y: 116.0'f32, w: 74.0'f32, h: 24.0'f32)
-  GemSlot = (x: 869.0'f32, y: 116.0'f32, w: 57.0'f32, h: 24.0'f32)
-  ActionSlotCount* = 10
-  CommandSlots* = 5
+  AbilityCount* = 4
   UpgradeSlots* = 4
+  BagSlots* = 6
+  BarPadX = 14.0'f32
+  BarPadY = 10.0'f32
+  BarGap = 12.0'f32
+  BarHeight* = 108.0'f32
+  VitalsWidth = 186.0'f32
+  PortraitSize = 37.0'f32
+  AbilityWellSize* = 60.0'f32
+  AbilityColumn = 64.0'f32
+  KeyBadgeH* = 22.0'f32
+  DividerW = 2.0'f32
+  UpgradeButtonSize* = vec2(122, 24)
+  UpgradeGap = 5.0'f32
+  BagWellSize* = 28.0'f32
+  BagCols = 3
+  BagGap = 6.0'f32
+  SectionTitleH* = 14.0'f32
+  ## Generated atlas shapes (see `addHudShapes`). Tint them with color.
+  HudDisc* = "hud.disc"
+  HudRing* = "hud.ring"
+  HudRound6* = "hud.round6"
+  HudRound6Patch* = 8
+  HudRound10* = "hud.round10"
+  HudRound10Patch* = 12
 
 type
   BottomHudLayout* = object
     bar*: GameUiPanel
-      ## Combined profile + action cluster (hidden while nothing is inspected).
-    profile*: GameUiPanel
-      ## Call to Adventure leftTop plate: portrait and vitals.
-    actions*: GameUiPanel
-      ## Call to Adventure bottomCenter plate: ability wells and status.
+      ## The whole hero plate (hidden while nothing is inspected).
     portrait*: GameUiPanel
-    title*: GameUiPanel
-    commands*: GameUiPanel
-    items*: GameUiPanel
-      ## Optional inventory row between commands and upgrades.
-    inventory*: GameUiPanel
+    name*: GameUiPanel
+    level*: GameUiPanel
     hpBar*: GameUiPanel
-    resourceBar*: GameUiPanel
-    xpBar*: GameUiPanel
-    goldBox*: GameUiPanel
-    gemBox*: GameUiPanel
+    goldLine*: GameUiPanel
+    abilities*: array[AbilityCount, GameUiPanel]
+      ## Round well bounds; key badge and name hang below each.
+    dividers*: seq[GameUiPanel]
+    upgradeTitle*: GameUiPanel
+    upgrades*: array[UpgradeSlots, GameUiPanel]
+    bagTitle*: GameUiPanel
+    bag*: seq[GameUiPanel]
+      ## One well per carried item; empty when the bag is empty.
     minimap*: GameUiPanel
     minimapTitle*: GameUiPanel
     minimapName*: GameUiPanel
@@ -87,104 +84,111 @@ proc transportStripHeight*(visible: bool): float32 =
   ## Replay strip height, or 0 so the widgets sit flush to the bottom.
   if visible: CompactTransportHeight else: 0
 
-proc actionWell*(actions: GameUiPanel, index: int): GameUiPanel =
-  ## Returns one art-space ability well on the action plate.
-  let i = clamp(index, 0, ActionSlotCount - 1)
-  actions.imageSlot(
-    AbilitySlotXs[i],
-    AbilitySlotYs[i],
-    AbilitySlotWs[i],
-    AbilitySlotHs[i]
+proc keyBadge*(well: GameUiPanel, width: float32): GameUiPanel =
+  ## Key badge centered on the bottom rim of a round ability well.
+  GameUiPanel(
+    origin: vec2(
+      well.origin.x + (well.size.x - width) * 0.5'f32,
+      well.origin.y + well.size.y - KeyBadgeH * 0.55'f32
+    ),
+    size: vec2(width, KeyBadgeH)
   )
 
-proc actionWellGrown*(
-    actions: GameUiPanel,
-    index: int,
-    grow = AbilityIconGrow
-): GameUiPanel =
-  ## Ability well expanded so the icon tucks under the bronze rim.
-  let i = clamp(index, 0, ActionSlotCount - 1)
-  actions.imageSlot(
-    AbilitySlotXs[i] - grow,
-    AbilitySlotYs[i] - grow,
-    AbilitySlotWs[i] + grow * 2,
-    AbilitySlotHs[i] + grow * 2
+proc abilityName*(well: GameUiPanel): GameUiPanel =
+  ## Name line under an ability well's key badge.
+  GameUiPanel(
+    origin: vec2(
+      well.origin.x - (AbilityColumn - AbilityWellSize) * 0.5'f32 - 6,
+      well.origin.y + well.size.y + KeyBadgeH * 0.45'f32
+    ),
+    size: vec2(AbilityColumn + 12, 16)
   )
 
-proc wellBounds(actions: GameUiPanel, first, last: int): GameUiPanel =
-  ## Axis-aligned box covering a contiguous run of action wells.
-  var
-    x0 = AbilitySlotXs[first]
-    y0 = AbilitySlotYs[first]
-    x1 = AbilitySlotXs[first] + AbilitySlotWs[first]
-    y1 = AbilitySlotYs[first] + AbilitySlotHs[first]
-  for i in first .. last:
-    x0 = min(x0, AbilitySlotXs[i])
-    y0 = min(y0, AbilitySlotYs[i])
-    x1 = max(x1, AbilitySlotXs[i] + AbilitySlotWs[i])
-    y1 = max(y1, AbilitySlotYs[i] + AbilitySlotHs[i])
-  actions.imageSlot(x0, y0, x1 - x0, y1 - y0)
+proc heroBarWidth*(bagCount: int): float32 =
+  ## Plate width: vitals, abilities, upgrades, and the bag when used.
+  result = BarPadX * 2 + VitalsWidth + BarGap +
+    AbilityCount.float32 * AbilityColumn +
+    (AbilityCount - 1).float32 * BarGap +
+    BarGap + DividerW + BarGap +
+    UpgradeButtonSize.x * 2 + UpgradeGap
+  if bagCount > 0:
+    let cols = min(bagCount, BagCols).float32
+    result += BarGap + DividerW + BarGap +
+      cols * BagWellSize + (cols - 1) * BagGap
 
 proc placeBottomHud*(
     size: Vec2,
     transportHeight = 0.0'f32,
-    commandCount = CommandSlots,
-    itemCount = 0,
-    upgradeCount = UpgradeSlots
+    bagCount = 0
 ): BottomHudLayout =
-  ## Places the floating widgets: CTA profile + action plates bottom-center
-  ## (shifted left of the minimap), minimap and its chip row bottom-right.
-  ## `transportHeight` lifts everything above the replay strip while it is
-  ## open. Slot-count arguments are kept so callers compile; the plates are
-  ## native Call to Adventure art and do not stretch with slot count.
-  discard commandCount
-  discard itemCount
-  discard upgradeCount
+  ## Places the floating widgets: the hero plate bottom-center (nudged
+  ## left only when it would touch the compass), the minimap and its
+  ## chip row bottom-right. `transportHeight` lifts everything above the
+  ## replay strip while it is open.
   let
+    bagN = clamp(bagCount, 0, BagSlots)
     floor = max(size.y - transportHeight, 0)
     minimapLeft = max(size.x - HudMargin - MinimapPanelSize.x, 0)
-    availRight = max(minimapLeft - MinimapClusterGap, 0)
-    clusterX = max((availRight - ClusterWidth) * 0.5'f32, HudMargin)
-    clusterY = max(floor - ClusterHeight, 0)
-  result.bar = GameUiPanel(
-    origin: vec2(clusterX, clusterY),
-    size: vec2(ClusterWidth, ClusterHeight)
+    width = heroBarWidth(bagN)
+    centered = (size.x - width) * 0.5'f32
+    barX = max(min(centered, minimapLeft - MinimapClusterGap - width), HudMargin)
+    barY = max(floor - HudMargin - BarHeight, 0)
+    o = vec2(barX, barY)
+  result.bar = GameUiPanel(origin: o, size: vec2(width, BarHeight))
+  var x = BarPadX
+  let top = BarPadY
+  result.portrait = result.bar.imageSlot(x, top, PortraitSize, PortraitSize)
+  result.name = result.bar.imageSlot(
+    x + PortraitSize + 8, top + 1, VitalsWidth - PortraitSize - 8, 18
   )
-  result.profile = GameUiPanel(
-    origin: vec2(clusterX, max(floor - ProfilePanelSize.y, 0)),
-    size: ProfilePanelSize
+  result.level = result.bar.imageSlot(
+    x + PortraitSize + 8, top + 20, VitalsWidth - PortraitSize - 8, 14
   )
-  result.actions = GameUiPanel(
-    origin: vec2(clusterX + ProfilePanelSize.x + ClusterGap, clusterY),
-    size: ActionsPanelSize
+  result.hpBar = result.bar.imageSlot(x, top + PortraitSize + 6, VitalsWidth, 20)
+  result.goldLine = result.bar.imageSlot(
+    x, top + PortraitSize + 30, VitalsWidth, 18
   )
-  result.portrait = result.profile.imageSlot(
-    PortraitSlot.x, PortraitSlot.y, PortraitSlot.w, PortraitSlot.h
+  x += VitalsWidth + BarGap
+  for i in 0 ..< AbilityCount:
+    result.abilities[i] = result.bar.imageSlot(
+      x + (AbilityColumn - AbilityWellSize) * 0.5'f32, top,
+      AbilityWellSize, AbilityWellSize
+    )
+    x += AbilityColumn + (if i < AbilityCount - 1: BarGap else: 0)
+  x += BarGap
+  result.dividers.add result.bar.imageSlot(
+    x, top, DividerW, BarHeight - BarPadY * 2
   )
-  result.hpBar = result.profile.imageSlot(
-    HpSlot.x, HpSlot.y, HpSlot.w, HpSlot.h
+  x += DividerW + BarGap
+  let gridTop = top + 28
+  result.upgradeTitle = result.bar.imageSlot(
+    x, top + 8, UpgradeButtonSize.x * 2 + UpgradeGap, SectionTitleH
   )
-  result.resourceBar = result.profile.imageSlot(
-    ResourceSlot.x, ResourceSlot.y, ResourceSlot.w, ResourceSlot.h
-  )
-  result.title = result.hpBar
-  result.commands = wellBounds(result.actions, 0, 3)
-  result.items = wellBounds(result.actions, 4, 5)
-  result.inventory = wellBounds(result.actions, 6, 9)
-  result.xpBar = result.actions.imageSlot(
-    XpSlot.x, XpSlot.y, XpSlot.w, XpSlot.h
-  )
-  result.goldBox = result.actions.imageSlot(
-    GoldSlot.x, GoldSlot.y, GoldSlot.w, GoldSlot.h
-  )
-  result.gemBox = result.actions.imageSlot(
-    GemSlot.x, GemSlot.y, GemSlot.w, GemSlot.h
-  )
+  for i in 0 ..< UpgradeSlots:
+    result.upgrades[i] = result.bar.imageSlot(
+      x + (i mod 2).float32 * (UpgradeButtonSize.x + UpgradeGap),
+      gridTop + (i div 2).float32 * (UpgradeButtonSize.y + UpgradeGap),
+      UpgradeButtonSize.x, UpgradeButtonSize.y
+    )
+  x += UpgradeButtonSize.x * 2 + UpgradeGap
+  if bagN > 0:
+    x += BarGap
+    result.dividers.add result.bar.imageSlot(
+      x, top, DividerW, BarHeight - BarPadY * 2
+    )
+    x += DividerW + BarGap
+    let cols = min(bagN, BagCols)
+    result.bagTitle = result.bar.imageSlot(
+      x, top + 8, cols.float32 * (BagWellSize + BagGap), SectionTitleH
+    )
+    for i in 0 ..< bagN:
+      result.bag.add result.bar.imageSlot(
+        x + (i mod BagCols).float32 * (BagWellSize + BagGap),
+        gridTop + (i div BagCols).float32 * (BagWellSize + BagGap),
+        BagWellSize, BagWellSize
+      )
   result.minimap = GameUiPanel(
-    origin: vec2(
-      max(size.x - HudMargin - MinimapPanelSize.x, 0),
-      max(floor - MinimapPanelSize.y, 0)
-    ),
+    origin: vec2(minimapLeft, max(floor - MinimapPanelSize.y, 0)),
     size: MinimapPanelSize
   )
   result.minimapTitle = result.minimap.imageSlot(
@@ -196,6 +200,68 @@ proc placeBottomHud*(
     MinimapNameSlot.w, MinimapNameSlot.h
   )
   result.buttons = result.minimapName
+
+proc roundedImage(size, radius: int, color = rgba(255, 255, 255, 255)): Image =
+  result = newImage(size, size)
+  let ctx = newContext(result)
+  ctx.fillStyle = color
+  ctx.fillRoundedRect(rect(0, 0, size.float32, size.float32), radius.float32)
+
+proc roundIcon*(icon: Image, size = 128): Image =
+  ## Circle-cropped copy of a square ability icon.
+  let mask = newImage(size, size)
+  let ctx = newContext(mask)
+  ctx.fillStyle = rgba(255, 255, 255, 255)
+  ctx.fillCircle(circle(vec2(size.float32 * 0.5'f32), size.float32 * 0.5'f32))
+  result = icon.resize(size, size)
+  result.draw(mask, blendMode = MaskBlend)
+
+proc addHudShapes*(builder: AtlasBuilder) =
+  ## White shapes the HUD tints at draw time: a disc, a ring, and two
+  ## rounded-rect 9-patches for plates, badges, and buttons.
+  let
+    disc = newImage(128, 128)
+    ring = newImage(128, 128)
+  block:
+    let ctx = newContext(disc)
+    ctx.fillStyle = rgba(255, 255, 255, 255)
+    ctx.fillCircle(circle(vec2(64, 64), 64))
+  block:
+    let ctx = newContext(ring)
+    ctx.strokeStyle = rgba(255, 255, 255, 255)
+    ctx.lineWidth = 7
+    ctx.strokeCircle(circle(vec2(64, 64), 60.5))
+  for (name, image) in [
+    (HudDisc, disc),
+    (HudRing, ring),
+    (HudRound6, roundedImage(HudRound6Patch * 2 + 2, 6)),
+    (HudRound10, roundedImage(HudRound10Patch * 2 + 2, 10))
+  ]:
+    if not builder.addImage(name, image):
+      raise newException(ValueError, "the UI atlas is too small for " & name)
+
+proc drawRounded*(
+    sk: Silky,
+    panel: GameUiPanel,
+    color: ColorRGBX,
+    large = false
+) =
+  ## Rounded-corner fill from the generated 9-patches.
+  if large:
+    sk.draw9Patch(HudRound10, HudRound10Patch, panel.origin, panel.size, color)
+  else:
+    sk.draw9Patch(HudRound6, HudRound6Patch, panel.origin, panel.size, color)
+
+proc drawRoundedFramed*(
+    sk: Silky,
+    panel: GameUiPanel,
+    fill, border: ColorRGBX,
+    large = false,
+    rim = 2.0'f32
+) =
+  ## Rounded plate with a solid rim.
+  sk.drawRounded(panel, border, large)
+  sk.drawRounded(panel.inset(rim), fill, large)
 
 proc compactTransportPanel*(
     size: Vec2,
@@ -232,11 +298,11 @@ proc drawBottomChrome*(
     hud: BottomHudLayout,
     showCluster: bool
 ) =
-  ## Theme window chrome behind the cluster and compass.
+  ## Theme window chrome behind the hero plate and compass.
   if showCluster:
-    sk.drawPanel(hud.profile)
-    sk.drawFrame(hud.profile.inset(2))
-    sk.drawPanel(hud.actions)
-    sk.drawFrame(hud.actions.inset(2))
+    sk.drawPanel(hud.bar)
+    sk.drawFrame(hud.bar.inset(2))
+    for divider in hud.dividers:
+      sk.drawRect(divider.origin, divider.size, rgbx(61, 54, 40, 255))
   sk.drawPanel(hud.minimap)
   sk.drawFrame(hud.minimap.inset(2))

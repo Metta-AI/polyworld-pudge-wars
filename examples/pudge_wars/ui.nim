@@ -23,7 +23,6 @@ const
   ShieldHpColor = rgbx(140, 230, 255, 255)
     ## Ice HP while spawn-protected. Overrides ally/enemy so the
     ## window is readable on bars, pips, and the portrait.
-  HookBarColor = rgbx(72, 148, 210, 255)
   ReadyGold = rgbx(255, 214, 120, 255)
   KillFeedSeconds = 6.0
   KillFeedMax = 6
@@ -51,13 +50,15 @@ const
     rgbx(255, 236, 80, 255),   # Lightning: charged yellow
     rgbx(255, 214, 90, 255)    # Bounty: gold
   ]
+  RunePillNames: array[RuneKind, string] = [
+    "Haste", "Double Damage", "Regen", "Big Hook", "Lightning", "Bounty"
+  ]
   RuneHudNames: array[RuneKind, string] = [
     "HASTE", "2X DMG", "REGEN",
     "BIG +" & $RuneBigHookDamagePercent & "%",
     "BOLT",
     "BOUNTY +" & $RuneBountyGold & "G"
   ]
-  RunePlateSize = vec2(190, 22)
   HudName = rgbx(245, 229, 178, 255)
   HudMuted = rgbx(160, 171, 188, 255)
   ChipMenu = 0
@@ -90,16 +91,31 @@ const
   CmdHook = 4
   CmdBlink = 5
   CmdRot = 6
+  CmdGrapple = 7
+  KeyCapFill = rgbx(245, 227, 168, 255)
+  KeyCapRim = rgbx(23, 19, 10, 255)
+  KeyCapText = rgbx(23, 19, 10, 255)
+  AbilityActiveRim = rgbx(156, 255, 122, 255)
+  AbilityDimRim = rgbx(138, 116, 68, 255)
+  UpgradeDimRim = rgbx(74, 66, 50, 255)
+  UpgradeShortNames: array[UpgradeKind, string] = [
+    "Damage", "Distance", "Speed", "Radius"
+  ]
   KillFeedW = 300.0'f32
-  ShopPanelSize = vec2(400, 360)
+  ShopPanelSize = vec2(400, 484)
   PermanentShopCols = 3
-  PermanentShopRows = 2
-  PanelInventory = vec2(252, 243)
-    ## Gods of the Arena bag plate: title, 3×2 of 72px wells, gold.
-  InventoryWellSize = 72.0'f32
-  InventoryBagCols = 3
-  InventoryBagRows = 2
-  InventoryWellGap = vec2(4.0'f32, 5.0'f32)
+  ShopTileSize = vec2(116, 142)
+  ShopTileGap = 10.0'f32
+  ShopIconSize = 104.0'f32
+  ShopChipH = 34.0'f32
+  ShopItemShortNames: array[ShopItem, string] = [
+    "Flask", "Haste", "Regen", "Big Hook", "2x Damage",
+    "River Treads", "Longflight", "Palisade", "Hooktrap", "Ward"
+  ]
+  HudScaleSteps = [0.5'f32, 0.75'f32, 1.0'f32, 1.5'f32, 2.0'f32, 3.0'f32]
+    ## Finer than the shared crisp steps so a 1280-wide window lands on
+    ## 0.75x instead of halving every label.
+  RunePillH = 28.0'f32
   DebugWindowTitle = "Debug"
   DebugWindowOrigin = vec2(16, 40)
   DebugWindowSize = vec2(336, 1000)
@@ -128,7 +144,6 @@ type
     west: GameUiPanel
     east: GameUiPanel
     bottom: BottomHudLayout
-    inventory: GameUiPanel
     transport: GameUiPanel
 
   KillFeedEntry = object
@@ -484,7 +499,20 @@ proc publishMatchRecap() =
   recapPublished = true
   echo "pw-match:", matchRecapJson()
 
-proc inventoryPanelOf(layout: GameUiLayout): GameUiPanel
+proc heroBagCount(): int =
+  ## Carried items on the inspected butcher; the hero bar grows by them.
+  let index = inspectIndex()
+  if run == nil or index < 0:
+    return 0
+  let hero = run.world.pudges[index]
+  for slot in 0 ..< int(InventorySlots):
+    if hero.inventoryItem(slot).isPermanent:
+      inc result
+
+proc heroBar(layout: GameUiLayout): BottomHudLayout =
+  placeBottomHud(
+    layout.size, transportStripHeight(transportBarOpen()), heroBagCount()
+  )
 
 proc placeChrome(layout: GameUiLayout): HudChrome =
   let transportH = transportStripHeight(transportBarOpen())
@@ -492,8 +520,7 @@ proc placeChrome(layout: GameUiLayout): HudChrome =
     layout: layout,
     west: layout.panel(GameUiRegion.TopLeft, PanelRoster),
     east: layout.panel(GameUiRegion.TopRight, PanelRoster),
-    bottom: placeBottomHud(layout.size, transportH, 2, int(InventorySlots)),
-    inventory: inventoryPanelOf(layout),
+    bottom: heroBar(layout),
     transport: compactTransportPanel(layout.size, transportH)
   )
 
@@ -503,7 +530,7 @@ proc hudLayoutFits(layoutSize: Vec2): bool =
     layout.gameAreaSize.y >= BottomHudMinGameHeight
 
 proc hudUiScale*(windowSize: Vec2): float32 =
-  fitUiScale(windowSize, hudLayoutFits, UiCrispSteps)
+  fitUiScale(windowSize, hudLayoutFits, HudScaleSteps)
 
 proc hudUiScale*(window: Window): float32 =
   hudUiScale(vec2(window.size.x.float32, window.size.y.float32))
@@ -552,44 +579,46 @@ proc clampCameraDistance*(distance: float32): float32 =
   clamp(distance, zoomMinDistance, zoomMaxDistance)
 
 proc shopPanelOf(layout: GameUiLayout): GameUiPanel =
-  ## Left of play, sitting just above the hero cluster so it never
-  ## covers the pad or the command card.
+  ## Bottom-left, level with the top of the hero bar so it never covers
+  ## the abilities; the chat plate rides above it.
   let
     transportH = transportStripHeight(transportBarOpen())
-    hud = placeBottomHud(layout.size, transportH, 2, int(InventorySlots))
+    floorY = layout.size.y - transportH - HudMargin
+    hud = heroBar(layout)
+    bottom =
+      if commandCardVisible() and hud.bar.origin.x < HudMargin + ShopPanelSize.x + 8:
+        hud.bar.origin.y - 8
+      else:
+        floorY
   GameUiPanel(
-    origin: vec2(
-      HudMargin,
-      max(hud.bar.origin.y - ShopPanelSize.y - 8, 8)
-    ),
+    origin: vec2(HudMargin, max(bottom - ShopPanelSize.y, 8)),
     size: ShopPanelSize
   )
 
 proc heroWantsShop(): bool =
+  when defined(takeScreenshot):
+    # Captures can force the shop open without walking to the pad.
+    if existsEnv("PW_SHOP"):
+      return humanControlActive() and heroIndex() >= 0
   if not humanControlActive() or heroIndex() < 0:
     return false
   let hero = run.world.pudges[heroIndex()]
   hero.state != Dying and hero.inOwnShop
 
-proc inventoryPanelOf(layout: GameUiLayout): GameUiPanel =
-  ## GOTA-style 3×2 bag, sitting just above the action plate.
-  let
-    transportH = transportStripHeight(transportBarOpen())
-    hud = placeBottomHud(layout.size, transportH, 2, int(InventorySlots))
-  GameUiPanel(
-    origin: vec2(
-      hud.actions.origin.x,
-      max(hud.actions.origin.y - PanelInventory.y - 8, 8)
-    ),
-    size: PanelInventory
-  )
-
 proc spectatorChromeVisible(): bool =
   ## Replay and idle spectators get the POV banner; a live seat does not.
   not humanControlActive()
 
+proc topCenterFloor(layout: GameUiLayout): float32
+
 proc spectatorBannerPanel(layout: GameUiLayout): GameUiPanel =
-  layout.panel(GameUiRegion.TopCenter, SpectatorBannerSize)
+  ## POV plate, under the score banner and rune pill.
+  GameUiPanel(
+    origin: vec2(
+      (layout.size.x - SpectatorBannerSize.x) * 0.5'f32, topCenterFloor(layout)
+    ),
+    size: SpectatorBannerSize
+  )
 
 proc spectatorAllPanel(banner: GameUiPanel): GameUiPanel =
   GameUiPanel(
@@ -631,16 +660,30 @@ proc pudgeHpColor*(pudge: Pudge): ColorRGBX =
   else: EastColor
 
 proc chatPanelOf(layout: GameUiLayout): GameUiPanel =
-  ## Bottom-left chat / events plate, above the hero cluster / shop / strip.
+  ## Bottom-left chat / events plate, above the hero bar / shop / strip.
+  ## When the open shop leaves no room above it (short windows), the
+  ## plate moves beside the shop instead of covering it.
   let transportH = transportStripHeight(transportBarOpen())
-  var floorY = layout.size.y - transportH - HudMargin
-  if commandCardVisible():
-    let hud = placeBottomHud(layout.size, transportH, 2, int(InventorySlots))
+  var
+    left = HudMargin
+    floorY = layout.size.y - transportH - HudMargin
+  let hud = heroBar(layout)
+  proc underBar(x: float32): bool =
+    commandCardVisible() and hud.bar.origin.x < x + ChatPanelSize.x + 8 and
+      hud.bar.origin.x + hud.bar.size.x > x
+  if underBar(left):
     floorY = min(floorY, hud.bar.origin.y)
   if heroWantsShop():
-    floorY = min(floorY, shopPanelOf(layout).origin.y)
+    let shop = shopPanelOf(layout)
+    if shop.origin.y - ChatPanelSize.y - 16 >= scoreBannerBottom(layout):
+      floorY = min(floorY, shop.origin.y)
+    else:
+      left = shop.origin.x + shop.size.x + 8
+      floorY = layout.size.y - transportH - HudMargin
+      if underBar(left):
+        floorY = min(floorY, hud.bar.origin.y)
   GameUiPanel(
-    origin: vec2(HudMargin, max(floorY - ChatPanelSize.y - 8, 8)),
+    origin: vec2(left, max(floorY - ChatPanelSize.y - 8, 8)),
     size: ChatPanelSize
   )
 
@@ -660,15 +703,11 @@ proc mouseOverUi*(window: Window, mouse: Vec2): bool =
     return true
   if heroWantsShop() and shopPanelOf(layout).contains(mouse):
     return true
-  if commandCardVisible() and chrome.inventory.contains(mouse):
-    return true
   if chrome.bottom.minimap.contains(mouse) or
       chrome.bottom.buttons.contains(mouse) or
       scorePlatePanel(layout).contains(mouse):
     return true
-  if commandCardVisible() and (
-      chrome.bottom.profile.contains(mouse) or
-      chrome.bottom.actions.contains(mouse)):
+  if commandCardVisible() and chrome.bottom.bar.contains(mouse):
     return true
   if transportBarOpen() and chrome.transport.contains(mouse):
     return true
@@ -913,56 +952,59 @@ proc drawMinimap(
 
 proc addHudSeconds(s: var string, ticks: int32)
 
-proc runePlatePanel(layout: GameUiLayout): GameUiPanel =
-  ## Next-rune clock, stacked under the score plate.
-  let score = scorePlatePanel(layout)
+proc runePillText(): (string, string) =
+  ## "Big Hook rune" and " - south river in 12s" for the drop clock.
+  let
+    kind = run.world.nextRuneKind
+    soon = runeSoonTicks(run.world)
+  var rest = " - "
+  rest.add(if run.world.nextRuneFromNorth: "north" else: "south")
+  rest.add " river in "
+  rest.addHudInt(int((soon + TickRate - 1) div TickRate))
+  rest.add "s"
+  (RunePillNames[kind] & " rune", rest)
+
+proc runePlatePanel(sk: Silky, layout: GameUiLayout): GameUiPanel =
+  ## Next-rune pill, centered under the score banner.
+  let
+    (name, rest) = runePillText()
+    w = sk.getTextSize("B15", name).x + sk.getTextSize("B15", rest).x + 32
   GameUiPanel(
-    origin: vec2(score.origin.x, score.origin.y + score.size.y + 4),
-    size: RunePlateSize
+    origin: vec2((layout.size.x - w) * 0.5'f32, scoreBannerBottom(layout) + 8),
+    size: vec2(w, RunePillH)
   )
 
-proc killFeedTop(layout: GameUiLayout): float32 =
-  ## Kill feed sits under the rune clock when river drops are on.
+proc topCenterFloor(layout: GameUiLayout): float32 =
+  ## First free Y under the banner and (when drops are on) the rune pill.
+  result = scoreBannerBottom(layout) + 8
   if run != nil and run.world.runePeriod > 0:
-    let plate = runePlatePanel(layout)
-    return plate.origin.y + plate.size.y + 6.0'f32
+    result += RunePillH + 8
+
+proc killFeedTop(layout: GameUiLayout): float32 =
+  ## Kill feed runs down the top-right corner, clear of the banner.
   hudToastY(layout)
 
 proc drawRunePlate(sk: Silky, layout: GameUiLayout) =
-  ## Public drop clock: kind, north/south, seconds remaining.
+  ## Public drop clock: which rune, which side of the river, how soon.
   if run == nil or run.world.runePeriod <= 0:
     return
   let
-    panel = runePlatePanel(layout)
-    kind = run.world.nextRuneKind
-    soon = runeSoonTicks(run.world)
-    north = run.world.nextRuneFromNorth
-  sk.drawEtched(panel.origin, panel.size, HudChipFill)
-  hudScratch.setLen(0)
-  hudScratch.add RuneHudNames[kind]
-  hudScratch.add " "
-  hudScratch.add(if north: "N" else: "S")
+    panel = sk.runePlatePanel(layout)
+    (name, rest) = runePillText()
+    nameW = sk.getTextSize("B15", name).x
+  sk.drawRoundedFramed(panel, rgbx(12, 12, 16, 235), rgbx(110, 92, 50, 255), large = true)
   sk.drawLabel(
-    hudScratch,
-    panel.origin + vec2(6, 0),
-    vec2(panel.size.x * 0.68'f32, panel.size.y),
-    RuneColors[kind],
-    "Small"
+    name, panel.origin + vec2(16, 0), vec2(nameW, panel.size.y),
+    RuneColors[run.world.nextRuneKind], "B15"
   )
-  hudScratch.setLen(0)
-  hudScratch.addHudSeconds(soon)
   sk.drawLabel(
-    hudScratch,
-    panel.origin + vec2(panel.size.x * 0.62'f32 - 6, 0),
-    vec2(panel.size.x * 0.38'f32, panel.size.y),
-    HudName,
-    "Small",
-    RightAlign
+    rest, panel.origin + vec2(16 + nameW, 0),
+    vec2(panel.size.x - nameW - 32, panel.size.y), HudName, "B15"
   )
 
 proc drawKillFeed(sk: Silky, layout: GameUiLayout) =
-  ## Fading list of recent kills below the top-right score plate,
-  ## League-style, so the top-center stays clear for gameplay.
+  ## Fading list of recent kills down the top-right corner, beside
+  ## the score banner, League-style.
   let now = epochTime()
   var alive: seq[KillFeedEntry]
   for entry in killFeed:
@@ -1353,43 +1395,6 @@ proc carriedShopItems(hero: Pudge): seq[ShopItem] =
     if item.isPermanent:
       result.add item
 
-proc bagWell(origin: Vec2, col, row: int): GameUiPanel =
-  ## One 72px GOTA inventory tile.
-  GameUiPanel(
-    origin: origin + vec2(
-      col.float32 * (InventoryWellSize + InventoryWellGap.x),
-      row.float32 * (InventoryWellSize + InventoryWellGap.y)
-    ),
-    size: vec2(InventoryWellSize)
-  )
-
-proc inventoryChrome(panel: GameUiPanel): tuple[
-    title, contents, gold: GameUiPanel,
-    slots: array[6, GameUiPanel]
-] =
-  ## Title, 3×2 wells, and gold footer matching Gods of the Arena.
-  const
-    padX = 14.0'f32
-    padY = 10.0'f32
-  let innerW = panel.size.x - padX * 2
-  result.title = GameUiPanel(
-    origin: panel.origin + vec2(padX, padY),
-    size: vec2(innerW, 28)
-  )
-  result.contents = GameUiPanel(
-    origin: vec2(result.title.origin.x, result.title.origin.y + 28 + 12),
-    size: vec2(innerW, InventoryWellSize * 2 + InventoryWellGap.y)
-  )
-  result.gold = GameUiPanel(
-    origin: vec2(result.contents.origin.x, result.contents.origin.y +
-      result.contents.size.y + 1),
-    size: vec2(innerW, 31)
-  )
-  for i in 0 ..< InventoryBagCols * InventoryBagRows:
-    result.slots[i] = bagWell(
-      result.contents.origin, i mod InventoryBagCols, i div InventoryBagCols
-    )
-
 proc itemSlotSpec(
     hero: Pudge, item: ShopItem, owned, ownedLive: bool
 ): CommandSlotSpec =
@@ -1416,14 +1421,124 @@ proc beginUseBagItem(item: ShopItem) =
   else:
     discard
 
+proc drawKeyBadge(sk: Silky, well: GameUiPanel, key: string) =
+  ## Cream key cap on the bottom rim of a round ability well.
+  let
+    badge = keyBadge(well, max(sk.getTextSize("B13", key).x + 14, 26))
+  sk.drawRoundedFramed(badge, KeyCapFill, KeyCapRim)
+  sk.drawLabel(key, badge.origin, badge.size, KeyCapText, "B13", CenterAlign)
+
+proc drawAbilityWell(
+    sk: Silky,
+    well: GameUiPanel,
+    spec: CommandSlotSpec,
+    name: string,
+    active = false
+) =
+  ## Round ability well: icon, gold rim when ready, cooldown seconds,
+  ## key cap, and the ability's name underneath.
+  let ready = spec.enabled and spec.remaining <= 0 and spec.overlay.len == 0
+  sk.drawSprite(HudDisc, well.origin, well.size, rgbx(26, 26, 32, 255))
+  sk.drawSprite(
+    spec.icon & ".round", well.origin + vec2(3), well.size - vec2(6),
+    if spec.enabled: SlotReady else: SlotDim
+  )
+  if spec.overlay.len > 0 and not active:
+    sk.drawSprite(
+      HudDisc, well.origin + vec2(3), well.size - vec2(6), rgbx(0, 0, 0, 150)
+    )
+    let font = if spec.overlay.len <= 2: "B24" else: "B13"
+    sk.drawLabel(spec.overlay, well.origin, well.size, rgbx(255, 255, 255, 255), font, CenterAlign)
+  let rim =
+    if active: AbilityActiveRim
+    elif ready: ReadyGold
+    else: AbilityDimRim
+  sk.drawSprite(HudRing, well.origin, well.size, rim)
+  if spec.autocast:
+    sk.drawSprite(
+      HudRing, well.origin - vec2(3), well.size + vec2(6), AutocastGreen
+    )
+  if spec.hotkey.len > 0:
+    sk.drawKeyBadge(well, spec.hotkey)
+  sk.drawLabel(
+    name, abilityName(well).origin, abilityName(well).size,
+    if active: AbilityActiveRim else: HudName, "B12", CenterAlign
+  )
+
+proc drawBagWell(sk: Silky, well: GameUiPanel, spec: CommandSlotSpec) =
+  ## Small carried-item well: icon, cooldown seconds, and a key cap in
+  ## the corner. Ranks live in the tooltip and on the shop tiles.
+  sk.drawRoundedFramed(
+    well, rgbx(20, 20, 26, 255),
+    if spec.enabled and spec.remaining <= 0: AbilityDimRim else: UpgradeDimRim
+  )
+  sk.drawSprite(
+    spec.icon, well.origin + vec2(2), well.size - vec2(4),
+    if spec.enabled: SlotReady else: SlotDim
+  )
+  if spec.overlay.len > 0:
+    sk.drawRect(well.origin + vec2(2), well.size - vec2(4), rgbx(0, 0, 0, 150))
+    sk.drawLabel(spec.overlay, well.origin, well.size, rgbx(255, 255, 255, 255), "B13", CenterAlign)
+  if spec.hotkey.len > 0:
+    let
+      w = max(sk.getTextSize("B11", spec.hotkey).x + 6, 14)
+      cap = GameUiPanel(
+        origin: well.origin + well.size - vec2(w - 3, 11), size: vec2(w, 14)
+      )
+    sk.drawRounded(cap, KeyCapFill)
+    sk.drawLabel(spec.hotkey, cap.origin, cap.size, KeyCapText, "B11", CenterAlign)
+
+proc drawUpgradeButton(
+    sk: Silky,
+    button: GameUiPanel,
+    kind: UpgradeKind,
+    level: int,
+    owned, affordable: bool
+) =
+  ## Labelled hook upgrade: key cap, name, and level out of max.
+  sk.drawRoundedFramed(
+    button,
+    if affordable: rgbx(40, 34, 20, 255) else: rgbx(24, 24, 30, 255),
+    if affordable: ReadyGold else: UpgradeDimRim
+  )
+  var x = button.origin.x + 5
+  if owned:
+    let cap = GameUiPanel(
+      origin: vec2(x, button.origin.y + 3), size: vec2(18, button.size.y - 6)
+    )
+    sk.drawRounded(cap, KeyCapFill)
+    sk.drawLabel(
+      bindLabel(BindAction(ord(BindUpgrade1) + ord(kind))),
+      cap.origin, cap.size, KeyCapText, "B11", CenterAlign
+    )
+    x += 24
+  sk.drawLabel(
+    UpgradeShortNames[kind],
+    vec2(x, button.origin.y), vec2(button.size.x - (x - button.origin.x) - 34, button.size.y),
+    if affordable or level > 0: HudName else: HudMuted, "B13"
+  )
+  hudScratch.setLen(0)
+  if level >= MaxUpgradeLevel:
+    hudScratch.add "MAX"
+  else:
+    hudScratch.addHudInt(level)
+    hudScratch.add "/"
+    hudScratch.addHudInt(MaxUpgradeLevel)
+  sk.drawLabel(
+    hudScratch,
+    vec2(button.origin.x + button.size.x - 38, button.origin.y),
+    vec2(32, button.size.y),
+    if level >= MaxUpgradeLevel: ReadyGold else: HudMuted, "B11", RightAlign
+  )
+
 proc drawBottomUnit(
     sk: Silky,
     window: Window,
     hud: BottomHudLayout,
     inHistory: bool
 ) =
-  ## Fills the Call to Adventure plates: portrait and vitals on the
-  ## profile card, abilities/items/upgrades in the action wells.
+  ## Fills the hero plate: portrait and vitals, the four ability wells,
+  ## hook upgrades, and any carried items.
   let index = inspectIndex()
   if index < 0:
     return
@@ -1431,7 +1546,6 @@ proc drawBottomUnit(
     owned = isOwnedInspect()
     heroIdx = heroIndex()
     hero = run.world.pudges[index]
-    portrait = hud.portrait
     ownedLive = owned and not inHistory
     hookRemaining =
       if hero.windupTicks > 0: hero.windupTicks else: hero.hookCooldown
@@ -1439,29 +1553,80 @@ proc drawBottomUnit(
       if hero.windupTicks > 0: HookWindupTicks else: HookCooldownTicks
     hookReady = hero.state == Alive and not inHistory and
       hero.windupTicks <= 0 and hero.hookCooldown <= 0 and not hookFlying(hero)
-    hookFill =
-      if hookRemaining <= 0 or hookDuration <= 0: 1.0'f32
-      else: 1.0'f32 - hookRemaining.float32 / hookDuration.float32
     hpColor = pudgeHpColor(hero)
-  sk.drawWellImage(portrait, PortraitKeys[hero.team])
-  let portraitInner = portrait.inset(
-    min(4.0'f32, min(portrait.size.x, portrait.size.y) * 0.08'f32)
+    teamColor = if hero.team == WestTeam: WestColor else: EastColor
+
+  # Portrait and name card.
+  let portrait = hud.portrait
+  sk.drawSprite(HudDisc, portrait.origin, portrait.size, teamColor)
+  sk.drawSprite(
+    HudDisc, portrait.origin + vec2(2), portrait.size - vec2(4),
+    rgbx(20, 20, 26, 255)
+  )
+  if PortraitKeys[hero.team] & ".round" in sk.atlas.entries:
+    sk.drawSprite(
+      PortraitKeys[hero.team] & ".round", portrait.origin + vec2(2),
+      portrait.size - vec2(4),
+      if hero.state == Dying: rgbx(90, 90, 96, 255) else: SlotReady
+    )
+  if hero.shieldTicks > 0:
+    sk.drawSprite(HudRing, portrait.origin - vec2(2), portrait.size + vec2(4), ShieldHpColor)
+  hudScratch.setLen(0)
+  hudScratch.add butcherDisplayName(index)
+  sk.drawLabel(hudScratch, hud.name.origin, hud.name.size, HudName, "B15")
+  hudScratch.setLen(0)
+  if not owned:
+    if spectatePudgeId == hero.id:
+      hudScratch.add "EYES - "
+    elif heroIdx >= 0 and hero.team == run.world.pudges[heroIdx].team:
+      hudScratch.add "ALLY - "
+    elif heroIdx >= 0:
+      hudScratch.add "ENEMY - "
+  hudScratch.add "LV "
+  hudScratch.addHudInt(int(hero.kills) + 1)
+  hudScratch.add(if hero.team == WestTeam: " - WEST" else: " - EAST")
+  sk.drawLabel(hudScratch, hud.level.origin, hud.level.size, HudGoldDim, "B11")
+
+  # HP bar with the numbers (or the respawn timer) on it.
+  sk.drawBar(
+    hud.hpBar.origin, hud.hpBar.size,
+    max(hero.hp, 0).float32, max(hero.maxHp, 1).float32, hpColor
   )
   if hero.state == Dying:
-    sk.drawRect(portraitInner.origin, portraitInner.size, rgbx(12, 14, 20, 170))
-  elif hero.shieldTicks > 0:
-    sk.drawRect(portraitInner.origin, portraitInner.size, rgbx(80, 200, 255, 150))
-    sk.drawRect(
-      portraitInner.origin,
-      vec2(portraitInner.size.x, 3),
-      rgbx(180, 240, 255, 230)
-    )
-    sk.drawRect(
-      portraitInner.origin + vec2(0, portraitInner.size.y - 3),
-      vec2(portraitInner.size.x, 3),
-      rgbx(180, 240, 255, 230)
+    hudScratch.setLen(0)
+    hudScratch.add "RESPAWN "
+    hudScratch.addHudSeconds(hero.deathTicks)
+  else:
+    writeRatio(hudScratch, max(hero.hp, 0).int, int(hero.maxHp))
+  sk.drawLabel(
+    hudScratch, hud.hpBar.origin, hud.hpBar.size,
+    rgbx(255, 255, 255, 255), "B13", CenterAlign
+  )
+
+  # Gold on the left; shield or rune buff on the right.
+  sk.drawSprite("gold", hud.goldLine.origin + vec2(0, 1), vec2(16))
+  writeAmount(hudScratch, int(hero.gold))
+  hudScratch.add " gold"
+  sk.drawLabel(
+    hudScratch, hud.goldLine.origin + vec2(20, 0),
+    vec2(hud.goldLine.size.x - 20, hud.goldLine.size.y), ReadyGold, "B13"
+  )
+  if hero.state != Dying and (hero.shieldTicks > 0 or hero.buffTicks > 0):
+    hudScratch.setLen(0)
+    var color = ShieldHpColor
+    if hero.shieldTicks > 0:
+      hudScratch.add "INVULN "
+      hudScratch.addHudSeconds(hero.shieldTicks)
+    else:
+      hudScratch.add RuneHudNames[hero.buffKind]
+      hudScratch.add " "
+      hudScratch.addHudSeconds(hero.buffTicks)
+      color = RuneColors[hero.buffKind]
+    sk.drawLabel(
+      hudScratch, hud.goldLine.origin, hud.goldLine.size, color, "B11", RightAlign
     )
 
+  # Abilities: Q hook, E grapple, F blink, R rot.
   let
     hookOverlay = cooldownOverlay(
       hookRemaining,
@@ -1470,21 +1635,14 @@ proc drawBottomUnit(
       elif hookFlying(hero): "AIR"
       else: ""
     )
+    grappleReady = hero.state == Alive and not inHistory and
+      hero.windupTicks <= 0 and hero.grappleCooldown <= 0 and
+      not hookFlying(hero)
     blinkReady = hero.state == Alive and not inHistory and
       hero.windupTicks <= 0 and hero.blinkCooldown <= 0 and
       hero.hookedBy == 0 and not run.world.rotAffected(hero)
-  var actionSpecs: array[ActionSlotCount, CommandSlotSpec]
-  for i in 0 ..< ActionSlotCount:
-    actionSpecs[i] = CommandSlotSpec(id: -1)
-  actionSpecs[0] = CommandSlotSpec(
-    id: CmdAttack, icon: AttackIcon,
-    hotkey: if owned: "RMB" else: "",
-    enabled: ownedLive or not owned,
-    remaining: if owned: hero.swingTicks else: 0,
-    duration: hero.attackPeriod,
-    overlay: if owned: cooldownOverlay(hero.swingTicks, hero.attackPeriod) else: ""
-  )
-  actionSpecs[1] = CommandSlotSpec(
+  var abilities: array[AbilityCount, CommandSlotSpec]
+  abilities[0] = CommandSlotSpec(
     id: CmdHook, icon: "hook",
     hotkey: if owned: bindLabel(BindHook) else: "",
     enabled: (ownedLive and hookReady) or not owned,
@@ -1493,13 +1651,17 @@ proc drawBottomUnit(
     overlay: if owned: hookOverlay else: "",
     autocast: owned and options.autocast
   )
-  actionSpecs[2] = CommandSlotSpec(
-    id: CmdRot, icon: "rot",
-    hotkey: if owned: bindLabel(BindRot) else: "",
-    enabled: ownedLive or not owned,
-    overlay: if owned and hero.rotOn: "ON" else: ""
+  abilities[1] = CommandSlotSpec(
+    id: CmdGrapple, icon: "grapple",
+    hotkey: if owned: bindLabel(BindGrapple) else: "",
+    enabled: (ownedLive and grappleReady) or not owned,
+    remaining: if owned: hero.grappleCooldown else: 0,
+    duration: GrappleCooldownTicks,
+    overlay:
+      if owned: cooldownOverlay(hero.grappleCooldown, GrappleCooldownTicks)
+      else: ""
   )
-  actionSpecs[3] = CommandSlotSpec(
+  abilities[2] = CommandSlotSpec(
     id: CmdBlink, icon: "blink",
     hotkey: if owned: bindLabel(BindBlink) else: "",
     enabled: (ownedLive and blinkReady) or not owned,
@@ -1509,367 +1671,149 @@ proc drawBottomUnit(
       if owned: cooldownOverlay(hero.blinkCooldown, BlinkCooldownTicks)
       else: ""
   )
-  let carried = hero.carriedShopItems
-  var itemWells: array[2, ShopItem]
-  var itemWellCount = 0
-  for item in carried:
-    if itemWellCount >= 2:
-      break
-    actionSpecs[4 + itemWellCount] = hero.itemSlotSpec(item, owned, ownedLive)
-    itemWells[itemWellCount] = item
-    inc itemWellCount
+  abilities[3] = CommandSlotSpec(
+    id: CmdRot, icon: "rot",
+    hotkey: if owned: bindLabel(BindRot) else: "",
+    enabled: ownedLive or not owned
+  )
+  const AbilityNames = ["Hook", "Grapple", "Blink", "Rot"]
+  for i in 0 ..< AbilityCount:
+    let rotOn = i == 3 and hero.rotOn
+    sk.drawAbilityWell(
+      hud.abilities[i], abilities[i],
+      if rotOn: "Rot ON" else: AbilityNames[i],
+      active = rotOn
+    )
+
+  # Hook upgrades, bought with kill points.
+  hudScratch.setLen(0)
+  hudScratch.add "UPGRADE HOOK"
+  sk.drawLabel(hudScratch, hud.upgradeTitle.origin, hud.upgradeTitle.size, HudGoldDim, "B11")
+  if owned and hero.points > 0:
+    hudScratch.setLen(0)
+    hudScratch.addHudInt(int(hero.points))
+    hudScratch.add(if hero.points == 1: " POINT" else: " POINTS")
+    let
+      titleW = sk.getTextSize("B11", "UPGRADE HOOK").x
+      pillW = sk.getTextSize("B11", hudScratch).x + 14
+      pill = GameUiPanel(
+        origin: hud.upgradeTitle.origin + vec2(titleW + 8, -2),
+        size: vec2(pillW, hud.upgradeTitle.size.y + 4)
+      )
+    sk.drawRounded(pill, ReadyGold)
+    sk.drawLabel(hudScratch, pill.origin, pill.size, KeyCapText, "B11", CenterAlign)
   for kind in UpgradeKind:
     let
-      level = hero.upgrades[kind]
+      level = int(hero.upgrades[kind])
       affordable = ownedLive and hero.points > 0 and level < MaxUpgradeLevel
-    actionSpecs[6 + ord(kind)] = CommandSlotSpec(
-      id: 100 + kind.ord,
-      icon: UpgradeIcons[kind],
-      hotkey: if owned: bindLabel(BindAction(ord(BindUpgrade1) + ord(kind))) else: "",
-      enabled: (owned and (affordable or level > 0)) or not owned,
-      overlay: if level >= MaxUpgradeLevel: "MAX" else: "",
-      badge: if level >= MaxUpgradeLevel or level == 0: "" else: $level
-    )
+    sk.drawUpgradeButton(hud.upgrades[ord(kind)], kind, level, owned, affordable)
 
-  for i in 0 ..< ActionSlotCount:
-    let well = hud.actions.actionWell(i)
-    if actionSpecs[i].icon.len > 0:
-      sk.drawSlotIcon(well, actionSpecs[i])
-    else:
-      sk.fillWell(well)
-
-  if hero.state == Dying:
-    hudScratch.setLen(0)
-    hudScratch.addHudSeconds(hero.deathTicks)
-    sk.drawLabel(
-      hudScratch, portrait.origin, portrait.size, ReadyGold, "Small", CenterAlign
-    )
-  elif hero.shieldTicks > 0:
-    let
-      plateSize = vec2(portrait.size.x - 8, 16)
-      plateOrigin = portrait.origin + vec2(4, 4)
-    sk.drawRect(plateOrigin, plateSize, rgbx(8, 18, 28, 210))
-    hudScratch.setLen(0)
-    hudScratch.add "INVULN "
-    hudScratch.addHudSeconds(hero.shieldTicks)
-    sk.drawLabel(
-      hudScratch, plateOrigin, plateSize,
-      ShieldHpColor, "Small", CenterAlign
-    )
-  if hero.state != Dying and hero.buffTicks > 0:
-    let
-      plateSize = vec2(portrait.size.x - 8, 14)
-      plateOrigin = portrait.origin + vec2(4, portrait.size.y - 18)
-    sk.drawRect(plateOrigin, plateSize, rgbx(10, 12, 16, 190))
-    hudScratch.setLen(0)
-    hudScratch.add RuneHudNames[hero.buffKind]
-    hudScratch.add " "
-    hudScratch.addHudSeconds(hero.buffTicks)
-    sk.drawLabel(
-      hudScratch, plateOrigin, plateSize,
-      RuneColors[hero.buffKind], "Small", CenterAlign
-    )
-
-  sk.drawBar(
-    hud.hpBar.origin,
-    hud.hpBar.size,
-    max(hero.hp, 0).float32,
-    max(hero.maxHp, 1).float32,
-    hpColor
-  )
-  sk.drawSprite("health", hud.hpBar.origin + vec2(2, 2), vec2(16), hpColor)
-  hudScratch.setLen(0)
-  hudScratch.add butcherDisplayName(index)
-  if not owned:
-    if spectatePudgeId == hero.id:
-      hudScratch.add "  EYES"
-    elif heroIdx >= 0 and hero.team == run.world.pudges[heroIdx].team:
-      hudScratch.add "  ALLY"
-    elif heroIdx >= 0:
-      hudScratch.add "  ENEMY"
-  sk.drawLabel(
-    hudScratch,
-    hud.hpBar.origin + vec2(20, 0),
-    vec2(hud.hpBar.size.x - 78, hud.hpBar.size.y),
-    HudName,
-    "Small"
-  )
-  hudScratch.setLen(0)
-  hudScratch.add "Lv "
-  hudScratch.addHudInt(int(hero.kills) + 1)
-  sk.drawLabel(
-    hudScratch,
-    hud.hpBar.origin + vec2(hud.hpBar.size.x - 54, 0),
-    vec2(52, hud.hpBar.size.y),
-    HudMuted,
-    "Small",
-    RightAlign
-  )
-
-  var hookCaption = ""
-  if inHistory:
-    hookCaption.add "SPECTATING THE PAST"
-  elif owned and aimingHookNow():
-    hookCaption.add "HOOK - CLICK GROUND"
-  elif owned and aimingBlinkNow():
-    hookCaption.add "BLINK - LAST LEGAL TILE"
-  elif hero.windupTicks > 0:
-    hookCaption.add "CASTING"
-  elif hookFlying(hero):
-    hookCaption.add "IN FLIGHT"
-  elif hookReady:
-    hookCaption.add "READY"
-    if owned and options.quickcast:
-      hookCaption.add " - QC"
-    if owned and options.autocast:
-      hookCaption.add " - AC"
-  elif hookRemaining > 0:
-    hookCaption.addHudInt(int(cooldownSeconds(hookRemaining)))
-    hookCaption.add " s"
-  else:
-    hookCaption.add "HOOK"
-  sk.drawBar(
-    hud.resourceBar.origin,
-    hud.resourceBar.size,
-    hookFill,
-    1.0'f32,
-    HookBarColor
-  )
-  sk.drawSprite(
-    "mana",
-    hud.resourceBar.origin + vec2(2, 4),
-    vec2(16),
-    rgbx(186, 214, 255, 255)
-  )
-  sk.drawLabel(
-    hookCaption,
-    hud.resourceBar.origin + vec2(20, 0),
-    vec2(hud.resourceBar.size.x - 24, hud.resourceBar.size.y),
-    rgbx(255, 255, 255, 255),
-    "Small",
-    CenterAlign
-  )
-
-  writeRatio(hudScratch, max(hero.hp, 0).int, int(hero.maxHp))
-  sk.drawValueBar(
-    hud.xpBar.origin,
-    hud.xpBar.size,
-    max(hero.hp, 0).float32,
-    max(hero.maxHp, 1).float32,
-    hpColor,
-    hudScratch
-  )
-  sk.drawSprite("health", hud.xpBar.origin + vec2(2, 1), vec2(18), hpColor)
-  hudScratch.setLen(0)
-  hudScratch.add "KO "
-  hudScratch.addHudInt(int(hero.kills))
-  sk.drawLabel(
-    hudScratch,
-    hud.xpBar.origin + vec2(hud.xpBar.size.x - 88, 0),
-    vec2(84, hud.xpBar.size.y),
-    ReadyGold,
-    "Small",
-    RightAlign
-  )
-
-  sk.drawSprite("gold", hud.goldBox.origin + vec2(0, -2), vec2(22))
-  writeAmount(hudScratch, int(hero.gold))
-  sk.drawLabel(
-    hudScratch,
-    hud.goldBox.origin + vec2(22, 0),
-    vec2(hud.goldBox.size.x - 22, hud.goldBox.size.y),
-    ReadyGold,
-    "Small"
-  )
-  sk.drawSprite("essence", hud.gemBox.origin + vec2(-2, -2), vec2(22))
-  writeInt(hudScratch, int(hero.points))
-  sk.drawLabel(
-    hudScratch,
-    hud.gemBox.origin + vec2(20, 0),
-    vec2(hud.gemBox.size.x - 20, hud.gemBox.size.y),
-    rgbx(220, 168, 255, 255),
-    "Small"
-  )
-
-  for i in 0 ..< ActionSlotCount:
-    if actionSpecs[i].icon.len == 0:
-      continue
-    sk.drawSlotLabels(hud.actions.actionWell(i), actionSpecs[i])
+  # Carried items (palisade, hooktrap, ward, ...), when there are any.
+  let carried = hero.carriedShopItems
+  var bagSpecs: seq[CommandSlotSpec]
+  if hud.bag.len > 0:
+    sk.drawLabel("ITEMS", hud.bagTitle.origin, hud.bagTitle.size, HudGoldDim, "B11")
+  for i, well in hud.bag:
+    if i >= carried.len:
+      break
+    let spec = hero.itemSlotSpec(carried[i], owned, ownedLive)
+    bagSpecs.add spec
+    sk.drawBagWell(well, spec)
 
   if owned:
-    for i in 0 ..< ActionSlotCount:
-      let spec = actionSpecs[i]
-      if spec.id < 0 or not spec.enabled:
-        continue
-      if not window.clicked(sk, hud.actions.actionWell(i)):
+    for i in 0 ..< AbilityCount:
+      let spec = abilities[i]
+      if not spec.enabled or not window.clicked(sk, hud.abilities[i]):
         continue
       case spec.id
-      of CmdAttack: beginAttackCommand()
       of CmdHook: beginHookCommand()
-      of CmdRot: beginRotCommand()
+      of CmdGrapple: beginGrappleCommand()
       of CmdBlink: beginBlinkCommand()
-      of 100 .. 103:
-        issueBuyCommand(UpgradeKind(spec.id - 100))
-      else:
-        if spec.id == ShopWall.ord:
-          beginUseBagItem(ShopWall)
-        elif spec.id == ShopMine.ord:
-          beginUseBagItem(ShopMine)
-        elif spec.id == ShopWard.ord:
-          beginUseBagItem(ShopWard)
+      of CmdRot: beginRotCommand()
+      else: discard
+    for kind in UpgradeKind:
+      if ownedLive and window.clicked(sk, hud.upgrades[ord(kind)]):
+        issueBuyCommand(kind)
+    for i, spec in bagSpecs:
+      if spec.enabled and window.clicked(sk, hud.bag[i]):
+        beginUseBagItem(carried[i])
 
-    if window.buttonPressed[MouseRight]:
-      let hookWell = hud.actions.actionWell(1)
-      if hookWell.contains(sk.mousePos):
-        toggleHookAutocast()
+    if window.buttonPressed[MouseRight] and
+        hud.abilities[0].contains(sk.mousePos):
+      toggleHookAutocast()
 
+    # One status line above the plate: errors win, then aim hints.
     let (errText, errAlpha) = humanErrorLine()
-    if errText.len > 0:
+    var
+      status = errText
+      statusColor = rgbx(245, 80, 85, uint8(errAlpha * 255))
+    if status.len == 0:
+      statusColor = ReadyGold
+      if inHistory: status = "SPECTATING THE PAST"
+      elif aimingHookNow(): status = "HOOK - CLICK GROUND"
+      elif aimingGrappleNow(): status = "GRAPPLE - CLICK GROUND"
+      elif aimingBlinkNow(): status = "BLINK - CLICK GROUND"
+    if status.len > 0:
       sk.drawLabel(
-        errText,
-        vec2(hud.bar.origin.x, hud.bar.origin.y - 16),
-        vec2(hud.bar.size.x, 16),
-        rgbx(245, 80, 85, uint8(errAlpha * 255)),
-        "Hud",
+        status,
+        vec2(hud.bar.origin.x, hud.bar.origin.y - 22),
+        vec2(hud.bar.size.x, 18),
+        statusColor,
+        "B15",
         CenterAlign
       )
 
   block actionTooltip:
-    var hovered = -1
-    var well = hud.bar
-    for i in 0 ..< ActionSlotCount:
-      if actionSpecs[i].icon.len == 0:
+    for i in 0 ..< AbilityCount:
+      let well = hud.abilities[i]
+      if not well.contains(sk.mousePos):
         continue
-      let slot = hud.actions.actionWell(i)
-      if slot.contains(sk.mousePos):
-        hovered = i
-        well = slot
-        break
-    if hovered < 0:
-      break actionTooltip
-    case hovered
-    of 0:
-      sk.drawHudTooltip(
-        window, well, attackTooltipLines(hero.meleeDamage, hero.attackPeriod)
-      )
-    of 1:
-      sk.drawHudTooltip(
-        window,
-        well,
-        hookTooltipLines(
-          thrownHookDamage(
-            hero.upgrades[UpgradeDamage],
+      let lines =
+        case i
+        of 0:
+          hookTooltipLines(
+            thrownHookDamage(
+              hero.upgrades[UpgradeDamage],
+              hero.hasBuff(RuneBigHook),
+              hero.hasBuff(RuneDoubleDamage)
+            ),
+            thrownHookRange(
+              hero.upgrades[UpgradeDistance],
+              hero.hasBuff(RuneBigHook)
+            ),
+            hero.itemRank[ShopLongshot],
+            options.quickcast,
             hero.hasBuff(RuneBigHook),
-            hero.hasBuff(RuneDoubleDamage)
-          ),
-          thrownHookRange(
-            hero.upgrades[UpgradeDistance],
-            hero.hasBuff(RuneBigHook)
-          ),
-          hero.itemRank[ShopLongshot],
-          options.quickcast,
-          hero.hasBuff(RuneBigHook),
-          hero.hasBuff(RuneDoubleDamage),
-          hero.hasBuff(RuneLightning),
-          bindLabel(BindHook)
+            hero.hasBuff(RuneDoubleDamage),
+            hero.hasBuff(RuneLightning),
+            bindLabel(BindHook)
+          )
+        of 1: grappleTooltipLines(bindLabel(BindGrapple))
+        of 2: blinkTooltipLines(bindLabel(BindBlink))
+        else: rotTooltipLines(hero.rotOn, bindLabel(BindRot))
+      sk.drawHudTooltip(window, well, lines)
+      break actionTooltip
+    for kind in UpgradeKind:
+      let button = hud.upgrades[ord(kind)]
+      if button.contains(sk.mousePos):
+        sk.drawHudTooltip(
+          window, button, upgradeTooltipLines(kind, hero.upgrades[kind])
         )
-      )
-    of 2:
-      sk.drawHudTooltip(
-        window, well, rotTooltipLines(hero.rotOn, bindLabel(BindRot))
-      )
-    of 3:
-      sk.drawHudTooltip(
-        window, well, blinkTooltipLines(bindLabel(BindBlink))
-      )
-    of 4, 5:
-      let itemIdx = hovered - 4
-      if itemIdx < itemWellCount:
+        break actionTooltip
+    for i, well in hud.bag:
+      if i < carried.len and well.contains(sk.mousePos):
         sk.drawHudTooltip(
           window,
           well,
           shopItemTooltipLines(
-            itemWells[itemIdx],
-            hero.itemRank[itemWells[itemIdx]],
+            carried[i],
+            hero.itemRank[carried[i]],
             bindLabel(BindWall),
             bindLabel(BindMine),
             bindLabel(BindWard)
           )
         )
-    of 6, 7, 8, 9:
-      let kind = UpgradeKind(hovered - 6)
-      sk.drawHudTooltip(
-        window, well, upgradeTooltipLines(kind, hero.upgrades[kind])
-      )
-    else:
-      discard
-
-proc drawInventoryPanel(
-    sk: Silky,
-    window: Window,
-    layout: GameUiLayout,
-    inHistory: bool
-) =
-  ## Six-well bag matching Gods of the Arena: 3×2 of 72px tiles.
-  ## Shop families occupy a well while owned; a planted ward leaves it.
-  if not commandCardVisible():
-    return
-  let index = inspectIndex()
-  if index < 0:
-    return
-  let
-    owned = isOwnedInspect()
-    hero = run.world.pudges[index]
-    ownedLive = owned and not inHistory
-    panel = inventoryPanelOf(layout)
-    chrome = inventoryChrome(panel)
-  sk.drawPanel(panel)
-  sk.drawFrame(panel.inset(2))
-  sk.drawLabel(
-    "INVENTORY",
-    chrome.title.origin,
-    chrome.title.size,
-    HudMuted,
-    "Small"
-  )
-  var
-    hoveredItem = ShopFlask
-    hoveredWell = chrome.slots[0]
-    foundHover = false
-  for slot in 0 ..< int(InventorySlots):
-    let well = chrome.slots[slot]
-    let item = hero.inventoryItem(slot)
-    if item.isPermanent:
-      let spec = hero.itemSlotSpec(item, owned, ownedLive)
-      sk.drawCommandSlot(well, spec)
-      if owned and spec.enabled and window.clicked(sk, well):
-        beginUseBagItem(item)
-      if well.contains(sk.mousePos):
-        hoveredItem = item
-        hoveredWell = well
-        foundHover = true
-    else:
-      sk.drawSlot(well)
-  sk.drawSprite("gold", chrome.gold.origin + vec2(0, 6), vec2(20))
-  writeAmount(hudScratch, int(hero.gold))
-  sk.drawLabel(
-    hudScratch,
-    chrome.gold.origin + vec2(31, 0),
-    vec2(chrome.gold.size.x - 31, chrome.gold.size.y),
-    ReadyGold,
-    "Small"
-  )
-  if foundHover:
-    sk.drawHudTooltip(
-      window, hoveredWell,
-      shopItemTooltipLines(
-        hoveredItem,
-        hero.itemRank[hoveredItem],
-        bindLabel(BindWall),
-        bindLabel(BindMine),
-        bindLabel(BindWard)
-      )
-    )
+        break actionTooltip
 
 proc canBuyShopRow(hero: Pudge, item: ShopItem): bool =
   if hero.gold < shopPrice(item):
@@ -1892,9 +1836,19 @@ proc canBuyShopRow(hero: Pudge, item: ShopItem): bool =
     return false
   true
 
+proc shopTile(gridOrigin: Vec2, i: int): GameUiPanel =
+  ## One named, priced item tile in the shop grid.
+  GameUiPanel(
+    origin: gridOrigin + vec2(
+      float32(i mod PermanentShopCols) * (ShopTileSize.x + ShopTileGap),
+      float32(i div PermanentShopCols) * (ShopTileSize.y + ShopTileGap)
+    ),
+    size: ShopTileSize
+  )
+
 proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
-  ## Icon shop while standing on the team's pad. Permanents fill the
-  ## HUD inventory; 5-9 still buy the timed powerups.
+  ## Shop while standing on the team's pad: named, priced item tiles
+  ## (permanents fill the bag) and key-labelled powerup chips (5-9).
   if not heroWantsShop():
     return
   let
@@ -1902,28 +1856,23 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
     live = humanControlActive() and not run.replayMode and
       hero.state == Alive
     panel = shopPanelOf(layout)
+    pad = 16.0'f32
   sk.drawPanel(panel)
   sk.drawFrame(panel.inset(2))
   sk.drawLabel(
-    "BASE SHOP",
-    panel.origin + vec2(10, 8),
-    vec2(160, 18),
-    ReadyGold,
-    "Hud"
+    "SHOP", panel.origin + vec2(pad, 12), vec2(160, 30), ReadyGold, "B24"
   )
-  hudScratch.setLen(0)
-  hudScratch.add "G "
-  hudScratch.addHudInt(int(hero.gold))
+  writeAmount(hudScratch, int(hero.gold))
+  let goldW = sk.getTextSize("B24", hudScratch).x
   sk.drawLabel(
     hudScratch,
-    panel.origin + vec2(panel.size.x - 90, 8),
-    vec2(80, 18),
-    ReadyGold,
-    "Hud",
-    RightAlign
+    panel.origin + vec2(panel.size.x - pad - goldW, 12),
+    vec2(goldW, 30), ReadyGold, "B24", RightAlign
   )
-  let
-    gridOrigin = panel.origin + vec2(14, 30)
+  sk.drawSprite(
+    "gold", panel.origin + vec2(panel.size.x - pad - goldW - 24, 18), vec2(20)
+  )
+  let gridOrigin = panel.origin + vec2(pad, 54)
   var
     hoveredPerm = ShopFlask
     foundPerm = false
@@ -1931,45 +1880,67 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
   var i = 0
   for item in ShopBoots..ShopWard:
     let
-      col = i mod PermanentShopCols
-      row = i div PermanentShopCols
-      well = bagWell(gridOrigin, col, row)
+      tile = shopTile(gridOrigin, i)
+      icon = GameUiPanel(
+        origin: tile.origin + vec2((tile.size.x - ShopIconSize) * 0.5'f32, 0),
+        size: vec2(ShopIconSize)
+      )
       rank = hero.itemRank[item]
+      afford = live and hero.canBuyShopRow(item)
       restock =
         if item == ShopWard and rank <= 0:
           cooldownOverlay(hero.wardCooldown, WardRestockTicks)
         else: ""
-      spec = CommandSlotSpec(
-        id: item.ord,
-        icon: ShopItemIcons[item],
-        enabled: live and hero.canBuyShopRow(item),
-        badge:
-          if item == ShopWard:
-            if rank > 0: "HELD" elif hero.wardCooldown <= 0: "1" else: ""
-          elif rank > 0: $rank
-          else: "",
-        overlay: restock
-      )
-    sk.drawCommandSlot(well, spec)
-    if spec.enabled and window.clicked(sk, well):
+      badge =
+        if item == ShopWard:
+          if rank > 0: "HELD" else: ""
+        elif rank > 0: "x" & $rank
+        else: ""
+    sk.drawRoundedFramed(
+      icon, rgbx(20, 20, 26, 255), if afford: ReadyGold else: UpgradeDimRim
+    )
+    sk.drawSprite(
+      ShopItemIcons[item], icon.origin + vec2(3), icon.size - vec2(6),
+      if afford: SlotReady else: rgbx(110, 110, 116, 200)
+    )
+    if restock.len > 0:
+      sk.drawRect(icon.origin + vec2(3), icon.size - vec2(6), rgbx(0, 0, 0, 140))
+      sk.drawLabel(restock, icon.origin, icon.size, rgbx(255, 255, 255, 255), "B24", CenterAlign)
+    if badge.len > 0:
+      let
+        bw = sk.getTextSize("B11", badge).x + 10
+        b = GameUiPanel(
+          origin: icon.origin + vec2(icon.size.x - bw - 4, 4), size: vec2(bw, 16)
+        )
+      sk.drawRounded(b, ReadyGold)
+      sk.drawLabel(badge, b.origin, b.size, KeyCapText, "B11", CenterAlign)
+    sk.drawLabel(
+      ShopItemShortNames[item],
+      vec2(tile.origin.x - 4, icon.origin.y + icon.size.y + 4),
+      vec2(tile.size.x + 8, 16),
+      if afford: HudName else: HudMuted, "B13", CenterAlign
+    )
+    sk.drawLabel(
+      shopGoldLabel(item),
+      vec2(tile.origin.x, icon.origin.y + icon.size.y + 20),
+      vec2(tile.size.x, 18),
+      if afford: ReadyGold
+      elif hero.gold < shopPrice(item): rgbx(255, 122, 102, 255)
+      else: HudMuted,
+      "B15", CenterAlign
+    )
+    if afford and window.clicked(sk, tile):
       issueBuyPower(item)
-    if well.contains(sk.mousePos):
+    if tile.contains(sk.mousePos):
       hoveredPerm = item
-      hoveredWell = well
+      hoveredWell = tile
       foundPerm = true
     inc i
-  while i < PermanentShopCols * PermanentShopRows:
-    sk.drawSlot(bagWell(
-      gridOrigin, i mod PermanentShopCols, i div PermanentShopCols
-    ))
-    inc i
-  const ShopPowerupsY = 30.0'f32 + InventoryWellSize * 2 + InventoryWellGap.y + 16
+  let powerTop = gridOrigin.y + 2 * ShopTileSize.y + ShopTileGap + 10
   sk.drawLabel(
-    "POWERUPS",
-    panel.origin + vec2(10, ShopPowerupsY),
-    vec2(200, 16),
-    ReadyGold,
-    "Small"
+    "POWERUPS - PRESS KEY",
+    vec2(panel.origin.x + pad, powerTop), vec2(panel.size.x - pad * 2, 16),
+    HudGoldDim, "B13"
   )
   const Powerups = [
     ShopFlask, ShopHaste, ShopRegen, ShopBigHook, ShopDoubleDamage
@@ -1979,32 +1950,40 @@ proc drawShopPanel(sk: Silky, window: Window, layout: GameUiLayout) =
     hoveredPower = ShopFlask
     foundPower = false
     hoveredRow = GameUiPanel()
+    x = panel.origin.x + pad
+    y = powerTop + 24
   for i, item in Powerups:
     let
-      row = GameUiPanel(
-        origin: panel.origin + vec2(8, ShopPowerupsY + 20 + float32(i) * 26),
-        size: vec2(panel.size.x - 16, 24)
-      )
+      label = ShopItemNames[item] & " " & shopGoldLabel(item)
+      keyW = sk.getTextSize("B15", PowerKeys[i]).x
+      w = 12 + keyW + 10 + sk.getTextSize("B15", label).x + 12
+    if x + w > panel.origin.x + panel.size.x - pad:
+      x = panel.origin.x + pad
+      y += ShopChipH + 8
+    let
+      chip = GameUiPanel(origin: vec2(x, y), size: vec2(w, ShopChipH))
       afford = live and hero.canBuyShopRow(item)
-    sk.drawRect(
-      row.origin, row.size,
-      if afford: rgbx(24, 28, 36, 220) else: rgbx(16, 18, 24, 220)
+    sk.drawRoundedFramed(
+      chip,
+      if afford: rgbx(30, 28, 26, 255) else: rgbx(18, 18, 22, 255),
+      if afford: rgbx(110, 92, 50, 255) else: UpgradeDimRim
     )
-    let label = "[" & PowerKeys[i] & "]  " & ShopItemNames[item] &
-      "  " & shopGoldLabel(item)
     sk.drawLabel(
-      label,
-      row.origin + vec2(6, 3),
-      vec2(row.size.x - 12, 18),
-      if afford: rgbx(226, 232, 240, 255) else: rgbx(120, 128, 144, 255),
-      "Small"
+      PowerKeys[i], chip.origin + vec2(12, 0), vec2(keyW, chip.size.y),
+      if afford: ReadyGold else: HudMuted, "B15"
     )
-    if live and window.clicked(sk, row):
+    sk.drawLabel(
+      label, chip.origin + vec2(12 + keyW + 10, 0),
+      vec2(chip.size.x - keyW - 22, chip.size.y),
+      if afford: HudName else: HudMuted, "B15"
+    )
+    if live and window.clicked(sk, chip):
       issueBuyPower(item)
-    if row.contains(sk.mousePos):
+    if chip.contains(sk.mousePos):
       hoveredPower = item
       foundPower = true
-      hoveredRow = row
+      hoveredRow = chip
+    x += w + 8
   if foundPower:
     var lines = shopItemTooltipLines(hoveredPower, 0)
     lines[0] = lines[0] & " - " & shopGoldLabel(hoveredPower)
@@ -2872,7 +2851,7 @@ proc drawDebugMenu(
       text &"eye {cameraEye.x:.1f} {cameraEye.y:.1f} {cameraEye.z:.1f}"
       text &"view px {playPx.origin.x:.0f},{playPx.origin.y:.0f} " &
         &"{playPx.size.x:.0f}x{playPx.size.y:.0f}"
-      text &"widgets: cluster {ClusterWidth:.0f}x{ClusterHeight:.0f}  " &
+      text &"widgets: hero bar {heroBar(currentLayout(window)).bar.size.x:.0f}x{BarHeight:.0f}  " &
         &"map {MinimapSize:.0f}"
       if debugHoverFound:
         text &"hover tile {debugHoverX}, {debugHoverZ}"
@@ -3012,23 +2991,21 @@ proc drawUi*(
   var
     layout = currentLayout(window)
     chrome = placeChrome(layout)
-  # Top-right corner: team scores flanking the match clock.
-  var westScore = "WEST "
-  westScore.addHudInt(int(run.world.teamKills[WestTeam.ord]))
-  var eastScore = ""
-  eastScore.addHudInt(int(run.world.teamKills[EastTeam.ord]))
-  eastScore.add " EAST"
+  # Top-center banner: team scores flanking the match clock.
   let matchSeconds = int(run.world.tick div TickRate)
   var matchClock = ""
   writeClock(matchClock, matchSeconds div 60, matchSeconds mod 60)
   sk.drawScorePlate(
     layout,
     ScorePlate(
-      west: westScore,
-      east: eastScore,
-      westColor: WestColor,
-      eastColor: EastColor,
-      clock: matchClock
+      west: int(run.world.teamKills[WestTeam.ord]),
+      east: int(run.world.teamKills[EastTeam.ord]),
+      killGoal: int(run.world.killGoal),
+      clock: matchClock,
+      youTeam:
+        if humanControlActive() and heroIndex() >= 0:
+          ord(run.world.pudges[heroIndex()].team)
+        else: -1
     )
   )
   sk.drawRunePlate(layout)
@@ -3073,9 +3050,6 @@ proc drawUi*(
   if clusterVisible:
     sk.drawBottomUnit(
       window, chrome.bottom, transport.inHistory and netRole != NetClient
-    )
-    sk.drawInventoryPanel(
-      window, layout, transport.inHistory and netRole != NetClient
     )
   sk.drawShopPanel(window, layout)
   centerCameraOnInspect(
