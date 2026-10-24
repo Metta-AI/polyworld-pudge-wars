@@ -6,7 +6,7 @@ import
   audio, butcherhook, butcherknife, content, director, fog, maps, sim, game, human, keybinds, netclient, netsim,
   netpredict, replays, ui,
   polyworld/[
-    actioncam, characters, chrome, common, gameuis, particles, particleshaders,
+    actioncam, bottomhud, characters, chrome, common, gameuis, particles, particleshaders,
     pathing, player, profiles, quadterrain, rtscameras, shadows, shapes,
     tapes, terrainsurfaces, viewers, worldbars
   , visions]
@@ -1047,12 +1047,21 @@ proc runGraphics*() =
         icon = placeholderIcon()
       if not builder.addImage(key, icon):
         raise newException(GraphicsError, "the UI atlas is too small for " & key)
-    addIcon("hook", iconPath(HookAbilityIcon, "abilities"))
-    addIcon("blink", iconPath(BlinkAbilityIcon, "abilities"))
-    addIcon("rot", iconPath(RotAbilityIcon, "abilities"))
+    proc addAbility(key, path: string) =
+      ## Square well art plus a circle-cropped copy for the hero bar.
+      addIcon(key, path)
+      let icon =
+        if fileExists(path): readImage(path) else: placeholderIcon()
+      if not builder.addImage(key & ".round", roundIcon(icon)):
+        raise newException(GraphicsError, "the UI atlas is too small for " & key)
+    addAbility("hook", iconPath(HookAbilityIcon, "abilities"))
+    addAbility("grapple", iconPath(GrappleAbilityIcon, "abilities"))
+    addAbility("blink", iconPath(BlinkAbilityIcon, "abilities"))
+    addAbility("rot", iconPath(RotAbilityIcon, "abilities"))
+    builder.addHudShapes()
     addIcon(AttackIcon, iconPath(AttackIcon))
     for team in Team:
-      addIcon(PortraitKeys[team], portraitPath(team))
+      addAbility(PortraitKeys[team], portraitPath(team))
     for kind in UpgradeKind:
       addIcon(UpgradeIcons[kind], iconPath(UpgradeIcons[kind]))
     for item in ShopBoots..ShopWard:
@@ -1064,6 +1073,9 @@ proc runGraphics*() =
         continue
       addIcon(name, path)
     builder.addDefaultFonts()
+    # Bold HUD ramp: score banner, key badges, and slot labels.
+    for size in [11, 12, 13, 15, 17, 24, 27, 54]:
+      builder.addFont(BoldFontPath, "B" & $size, size.float32)
     builder.write(AtlasPath)
   var window: Window
   var sk: Silky

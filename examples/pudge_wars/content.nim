@@ -417,6 +417,8 @@ const
     "Hook Radius"
   ]
   HookAbilityIcon* = "meat_hook"
+  GrappleAbilityIcon* = "chain_axe"
+    ## HUD well for E-grapple: a grappling hook on a rope.
   BlinkAbilityIcon* = "riftwake"
     ## HUD well for F-blink: a rift/phase mark already in abilities/.
   RotAbilityIcon* = "withering_idol"
