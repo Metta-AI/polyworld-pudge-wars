@@ -1,6 +1,6 @@
 # Neural policies and Jev
 
-Fresh Meat uses GotA's Bassy tensor API and per-seat inference client, ported
+Pudge Wars uses GotA's Bassy tensor API and per-seat inference client, ported
 from Polyworld `743f108091ca20b78f7e3fdc1a42f59ddb4ac795`.
 Python and native executables are not player artifacts. A neural policy is a
 BASIC program plus weights; BASIC builds observations and issues game actions.

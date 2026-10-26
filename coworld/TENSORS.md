@@ -1,6 +1,6 @@
 # BASIC-defined neural architectures
 
-Fresh Meat policies can describe their forward pass in BASIC using packed tensors.
+Pudge Wars policies can describe their forward pass in BASIC using packed tensors.
 Weights, intermediate results and recurrent state remain inside each player's VM.
 The forward pass is defined in BASIC; GotA-specific named native runners are not registered.
 

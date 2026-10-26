@@ -1,4 +1,4 @@
-# Fresh Meat training bridge
+# Pudge Wars training bridge
 
 `examples/pudge_wars/training_host.nim` runs the hosted Nim simulation without
 the WebSocket clock. It calls the same `observation` and `applyAction` functions

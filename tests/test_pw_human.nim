@@ -215,12 +215,12 @@ echo "Testing bot print lines land in the speech feed"
 block:
   let game = newGame(map, MatchTicks, false, ReplayData())
   let speakPath = getTempDir() / "pw_speak_test.bas"
-  writeFile(speakPath, "print \"grr fresh meat\"\n")
+  writeFile(speakPath, "print \"grr pudge wars\"\n")
   loadBots(game, [BotGroup(path: speakPath, count: PudgeCount)])
   game.play(1)
   removeFile(speakPath)
   for i in 0 ..< PudgeCount:
-    doAssert game.botSpeech[i].text == "grr fresh meat",
+    doAssert game.botSpeech[i].text == "grr pudge wars",
       "every scripted seat speaks its printed line"
   doAssert game.chatLog.len == 0,
     "bot print is a bubble, not match chat"

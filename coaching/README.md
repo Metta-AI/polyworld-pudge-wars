@@ -1,4 +1,4 @@
-# Fresh Meat: a live coach and a teammate you can teach
+# Pudge Wars: a live coach and a teammate you can teach
 
 The demo gives the game most of the screen, with a compact right panel for a next-action cue, enemy position estimates, and a short strategy. Only urgent cues appear over the arena. **Coach** hides the panel for more space; **Loom** opens optional teammate teaching tools. You retain all movement and ability controls.
 

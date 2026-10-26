@@ -198,7 +198,7 @@ class HumanGuide:
 
     def request_body(self):
         body = {"model": self.model, "state": {
-            "game": "Fresh Meat. A human skillshot team arena. Advise only; never control the player.",
+            "game": "Pudge Wars. A human skillshot team arena. Advise only; never control the player.",
             "view": "Current human self and team-shared visible entities only. Unseen enemies are unknown.",
             "observation": self.obs,
             "actions": self.actions, "strategies": self.strategies,

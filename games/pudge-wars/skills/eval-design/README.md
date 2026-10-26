@@ -1,4 +1,4 @@
-# Hosted evaluation design for Fresh Meat
+# Hosted evaluation design for Pudge Wars
 
 Use existing replays to diagnose, native full games to catch regressions, and
 hosted episodes to judge the actual uploaded policy. Keep the engine/rules,

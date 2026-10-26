@@ -1,4 +1,4 @@
-## Human seat for Fresh Meat: mouse picking, command input, and the
+## Human seat for Pudge Wars: mouse picking, command input, and the
 ## acknowledgment state the HUD and world overlays draw.
 ##
 ## The client queues integer intents only; the sim drains them at the

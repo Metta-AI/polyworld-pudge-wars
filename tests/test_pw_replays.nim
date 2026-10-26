@@ -1,4 +1,4 @@
-## Fresh Meat action replay codec, playback cursor, and validation.
+## Pudge Wars action replay codec, playback cursor, and validation.
 
 import
   std/[os, strutils],

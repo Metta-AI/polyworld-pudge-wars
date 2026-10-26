@@ -1,4 +1,4 @@
-## Fresh Meat WAV clips load through the engine sound module.
+## Pudge Wars WAV clips load through the engine sound module.
 
 import
   polyworld/sounds,

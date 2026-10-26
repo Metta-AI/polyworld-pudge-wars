@@ -5,9 +5,9 @@
   "id": "sub_ada8bc7f-1478-4836-9c44-e339893b36c4",
   "status": "pending",
   "league": {
-    "name": "Fresh Meat",
+    "name": "Pudge Wars",
     "short_name": null,
-    "description": "Fresh Meat league for submitted policies and recurring competition rounds.",
+    "description": "Pudge Wars league for submitted policies and recurring competition rounds.",
     "commissioner_key": "platform",
     "commissioner_config": {
       "default_variant_id": "league-3v3"
@@ -64,7 +64,7 @@
     "notes": null,
     "id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
     "game": {
-      "name": "Fresh Meat",
+      "name": "Pudge Wars",
       "coworld_name": "pudge-wars",
       "description": "Two banks split by a river, six butchers, one hook. First team to 30 wins. Fog on the enemy bank. Platform-ladder 3v3 clone teams, plus a sibling 1v1 duel league.",
       "owner_user_id": "system",

@@ -1,6 +1,6 @@
-# PolyWorld — Fresh Meat
+# PolyWorld — Pudge Wars
 
-A self-contained slice of the **PolyWorld** engine plus **Fresh Meat**: a 3v3
+A self-contained slice of the **PolyWorld** engine plus **Pudge Wars**: a 3v3
 river arena where two banks of butchers fight to a kill goal with a
 skillshot meat hook, grapple, blink, and rot. Deterministic 32 Hz
 simulation, BASIC bots on empty seats, and a LAN/browser lobby so friends
@@ -165,7 +165,7 @@ point.
 | `local` | `http://127.0.0.1:8765/v1/systemone` | none | whatever the sidecar serves |
 | a URL | that base URL (loopback or one of the above hosts) | `COACH_API_KEY` | `--coach-model` |
 
-Key files live in `~/Library/Application Support/Fresh Meat/`, one line each
+Key files live in `~/Library/Application Support/Pudge Wars/`, one line each
 (a repository `.env.local` also works from the checkout). Without a key the
 coach gives local cues only and says so. `--coach-model NAME` overrides the
 model name. The local sidecar is `d1/serve.py` in the Co-play Notes
@@ -196,7 +196,7 @@ when its answer lands.
 ### Traces
 
 Every coached or piloted seat writes a decision trace under
-`~/Library/Application Support/Fresh Meat/practice/<timestamp>/`
+`~/Library/Application Support/Pudge Wars/practice/<timestamp>/`
 (`--practice-dir DIR` moves it; pilots write `pilot-<slot>/` inside):
 
 | File | What it holds |
@@ -225,15 +225,15 @@ Build a self-contained app with the native game, assets, and BASIC policies:
 
 ```bash
 examples/pudge_wars/macos/build_app.sh
-open "tmp/desktop/Fresh Meat.app"
+open "tmp/desktop/Pudge Wars.app"
 ```
 
 Move the app into Applications or onto your Desktop. Opening it starts a 3v3
 match with you on West and five BASIC bots, at fair difficulty, with the
 practice coach on (see above for the key file). Extra flags pass through:
-`open "tmp/desktop/Fresh Meat.app" --args --coach local --pilot:1`. It works offline
+`open "tmp/desktop/Pudge Wars.app" --args --coach local --pilot:1`. It works offline
 and does not need this checkout after building. Logs are saved to
-`~/Library/Logs/Fresh Meat/game.log`.
+`~/Library/Logs/Pudge Wars/game.log`.
 
 ## Controls
 

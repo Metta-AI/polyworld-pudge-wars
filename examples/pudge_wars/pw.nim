@@ -1,4 +1,4 @@
-## Fresh Meat executable entry point.
+## Pudge Wars executable entry point.
 
 when defined(headless):
   import game

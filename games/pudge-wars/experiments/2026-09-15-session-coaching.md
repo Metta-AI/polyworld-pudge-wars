@@ -57,7 +57,7 @@ contacts were not separately instrumented, so that mechanism remains unmeasured.
 
 - Frozen oracle: `41212e9a-6383-40f8-b44e-f4ceb64ef9c9`; source SHA-256
   `b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6`.
-- Target: canonical Fresh Meat 0.3.21, simulator 37, 3v3, 30 kills or 38,400 ticks.
+- Target: canonical Pudge Wars 0.3.21, simulator 37, 3v3, 30 kills or 38,400 ticks.
   Local simulator source at build: `7d8ab8fce0c9a7d82993402051a0fecdcc0487f4`.
 - Native runner SHA-256:
   `95f6d80fc37b86b91b27617086865e5f1bd0c4bd0e4ddeed6828f7792edd57c3`.

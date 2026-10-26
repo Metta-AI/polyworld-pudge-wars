@@ -1,6 +1,6 @@
 # Network-condition simulator
 
-A local latency / jitter / packet-loss simulator for the Fresh Meat
+A local latency / jitter / packet-loss simulator for the Pudge Wars
 **follower** (the browser/native client that joins a hosted match). It lets
 you feel and measure the game under 100 / 250 / 500 ms links without a real
 WAN, and it drives a developer debug panel.

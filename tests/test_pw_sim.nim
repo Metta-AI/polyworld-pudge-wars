@@ -1,4 +1,4 @@
-## Fresh Meat simulation: hooks, headshots, melee, upgrades, and the kill goal.
+## Pudge Wars simulation: hooks, headshots, melee, upgrades, and the kill goal.
 
 import
   std/strutils,

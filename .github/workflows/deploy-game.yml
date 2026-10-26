@@ -1,4 +1,4 @@
-# Build and deploy the source-owned Fresh Meat Coworld package.
+# Build and deploy the source-owned Pudge Wars Coworld package.
 #
 # Lifecycle:
 #   1. `coworld next-version pudge-wars-basic` allocates the next registry version.
@@ -17,7 +17,7 @@
 #
 # The Coworld CLI is installed from the public package repo so deploys use the
 # current registry/version allocator without waiting for a PyPI release.
-name: "Deploy Fresh Meat BASIC Game"
+name: "Deploy Pudge Wars BASIC Game"
 
 on:
   workflow_dispatch:

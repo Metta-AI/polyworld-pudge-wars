@@ -1,4 +1,4 @@
-# Playing Fresh Meat with your team
+# Playing Pudge Wars with your team
 
 One person hosts on their machine; everyone else joins from a browser —
 no installs. The host runs the authoritative simulation, players claim

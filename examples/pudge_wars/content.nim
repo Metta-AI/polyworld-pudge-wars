@@ -1,4 +1,4 @@
-## Deterministic Fresh Meat constants.
+## Deterministic Pudge Wars constants.
 ##
 ## Modeled on Warcraft 3 Pudge Wars v2.03d: two banks split by a river,
 ## every player is a butcher, Meat Hook is the kill skill, Blink is a

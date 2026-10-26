@@ -1,5 +1,5 @@
-# Fresh Meat branding
+# Existing game branding
 
-Fresh Meat is the public name of the game formerly called Pudge Wars. Use the supplied transparent `examples/pudge_wars/fresh-meat-logo.png` artwork for the loading screen, site and IDE catalog.
+The existing game remains **Pudge Wars**. The western cowboy game **hookem** is being developed separately on Polyworld. Do not rename the existing Coworld, league, saved-data paths, or protocol IDs as part of hookem work.
 
-The existing Coworld namespace `pudge-wars-basic`, game/league IDs, repository names, protocol identifiers, replay versions and saved-data directories remain stable. Coworld uses its game display-name override for Fresh Meat. This preserves rankings, policy ownership, existing links, installed saves and historical replays. Old native app names are accepted as launcher fallbacks. Historical release receipts and Warcraft attribution retain their original wording.
+The temporary Fresh Meat display name has been retired; historical release records retain their original text. The existing Pudge Wars namespace and all policy/rating history remain unchanged.

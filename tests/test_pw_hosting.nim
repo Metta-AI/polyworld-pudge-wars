@@ -51,7 +51,7 @@ try:
   let response = client.get(url)
   doAssert response.code == Http200,
     "GET " & url & " must return the lobby page"
-  doAssert "Fresh Meat" in response.body,
+  doAssert "Pudge Wars" in response.body,
     "GET " & url & " must return the lobby page"
   doAssert "ENTER CHANNEL" in response.body,
     "the lobby must have the Battle.net-style channel gate"

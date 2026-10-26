@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## Hosts a Fresh Meat party with base.bas on every unclaimed seat and
+## Hosts a Pudge Wars party with base.bas on every unclaimed seat and
 ## hands you the invite link (copied to the clipboard on macOS).
 ##
 ##   examples/pudge_wars/host_party.sh [extra pw flags]
@@ -10,7 +10,7 @@
 ##   examples/pudge_wars/host_party.sh --difficulty pro --killGoal 15
 ##   examples/pudge_wars/host_party.sh --human --name Aaron
 ##
-## Launches native ./pw (not Fresh Meat.app). The browser client rebuild
+## Launches native ./pw (not Pudge Wars.app). The browser client rebuild
 ## is optional and runs in the background after the host is started:
 ##   PW_BUILD_WEB=0   skip the emscripten rebuild (existing html still served)
 ##   PW_BUILD_WEB=1   force a background rebuild even if html looks current

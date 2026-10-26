@@ -1,4 +1,4 @@
-## Fresh Meat map: seed determinism, bank layers, and the river layer.
+## Pudge Wars map: seed determinism, bank layers, and the river layer.
 
 import
   std/[sets, strformat, strutils],

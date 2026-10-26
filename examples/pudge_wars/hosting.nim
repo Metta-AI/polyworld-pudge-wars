@@ -1,4 +1,4 @@
-## Fresh Meat match hosting: one embedded HTTP + WebSocket server.
+## Pudge Wars match hosting: one embedded HTTP + WebSocket server.
 ##
 ## `pw --host` serves three things from the game process: the lobby
 ## page (`/`), the wasm bundle (`/play/...`), and the match socket
@@ -479,7 +479,7 @@ proc lobbyPayload(): JsonNode =
     "runes": infoRuneSeconds,
     "teamSize": hostTeamSize,
     "web": fileExists(bundleDir / "pw.html"),
-    "game": "Fresh Meat"
+    "game": "Pudge Wars"
   }
 
 proc lobbyJson(): string =

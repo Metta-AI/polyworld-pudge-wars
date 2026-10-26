@@ -40,11 +40,11 @@ if [[ -f "${webdata}" ]]; then
   fi
 fi
 if ! command -v emcc >/dev/null 2>&1; then
-  echo "emcc is required to build the Fresh Meat replay viewer" >&2
+  echo "emcc is required to build the Pudge Wars replay viewer" >&2
   exit 1
 fi
 if ! command -v nim >/dev/null 2>&1; then
-  echo "nim is required to build the Fresh Meat replay viewer" >&2
+  echo "nim is required to build the Pudge Wars replay viewer" >&2
   exit 1
 fi
 
@@ -83,10 +83,10 @@ fi
 printf '{"game":"pudge_wars","simVersion":%s}\n' "${sim_version}" \
   > "${output_dir}/sim-version.json"
 cp "${output_dir}/sim-version.json" "${src}/sim-version.json"
-cover="${polyworld_root}/examples/pudge_wars/fresh-meat-logo.png"
+cover="${polyworld_root}/examples/pudge_wars/cover.webp"
 if [[ -f "$cover" ]]; then
-  cp "$cover" "${output_dir}/fresh-meat-logo.png"
-  cp "$cover" "${src}/fresh-meat-logo.png"
+  cp "$cover" "${output_dir}/cover.webp"
+  cp "$cover" "${src}/cover.webp"
 fi
 preview="${polyworld_root}/coworld/preview.jpg"
 if [[ -f "$preview" ]]; then

@@ -1,4 +1,4 @@
-## Window, terrain, butchers, hook ribbons, and HUD for Fresh Meat.
+## Window, terrain, butchers, hook ribbons, and HUD for Pudge Wars.
 
 import
   std/[math, os, strutils, tables, times],
@@ -1082,7 +1082,7 @@ proc runGraphics*() =
   var sk: Silky
   profileBlock "window":
     (window, sk) = initGameWindow(
-      "Fresh Meat",
+      "Pudge Wars",
       AtlasPath,
       gameWindowSize(options.windowWidth, options.windowHeight),
       options.vsync,

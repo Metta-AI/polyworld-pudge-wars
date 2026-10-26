@@ -1,4 +1,4 @@
-## Fresh Meat network client: transport and the follower session.
+## Pudge Wars network client: transport and the follower session.
 ##
 ## A client never simulates ahead: it sends its seat's intents to the
 ## host and applies the streamed action tape, verifying the host's hash

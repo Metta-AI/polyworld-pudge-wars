@@ -1,6 +1,6 @@
 # The Duel Loop
 
-A 1v1 Fresh Meat ladder between a human and an evolving bot policy.
+A 1v1 Pudge Wars ladder between a human and an evolving bot policy.
 The human plays matches; an outside agent (Claude Code) studies the
 logs after each one, edits `players/challenger.bas`, and tries again.
 The loop ends when the challenger wins for real.

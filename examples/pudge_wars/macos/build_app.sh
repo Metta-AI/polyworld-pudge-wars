@@ -16,7 +16,7 @@ from pathlib import Path
 
 root = Path(sys.argv[1])
 source = root / 'examples/pudge_wars/macos'
-app = root / 'tmp/desktop/Fresh Meat.app'
+app = root / 'tmp/desktop/Pudge Wars.app'
 if app.exists():
     shutil.rmtree(app)
 macos = app / 'Contents/MacOS'
@@ -28,7 +28,7 @@ shutil.copy2(root / 'tmp/pw-desktop', macos / 'pw')
 shutil.copy2(source / 'AppIcon.icns', resources / 'AppIcon.icns')
 with (source / 'Info.plist').open('rb') as f:
     info = plistlib.load(f)
-info['CFBundleExecutable'] = 'Fresh Meat'
+info['CFBundleExecutable'] = 'Pudge Wars'
 with (app / 'Contents/Info.plist').open('wb') as f:
     plistlib.dump(info, f)
 
@@ -52,7 +52,7 @@ players = game / 'players'
 players.mkdir()
 for name in ('base', 'aggressive', 'sniper', 'challenger', 'denier', 'patient', 'support'):
     shutil.copy2(root / f'examples/pudge_wars/players/{name}.bas', players / f'{name}.bas')
-launcher = macos / 'Fresh Meat'
+launcher = macos / 'Pudge Wars'
 launcher.write_text('''#!/bin/bash
 set -euo pipefail
 contents="$(cd "$(dirname "$0")/.." && pwd)"
@@ -68,5 +68,5 @@ launcher.chmod(0o755)
 print(app)
 PY
 
-codesign --force --deep --sign - "tmp/desktop/Fresh Meat.app"
-echo "Ready: $root/tmp/desktop/Fresh Meat.app"
+codesign --force --deep --sign - "tmp/desktop/Pudge Wars.app"
+echo "Ready: $root/tmp/desktop/Pudge Wars.app"

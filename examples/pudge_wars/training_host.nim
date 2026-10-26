@@ -21,7 +21,7 @@ proc handle(request: JsonNode): JsonNode =
       seats = request["seats"].getInt
       seed = int32(request["seed"].getInt)
     if seats < 2 or seats > MaxPudgeCount or seats mod 2 != 0:
-      raise newException(ValueError, "Fresh Meat needs 2, 4, 6, 8, or 10 seats")
+      raise newException(ValueError, "Pudge Wars needs 2, 4, 6, 8, or 10 seats")
     learnerSlot = request["learner_slot"].getInt
     if learnerSlot < 0 or learnerSlot >= seats:
       raise newException(ValueError, "Learner slot is outside the roster")
