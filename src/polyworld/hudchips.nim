@@ -1,7 +1,7 @@
 ## Corner HUD chips for Polyworld games.
 ##
 ## League-style floating chrome instead of a full-width Warcraft 3 bar:
-## a team-colored score banner hangs from the top-center edge with a
+## a dark score banner hangs from the top-center edge with a
 ## kill-race track under it, and small chip rows (menu, allies, log,
 ## replay) ride above the minimap.
 ## `drawEtched` is the shared dark plate with the double gold rim that
@@ -23,8 +23,9 @@ const
   ScoreClockW = 88.0'f32
   ScoreTrackSize = vec2(360, 6)
   ScoreTrackGap = 4.0'f32
-  ScoreBlockFill* = [rgbx(168, 50, 38, 242), rgbx(34, 76, 156, 242)]
-  ScoreClockFill = rgbx(14, 14, 18, 248)
+  ScoreBlockFill* = rgbx(10, 10, 12, 248)
+  ScoreTeamText = [rgbx(210, 134, 124, 255), rgbx(132, 166, 214, 255)]
+  ScoreYouFill = rgbx(36, 36, 40, 255)
   ScoreTrackFill = rgbx(12, 12, 16, 230)
   ScoreTrackColors = [rgbx(255, 122, 102, 255), rgbx(111, 176, 255, 255)]
   ChipGap* = 4.0'f32
@@ -101,11 +102,10 @@ proc drawScorePlate*(
     GameUiPanel(origin: o + vec2(-2, -rise), size: vec2(ScorePlateSize.x + 4, h + rise + 2)),
     rgbx(0, 0, 0, 220), large = true
   )
-  sk.drawRounded(westBlock, ScoreBlockFill[0], large = true)
-  sk.drawRounded(eastBlock, ScoreBlockFill[1], large = true)
-  sk.drawRect(clockBlock.origin, clockBlock.size, ScoreClockFill)
+  sk.drawRounded(westBlock, ScoreBlockFill, large = true)
+  sk.drawRounded(eastBlock, ScoreBlockFill, large = true)
+  sk.drawRect(clockBlock.origin, clockBlock.size, ScoreBlockFill)
   let white = rgbx(255, 255, 255, 255)
-  let teamText = rgbx(220, 220, 220, 220)
   # West: label then number, pushed against the clock.
   var westScore = ""
   westScore.addHudInt(plate.west)
@@ -118,11 +118,11 @@ proc drawScorePlate*(
   if plate.youTeam == 0:
     let youW = sk.getTextSize("B11", "YOU").x + 10
     let you = GameUiPanel(origin: vec2(labelRight - youW, o.y + h * 0.5'f32 - 9), size: vec2(youW, 18))
-    sk.drawRounded(you, white)
-    sk.drawLabel("YOU", you.origin, you.size, rgbx(122, 31, 20, 255), "B11", CenterAlign)
+    sk.drawRounded(you, ScoreYouFill)
+    sk.drawLabel("YOU", you.origin, you.size, ScoreTeamText[0], "B11", CenterAlign)
     labelRight = you.origin.x - 8
   sk.drawLabel(
-    "WEST", vec2(labelRight - westLabelW, o.y), vec2(westLabelW, h), teamText, "B13"
+    "WEST", vec2(labelRight - westLabelW, o.y), vec2(westLabelW, h), ScoreTeamText[0], "B13"
   )
   # East: number then label, pushed against the clock.
   var eastScore = ""
@@ -134,13 +134,13 @@ proc drawScorePlate*(
   sk.drawLabel(eastScore, eastNum.origin, eastNum.size, white, "B27")
   var labelLeft = eastNum.origin.x + eastNum.size.x + 10
   let eastLabelW = sk.getTextSize("B13", "EAST").x
-  sk.drawLabel("EAST", vec2(labelLeft, o.y), vec2(eastLabelW, h), teamText, "B13")
+  sk.drawLabel("EAST", vec2(labelLeft, o.y), vec2(eastLabelW, h), ScoreTeamText[1], "B13")
   if plate.youTeam == 1:
     labelLeft += eastLabelW + 8
     let youW = sk.getTextSize("B11", "YOU").x + 10
     let you = GameUiPanel(origin: vec2(labelLeft, o.y + h * 0.5'f32 - 9), size: vec2(youW, 18))
-    sk.drawRounded(you, white)
-    sk.drawLabel("YOU", you.origin, you.size, rgbx(20, 50, 110, 255), "B11", CenterAlign)
+    sk.drawRounded(you, ScoreYouFill)
+    sk.drawLabel("YOU", you.origin, you.size, ScoreTeamText[1], "B11", CenterAlign)
   # Clock and goal.
   sk.drawLabel(
     plate.clock, clockBlock.origin + vec2(0, 2), vec2(ScoreClockW, 23),
