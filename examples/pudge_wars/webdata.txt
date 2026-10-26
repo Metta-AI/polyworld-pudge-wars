@@ -6,6 +6,7 @@ characters/butcher/butcher_game.profile.png
 characters/butcher/butcher_game_east.glb
 characters/butcher/butcher_game_east.profile.png
 abilities/meat_hook.png
+abilities/chain_axe.png
 abilities/riftwake.png
 abilities/withering_idol.png
 items/river_treads.png

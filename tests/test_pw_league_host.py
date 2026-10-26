@@ -165,7 +165,7 @@ class LeagueHostTest(unittest.TestCase):
         for project in ["coworld", "coworld/platform-hosted"]:
             manifest = json.loads((ROOT / project / "coworld_manifest_template.json").read_text())
             self.assertEqual(manifest["game"]["replay_viewer"]["bundle"],
-                             "sha256:6d690bfc900aadcf08ad8937f2b37baf0964d659eb224453e12e5f64b56011ce")
+                             "sha256:5fb1947dbfb26bae7c5ebee8167d1d838ce1ef3e7e8a4c22dc76a50e1848c8c6")
 
 
 if __name__ == "__main__":
