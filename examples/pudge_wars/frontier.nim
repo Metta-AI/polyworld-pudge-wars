@@ -34,9 +34,9 @@ proc addLassoRope*(renderer: var ShapeRenderer, points: openArray[Vec3], charged
   ## Continuous six-sided hemp rope, cheaper than the former iron-link chain.
   renderer.ropeTube(points,0.075'f32,charged)
 
-proc snareBlade(renderer: var ShapeRenderer, transform: Mat4,
+proc collarWedge(renderer: var ShapeRenderer, transform: Mat4,
     a, b, tip: Vec3) =
-  ## Faceted iron tooth, bright cutting edge and a dark thick spine.
+  ## Faceted iron collar with a bright ridge and a dark underside.
   let
     up = vec3(0, 0.055'f32, 0)
     edge = rgbx(203,210,205,254)
@@ -52,7 +52,7 @@ proc snareBlade(renderer: var ShapeRenderer, transform: Mat4,
   renderer.addTriangle(aa, bb, ridge, back)
 
 proc addLassoLoop*(renderer: var ShapeRenderer, transform: Mat4, team: ColorRGBX) =
-  # A tapered noose with six inward steel fangs and a heavy honda collar.
+  # An open tapered noose with iron ferrules and a heavy honda collar.
   # Everything stays inside the original unit latch disk.
   proc rim(angle: float32): Vec3 =
     let taper = 0.82'f32 + 0.18'f32 * cos(angle)
@@ -65,16 +65,12 @@ proc addLassoLoop*(renderer: var ShapeRenderer, transform: Mat4, team: ColorRGBX
   for i in 0..<6:
     let
       angle = -2.30'f32 + i.float32 * 0.92'f32
-      a = rim(angle-0.16'f32)
-      b = rim(angle+0.16'f32)
-      tip = rim(angle+0.20'f32) * 0.57'f32
       center = rim(angle)
-    renderer.snareBlade(transform, a, b, tip)
-    # Iron ferrules bind each blade to the hemp; brass rivets catch the light.
+    # Rounded iron ferrules reinforce the rope without teeth inside the loop.
     renderer.addLine(transform*(center+vec3(0,-0.055,0)),
       transform*(center+vec3(0,0.055,0)),rgbx(54,63,66,254),gauge*1.45'f32)
   # Thick, angular honda jaw at the trailing end, wrapped in team leather.
-  renderer.snareBlade(transform, vec3(-0.20,0,-0.77), vec3(0.20,0,-0.77),
+  renderer.collarWedge(transform, vec3(-0.20,0,-0.77), vec3(0.20,0,-0.77),
     vec3(0,0,-0.98))
   renderer.addLine(transform*vec3(-0.16,0.06,-0.84),
     transform*vec3(0.16,0.06,-0.84),team,gauge*1.15'f32)

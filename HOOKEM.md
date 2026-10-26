@@ -29,7 +29,7 @@ open tmp/desktop/hookem.app
 ## Art and motion
 
 - Original low-poly cowboys, team bandannas, broad hats, boots, and rope coils.
-- Barbed snare heads with inward steel teeth, tapered rope loops, and heavy
+- Open snare heads with iron ferrules, tapered rope loops, and heavy
   team-wrapped iron collars; the gameplay latch radius is unchanged.
 - Overhead lasso twirling with a circling wrist, an overhead throw released at
   the existing 9/32-second cast point, and a two-handed rope gathering motion.
