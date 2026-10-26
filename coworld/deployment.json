@@ -132,18 +132,18 @@
   },
   "last_policy_update_at": "2026-10-14T23:41:19.775513+00:00",
   "hosted_play_release": {
-    "version": "0.1.4",
-    "coworld_id": "cow_1138ecba-2cd6-4115-9194-bc3cb5521643",
-    "manifest_hash": "sha256:7b2bd24443156b38232d45ee87a8f9526da56762fe2b407513f72d8ddfb304ec",
+    "version": "0.1.5",
+    "coworld_id": "cow_20ccb941-a3e4-4cf1-9cb3-f7376cb61dac",
+    "manifest_hash": "sha256:81862e632d5b721ffcfda51a583924dc9d544c2cc077bd961a20ee9a56b8e779",
     "image": "public.ecr.aws/q5f4m8t9/cogames@sha256:01caef1ddfcf33cc83d1be502a2f5cdb0c41d78d3046a3b1e25592240e996bc0",
-    "replay_viewer": "sha256:5fb1947dbfb26bae7c5ebee8167d1d838ce1ef3e7e8a4c22dc76a50e1848c8c6",
+    "replay_viewer": "sha256:c3ff4c068f9100d1f2517f6e5cc77a78da33648256d9e1ca789b2cadbbc1212e",
     "simulator_version": 38,
     "wire_protocol": 14,
     "certification": "certified",
     "canonical": true,
     "released_at": "2026-10-26",
     "engine_commit": "cd8111a",
-    "browser_source_commit": "2ffb5cc",
-    "browser_url": "https://pudge-wars-site-theta.vercel.app/play/bundles/5fb1947dbfb26bae/pw.html"
+    "browser_source_commit": "ab2f756",
+    "browser_url": "https://pudge-wars-site-theta.vercel.app/play/bundles/c3ff4c068f9100d1/pw.html"
   }
 }
