@@ -2218,6 +2218,10 @@ proc runGraphics*() =
   # measured from the wall-clock gap between frame starts.
   var fpsSmoothed = 0.0'f32
   var fpsPrevStart = 0.0
+  var tpsSampleStart = epochTime()
+  var tpsSampleTicks = 0
+  var measuredTps = 0
+  var tpsKnown = false
   # Network debug panel (dev): F6 toggles the overlay, F7 cycles the
   # network-condition simulator (off/local/good/poor/extreme). F9/F10
   # stay MENU/TEAM. Auto-open when --netsim already turned the sim on.
@@ -2389,9 +2393,16 @@ proc runGraphics*() =
           run.historyPlayback = transport.inHistory or
             netRole == NetClient
           advanceRenderedSimulation()
+          inc tpsSampleTicks
           transport.sync(
             run.world.tick, recordedTicksNow(), run.world.gameOver
           )
+      let tpsNow = epochTime()
+      if tpsNow - tpsSampleStart >= 1.0:
+        measuredTps = int(tpsSampleTicks.float64 / (tpsNow - tpsSampleStart) + 0.5)
+        tpsKnown = true
+        tpsSampleTicks = 0
+        tpsSampleStart = tpsNow
       when not defined(emscripten):
         if netRole == NetHost:
           hostBroadcastTicks(run)
@@ -3118,16 +3129,28 @@ proc runGraphics*() =
                 rgbx(120, 200, 140, 220))
           sk.drawLabel("F6 panel  F7 preset  F3 sliders", vec2(gx, gy + Gh + 1),
             vec2(gw, 12), rgbx(150, 150, 150, 200), "Hud", LeftAlign)
-        else:
-          # Compact readout: host round-trip ping (ms) and render FPS.
-          hudScratch.setLen(0)
-          hudScratch.add "PING "
+      if netRole != NetClient or not netDebugPanel:
+        # Measured completed simulation ticks, separate from rendered frames.
+        let
+          screenH = window.size.y.float32 / sk.uiScale
+          targetTps = if transport.playing and not run.world.gameOver:
+            int(clockRate * transport.speed) else: 0
+        hudScratch.setLen(0)
+        hudScratch.add "TPS "
+        if tpsKnown: hudScratch.addHudInt(measuredTps)
+        else: hudScratch.add "--"
+        hudScratch.add " / "
+        hudScratch.addHudInt(targetTps)
+        hudScratch.add " target   FPS "
+        hudScratch.addHudInt(int(fpsSmoothed + 0.5'f32))
+        if netRole == NetClient:
+          hudScratch.add "   PING "
           if netPingKnown(): hudScratch.addHudInt(netPingMs())
           else: hudScratch.add "--"
-          hudScratch.add "ms  FPS "
-          hudScratch.addHudInt(fpsNow)
-          sk.drawLabel(hudScratch, vec2(10, screenH - 24), vec2(220, 18),
-            rgbx(236, 232, 210, 220), "Hud", LeftAlign)
+          hudScratch.add "ms"
+        sk.drawRect(vec2(6, screenH - 28), vec2(340, 22), rgbx(16, 19, 21, 190))
+        sk.drawLabel(hudScratch, vec2(10, screenH - 26), vec2(332, 18),
+          rgbx(236, 232, 210, 230), "Hud", LeftAlign)
       sk.endUi()
       profilePop()
       when defined(takeScreenshot):

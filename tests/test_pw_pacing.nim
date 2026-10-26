@@ -6,7 +6,7 @@ import std/[times, unittest],
 
 proc oneSecond(humanPaced: bool): int32 =
   var transport = initPlayer(live = true, durationTicks = 1000)
-  # Include a microsecond of tolerance at the one-second boundary: 1/28
+  # Include a microsecond of tolerance at the one-second boundary: 1/32
   # cannot be represented exactly by the transport's float32 accumulator.
   for frame in 0 .. 64:
     let dt = if frame == 64: 0.000001'f32 else: 1.0'f32 / 64
@@ -17,10 +17,10 @@ proc oneSecond(humanPaced: bool): int32 =
   transport.tick
 
 suite "human clock":
-  test "one wall second advances 28 human ticks or 32 bot ticks":
-    check oneSecond(true) == 28
+  test "one wall second advances 32 human ticks or 32 bot ticks":
+    check oneSecond(true) == 32
     check oneSecond(false) == 32
-    check wallTickNanoseconds(true) == 35_714_285
+    check wallTickNanoseconds(true) == 31_250_000
     check wallTickNanoseconds(false) == 31_250_000
 
   test "the same ticks still produce the same physics and hashes":
@@ -35,7 +35,7 @@ suite "human clock":
 
   test "prediction uses actual wall-clock ticks":
     check leadFromRttMs(250, wallTickRate(false)) == 4
-    check leadFromRttMs(250, wallTickRate(true)) == 3
+    check leadFromRttMs(250, wallTickRate(true)) == 4
     check leadFromRttMs(-1, wallTickRate(true)) == MinLead
 
   test "spectators learn pace changes and fresh starts reset it":

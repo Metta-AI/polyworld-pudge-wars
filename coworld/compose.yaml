@@ -1,6 +1,6 @@
 services:
   pudgewars:
-    image: coworld-pudgewars:latest
+    image: coworld-hookem:latest
     platform: linux/amd64
     build:
       context: .

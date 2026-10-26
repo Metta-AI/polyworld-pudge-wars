@@ -247,7 +247,9 @@
       }
       var replayUrl = replayParam();
       var Module = {
-        arguments: replayUrl ? ['--replay', '/replay.pwr'] : ['--human:0', '--bot', '/base.bas:6', '--name', 'Wrangler'],
+        arguments: replayUrl ? ['--replay', '/replay.pwr'] :
+          new URLSearchParams(location.search).has('join') ? [] :
+          ['--human:0', '--bot', '/base.bas:6', '--name', 'Wrangler'],
         preRun: [(function() {
           if (!replayUrl) {
             return;

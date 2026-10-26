@@ -6,8 +6,8 @@ separate first art pass; the existing production game remains **Pudge Wars**.
 The game runs in Polyworld's Nim engine, skeletal animation, terrain, particles,
 and WebAssembly renderer. It retains the existing deterministic simulation,
 policy API, replay schema, damage, collision, and ranked rules. Internal
-`pudge_wars` identifiers remain for compatibility; do not publish this branch's
-legacy Coworld manifest over the production Pudge Wars listing.
+`pudge_wars` identifiers remain for compatibility. The Coworld manifest publishes
+to the separate `hookem` namespace; the Pudge Wars listing remains unchanged.
 
 ## Play locally
 
@@ -34,6 +34,7 @@ open tmp/desktop/hookem.app
 - Overhead lasso twirling with a circling wrist, an overhead throw released at
   the existing 9/32-second cast point, and a two-handed rope gathering motion.
 - Cross-fades between locomotion and rope handling; interpolated attack motion.
+- Full 32 TPS human pace, with measured TPS and target rate beside FPS.
 - Blue-green flowing river, splash particles, dusty banks, broadleaf trees,
   perimeter fences, compact dark HUD, and new ability icons.
 

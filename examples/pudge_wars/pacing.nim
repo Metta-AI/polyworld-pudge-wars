@@ -1,9 +1,8 @@
 ## Wall-clock pacing only. Physics, cooldowns and replay hashes stay at 32 Hz.
 import content
 
-const HumanTickRate* = 28'i32
-  ## 87.5% speed gives humans about 14% more reaction time. Bots in the same match
-  ## share this clock; policy-only evaluation keeps its existing speed.
+const HumanTickRate* = TickRate
+  ## Humans and bots share the full 32-tick wall clock.
 
 proc wallTickRate*(humanPaced: bool): int32 =
   if humanPaced: HumanTickRate else: TickRate
