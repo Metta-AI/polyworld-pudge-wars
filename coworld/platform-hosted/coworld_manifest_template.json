@@ -8,7 +8,7 @@
   ],
   "game": {
     "name": "pudge-wars",
-    "description": "Two banks split by a river, six butchers, one hook. First team to 30 wins. Fog on the enemy bank. Platform-ladder 3v3 clone teams, plus a sibling 1v1 duel league.",
+    "description": "Fresh Meat: two teams of butchers hook, blink and fight across a river to the kill goal. Play alongside BASIC and neural file policies, with optional Jev judgments.",
     "owner": "coworld@softmax.com",
     "runnable": {
       "type": "game",
@@ -17,12 +17,12 @@
         "pwcoworld"
       ],
       "env": {
-        "PUDGE_WARS_CLIENT_URL": "https://pudge-wars-site-theta.vercel.app/play/bundles/3115a0709de5c7e3/pw.html"
+        "PUDGE_WARS_CLIENT_URL": "https://pudge-wars-site-theta.vercel.app/play/bundles/ad206cd384687db5/pw.html"
       },
       "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main"
     },
     "replay_viewer": {
-      "bundle": "sha256:3115a0709de5c7e300a201a742f9b83c238c9086ef98189c3ddc52bc30f45223",
+      "bundle": "sha256:ad206cd384687db535259c95dbf4d2ba3f57bcdb2ac0f2cd9370b3f4ad2cbf68",
       "replay_compression": "gzip"
     },
     "config_schema": {
