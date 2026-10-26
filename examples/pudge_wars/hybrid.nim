@@ -43,7 +43,7 @@ proc tacticalChoices*(world: World, slot: int): TacticalChoices =
 
 proc tacticalRequest*(oracle: Oracle, game: Game, slot: int, model: string,
     choices: TacticalChoices, history: seq[JsonNode] = @[]): string =
-  discard oracle.state("game", %"Pudge Wars. BASIC already plays every tick: aims hooks, fights in melee, dodges, retreats, buys, and rescues. Choose temporary tactical preferences, not immediate actions.")
+  discard oracle.state("game", %"Fresh Meat. BASIC already plays every tick: aims hooks, fights in melee, dodges, retreats, buys, and rescues. Choose temporary tactical preferences, not immediate actions.")
   discard oracle.state("observation", observationJson(game.world, slot))
   discard oracle.state("recent_history", %history)
   discard oracle.state("contract", %"Advice arrives after a delay and expires four seconds after this observation. Default means original BASIC behavior. Emergencies, melee, recovery and rune collection keep their local priorities. Choose default when there is no clear improvement.")

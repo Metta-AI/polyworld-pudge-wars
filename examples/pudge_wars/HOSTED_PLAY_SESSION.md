@@ -1,4 +1,4 @@
-# Pudge Wars hosted play — session context for implementers
+# Fresh Meat hosted play — session context for implementers
 
 Read this entire file before writing code. This is the handoff from the 2026-09-01 design thread (Aaron Landy). Engine truth stays in **polyworld**. Coworld packaging, k8s , and Observatory APIs live in sibling **metta**. Do not rebase metta. Commits only when asked. Use bun on the website. Uploads: `uv run coworld --elevated` from metta (auth `aaronlan95@gmail.com`).
 
@@ -30,7 +30,7 @@ A logged-in player on pudgewars.com hits **Play**, gets a XvX (or 1 human + 5 po
 | polyworld | `/Users/aaln/experiments/softmax/polyworld` | Sim, `coworld_host.nim`, netproto, WASM, party host |
 | metta | `/Users/aaln/experiments/softmax/metta` | Coworld CLI, play sessions, k8s dispatcher, Observatory API |
 
-Pudge Wars Coworld package: `metta/packages/coworld/src/coworld/examples/pudgewars/`
+Fresh Meat Coworld package: `metta/packages/coworld/src/coworld/examples/pudgewars/`
 
 Website (create): `polyworld/web/pudge-wars/` **or** a sibling Vercel project. Domain **pudgewars.com** (apex purchased). DNS: Cloudflare, account `aaron@thecompassmag.com` (wangler logged in), deploy on **softmax Vercel**.
 
@@ -40,11 +40,11 @@ Website (create): `polyworld/web/pudge-wars/` **or** a sibling Vercel project. D
 
 | What | ID |
 |------|-----|
-| 3v3 league | [Pudge Wars](https://softmax.com/observatory/v2?detail=league:league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0) `league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0` |
+| 3v3 league | [Fresh Meat](https://softmax.com/observatory/v2?detail=league:league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0) `league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0` |
 | 3v3 seed | `lseed_44f5072a-3066-4542-9fbd-b52cfa2e225c` (`pudge-wars/ladder`, variant `league-3v3`) |
 | 3v3 division | `div_471aedc1-00f7-41dd-971d-f0beff95a439` |
 | 3v3 ladder | `team_pair` + **`team_layout: blocks`** (two captains, each cloned onto a bank). `min_episodes_per_entrant: 1`, `filler_policy` below two champions. First to 30. Ranking is `score` mean (1 win / 0 fail per seated captain). Canonical main Softmax league. |
-| 1v1 league | [Pudge Wars 1v1](https://softmax.com/observatory/v2?detail=league:league_f81c4e63-ad7b-4f32-a837-b7931929545b) `league_f81c4e63-ad7b-4f32-a837-b7931929545b` |
+| 1v1 league | [Fresh Meat 1v1](https://softmax.com/observatory/v2?detail=league:league_f81c4e63-ad7b-4f32-a837-b7931929545b) `league_f81c4e63-ad7b-4f32-a837-b7931929545b` |
 | 1v1 seed | `lseed_b9dc699b-c11a-4623-a581-14a0c984ab3c` (`pudge-wars/duel`, variant `duel-1v1`) |
 | 1v1 division | `div_157803f2-6b50-49dd-ae4f-c4b2219d269c` |
 | 1v1 ladder | `team_pair` + **`team_layout: blocks`** on 2 seats (no clones). `filler_policy` until a second champion exists. Same `score` mean ranking. |

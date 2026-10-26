@@ -1,4 +1,4 @@
-## Pudge Wars wire protocol: the lobby handshake and the live tape.
+## Fresh Meat wire protocol: the lobby handshake and the live tape.
 ##
 ## One match has one authoritative host simulation. Remote clients send
 ## their seat's intents up; the host drains them through the same

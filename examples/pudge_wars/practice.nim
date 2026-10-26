@@ -802,7 +802,7 @@ proc practiceRequest*(oracle: Oracle, model: string, obs: JsonNode,
     actions, strategies: seq[PracticeOption]): string =
   ## Drafts one batched System One request: the human's view and two
   ## Choice questions, each with an explicit `none`.
-  discard oracle.state("game", %("Pudge Wars. A human skillshot team " &
+  discard oracle.state("game", %("Fresh Meat. A human skillshot team " &
     "arena. Advise only; never control the player."))
   discard oracle.state("view", %("Current human self and team-shared " &
     "visible entities only. Unseen enemies are unknown."))

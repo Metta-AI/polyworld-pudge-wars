@@ -1,4 +1,4 @@
-## Pudge Wars Silky HUD: floating corner widgets over a full-screen world.
+## Fresh Meat Silky HUD: floating corner widgets over a full-screen world.
 
 import
   std/[json, os, strformat, strutils, times, unicode],

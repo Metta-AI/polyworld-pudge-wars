@@ -3,7 +3,7 @@
 Design research for a top-down, deterministic-sim, bot-vs-human battle
 royale on the PolyWorld engine (RTS camera, integer sim @ 32 ticks/s,
 replays, BASIC-scripted bots, 1 human + N bots, LAN party hosting),
-building on Pudge Wars (momentum hooks, wall bounces, mid-air clashes,
+building on Fresh Meat (momentum hooks, wall bounces, mid-air clashes,
 melee, drowning river, runes, kill scoring). Web-grounded, August 2026.
 No code here — design only. Sources at the bottom.
 

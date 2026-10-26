@@ -1,4 +1,4 @@
-## Local network-condition simulator for the Pudge Wars follower.
+## Local network-condition simulator for the Fresh Meat follower.
 ##
 ## Sits between `netclient`'s transport and the game: outbound packets
 ## (intents, pings, hello) and inbound packets (the host's tape, pongs,

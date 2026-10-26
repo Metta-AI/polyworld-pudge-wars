@@ -6,7 +6,7 @@ PolyWorld's design doc names two modes of interaction: playing the game and
 spectating. Spectating works today. Playing does not exist yet — every command
 in every game comes from a BASIC VM or a replay tape. This doc researches what
 a first-class human player experience requires in a Warcraft 3 / StarCraft
-style game, and designs how Pudge Wars becomes the testbed for it.
+style game, and designs how Fresh Meat becomes the testbed for it.
 
 The goal is not "add mouse control." The goal is a human seat good enough that
 people *choose* to play alongside their agents: as a teammate of five bots, as
@@ -24,7 +24,7 @@ human-agent matches, and replays that double as imitation-learning data.
 | Action grammar: `walkTo`, `hookTo`, `attackTarget`, `buyUpgrade` | Done, replay-recorded (`bots.nim`, `sim.nim`) |
 | Mouse-to-world picking | Missing (GOTA has screen-space entity pick only) |
 | Hotkeys / ability targeting / command input | Missing |
-| Minimap in Pudge Wars | Missing (exists in GOTA/LVD to port) |
+| Minimap in Fresh Meat | Missing (exists in GOTA/LVD to port) |
 | Death, respawn, victory/defeat presentation | Missing |
 | Audio, anywhere in the engine | Missing entirely |
 
@@ -54,7 +54,7 @@ mask the wait by responding **instantly in presentation** — the unit barks
 authoritative effect lands a few turns later. Perceived latency is the gap
 between input and *any* response, not input and effect.
 
-What this means for Pudge Wars at 32 Hz (raised from the engine's shared
+What this means for Fresh Meat at 32 Hz (raised from the engine's shared
 24 Hz default for exactly this reason), in-process:
 
 | Stage | Cost |
@@ -92,7 +92,7 @@ costs more than any improvement it buys. The genre grammar:
 
 F8 (or F3 → Record bug tape) writes a shareable `.pwr` to `duels/bug_YYYYMMDD_HHMMSS.pwr`; `duels/bug_latest.txt` points at it for Cursor attach.
 
-Pudge Wars is a **single-hero** game — exactly Dota's control shape, not
+Fresh Meat is a **single-hero** game — exactly Dota's control shape, not
 StarCraft's. That deletes the expensive parts of RTS input (box select,
 control groups, subgroup tabbing, command cards for 12 unit types) and leaves
 nine interactions. The design should still keep "which entity do my inputs
@@ -170,7 +170,7 @@ The precedents:
   reaction time) make mixed play pointless; DeepMind added APM caps and camera
   constraints to keep the comparison meaningful.
 
-Both lessons bite Pudge Wars directly. Bots decide **every tick**: 32 command
+Both lessons bite Fresh Meat directly. Bots decide **every tick**: 32 command
 windows per second, with perfect lead-aim arithmetic — an equivalent of >1,900
 APM and 31 ms reactions. Unthrottled, they are miserable to play against and
 pointless to play with. The fixes must live **in the sim and on the tape**

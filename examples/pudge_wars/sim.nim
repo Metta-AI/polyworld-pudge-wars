@@ -1,4 +1,4 @@
-## Pudge Wars simulation: butchers, Meat Hook, melee, and the tick.
+## Fresh Meat simulation: butchers, Meat Hook, melee, and the tick.
 ##
 ## Planar motion uses Q16.16 tile-space bodies. Combat ranges and replay
 ## integers stay on `WorldPoint`. Walking carries momentum: each butcher

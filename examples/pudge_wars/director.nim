@@ -1,4 +1,4 @@
-## Director camera: scores live Pudge Wars situations so the shared
+## Director camera: scores live Fresh Meat situations so the shared
 ## action camera can cut to hooks, fights, and kills like a broadcast.
 ##
 ## Scores sit on the action-cam ladder in `actioncam.nim`: idle shots

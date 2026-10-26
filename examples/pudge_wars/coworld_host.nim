@@ -1278,7 +1278,7 @@ proc bootGame() =
       tokens.len mod 2 != 0:
     raise newException(
       CatchableError,
-      "Pudge Wars Coworld seats 2, 4, 6, 8, or 10 butchers"
+      "Fresh Meat Coworld seats 2, 4, 6, 8, or 10 butchers"
     )
   let
     duel = tokens.len == DuelPudgeCount

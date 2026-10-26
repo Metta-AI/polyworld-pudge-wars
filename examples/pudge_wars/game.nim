@@ -1,4 +1,4 @@
-## Pudge Wars match setup, command line, and the headless runner.
+## Fresh Meat match setup, command line, and the headless runner.
 
 import
   std/[os, strformat, strutils, tables],
@@ -26,7 +26,7 @@ type
     NetClient ## Follows a host's action tape over the network.
 
 proc usage() =
-  echo "Pudge Wars"
+  echo "Fresh Meat"
   echo "  --bot:PATH              Fill butcher slots with that script."
   echo "  --bot:PATH:N            Fill N slots with that file."
   echo "  --bot PATH[:N]          The equivalent two-argument form."

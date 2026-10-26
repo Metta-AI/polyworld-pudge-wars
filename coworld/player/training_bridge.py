@@ -1,4 +1,4 @@
-"""Train one Pudge Wars butcher against the bundled BASIC opponents."""
+"""Train one Fresh Meat butcher against the bundled BASIC opponents."""
 
 from __future__ import annotations
 
@@ -276,7 +276,7 @@ def terminal() -> dict:
 def reset(request: dict) -> dict:
     global observation, seat, seats, max_ticks, teacher
     if request["players"] != 1:
-        raise ValueError("Pudge Wars trains one controlled butcher")
+        raise ValueError("Fresh Meat trains one controlled butcher")
     seed = (
         int.from_bytes(hashlib.sha256(request["seed"].encode()).digest()[:4], "little")
         & 0x7FFFFFFF
@@ -341,7 +341,7 @@ def handle(request: dict) -> dict:
         action = json.loads(request["response"])
         heads = encoding()["action_heads"]
         if any(action[head["name"]] not in head["choices"] for head in heads):
-            raise ValueError("Action does not match Pudge Wars codec")
+            raise ValueError("Action does not match Fresh Meat codec")
         command = {}
         if action["mode"] in ("walk", "hook", "blink"):
             command[action["mode"] + "_to"] = [action["x"], action["y"]]

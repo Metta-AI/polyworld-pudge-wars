@@ -1,7 +1,7 @@
-# Pudge Wars investigation bindings
+# Fresh Meat investigation bindings
 
 This repository owns the game and its policy sources. These bindings adapt the
-installed research skills to Pudge Wars; they do not require the CoGames,
+installed research skills to Fresh Meat; they do not require the CoGames,
 Mettagrid, CogsGuard, or agent-policies repository layouts.
 
 | Binding | Entry point |

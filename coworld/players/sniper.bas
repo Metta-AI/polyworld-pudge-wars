@@ -1,4 +1,4 @@
-' Pudge Wars deadeye — holds the waterline, stacks hook distance and
+' Fresh Meat deadeye — holds the waterline, stacks hook distance and
 ' radius, and only throws at wounded targets in hook range (never brawls).
 '
 ' Rot: only blight a hooked, drowning, or badly wounded butcher already

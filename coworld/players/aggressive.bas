@@ -1,4 +1,4 @@
-' Pudge Wars berserker — pushes the river, stacks radius and
+' Fresh Meat berserker — pushes the river, stacks radius and
 ' distance, and brawls in melee whenever an enemy is in reach.
 '
 ' Rot: blight any unshielded butcher in the 8-tile disk while HP is

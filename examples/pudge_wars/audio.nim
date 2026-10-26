@@ -1,4 +1,4 @@
-## Pudge Wars combat one-shots. Files live in
+## Fresh Meat combat one-shots. Files live in
 ## polyworld_data/sounds/pudge_wars. Display-side only; the sim never
 ## hears anything. Playback is gated in graphics to the local hero and
 ## the current play camera. HUD, pings, runes, and match stingers stay

@@ -1,4 +1,4 @@
-# Pudge Wars BASIC league migration
+# Fresh Meat BASIC league migration
 
 The default `coworld/` package is now **pudge-wars-basic**, using game-hosted
 BASIC files. `coworld/platform-hosted/` preserves the `pudge-wars` Docker-player

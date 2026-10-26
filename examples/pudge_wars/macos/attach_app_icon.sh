@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ## Stamp a Finder icon onto the Mach-O at the repo root. By default also
-## copies that binary into Pudge Wars.app — pass --no-app to skip the
+## copies that binary into Fresh Meat.app — pass --no-app to skip the
 ## bundle (host_party launches ./pw, not the .app).
 ##
 ##   examples/pudge_wars/macos/attach_app_icon.sh [./pw] [--no-app]
@@ -36,10 +36,10 @@ if [[ "$stamp_app" -eq 1 && ! -f "$plist" ]]; then
   exit 1
 fi
 
-app="$dir/Pudge Wars.app"
+app="$dir/Fresh Meat.app"
 macos_dir="$app/Contents/MacOS"
 resources="$app/Contents/Resources"
-app_exec="$macos_dir/Pudge Wars"
+app_exec="$macos_dir/Fresh Meat"
 
 abs_icns="$(python3 -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$icns")"
 abs_bin="$(python3 -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$binary")"
@@ -49,8 +49,8 @@ if [[ "$stamp_app" -eq 1 ]]; then
   cp -f "$plist" "$app/Contents/Info.plist"
   printf 'APPL????' > "$app/Contents/PkgInfo"
   cp -f "$icns" "$resources/AppIcon.icns"
-  if pgrep -f 'Pudge Wars.app/Contents/MacOS/Pudge Wars' >/dev/null 2>&1; then
-    echo "skipping copy over $app_exec — a Pudge Wars.app process is still running"
+  if pgrep -f 'Fresh Meat.app/Contents/MacOS/Fresh Meat' >/dev/null 2>&1; then
+    echo "skipping copy over $app_exec — a Fresh Meat.app process is still running"
   else
     cp -f "$binary" "$app_exec"
     chmod +x "$app_exec"

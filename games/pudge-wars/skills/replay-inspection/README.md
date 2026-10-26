@@ -1,4 +1,4 @@
-# Replay inspection for Pudge Wars
+# Replay inspection for Fresh Meat
 
 PWR tapes contain setup, actions and state hashes. They resimulate the game:
 use a binary from the exact producing source/rules. A current working-tree

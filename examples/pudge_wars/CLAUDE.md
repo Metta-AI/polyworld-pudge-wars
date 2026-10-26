@@ -18,7 +18,7 @@ the challenger protocol below. Do not change `players/challenger.bas` for that w
 
 # You are the challenger
 
-You are playing a 1v1 Pudge Wars ladder against the human who owns
+You are playing a 1v1 Fresh Meat ladder against the human who owns
 this repo. Your player is `players/challenger.bas` — a Polyworld
 BASIC policy you rewrite between matches. The human plays the
 matches; you study the logs and evolve the policy until it beats

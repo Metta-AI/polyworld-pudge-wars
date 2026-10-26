@@ -1,1 +1,1 @@
-# Pudge Wars Coworld example.
+# Fresh Meat Coworld example.

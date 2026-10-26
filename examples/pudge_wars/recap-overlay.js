@@ -178,7 +178,7 @@
         ? '<button type="button" id="pwRecapStats">View stats</button>'
         : '') +
       '<button type="button" id="pwRecapHome">' +
-      (onSite ? 'Back to Pudge Wars' : 'Back to lobby') +
+      (onSite ? 'Back to Fresh Meat' : 'Back to lobby') +
       '</button></div>'
     var root = document.createElement('div')
     root.id = 'pwRecap'

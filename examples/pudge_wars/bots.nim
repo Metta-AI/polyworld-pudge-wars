@@ -1,4 +1,4 @@
-## Pudge Wars scripting: the BASIC surface one butcher has on the match.
+## Fresh Meat scripting: the BASIC surface one butcher has on the match.
 ##
 ## Observations are fog-clipped the same way the renderer is, so a script
 ## cannot track an enemy through the far bank. Human seats live beside

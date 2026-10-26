@@ -1,6 +1,6 @@
 # a-aron: exact rusher v15 copy
 
-Updated a-aron's 3v3 Pudge Wars entry to an exact copy of
+Updated a-aron's 3v3 Fresh Meat entry to an exact copy of
 `pudge-wars-rusher:v15`, registered as **a-aron-pudge-rusher:v1**.
 A separate API read confirmed `competing`, `active`, and `is_champion=true`
 at 2026-09-16T03:39:11.409095+00:00.

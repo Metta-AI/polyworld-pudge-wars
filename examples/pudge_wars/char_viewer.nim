@@ -1,4 +1,4 @@
-## Butcher clip viewer: orbit the Pudge Wars player models and flip every
+## Butcher clip viewer: orbit the Fresh Meat player models and flip every
 ## named clip with debug toggles. Same load path and toon shading as ./pw.
 ##
 ## Run from the repo root:
@@ -23,7 +23,7 @@ proc ensureAtlas() =
 
 ensureAtlas()
 let (window, sk) = initGameWindow(
-  "Pudge Wars — Butcher Workshop",
+  "Fresh Meat — Butcher Workshop",
   AtlasPath,
   ivec2(1280, 800),
   iconPath = AppIconPath

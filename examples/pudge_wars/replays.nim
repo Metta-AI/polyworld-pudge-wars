@@ -1,4 +1,4 @@
-## Pudge Wars action-only replay format and playback cursor.
+## Fresh Meat action-only replay format and playback cursor.
 ##
 ## Format v2 adds the human seat: stop, ping, and take-over actions, a
 ## fine-grained (1/256-tile) hook aim, per-slot controller tags, and the
@@ -244,7 +244,7 @@ type
   ReplayPlayer* = TapePlayer[Setup, ReplayAction]
 
 proc fail(message: string) {.noreturn.} =
-  ## Raises one Pudge Wars replay error.
+  ## Raises one Fresh Meat replay error.
   raise newException(ReplayError, message)
 
 proc validKind(kind: uint8): bool =
@@ -259,7 +259,7 @@ proc initReplayData*(setup: Setup): ReplayData =
   )
 
 proc initReplayRecorder*(setup: Setup): ReplayRecorder =
-  ## Creates an in-memory Pudge Wars action recorder.
+  ## Creates an in-memory Fresh Meat action recorder.
   initTapeRecorder[Setup, ReplayAction](
     setup,
     ReplayFormatVersion,
@@ -621,7 +621,7 @@ proc validate*(data: ReplayData) =
     lastTick = action.tick
 
 proc encodeReplay*(data: ReplayData): string =
-  ## Encodes a validated Pudge Wars replay.
+  ## Encodes a validated Fresh Meat replay.
   data.validate()
   if data.header.gameVersion != ReplayGameVersion:
     fail("cannot encode a tape from another game version")
@@ -654,7 +654,7 @@ proc upgradeReplayV4(old: ReplayDataV4): ReplayData =
   result.hashes = old.hashes
 
 proc decodeReplay*(bytes: string): ReplayData =
-  ## Decodes and validates one Pudge Wars replay buffer.
+  ## Decodes and validates one Fresh Meat replay buffer.
   ## Format v4 tapes load with empty seat labels.
   let payload = replayFilePayload(
     bytes,
@@ -676,7 +676,7 @@ proc decodeReplay*(bytes: string): ReplayData =
   result.validate()
 
 proc saveReplay*(path: string, data: ReplayData) =
-  ## Writes one complete Pudge Wars replay file.
+  ## Writes one complete Fresh Meat replay file.
   writeFile(path, data.encodeReplay())
 
 proc writeFileSynced(path, contents: string) =
@@ -769,7 +769,7 @@ proc writeBugReplay*(
   writeFileSynced(dir / BugLatestName, pointer)
 
 proc loadReplay*(path: string): ReplayData =
-  ## Loads one complete Pudge Wars replay file.
+  ## Loads one complete Fresh Meat replay file.
   if path.len == 0:
     fail("replay input path is empty")
   decodeReplay(readFile(path))

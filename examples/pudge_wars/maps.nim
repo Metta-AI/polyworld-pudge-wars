@@ -1,4 +1,4 @@
-## Pudge Wars map: two bank layers split by a fire-pit layer.
+## Fresh Meat map: two bank layers split by a fire-pit layer.
 ##
 ## The 128×128 grid is generated from an explicit seed using only integers.
 ## West and east are separate walkable layers that stop at the pit.

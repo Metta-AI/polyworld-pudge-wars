@@ -35,8 +35,8 @@ if [[ ! -x ./pw || -n "$stale" ]]; then
 fi
 examples/pudge_wars/macos/attach_app_icon.sh ./pw
 pw_bin=./pw
-if [[ -x "examples/pudge_wars/macos/Pudge Wars.app/Contents/MacOS/Pudge Wars" ]]; then
-  pw_bin="examples/pudge_wars/macos/Pudge Wars.app/Contents/MacOS/Pudge Wars"
+if [[ -x "examples/pudge_wars/macos/Fresh Meat.app/Contents/MacOS/Fresh Meat" ]]; then
+  pw_bin="examples/pudge_wars/macos/Fresh Meat.app/Contents/MacOS/Fresh Meat"
 fi
 
 exec "$pw_bin" --duel --human:0 "$@"

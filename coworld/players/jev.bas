@@ -12,7 +12,7 @@ if request > 0 then
   end if
 end if
 if worldTick >= nextQuestion and oracleReady() = 0 then
-  oracleStateText("game", "Pudge Wars: hook enemies across a river, survive and score team kills.")
+  oracleStateText("game", "Fresh Meat: hook enemies across a river, survive and score team kills.")
   oracleState("self.hp", selfHp)
   oracleState("self.maxHp", selfMaxHp)
   oracleState("self.hookReady", hookReady)

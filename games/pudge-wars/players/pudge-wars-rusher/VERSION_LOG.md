@@ -11,7 +11,7 @@
 
 ## Submission decision: v16 — E06b combined coaching
 
-- User authorization: **“update policy on league”** (Aaron, current session, recorded 2026-09-16T02:03:16.320688+00:00); refers to retained E06b and the 3v3 Pudge Wars league.
+- User authorization: **“update policy on league”** (Aaron, current session, recorded 2026-09-16T02:03:16.320688+00:00); refers to retained E06b and the 3v3 Fresh Meat league.
 - Submitted `bdc7ac29-743d-4ace-b1cc-3b0529cef552` to `league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0` with `auto_champion=never`; explicit one-time champion promotion follows successful qualification.
 - Evidence: E06b native screen 38/48, independent confirmation 67/96, mean kill margin +7.1458 with seed-bootstrap 95% CI [4.9479, 9.1979]; exact image passed 1,004 semantic/lifecycle probes. Ten hosted runtime smoke episodes passed. Hosted A/B competitive strength and broad-field guardrail remain unmeasured; no hosted win-rate p-value is claimed.
 - This is the user's requested publication based on the disclosed native evidence, not a completed hosted research promotion verdict. Three legacy movement assertions differ intentionally under the recorded CurveHook contract; no candidate code was changed after selection.
