@@ -18,11 +18,11 @@ const
   HudText* = rgbx(236, 232, 210, 255)
   HudChipFill* = rgbx(18, 22, 28, 255)
   HudChipActive* = rgbx(52, 44, 26, 255)
-  ScorePlateSize* = vec2(765, 66)
+  ScorePlateSize* = vec2(440, 44)
     ## Top-center banner: west block, clock, east block.
-  ScoreClockW = 128.0'f32
-  ScoreTrackSize = vec2(646, 12)
-  ScoreTrackGap = 7.0'f32
+  ScoreClockW = 88.0'f32
+  ScoreTrackSize = vec2(360, 6)
+  ScoreTrackGap = 4.0'f32
   ScoreBlockFill* = [rgbx(168, 50, 38, 242), rgbx(34, 76, 156, 242)]
   ScoreClockFill = rgbx(14, 14, 18, 248)
   ScoreTrackFill = rgbx(12, 12, 16, 230)
@@ -110,11 +110,11 @@ proc drawScorePlate*(
   var westScore = ""
   westScore.addHudInt(plate.west)
   let
-    numW = max(sk.getTextSize("B54", westScore).x, 30)
-    westNum = GameUiPanel(origin: o + vec2(blockW - 18 - numW, 0), size: vec2(numW, h))
-  sk.drawLabel(westScore, westNum.origin, westNum.size, white, "B54", RightAlign)
-  let westLabelW = sk.getTextSize("B17", "WEST").x
-  var labelRight = westNum.origin.x - 16
+    numW = max(sk.getTextSize("B27", westScore).x, 30)
+    westNum = GameUiPanel(origin: o + vec2(blockW - 12 - numW, 0), size: vec2(numW, h))
+  sk.drawLabel(westScore, westNum.origin, westNum.size, white, "B27", RightAlign)
+  let westLabelW = sk.getTextSize("B13", "WEST").x
+  var labelRight = westNum.origin.x - 10
   if plate.youTeam == 0:
     let youW = sk.getTextSize("B11", "YOU").x + 10
     let you = GameUiPanel(origin: vec2(labelRight - youW, o.y + h * 0.5'f32 - 9), size: vec2(youW, 18))
@@ -122,19 +122,19 @@ proc drawScorePlate*(
     sk.drawLabel("YOU", you.origin, you.size, rgbx(122, 31, 20, 255), "B11", CenterAlign)
     labelRight = you.origin.x - 8
   sk.drawLabel(
-    "WEST", vec2(labelRight - westLabelW, o.y), vec2(westLabelW, h), teamText, "B17"
+    "WEST", vec2(labelRight - westLabelW, o.y), vec2(westLabelW, h), teamText, "B13"
   )
   # East: number then label, pushed against the clock.
   var eastScore = ""
   eastScore.addHudInt(plate.east)
   let eastNum = GameUiPanel(
-    origin: o + vec2(blockW + ScoreClockW + 18, 0),
-    size: vec2(max(sk.getTextSize("B54", eastScore).x, 30), h)
+    origin: o + vec2(blockW + ScoreClockW + 12, 0),
+    size: vec2(max(sk.getTextSize("B27", eastScore).x, 30), h)
   )
-  sk.drawLabel(eastScore, eastNum.origin, eastNum.size, white, "B54")
-  var labelLeft = eastNum.origin.x + eastNum.size.x + 16
-  let eastLabelW = sk.getTextSize("B17", "EAST").x
-  sk.drawLabel("EAST", vec2(labelLeft, o.y), vec2(eastLabelW, h), teamText, "B17")
+  sk.drawLabel(eastScore, eastNum.origin, eastNum.size, white, "B27")
+  var labelLeft = eastNum.origin.x + eastNum.size.x + 10
+  let eastLabelW = sk.getTextSize("B13", "EAST").x
+  sk.drawLabel("EAST", vec2(labelLeft, o.y), vec2(eastLabelW, h), teamText, "B13")
   if plate.youTeam == 1:
     labelLeft += eastLabelW + 8
     let youW = sk.getTextSize("B11", "YOU").x + 10
@@ -143,14 +143,14 @@ proc drawScorePlate*(
     sk.drawLabel("YOU", you.origin, you.size, rgbx(20, 50, 110, 255), "B11", CenterAlign)
   # Clock and goal.
   sk.drawLabel(
-    plate.clock, clockBlock.origin + vec2(0, 6), vec2(ScoreClockW, 32),
-    white, "B27", CenterAlign
+    plate.clock, clockBlock.origin + vec2(0, 2), vec2(ScoreClockW, 23),
+    white, "B17", CenterAlign
   )
   if plate.killGoal > 0:
     var goal = "FIRST TO "
     goal.addHudInt(plate.killGoal)
     sk.drawLabel(
-      goal, clockBlock.origin + vec2(0, h - 24), vec2(ScoreClockW, 16),
+      goal, clockBlock.origin + vec2(0, h - 18), vec2(ScoreClockW, 16),
       HudGold, "B11", CenterAlign
     )
   # Kill-race track: west fills left of center, east fills right.
@@ -173,7 +173,7 @@ proc drawScorePlate*(
       sk.drawRect(vec2(mid - westW, inner.origin.y), vec2(westW, inner.size.y), ScoreTrackColors[0])
     if eastW > 0:
       sk.drawRect(vec2(mid, inner.origin.y), vec2(eastW, inner.size.y), ScoreTrackColors[1])
-    sk.drawRect(vec2(mid - 1, track.origin.y - 4), vec2(2, track.size.y + 8), HudGold)
+    sk.drawRect(vec2(mid - 1, track.origin.y - 2), vec2(2, track.size.y + 4), HudGold)
 
 proc chipSlot*(panel: GameUiPanel, index, count: int): GameUiPanel =
   ## Returns one evenly split chip inside a row panel.

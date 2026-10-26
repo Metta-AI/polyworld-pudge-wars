@@ -112,9 +112,9 @@ const
     "Flask", "Haste", "Regen", "Big Hook", "2x Damage",
     "River Treads", "Longflight", "Palisade", "Hooktrap", "Ward"
   ]
-  HudScaleSteps = [0.5'f32, 0.75'f32, 1.0'f32, 1.5'f32, 2.0'f32, 3.0'f32]
-    ## Finer than the shared crisp steps so a 1280-wide window lands on
-    ## 0.75x instead of halving every label.
+  HudScaleSteps = [0.5'f32, 0.75'f32, 1.0'f32]
+    ## Fit small windows without enlarging panels to fill large ones.
+    ## Display density is applied separately so Retina text stays crisp.
   RunePillH = 28.0'f32
   DebugWindowTitle = "Debug"
   DebugWindowOrigin = vec2(16, 40)
@@ -346,9 +346,10 @@ proc menuCanRestart(): bool =
   not run.replayMode and netRole != NetClient
 
 proc transportBarOpen*(): bool =
-  ## Play/pause/speed strip. On by default while a simulation is
-  ## running; hidden on the host lobby overlay.
-  showTransportBar and not hostLobbyOpen
+  ## Replay controls belong to recordings and local bot spectating.
+  ## A live human seat (including a network spectator) cannot scrub time.
+  showTransportBar and not hostLobbyOpen and run != nil and
+    (run.replayMode or (not humanControlActive() and netRole != NetClient))
 
 proc toggleTransportBar*() =
   if hostLobbyOpen:
@@ -575,7 +576,8 @@ proc updateTouchHud*(window: Window) =
     chatVisible = false
 
 proc hudUiScale*(window: Window): float32 =
-  hudUiScale(vec2(window.size.x.float32, window.size.y.float32))
+  let density = max(window.contentScale, 1.0'f32)
+  hudUiScale(vec2(window.size.x.float32, window.size.y.float32) / density) * density
 
 var pointerProbeWindow*: Window
   ## The game window, for touch-input.js's HUD hit test.
@@ -1041,8 +1043,13 @@ proc topCenterFloor(layout: GameUiLayout): float32 =
     result += RunePillH + 8
 
 proc killFeedTop(layout: GameUiLayout): float32 =
-  ## Kill feed runs down the top-right corner, clear of the banner.
-  hudToastY(layout)
+  ## Move below the top-center widgets if the side column cannot fit.
+  let left = layout.size.x - layout.margin - KillFeedW
+  let banner = scorePlatePanel(layout)
+  if left < banner.origin.x + banner.size.x + 12:
+    topCenterFloor(layout)
+  else:
+    hudToastY(layout)
 
 proc drawRunePlate(sk: Silky, layout: GameUiLayout) =
   ## Public drop clock: which rune, which side of the river, how soon.
@@ -1063,8 +1070,7 @@ proc drawRunePlate(sk: Silky, layout: GameUiLayout) =
   )
 
 proc drawKillFeed(sk: Silky, layout: GameUiLayout) =
-  ## Fading list of recent kills down the top-right corner, beside
-  ## the score banner, League-style.
+  ## Wrap whole events within the right column, including long names.
   let now = epochTime()
   var alive: seq[KillFeedEntry]
   for entry in killFeed:
@@ -1082,15 +1088,17 @@ proc drawKillFeed(sk: Silky, layout: GameUiLayout) =
         entry.color.r, entry.color.g, entry.color.b,
         uint8(float(entry.color.a) * fade)
       )
-    sk.drawLabel(
-      entry.text,
-      vec2(layout.size.x - layout.margin - KillFeedW, y),
-      vec2(KillFeedW, 18),
-      color,
-      "Hud",
-      RightAlign
+      origin = vec2(layout.size.x - layout.margin - KillFeedW, y)
+    discard sk.drawText(
+      "Hud", entry.text, origin + vec2(1),
+      rgbx(0, 0, 0, uint8(210 * fade)),
+      maxWidth = KillFeedW, wordWrap = true
     )
-    y += 20
+    let used = sk.drawText(
+      "Hud", entry.text, origin, color,
+      maxWidth = KillFeedW, wordWrap = true
+    )
+    y += max(used.y, 16) + 8
 
 proc drawKillStinger(sk: Silky, layout: GameUiLayout) =
   ## Centered Dota kill-streak shout: GODLIKE, FIRST BLOOD, SHUTDOWN.

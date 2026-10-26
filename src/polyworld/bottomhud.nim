@@ -15,39 +15,38 @@ import
 
 const
   CompactTransportHeight* = 20.0'f32
-  BottomHudMinWidth* = 1360.0'f32
-    ## Hero bar (with a full bag) + compass at 1×. 1920×1080 is 1×,
-    ## a full-screen 3024-wide retina window is 2×.
+  BottomHudMinWidth* = 1100.0'f32
+    ## Room for the compact hero bar with a full bag and the minimap.
   BottomHudMinGameHeight* = 720.0'f32
     ## Room for the chat, the shop, and the hero bar stacked on the left.
   BottomHudFill* = rgbx(10, 10, 14, 250)
   HudMargin* = 8.0'f32
-  MinimapPanelSize* = vec2(334, 338)
+  MinimapPanelSize* = vec2(208, 240)
   MinimapSize* = MinimapPanelSize.x
     ## Cropped compass: ring, title, and nameplate. No quest well.
-  MiniButtonH* = 28.0'f32
+  MiniButtonH* = 24.0'f32
   MinimapClusterGap = 12.0'f32
-  MinimapMapSlot = (x: 66.0'f32, y: 40.0'f32, w: 252.0'f32, h: 252.0'f32)
-  MinimapTitleSlot = (x: 102.0'f32, y: 4.0'f32, w: 186.0'f32, h: 24.0'f32)
-  MinimapNameSlot = (x: 140.0'f32, y: 304.0'f32, w: 114.0'f32, h: 28.0'f32)
+  MinimapMapSlot = (x: 12.0'f32, y: 24.0'f32, w: 184.0'f32, h: 184.0'f32)
+  MinimapTitleSlot = (x: 12.0'f32, y: 4.0'f32, w: 184.0'f32, h: 18.0'f32)
+  MinimapNameSlot = (x: 12.0'f32, y: 212.0'f32, w: 184.0'f32, h: MiniButtonH)
   AbilityCount* = 4
   UpgradeSlots* = 4
   BagSlots* = 6
-  BarPadX = 14.0'f32
-  BarPadY = 10.0'f32
-  BarGap = 12.0'f32
-  BarHeight* = 108.0'f32
-  VitalsWidth = 186.0'f32
-  PortraitSize = 37.0'f32
-  AbilityWellSize* = 60.0'f32
-  AbilityColumn = 64.0'f32
-  KeyBadgeH* = 22.0'f32
+  BarPadX = 10.0'f32
+  BarPadY = 8.0'f32
+  BarGap = 8.0'f32
+  BarHeight* = 88.0'f32
+  VitalsWidth = 158.0'f32
+  PortraitSize = 30.0'f32
+  AbilityWellSize* = 48.0'f32
+  AbilityColumn = 52.0'f32
+  KeyBadgeH* = 20.0'f32
   DividerW = 2.0'f32
-  UpgradeButtonSize* = vec2(122, 24)
-  UpgradeGap = 5.0'f32
-  BagWellSize* = 28.0'f32
+  UpgradeButtonSize* = vec2(116, 24)
+  UpgradeGap = 4.0'f32
+  BagWellSize* = 24.0'f32
   BagCols = 3
-  BagGap = 6.0'f32
+  BagGap = 4.0'f32
   SectionTitleH* = 14.0'f32
   ## Generated atlas shapes (see `addHudShapes`). Tint them with color.
   HudDisc* = "hud.disc"
@@ -142,11 +141,11 @@ proc placeBottomHud*(
     x + PortraitSize + 8, top + 1, VitalsWidth - PortraitSize - 8, 18
   )
   result.level = result.bar.imageSlot(
-    x + PortraitSize + 8, top + 20, VitalsWidth - PortraitSize - 8, 14
+    x + PortraitSize + 8, top + 17, VitalsWidth - PortraitSize - 8, 14
   )
-  result.hpBar = result.bar.imageSlot(x, top + PortraitSize + 6, VitalsWidth, 20)
+  result.hpBar = result.bar.imageSlot(x, top + PortraitSize + 4, VitalsWidth, 18)
   result.goldLine = result.bar.imageSlot(
-    x, top + PortraitSize + 30, VitalsWidth, 18
+    x, top + PortraitSize + 24, VitalsWidth, 18
   )
   x += VitalsWidth + BarGap
   for i in 0 ..< AbilityCount:
@@ -160,9 +159,9 @@ proc placeBottomHud*(
     x, top, DividerW, BarHeight - BarPadY * 2
   )
   x += DividerW + BarGap
-  let gridTop = top + 28
+  let gridTop = top + 20
   result.upgradeTitle = result.bar.imageSlot(
-    x, top + 8, UpgradeButtonSize.x * 2 + UpgradeGap, SectionTitleH
+    x, top + 1, UpgradeButtonSize.x * 2 + UpgradeGap, SectionTitleH
   )
   for i in 0 ..< UpgradeSlots:
     result.upgrades[i] = result.bar.imageSlot(
@@ -179,7 +178,7 @@ proc placeBottomHud*(
     x += DividerW + BarGap
     let cols = min(bagN, BagCols)
     result.bagTitle = result.bar.imageSlot(
-      x, top + 8, cols.float32 * (BagWellSize + BagGap), SectionTitleH
+      x, top + 1, cols.float32 * (BagWellSize + BagGap), SectionTitleH
     )
     for i in 0 ..< bagN:
       result.bag.add result.bar.imageSlot(
@@ -188,7 +187,7 @@ proc placeBottomHud*(
         BagWellSize, BagWellSize
       )
   result.minimap = GameUiPanel(
-    origin: vec2(minimapLeft, max(floor - MinimapPanelSize.y, 0)),
+    origin: vec2(minimapLeft, max(floor - HudMargin - MinimapPanelSize.y, 0)),
     size: MinimapPanelSize
   )
   result.minimapTitle = result.minimap.imageSlot(
