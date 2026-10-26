@@ -83,12 +83,8 @@ fi
 printf '{"game":"pudge_wars","simVersion":%s}\n' "${sim_version}" \
   > "${output_dir}/sim-version.json"
 cp "${output_dir}/sim-version.json" "${src}/sim-version.json"
-cover="${polyworld_root}/examples/pudge_wars/fresh-meat-logo.png"
+cover="${polyworld_root}/examples/pudge_wars/assets/hookem/hookem-logo.svg"
 if [[ -f "$cover" ]]; then
-  cp "$cover" "${output_dir}/fresh-meat-logo.png"
-  cp "$cover" "${src}/fresh-meat-logo.png"
-fi
-preview="${polyworld_root}/coworld/preview.jpg"
-if [[ -f "$preview" ]]; then
-  cp "$preview" "${output_dir}/preview.jpg"
+  cp "$cover" "${output_dir}/hookem-logo.svg"
+  cp "$cover" "${src}/hookem-logo.svg"
 fi

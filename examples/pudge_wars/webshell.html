@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="color-scheme" content="dark">
     <meta name="theme-color" content="#07080b">
-    <title>Fresh Meat</title>
-    <link rel="preload" as="image" href="fresh-meat-logo.png">
+    <title>hookem</title>
+    <link rel="preload" as="image" href="hookem-logo.svg">
     <script type="importmap">
       {
         "imports": {
@@ -145,13 +145,13 @@
     <div id="boot">
       <div class="boot-ui">
         <div class="pw-hero">
-          <h1 class="pw-hero-mark">Fresh Meat</h1>
+          <h1 class="pw-hero-mark">hookem</h1>
           <img
             class="pw-hero-cover"
-            src="fresh-meat-logo.png"
-            alt="Fresh Meat"
-            width="1010"
-            height="748"
+            src="hookem-logo.svg"
+            alt="hookem"
+            width="720"
+            height="240"
           >
           <span class="pw-hero-rule"><i id="bootBar"></i></span>
         </div>
@@ -195,7 +195,7 @@
     </script>
     <script src="recap-overlay.js"></script>
     <script src="touch-input.js"></script>
-    <script type="module" src="boot-scene.js"></script>
+
     <script type='text/javascript'>
       function bootError(text) {
         var boot = document.getElementById('boot');
@@ -247,7 +247,7 @@
       }
       var replayUrl = replayParam();
       var Module = {
-        arguments: replayUrl ? ['--replay', '/replay.pwr'] : [],
+        arguments: replayUrl ? ['--replay', '/replay.pwr'] : ['--human:0', '--bot', '/base.bas:6', '--name', 'Wrangler'],
         preRun: [(function() {
           if (!replayUrl) {
             return;
@@ -325,7 +325,7 @@
             var bar = document.getElementById('bootBar');
             if (bar) bar.style.width = percent + '%';
             if (window.pwBoot) window.pwBoot.setProgress(percent / 100);
-            note.textContent = 'Sharpening hooks — ' + percent + '%';
+            note.textContent = 'Coiling lassos — ' + percent + '%';
           } else if (text) {
             note.textContent = text;
           }

@@ -1,10 +1,6 @@
 # Assets the web build packs from ../polyworld_data (see
 # emscripten.nims). One file or directory per line; keeping this list
 # tight keeps the browser download small.
-characters/butcher/butcher_game.glb
-characters/butcher/butcher_game.profile.png
-characters/butcher/butcher_game_east.glb
-characters/butcher/butcher_game_east.profile.png
 abilities/meat_hook.png
 abilities/chain_axe.png
 abilities/riftwake.png

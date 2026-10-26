@@ -1,12 +1,12 @@
-## Window, terrain, butchers, hook ribbons, and HUD for Fresh Meat.
+## Window, terrain, butchers, hook ribbons, and HUD for hookem.
 
 import
   std/[math, os, strutils, tables, times],
   chroma, opengl, pixie, silky, vmath, windy,
-  audio, butcherhook, butcherknife, content, director, fog, maps, sim, game, human, keybinds, netclient, netsim,
+  audio, butcherhook, frontier, content, director, fog, maps, sim, game, human, keybinds, netclient, netsim,
   netpredict, pacing, practice, replays, ui,
   polyworld/[
-    actioncam, bottomhud, characters, chrome, common, gameuis, particles, particleshaders,
+    actioncam, animblend, bottomhud, characters, chrome, common, gameuis, particles, particleshaders,
     pathing, player, profiles, quadterrain, rtscameras, shadows, shapes,
     tapes, terrainsurfaces, viewers, worldbars
   , visions]
@@ -37,13 +37,13 @@ const
     ## Magenta core matching the MagicBurst fade.
   BlinkResidueSeconds = 0.55
     ## Ground glow + silhouette linger after the hashed vanish tick.
-  RotFill = rgbx(16, 38, 18, 90)
+  RotFill = rgbx(136, 105, 64, 70)
     ## Dark swamp stain inside the blight.
-  RotSick = rgbx(28, 62, 26, 90)
+  RotSick = rgbx(172, 132, 81, 70)
     ## Foot glow on anyone standing in Rot.
-  RotCore = rgbx(22, 48, 20, 125)
+  RotCore = rgbx(147, 112, 66, 90)
     ## Tight blight pooled under the caster.
-  RotSpore = rgbx(34, 64, 28, 110)
+  RotSpore = rgbx(202, 164, 107, 90)
     ## Drifting motes along the blight rim.
   LightningFlash = rgbx(255, 236, 80, 200)
   LightningRing = rgbx(255, 214, 90, 140)
@@ -504,42 +504,27 @@ proc addDebugMapOverlays(renderer: var ShapeRenderer) =
       0.12'f32
     )
 
-proc addLavaBoil(renderer: var ShapeRenderer, seconds: float32) =
-  ## Thin pit lips plus glossy bubble pops on the Voronoi sheet.
-  let pitY = float32(WaterLevelSteps) / HeightSteps + 0.12'f32
-  var
-    westLip: seq[Vec3]
-    eastLip: seq[Vec3]
-  for z in PlayZMin .. PlayZMax:
+proc addRiverFoam(renderer: var ShapeRenderer, seconds: float32) =
+  ## Short drifting foam streaks; no particles or effects hide a lasso cast.
+  let y = float32(WaterLevelSteps) / HeightSteps + 0.13'f32
+  for i in 0..<24:
     let
-      hw = riverHalfWidthAt(z)
-      zz = float32(z) - HalfGrid + 0.5'f32
-    westLip.add vec3(float32(RiverCenterX - hw) - HalfGrid, pitY, zz)
-    eastLip.add vec3(float32(RiverCenterX + hw + 1) - HalfGrid, pitY, zz)
-  renderer.addPolyline(westLip, BroilerBar, 0.08'f32)
-  renderer.addPolyline(eastLip, BroilerBar, 0.08'f32)
-  const BoilCount = 12
-  for i in 0 ..< BoilCount:
-    let
-      seed = float32(i) * 17.13'f32 + seconds * 0.12'f32
-      along = abs(sin(seed * 1.31'f32))
-      across = 0.5'f32 + 0.5'f32 * sin(seed * 2.17'f32 + 1.7'f32)
-      pop = 0.5'f32 + 0.5'f32 * sin(seed * 0.73'f32)
-      z = PlayZMin + int(along * float32(PlayZMax - PlayZMin))
-      hw = riverHalfWidthAt(z)
-      x = RiverCenterX - hw + int(across * float32(max(hw * 2, 1)))
-    if not riverTile(x, z) or islandTile(x, z):
-      continue
-    let
-      life = abs(sin(seconds * (0.55'f32 + pop * 0.7'f32) + float32(i) * 0.41'f32))
-      grow = life * life
-      center = vec3(
-        float32(x) - HalfGrid + 0.5'f32 + sin(seed) * 0.28'f32,
-        pitY + 0.04'f32 + grow * 0.06'f32,
-        float32(z) - HalfGrid + 0.5'f32 + cos(seed * 1.4'f32) * 0.28'f32
-      )
-      rim = fadeRgbx(rgbx(220, 78, 18, 255), 36.0'f32 + grow * 40.0'f32)
-    renderer.addCircle(center, 0.22'f32 + grow * 0.20'f32, rim, 10)
+      z = PlayZMin.float32 + ((i.float32 * 4.17'f32 + seconds * 1.5'f32) mod (PlayZMax-PlayZMin).float32)
+      hw = riverHalfWidthAt(int(z)).float32
+      x = RiverCenterX.float32 + sin(i.float32 * 2.4'f32) * (hw-1.5'f32)
+    if not islandTile(int(x),int(z)) and fogCanSee(worldAtTile(int(x),int(z))):
+      renderer.addLine(vec3(x-HalfGrid,y,z-HalfGrid),
+        vec3(x-HalfGrid+0.15'f32,y,z-HalfGrid+0.8'f32),rgbx(183,222,206,90),0.06'f32)
+
+proc addFrontierProps(renderer: var ShapeRenderer) =
+  ## Timber fence and hitching posts live outside the playable area.
+  for side in [-1,1]:
+    let x = if side < 0: (PlayWestMin-2).float32-HalfGrid else: (PlayEastMax+2).float32-HalfGrid
+    for z in countup(PlayZMin,PlayZMax-4,6):
+      let p = liftPoint(vec3(x,0,z.float32-HalfGrid),0)
+      renderer.addAxisBox(p+vec3(0,1.1,0),0.18,1.1,0.18,rgbx(124,88,49,255))
+      for h in [0.7'f32,1.55'f32]:
+        renderer.addAxisBox(p+vec3(0,h,3),0.10,0.10,3.0,rgbx(151,113,67,255))
 
 proc addDebugCollisionOverlays(renderer: var ShapeRenderer) =
   ## Unit collision disks, hook latch radius, and fountain pads.
@@ -956,7 +941,7 @@ proc drawMeatHook(
     headPos = liftPoint(points[^1], 1.45'f32)
     roll = if grabbed: 0'f32 else: sin(seconds * 5.0'f32) * 0.06'f32
     transform = hookTransform(headPos, yaw, headRadius, roll)
-    eye = if showHead: transform * HookEye else: headPos
+    eye = if showHead: transform * LassoEye else: headPos
   var lifted: seq[Vec3]
   for i in 0..<points.high:
     let
@@ -978,54 +963,25 @@ proc drawMeatHook(
   lifted.add eye
   if attachHand and lifted.len > 1:
     lifted[0] = handOrigin
-  renderer.addHookChain(lifted, charged=charged)
+  renderer.addLassoRope(lifted, charged=charged)
   if showHead:
-    renderer.addButcherHook(transform,teamColor)
-
-const
-  FirepitTiles = [
-    "crypt-rock-1", "crypt-rock-2", "crypt-rock-1", "crypt-rock-2",
-    "crypt-grate-2", "crypt-lava-2", "crypt-lava-3"
-  ]
-    ## Banks vary only inside the charcoal volcanic pair. No purple stone.
-  FirepitRock = SurfaceNames.len
-  FirepitJagged = SurfaceNames.len + 1
-  FirepitGrate = SurfaceNames.len + 4
-  FirepitLava = SurfaceNames.len + 5
-  FirepitCrust = SurfaceNames.len + 6
-  FirepitFloor = vec3(1.04, 0.96, 0.86)
-  FirepitSkirt = vec3(0.78, 0.62, 0.48)
+    renderer.addLassoLoop(transform, teamColor)
 
 proc applyArenaTerrain(mapSeed: int) =
-  ## Volcanic rock floor at authored brightness. Gameplay kinds stay put.
+  ## Cosmetic materials only: preserve terrain heights, collision and map hash.
   seed = mapSeed
-  initTerrain(MixedTrees, GeneratedTerrain, PaintedRocks, FirepitTiles)
+  initTerrain(FrontierTrees, GeneratedTerrain, PaintedRocks)
   terrainSplats = false
-  setTileMaterial(
-    int(GrassTile), FirepitRock.float32, FirepitJagged.float32,
-    FirepitFloor, FirepitSkirt, 1
-  )
-  setTileMaterial(
-    int(RoadTile), FirepitGrate.float32, FirepitGrate.float32,
-    vec3(1.08, 0.96, 0.84), vec3(0.72, 0.48, 0.34), 5
-  )
-  setTileMaterial(
-    int(RockTile), FirepitJagged.float32, FirepitRock.float32,
-    FirepitFloor, FirepitSkirt, 4
-  )
-  setTileMaterial(
-    int(MarshTile), FirepitLava.float32, FirepitRock.float32,
-    vec3(1.06, 0.92, 0.74), vec3(0.64, 0.38, 0.26), 2
-  )
-  setTileMaterial(
-    int(StoneTile), FirepitCrust.float32, FirepitRock.float32,
-    FirepitFloor, FirepitSkirt, 6
-  )
-  setTileMaterial(
-    int(TreeTile), FirepitJagged.float32, FirepitRock.float32,
-    FirepitFloor, FirepitSkirt, 0
-  )
-  scatterRocks(70, mapSeed)
+  terrainTextureScale = 0.22'f32
+  let sand = vec3(1.30, 1.12, 0.79)
+  let cliff = vec3(1.13, 0.91, 0.62)
+  setTileMaterial(int(GrassTile), DirtSurface.float32, GravelSurface.float32, sand, cliff, 1)
+  setTileMaterial(int(RoadTile), DirtSurface.float32, GravelSurface.float32, vec3(1.11, 0.92, 0.65), cliff, 5)
+  setTileMaterial(int(RockTile), GravelSurface.float32, GravelSurface.float32, sand, cliff, 4)
+  setTileMaterial(int(MarshTile), DirtSurface.float32, GravelSurface.float32, vec3(0.56, 0.69, 0.63), cliff, 2)
+  setTileMaterial(int(StoneTile), GravelSurface.float32, GravelSurface.float32, sand, cliff, 6)
+  setTileMaterial(int(TreeTile), DirtSurface.float32, GravelSurface.float32, sand, cliff, 0)
+  scatterRocks(35, mapSeed)
 
 proc runGraphics*() =
   startProfileTrace()
@@ -1082,7 +1038,7 @@ proc runGraphics*() =
   var sk: Silky
   profileBlock "window":
     (window, sk) = initGameWindow(
-      "Fresh Meat",
+      "hookem",
       AtlasPath,
       gameWindowSize(options.windowWidth, options.windowHeight),
       options.vsync,
@@ -1135,7 +1091,7 @@ proc runGraphics*() =
 
   profileBlock "terrain":
     amplitude = 1.15'f32
-    treeHeight = 7.2'f32
+    treeHeight = 6.2'f32
     applyArenaTerrain(run.map.seed)
 
   let scene = newCharacterScene(window)
@@ -1145,6 +1101,8 @@ proc runGraphics*() =
     pudgeClips: array[Team, array[5, int]]
     pudgeMeleeClips: array[Team, int]
     chainHands: Table[int32, Vec3]
+    cowboyPlayers: Table[int32, ClipPlayer]
+    cowboyPoseTimes: Table[int32, float32]
   profileBlock "models":
     for team in Team:
       let spec = PudgeSpecs[team]
@@ -1292,6 +1250,8 @@ proc runGraphics*() =
   proc captureUnitPositions() =
     previousPositions.clear()
     previousFacings.clear()
+    cowboyPlayers.clear()
+    cowboyPoseTimes.clear()
     previousHookPositions.clear()
     previousRunePositions.clear()
     previousHp.clear()
@@ -1349,7 +1309,7 @@ proc runGraphics*() =
       model: CharacterModel, clip: int, ticks: int32, hold: bool
   ): float32 =
     if hold:
-      min(ticks.float32 / TickRate.float32, clipDuration(model, clip))
+      min(unitTime(ticks), max(0'f32, clipDuration(model, clip) - 0.0001'f32))
     else:
       unitTime(ticks)
 
@@ -1685,29 +1645,14 @@ proc runGraphics*() =
       if pudge.enteredRiver:
         var splash = pos
         splash.y = surfaceHeightNear(pos.x, pos.z, pos.y) + 0.3'f32
-        particles.emitParticleBurst(FireBurst, splash)
-        particles.emitParticleBurst(CombatSparks, splash, 0.08'f32)
+        particles.emitParticleBurst(RiverSplash, splash)
       if pudge.state == Alive and pudge.rotOn and fogShownPudge(pudge) and
           (pudge.rotTicks == 0 or pudge.rotTicks == RotPeriodTicks div 2):
         var cloud = pos
         cloud.y -= 0.95'f32
-        particles.emitParticleBurst(DecayAura, cloud)
+        particles.emitParticleBurst(DustAura, cloud)
         if pudge.rotTicks == 0:
-          particles.emitParticleBurst(DecayAura, cloud, 0.16'f32)
-    if run.world.tick mod 20 == 0:
-      const PitSpots = 3
-      let stride = PlayZMax - PlayZMin + 1
-      for i in 0 ..< PitSpots:
-        let
-          z = PlayZMin + ((int(run.world.tick) div 20 * 17 + i * 31) mod stride)
-          xOff = ((int(run.world.tick) div 20 + i * 7) mod 7) - 3
-          x = RiverCenterX + xOff
-        if not riverTile(x, z) or islandTile(x, z):
-          continue
-        var ember = tileCenterRender(x, z)
-        ember.y = surfaceHeightNear(ember.x, ember.z, ember.y) + 0.22'f32
-        if fogCanSee(worldFromRender(ember)):
-          particles.emitParticleBurst(FireBurst, ember)
+          particles.emitParticleBurst(DustAura, cloud, 0.16'f32)
     if run.world.tick mod IslandFountainHealPeriodTicks == 0:
       let fountain = liftPoint(
         tileCenterRender(IslandCenterX, IslandCenterZ), 1.15'f32
@@ -1822,9 +1767,9 @@ proc runGraphics*() =
       result.b = result.b * (1.0'f32 - weight) + 1.00'f32 * weight
       return
     var weight = 0.0'f32
-    var washR = 0.10'f32
-    var washG = 0.26'f32
-    var washB = 0.08'f32
+    var washR = 0.65'f32
+    var washG = 0.48'f32
+    var washB = 0.29'f32
     if pudge.hasBuff(RuneLightning):
       let beat = 0.5'f32 + 0.5'f32 * sin(
         unitTime(int32(run.world.tick)) * TAU.float32 * 8.0'f32
@@ -1902,7 +1847,7 @@ proc runGraphics*() =
         let killer = pudgeIndex(run.world, pudge.lastHurtBy)
         if killer >= 0 and run.world.pudges[killer].id != pudge.id:
           pushKillFeed(
-            pudgeLabel(run.world.pudges[killer].id) & " butchered " &
+            pudgeLabel(run.world.pudges[killer].id) & " roped " &
               pudgeLabel(pudge.id),
             run.world.pudges[killer].team
           )
@@ -1973,7 +1918,7 @@ proc runGraphics*() =
         if ci >= 0: run.world.pudges[ci].team else: WestTeam
       pushKillFeed(
         pudgeLabel(run.world.chunkerId) & " denied " &
-          pudgeLabel(run.world.chunkOwnerId) & "'s hook",
+          pudgeLabel(run.world.chunkOwnerId) & "'s lasso",
         team
       )
     # Kill-streak shouts are global: fog never hides GODLIKE.
@@ -2081,6 +2026,8 @@ proc runGraphics*() =
     run.historyPlayback = true
     previousPositions.clear()
     previousFacings.clear()
+    cowboyPlayers.clear()
+    cowboyPoseTimes.clear()
     previousHookPositions.clear()
     particles.clearParticles()
     resetHumanTransients()
@@ -2100,6 +2047,8 @@ proc runGraphics*() =
     replayCheckpoints = @[captureCheckpoint()]
     previousPositions.clear()
     previousFacings.clear()
+    cowboyPlayers.clear()
+    cowboyPoseTimes.clear()
     previousHookPositions.clear()
     previousRunePositions.clear()
     previousHp.clear()
@@ -2499,6 +2448,11 @@ proc runGraphics*() =
           let pudge = predictedPudge(pudgeIndex)
           if not fogShownPudge(pudge) or pudge.justBlinked:
             continue
+          var hookOut = false
+          for hook in run.world.hooks:
+            if hook.ownerId == pudge.id and hook.phase != HookIdle:
+              hookOut = true
+              break
           let
             model = pudgeModels[pudge.team]
             liveClip =
@@ -2507,6 +2461,8 @@ proc runGraphics*() =
                 pudgeClips[pudge.team][victoryClip]
               elif pudge.animClip == attackClip and pudge.meleeAnim:
                 pudgeMeleeClips[pudge.team]
+              elif hookOut and pudge.state == Alive and pudge.animClip != attackClip:
+                model.clipIndex(if pudge.animClip == runClip: "WranglerRunReel" else: "WranglerReel")
               else:
                 pudgeClips[pudge.team][pudge.animClip]
             clip =
@@ -2529,6 +2485,12 @@ proc runGraphics*() =
               0'f32
             else:
               clipOverrideTime
+          let poseNow = unitTime(int32(run.world.tick))
+          if pudge.id notin cowboyPlayers:
+            cowboyPlayers[pudge.id] = newClipPlayer(model.file.root)
+            cowboyPoseTimes[pudge.id] = poseNow
+          let poseDelta = clamp(poseNow - cowboyPoseTimes[pudge.id], 0'f32, 0.1'f32)
+          cowboyPoseTimes[pudge.id] = poseNow
           drawCharacter(
             scene,
             model,
@@ -2536,7 +2498,8 @@ proc runGraphics*() =
             unitFacing(pudge.id, pudge.facing),
             clip,
             animSeconds,
-            butcherTint(pudgeIndex(run.world, pudge.id), pudge)
+            butcherTint(pudgeIndex(run.world, pudge.id), pudge),
+            posePlayer = cowboyPlayers[pudge.id], poseDelta = poseDelta
           )
           if not scene.sunDepthPass:
             let
@@ -2550,17 +2513,16 @@ proc runGraphics*() =
                 if pudge.hasBuff(RuneBigHook):
                   r = r + r * RuneBigHookPercent div 100
                 r.float32 / WorldScale.float32 * HeldHookVisualScale
-            chainHands[pudge.id] = butcherHeldHookEye(rightHand, facing, heldRadius)
-            knifeRenderer.addButcherKnife(
-              butcherKnifeTransform(leftHand), DefaultButcherKnife, wrap)
-            var hookOut = false
-            for hook in run.world.hooks:
-              if hook.ownerId == pudge.id and hook.phase != HookIdle:
-                hookOut = true
-                break
-            if pudge.state == Alive and not hookOut:
-              knifeRenderer.addButcherHook(
-                butcherHeldHookTransform(rightHand, facing, heldRadius), wrap)
+            chainHands[pudge.id] = rightHand * vec3(0,0,0)
+            knifeRenderer.addRopeCoil(leftHand, facing)
+            if pudge.state == Alive and not hookOut and clip >= 0:
+              let
+                windup = if pudge.windupTicks > 0:
+                  1'f32 - pudge.windupTicks.float32 / HookWindupTicks.float32
+                  else: 0'f32
+                phase = animSeconds / max(model.clipDuration(clip), 0.1'f32) * TAU.float32
+              knifeRenderer.addSwingingLasso(chainHands[pudge.id], facing,
+                phase, heldRadius, windup, wrap)
         if scene.sunDepthPass:
           return
         let now = epochTime()
@@ -2615,11 +2577,12 @@ proc runGraphics*() =
       drawWater(
         viewProjection,
         cameraEye,
-        unitTime(int32(run.world.tick))
+        unitTime(int32(run.world.tick)), river=true
       )
 
       shapeRenderer.clear()
-      shapeRenderer.addLavaBoil(unitTime(int32(run.world.tick)))
+      shapeRenderer.addRiverFoam(unitTime(int32(run.world.tick)))
+      shapeRenderer.addFrontierProps()
       shapeRenderer.addDebugMapOverlays()
       for pudge in run.world.pudges:
         if pudge.hookedBy == 0 or pudge.state == Dying:

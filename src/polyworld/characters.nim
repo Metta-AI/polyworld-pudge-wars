@@ -13,7 +13,7 @@
 import
   std/[tables, json, strutils, sets, os],
   chroma, gltf, vmath, windy,
-  shadows, toon
+  shadows, toon, animblend
 
 type
   CharacterShading* = enum
@@ -196,7 +196,8 @@ proc beginCharacters*(
 proc drawCharacter*(
     scene: CharacterScene, model: CharacterModel,
     position: Vec3, facing: float32, clip: int, animTime: float32,
-    tint = color(1, 1, 1, 1), sizeFactor = 1.0'f32
+    tint = color(1, 1, 1, 1), sizeFactor = 1.0'f32,
+    posePlayer: ClipPlayer = nil, poseDelta = 0.0'f32
 ) =
   ## Poses the shared model at the given clip time and draws one instance.
   ## Looping clips may pass any time (playback wraps); one-shot clips like
@@ -220,7 +221,10 @@ proc drawCharacter*(
       root.activeClips.setLen(1)
     root.activeClips[0] = clip
     root.animTime = animTime
-  root.updateAnimation(0)
+  if posePlayer != nil:
+    posePlayer.sampleClip(clip, animTime, poseDelta)
+  else:
+    root.updateAnimation(0)
   let transform =
     translate(position) * rotateY(facing) *
     scale(vec3(sizeFactor, sizeFactor, sizeFactor)) * model.baseTransform

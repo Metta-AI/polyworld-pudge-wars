@@ -478,6 +478,7 @@ proc terrainFrag(
 
 var cameraPos: Uniform[Vec3]
 var waterTime: Uniform[float32]
+var riverStyle: Uniform[float32]
 
 template lavaCell(ox, oz: untyped) =
   ## One jittered Voronoi neighbor. Reads px/pz/waterTime; writes d1/d2.
@@ -511,7 +512,27 @@ proc waterFrag(
     worldPos: Vec3,
     waterNormal: Vec3
 ) =
-  ## Packed lava cells: amber bowls, yellow-white ridges, glossy pops.
+  ## River mode is opt-in; existing Polyworld lava scenes keep their material.
+  if riverStyle > 0.5:
+    let
+      flow = worldPos.z * 0.54 - waterTime * 1.75
+      crossWave = sin(worldPos.x * 1.4 + sin(flow * 0.4))
+      ripple = sin(flow + crossWave * 0.45)
+      fine = sin(worldPos.z * 2.6 - waterTime * 3.2 + worldPos.x * 0.8)
+      crest = pow(max(ripple * 0.6 + fine * 0.4, 0.0), 12.0)
+      glint = pow(max(dot(normalize(waterNormal),
+        normalize(normalize(cameraPos - worldPos) + envLightDirection)), 0.0), 48.0)
+      visibility = smoothstep(0.05, 0.95, texture(visibilityTex,
+        vec2((worldPos.x + visibilityOffset) * visibilityScale,
+             (worldPos.z + visibilityOffset) * visibilityScale)).x)
+      shade = 0.40 + 0.60 * visibility
+      blend = 0.45 + ripple * 0.12 + fine * 0.06
+      foam = crest * 0.38 + glint * 0.22
+    fragColor = vec4(
+      (0.065 + blend * 0.055 + foam * 0.72) * shade,
+      (0.29 + blend * 0.19 + foam * 0.86) * shade,
+      (0.33 + blend * 0.14 + foam * 0.79) * shade, 0.91)
+    return
   let
     specular = pow(
     max(dot(
@@ -916,7 +937,7 @@ var
   groundRingValues = vec4(0)
   groundRingShapeValues = vec3(0)
   waterProgram: GLuint
-  waterMvpLocation, waterCameraLocation, waterTimeLocation: GLint
+  waterMvpLocation, waterCameraLocation, waterTimeLocation, riverStyleLocation: GLint
   waterVisibilityTexLocation: GLint
   waterVisibilityOffsetLocation, waterVisibilityScaleLocation: GLint
   waterNormalTextureArray: GLuint
@@ -1007,7 +1028,7 @@ type
     autumnLayers: seq[int]  # greens only, or greens plus reds and yellows
 
   TreeStyle* = enum
-    MixedTrees, EvergreenTrees, DenseTrees
+    MixedTrees, EvergreenTrees, DenseTrees, FrontierTrees
   TerrainStyle* = enum
     CartoonTerrain, GeneratedTerrain
   RockStyle* = enum
@@ -3275,6 +3296,7 @@ proc initTerrain*(
   waterEnv = envLocations(waterProgram)
   waterCameraLocation = glGetUniformLocation(waterProgram, "cameraPos")
   waterTimeLocation = glGetUniformLocation(waterProgram, "waterTime")
+  riverStyleLocation = glGetUniformLocation(waterProgram, "riverStyle")
   waterVisibilityTexLocation = glGetUniformLocation(
     waterProgram,
     "visibilityTex"
@@ -3579,6 +3601,9 @@ proc initTerrain*(
       "tree_leafy_simple", 24, @[1, 2, 5, 6], @[1, 2, 3, 4, 5, 6])
     treeModels.add loadTreeModel(
       "tree_leafy_double", 23, @[7, 8, 11, 12], @[7, 8, 9, 10, 11, 12])
+  of FrontierTrees:
+    treeModels.add loadTreeModel("tree_leafy_simple", 65, @[1, 2, 5, 6], @[1, 2, 5, 6])
+    treeModels.add loadTreeModel("tree_leafy_double", 35, @[7, 8, 11, 12], @[7, 8, 11, 12])
   of EvergreenTrees:
     # Compact layered firs dominate, with a few green broadleaf trees.
     treeModels.add loadTreeModel("tree_fir_01", 52, @[0], @[0])
@@ -3815,9 +3840,10 @@ proc drawTerrain*(viewProjection: Mat4, showEdges = false) =
 proc drawWater*(
     viewProjection: Mat4,
     cameraEye: Vec3,
-    seconds = 0.0'f32
+    seconds = 0.0'f32,
+    river = false
 ) =
-  ## Transparent fire-pit pass; call after all opaque drawing.
+  ## Transparent water/lava pass; call after all opaque drawing.
   if waterMesh.len == 0:
     return
   glDisable(GL_CULL_FACE)
@@ -3827,6 +3853,7 @@ proc drawWater*(
   glUniformMatrix4fv(waterMvpLocation, 1, GL_FALSE, cast[ptr float32](mvp.addr))
   glUniform3f(waterCameraLocation, cameraEye.x, cameraEye.y, cameraEye.z)
   glUniform1f(waterTimeLocation, seconds)
+  glUniform1f(riverStyleLocation, if river: 1.0'f32 else: 0.0'f32)
   glUniform1f(waterVisibilityOffsetLocation, HalfGrid)
   glUniform1f(
     waterVisibilityScaleLocation,

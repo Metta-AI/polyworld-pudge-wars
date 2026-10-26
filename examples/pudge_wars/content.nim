@@ -1,11 +1,11 @@
-## Deterministic Fresh Meat constants.
+## Deterministic hookem constants.
 ##
 ## Modeled on Warcraft 3 Pudge Wars v2.03d: two banks split by a river,
 ## every player is a butcher, Meat Hook is the kill skill, Blink is a
 ## short hop that can cross the narrow river gap by the fountain, and
 ## kills buy hook upgrades.
 
-import std/os, polyworld/[common, hashes]
+import std/[os, strutils], polyworld/[common, hashes]
 
 const
   TickRate* = 32'i32
@@ -390,8 +390,8 @@ const
   ## the five named clips.
   PudgeSpecs*: array[Team, PudgeSpec] = [
     PudgeSpec(
-      name: "West Butcher",
-      modelPath: DataRoot & "/characters/butcher/butcher_game.glb",
+      name: "West Wrangler",
+      modelPath: "examples/pudge_wars/assets/hookem/cowboy_west.glb",
       runClip: "ButcherRun",
       idleClip: "ButcherIdle",
       deathClip: "ButcherDeath",
@@ -400,8 +400,8 @@ const
       targetHeight: 6.4
     ),
     PudgeSpec(
-      name: "East Butcher",
-      modelPath: DataRoot & "/characters/butcher/butcher_game_east.glb",
+      name: "East Wrangler",
+      modelPath: "examples/pudge_wars/assets/hookem/cowboy_east.glb",
       runClip: "ButcherRun",
       idleClip: "ButcherIdle",
       deathClip: "ButcherDeath",
@@ -416,12 +416,12 @@ const
     "Hook Speed",
     "Hook Radius"
   ]
-  HookAbilityIcon* = "meat_hook"
-  GrappleAbilityIcon* = "chain_axe"
+  HookAbilityIcon* = "hookem_lasso"
+  GrappleAbilityIcon* = "hookem_tether"
     ## HUD well for E-grapple: a grappling hook on a rope.
-  BlinkAbilityIcon* = "riftwake"
+  BlinkAbilityIcon* = "hookem_step"
     ## HUD well for F-blink: a rift/phase mark already in abilities/.
-  RotAbilityIcon* = "withering_idol"
+  RotAbilityIcon* = "hookem_dust"
     ## HUD well for R-rot: a sick-green idol already in abilities/.
   AttackIcon* = "attack"
   PortraitKeys*: array[Team, string] = ["pudge_west", "pudge_east"]
@@ -523,7 +523,10 @@ proc shopItemBlurb*(
 
 proc iconPath*(name: string, kind = "icons"): string =
   ## Returns a polyworld_data path for one published PNG.
-  DataRoot & "/" & kind & "/" & name & ".png"
+  if name.startsWith("hookem_"):
+    "examples/pudge_wars/assets/hookem/" & name & ".png"
+  else:
+    DataRoot & "/" & kind & "/" & name & ".png"
 
 proc soundPath*(name: string): string =
   ## Returns a polyworld_data path for one published WAV.
@@ -740,7 +743,7 @@ proc hookTooltipLines*(
     hookKey = "Q"
 ): seq[string] =
   ## Title, how-to, and live hook numbers for the Meat Hook well.
-  var title = "Meat Hook"
+  var title = "Lasso"
   if doubleDamage or bigHook or lightning:
     title.add "  ["
     var first = true
@@ -780,7 +783,7 @@ proc hookTooltipLines*(
 proc grappleTooltipLines*(grappleKey = "E"): seq[string] =
   ## Title, how-to, and pull numbers for the E-grapple (not on the bar).
   @[
-    "Grapple",
+    "Tether",
     "Press " & grappleKey &
       ", then click. Latches terrain and yanks you to it. Deals no damage.",
     "0 damage - " & formatTiles(GrappleRange) & " tiles - CD " &
@@ -790,9 +793,9 @@ proc grappleTooltipLines*(grappleKey = "E"): seq[string] =
 proc rotTooltipLines*(active: bool, rotKey = "R"): seq[string] =
   ## Title, how-to, and pulse numbers for the Rot well.
   @[
-    if active: "Rot  [ON]" else: "Rot",
+    if active: "Dust Up  [ON]" else: "Dust Up",
     "Toggle (" & rotKey &
-      ") a blight cloud. Damages everyone inside, including you.",
+      ") a dust cloud. Damages everyone inside, including you.",
     $RotDamage & " dmg / " & formatSeconds(RotPeriodTicks) &
       " (" & $rotDps() & " DPS) - " & formatTiles(RotRadius) &
       " tiles - " & $RotSlowPercent & "% slow"
@@ -801,7 +804,7 @@ proc rotTooltipLines*(active: bool, rotKey = "R"): seq[string] =
 proc blinkTooltipLines*(blinkKey = "F"): seq[string] =
   ## Title, how-to, and hop numbers for the Blink well.
   @[
-    "Blink",
+    "Sidestep",
     "Hop toward the cursor (" & blinkKey &
       "). Cross the narrow gap by the fountain. Cliffs, walls and bodies stop the hop.",
     $BlinkRangeTiles & " tiles - CD " & formatSeconds(BlinkCooldownTicks)

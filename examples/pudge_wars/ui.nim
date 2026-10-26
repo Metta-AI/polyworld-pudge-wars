@@ -1,4 +1,4 @@
-## Fresh Meat Silky HUD: floating corner widgets over a full-screen world.
+## hookem Silky HUD: floating corner widgets over a full-screen world.
 
 import
   std/[json, os, strformat, strutils, times, unicode],
@@ -34,9 +34,9 @@ const
   ChatTabW = 72.0'f32
   EventLogMax = 48
   MaxChatDraft = 120
-  MinimapWest = rgbx(78, 58, 48, 255)
-  MinimapEast = rgbx(46, 64, 78, 255)
-  MinimapRiver = rgbx(255, 78, 12, 255)
+  MinimapWest = rgbx(146, 119, 78, 255)
+  MinimapEast = rgbx(125, 114, 83, 255)
+  MinimapRiver = rgbx(35, 111, 124, 255)
   MinimapIsland = rgbx(148, 132, 96, 255)
   MinimapForest = rgbx(22, 24, 22, 255)
   MinimapShop = rgbx(232, 196, 86, 255)
@@ -1744,25 +1744,25 @@ proc drawBottomUnit(
     hotkey: if owned: bindLabel(BindRot) else: "",
     enabled: ownedLive or not owned
   )
-  const AbilityNames = ["Hook", "Grapple", "Blink", "Rot"]
+  const AbilityNames = ["Lasso", "Tether", "Sidestep", "Dust Up"]
   for i in 0 ..< AbilityCount:
     let rotOn = i == 3 and hero.rotOn
     sk.drawAbilityWell(
       hud.abilities[i], abilities[i],
-      if rotOn: "Rot ON" else: AbilityNames[i],
+      if rotOn: "Dust ON" else: AbilityNames[i],
       active = rotOn
     )
 
   # Hook upgrades, bought with kill points.
   hudScratch.setLen(0)
-  hudScratch.add "UPGRADE HOOK"
+  hudScratch.add "UPGRADE LASSO"
   sk.drawLabel(hudScratch, hud.upgradeTitle.origin, hud.upgradeTitle.size, HudGoldDim, "B11")
   if owned and hero.points > 0:
     hudScratch.setLen(0)
     hudScratch.addHudInt(int(hero.points))
     hudScratch.add(if hero.points == 1: " POINT" else: " POINTS")
     let
-      titleW = sk.getTextSize("B11", "UPGRADE HOOK").x
+      titleW = sk.getTextSize("B11", "UPGRADE LASSO").x
       pillW = sk.getTextSize("B11", hudScratch).x + 14
       pill = GameUiPanel(
         origin: hud.upgradeTitle.origin + vec2(titleW + 8, -2),
@@ -1818,7 +1818,7 @@ proc drawBottomUnit(
     if status.len == 0:
       statusColor = ReadyGold
       if inHistory: status = "SPECTATING THE PAST"
-      elif aimingHookNow(): status = "HOOK - CLICK GROUND"
+      elif aimingHookNow(): status = "LASSO - CLICK GROUND"
       elif aimingGrappleNow(): status = "GRAPPLE - CLICK GROUND"
       elif aimingBlinkNow(): status = "BLINK - CLICK GROUND"
     if status.len > 0:
@@ -2177,7 +2177,7 @@ proc drawNetLobby*(
       if seat.name.len > 0:
         hudScratch.add seat.name
       else:
-        hudScratch.add "Butcher Bot"
+        hudScratch.add "Wrangler Bot"
     sk.drawLabel(
       hudScratch,
       inner.origin + vec2(60, y),
@@ -2389,12 +2389,12 @@ proc drawControlsOverlay(
     labels = [
       "Back",
       "Quickcast",
-      "Autocast Hook"
+      "Autocast Lasso"
     ]
     hints = [
       "",
       "Abilities fire at the cursor on key press.",
-      "Right-click an enemy to hook. Right-click the Hook well to toggle."
+      "Right-click an enemy to lasso. Right-click the Lasso well to toggle."
     ]
     values = [
       "",
@@ -2761,7 +2761,7 @@ proc drawDebugOverlaysHud(sk: Silky, layout: GameUiLayout) =
   y += 14
   sk.drawDebugLegendSwatch(vec2(x, y), DebugEast, "East bank")
   y += 14
-  sk.drawDebugLegendSwatch(vec2(x, y), DebugRiver, "Fire pit")
+  sk.drawDebugLegendSwatch(vec2(x, y), DebugRiver, "River")
   y += 14
   sk.drawDebugLegendSwatch(vec2(x, y), DebugWater, "Coals")
   y += 14

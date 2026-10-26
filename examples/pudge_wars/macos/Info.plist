@@ -5,17 +5,17 @@
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleDisplayName</key>
-  <string>Fresh Meat</string>
+  <string>hookem</string>
   <key>CFBundleExecutable</key>
-  <string>Fresh Meat</string>
+  <string>hookem</string>
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
-  <string>com.softmax.polyworld.pudge-wars</string>
+  <string>com.softmax.polyworld.hookem</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>Fresh Meat</string>
+  <string>hookem</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

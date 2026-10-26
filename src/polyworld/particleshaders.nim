@@ -11,7 +11,9 @@ type ParticleEffectKind* = enum
   FireBurst,
   ArrowWake,
   HealingAura,
-  DecayAura
+  DecayAura,
+  DustAura,
+  RiverSplash
 
 var
   uParticleViewProjection*: Uniform[Mat4]
@@ -183,7 +185,25 @@ proc evaluateParticle(
     alive = 1.0'f
     return
 
-  if uParticleEffectKind == DecayAura.ord.int32:
+  if uParticleEffectKind == RiverSplash.ord.int32:
+    let
+      age = elapsed
+      lifetime = 0.65'f
+      angle = particleRandom(state) * 6.28318530718'f
+      speed = 1.2'f + particleRandom(state) * 3.0'f
+    if age < 0.0'f or age >= lifetime:
+      return
+    position = uParticleOrigin + vec3(cos(angle) * speed * age,
+      max(0.0'f, speed * age - 4.0'f * age * age), sin(angle) * speed * age)
+    velocity = vec3(cos(angle) * speed, speed - 8.0'f * age, sin(angle) * speed)
+    life = age / lifetime
+    size = 0.10'f * (1.0'f - life)
+    color = vec4(0.55'f, 0.90'f, 0.94'f, 1.0'f - life)
+    alive = 1.0'f
+    return
+
+  if uParticleEffectKind == DecayAura.ord.int32 or
+      uParticleEffectKind == DustAura.ord.int32:
     let
       birth = particleId * 0.011'f
       age = elapsed - birth
@@ -218,6 +238,8 @@ proc evaluateParticle(
         vec4(0.04'f, 0.09'f, 0.03'f, 0.0'f),
         progress
       )
+      if uParticleEffectKind == DustAura.ord.int32:
+        color = vec4(0.64'f, 0.47'f, 0.27'f, 0.45'f * (1.0'f - progress))
       alive = 1.0'f
       return
     let
@@ -246,6 +268,8 @@ proc evaluateParticle(
       vec4(0.03'f, 0.07'f, 0.02'f, 0.0'f),
       progress
     )
+    if uParticleEffectKind == DustAura.ord.int32:
+      color = vec4(0.72'f, 0.55'f, 0.34'f, 0.35'f * (1.0'f - progress))
     alive = 1.0'f
     return
 

@@ -152,7 +152,9 @@ proc effectParticleCount(kind: ParticleEffectKind): int =
     24
   of HealingAura:
     48
-  of DecayAura:
+  of RiverSplash:
+    24
+  of DecayAura, DustAura:
     64
 
 proc effectLifetime(
@@ -175,7 +177,9 @@ proc effectLifetime(
     travelTime + 0.35'f32
   of HealingAura:
     1.75'f32
-  of DecayAura:
+  of RiverSplash:
+    0.7'f32
+  of DecayAura, DustAura:
     2.45'f32
 
 proc addParticleEffect(

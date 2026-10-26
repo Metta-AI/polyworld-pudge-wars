@@ -136,3 +136,13 @@ proc update*(player: ClipPlayer, dt: float32) =
     node.pos = mix(a.pos, b.pos, w)
     node.rot = slerp(a.rot, b.rot, w)
     node.scale = mix(a.scale, b.scale, w)
+
+proc sampleClip*(player: ClipPlayer, clip: int, time, dt: float32,
+    fade = 0.12'f32) =
+  ## Cross-fade externally timed gameplay clips without changing their clock.
+  ## Useful for fixed-tick simulations with interpolated rendering. Call again
+  ## with dt=0 for another render pass of the same instance (e.g. shadows).
+  if clip != player.current:
+    player.play(clip, fade)
+  player.currentTime = time - max(dt, 0'f32)
+  player.update(max(dt, 0'f32))

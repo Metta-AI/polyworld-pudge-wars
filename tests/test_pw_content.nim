@@ -1,4 +1,4 @@
-## Fresh Meat balance table, upgrade curves, and butcher model names.
+## hookem balance table, upgrade curves, and butcher model names.
 
 import
   std/[json, os, sets, streams, strformat, strutils],
@@ -161,11 +161,17 @@ block:
       continue
     entries.add entry
   proc packed(rel: string): bool =
+    if rel.startsWith("examples/pudge_wars/assets/hookem/"):
+      let config = readFile(currentSourcePath().parentDir / "../examples/pudge_wars/config.nims")
+      return "--preload-file " in config and
+        "@/examples/pudge_wars/assets/hookem" in config and fileExists(rel)
     for entry in entries:
       if rel == entry or rel.startsWith(entry & "/"):
         return true
     false
   proc dataRel(path: string): string =
+    if path.startsWith("examples/pudge_wars/assets/hookem/"):
+      return path
     let prefix = DataRoot & "/"
     doAssert path.startsWith(prefix), path
     path[prefix.len .. ^1]
@@ -189,7 +195,7 @@ block:
     let rel = dataRel(iconPath(name, "items"))
     doAssert packed(rel), "webdata.txt missing " & rel
 
-echo "Testing published Fresh Meat icons resolve"
+echo "Testing published hookem icons resolve"
 block:
   doAssert fileExists(iconPath(HookAbilityIcon, "abilities")),
     "missing " & iconPath(HookAbilityIcon, "abilities")
@@ -257,7 +263,7 @@ block:
       0, false, false, false, false
     )
     doAssert hook.len == 3
-    doAssert hook[0] == "Meat Hook"
+    doAssert hook[0] == "Lasso"
     doAssert $BaseHookDamage in hook[2]
     doAssert $AllyHookHeal in hook[2]
     let buffed = hookTooltipLines(
@@ -301,7 +307,7 @@ block:
   doAssert RuneNames[RuneLightning] == "Lightning"
   doAssert RuneNames[RuneBounty] == "Bounty"
 
-echo "Testing published Fresh Meat recordings resolve"
+echo "Testing published hookem recordings resolve"
 block:
   const Clips = [
     "hook_throw", "hook_latch", "hook_clash", "melee", "splash", "kill",
