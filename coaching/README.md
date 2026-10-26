@@ -1,4 +1,28 @@
-# Pudge Wars: a teammate you can coach
+# Pudge Wars: a live coach and a teammate you can teach
+
+The demo gives the game most of the screen, with a compact right panel for a next-action cue, enemy position estimates, and a short strategy. Only urgent cues appear over the arena. **Coach** hides the panel for more space; **Loom** opens optional teammate teaching tools. You retain all movement and ability controls.
+
+Run from the repository root:
+
+```sh
+./scripts/coach_demo.sh
+```
+
+Open **http://127.0.0.1:8787** and click **Play 2v2**. The launcher builds matching native/WASM clients. The server automatically reads `TYPESAFE_API_KEY` from the root `.env.local` (gitignored); an existing shell environment takes precedence. `TYPESAFE_MODEL` optionally overrides `jev-latest`. The key stays on the Python server and is stripped from the game host's environment. This Jev experience does not require an OpenAI key.
+
+**Now** shows exact visible enemies and Jev's estimated regions for recently seen enemies that have left sight. **In 2 seconds** shows region probabilities for two seconds after the latest model read. Select an enemy to inspect its distribution. Solid markers are sightings; dashed markers are historical sightings; shaded regions are model estimates, not hidden positions. Never-seen enemies have no invented locations. Forecasts expire after two seconds, and the model stops querying enemies after 15 seconds without a sighting. These are uncalibrated model estimates for this game, not measured accuracy or guaranteed hit probabilities.
+
+Jev answers one batched request with independent Choice questions for the next action, strategy, and enemy regions. The coach consumes only the team's fog-filtered observations. Immediate low-health, nearby-hook and incapacitation cues run locally. Returned actions are checked again against the current candidates; ineligible targets, old match results and expired answers are discarded. 85% confidence permits direct hook/rescue advice; 60–85% presents an option; lower confidence uses local guidance. Reasons are authored descriptions of checked facts, not claims about the model's internal reasoning. The thresholds are starting defaults that need gameplay evaluation.
+
+The worker makes at most one request per second, with one request in flight and a 1.5-second timeout. Failures back off; missing credentials use visibly labeled local coaching. **Pause coach** stops inference, and requests also stop when the browser stops polling. The full-screen button includes both the game and coach. On narrow screens, the panel starts closed and **Coach** opens it over the right edge of the game. If the UI loses contact with the server, advice and forecasts expire instead of freezing as live guidance.
+
+This implementation follows TypeSafe's [System One](https://docs.typesafe.ai/concepts/system-one), [Choice](https://docs.typesafe.ai/primitives/choice), and [confidence routing](https://docs.typesafe.ai/patterns/confidence-routing) patterns. Focused behavioral and HTTP integration tests run with:
+
+```sh
+tmp/coaching/venv/bin/python -m unittest discover -s tests -p 'test_coaching*.py' -v
+```
+
+## Teaching Loom
 
 This local demonstration pairs a human in the existing 3D WASM game with **Loom**, a deterministic agent whose movement and hook decisions are controlled by an executable semantic playbook. OpenAI Realtime interprets spoken coaching using the agent's visible gameplay context and proposes typed policy edits. A compiled revision takes effect at the next policy decision.
 
@@ -12,7 +36,7 @@ From the repository root, with the repository's Nim toolchain, Emscripten, Pytho
 ./scripts/coach_demo.sh
 ```
 
-Open **http://127.0.0.1:8787**, click **Start 2v2 match**, then **Connect voice**. Focus the arena to use the game's movement and ability controls. You control the human seat; the two opponents use the existing Python rusher policy.
+Open **http://127.0.0.1:8787**, click **Play 2v2**, then **Connect voice**. Focus the arena to use the game's movement and ability controls. You control the human seat; the two opponents use the existing Python rusher policy.
 
 Voice needs `OPENAI_API_KEY` already set in the launching shell's environment. No credential goes into frontend code. The default model is `gpt-realtime-2.1`; `OPENAI_REALTIME_MODEL` can select another compatible Realtime model. Stop and relaunch the server after changing its environment. Without a key, the actual game and typed coaching still run.
 

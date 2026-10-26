@@ -21,6 +21,7 @@ type
     NcOffline,
     NcLobby,        ## Connected; waiting for the host to start.
     NcPlaying,      ## Following the live tape.
+    NcFinished,     ## Host completed; drain the final tape without reconnecting.
     NcReconnecting, ## Socket died; retrying with the same seat token.
     NcDropped,      ## Connection lost or refused.
     NcDesynced      ## A tick hash disagreed with the host.
@@ -41,6 +42,7 @@ var
   clientErrorText = ""
   clientSeat = -1
     ## Seat this client drives, or -1 while spectating.
+  clientHumanPaced = false
   clientToken = ""
   seatNames: array[MaxPudgeCount, string]
   seatHumans: array[MaxPudgeCount, bool]
@@ -463,13 +465,17 @@ proc pumpOutbound() =
 
 proc netFollowing*(): bool =
   ## Whether this process is a remote client following a host.
-  clientPhase in {NcLobby, NcPlaying, NcReconnecting}
+  clientPhase in {NcLobby, NcPlaying, NcFinished, NcReconnecting}
 
 proc netClientPhase*(): NetClientPhase =
   clientPhase
 
 proc netClientSeat*(): int =
   clientSeat
+
+proc netHumanPaced*(): bool =
+  ## Authoritative host pacing, including for spectators and reconnects.
+  clientHumanPaced
 
 proc netClientError*(): string =
   clientErrorText
@@ -625,6 +631,7 @@ proc takeReceived() =
       pendingMessages.add data
 
 proc applyLobby(lobby: LobbyMsg) =
+  clientHumanPaced = lobby.humanPaced
   for i in 0 ..< MaxPudgeCount:
     if i < lobby.seats.len:
       seatNames[i] = lobby.seats[i].name
@@ -721,6 +728,7 @@ proc netClientPump*(game: Game): NetClientEvents =
       # keep the rest of the batch (its ticks belong to the new world)
       # for after the rebuild.
       result.restarted = true
+      clientHumanPaced = message.start.humanPaced
       result.setup = message.start.setup
       clientPhase = NcPlaying
       reconnectAttempt = 0
@@ -729,7 +737,10 @@ proc netClientPump*(game: Game): NetClientEvents =
     of NmPong:
       notePong(message.pong.sentAtUs)
     of NmBye:
-      netDrop("HOST: " & message.bye.reason)
+      if message.bye.reason == "match complete":
+        clientPhase = NcFinished
+      else:
+        netDrop("HOST: " & message.bye.reason)
     else:
       discard
   if index > 0:
@@ -759,6 +770,7 @@ proc netBootstrap*(
   ## any live slice. Runs before the window exists; progress goes to
   ## the console.
   rememberSession(url, name, token, requestSlot)
+  clientHumanPaced = false
   reconnectAttempt = 0
   let connectError = transportConnect(url)
   if connectError.len > 0:
@@ -809,6 +821,7 @@ proc netBootstrap*(
           echo "join: lobby open, ", claimed, "/", message.lobby.seats.len,
             " seats claimed - waiting for the host to start"
       of NmStart:
+        clientHumanPaced = message.start.humanPaced
         result = (true, "", message.start.setup)
         started = true
         break
@@ -861,6 +874,7 @@ proc netTestReset*() =
   clientErrorText = ""
   clientSeat = -1
   clientToken = ""
+  clientHumanPaced = false
   sessionUrl = ""
   sessionName = ""
   sessionToken = ""

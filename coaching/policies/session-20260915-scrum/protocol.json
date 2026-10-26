@@ -1,0 +1,59 @@
+{
+  "status": "preregistered",
+  "session_id": "2026-09-15t21-41-17-535zc09870",
+  "baseline_sha256": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "experiments": {
+    "engagement": {
+      "id": "E04",
+      "screen_seeds": [
+        917501,
+        917512
+      ],
+      "confirmation_seeds": [
+        917201,
+        917224
+      ],
+      "hypothesis": "Aiming at a wounded ally/enemy melee midpoint when urgent actions have passed increases useful hook opportunities and mean kill margin by at least 2."
+    },
+    "fountain": {
+      "id": "E05",
+      "screen_seeds": [
+        917301,
+        917312
+      ],
+      "confirmation_seeds": [
+        917401,
+        917424
+      ],
+      "hypothesis": "Rejecting non-support straight throws through the true fountain disk avoids accidental bounces and improves mean kill margin by at least 2."
+    }
+  },
+  "controls": {
+    "team_size": 3,
+    "sides": [
+      0,
+      1
+    ],
+    "kill_goal": 30,
+    "max_ticks": 38400,
+    "opponent": "frozen v14 baseline",
+    "screen_games_per_candidate": 24,
+    "confirmation_games_if_screen_passes": 48,
+    "paired_unit": "seed with both bank assignments"
+  },
+  "gate": {
+    "screen": "all 24 complete; mean bank-paired kill margin >=2; seed-block bootstrap 95% lower bound >0; zero reference or round-trip mismatches; eligible changed decisions >0",
+    "confirmation": "all 48 fresh games complete; mean margin >=1; seed-block bootstrap 95% lower bound >0; zero mismatches",
+    "selection": "If both pass choose larger confirmation mean margin. Otherwise keep baseline. Do not combine two untested edits.",
+    "hosted": "Local retention is an experimental artifact only. League promotion requires separate pinned hosted confirmation as documented in eval-design; no promotion from this local screen."
+  },
+  "critique": [
+    "Head-to-head seed blocks test this mirror matchup only, not causal gain versus a third opponent.",
+    "Two banks for a map are correlated: bootstrap seed blocks, not games.",
+    "24 games are directional with low power for small benefits: failure to pass means no retention, not proof of no effect.",
+    "Centroid can miss or pull an ally out of a favorable fight; require wounded ally and protect prior urgent actions.",
+    "Straight ray exclusion may remove useful rebounds; rejected hooks are mechanism exposure, not proof of waste.",
+    "Native synchronous actions do not reproduce hosted timing."
+  ],
+  "curve_hook": "Do not rerun the rejected E02 return-sweep with old seeds or adopt unconditional lateral casting. Record evidence-corrected skill proposal as inactive."
+}

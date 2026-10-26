@@ -160,12 +160,12 @@ class LeagueHostTest(unittest.TestCase):
     def test_certified_viewer_matches_simulator_version(self):
         version = re.search(r"ReplayGameVersion\* = (\d+)'u16",
                             (ROOT / "examples/pudge_wars/replays.nim").read_text())
-        self.assertEqual(version.group(1), "37",
+        self.assertEqual(version.group(1), "38",
                          "Rebuild and certify a viewer when the simulator version changes")
         for project in ["coworld", "coworld/platform-hosted"]:
             manifest = json.loads((ROOT / project / "coworld_manifest_template.json").read_text())
             self.assertEqual(manifest["game"]["replay_viewer"]["bundle"],
-                             "sha256:bbbd87e990e2779988f308dc3300ab97527923ccc2786d7226606524a6880a12")
+                             "sha256:6d690bfc900aadcf08ad8937f2b37baf0964d659eb224453e12e5f64b56011ce")
 
 
 if __name__ == "__main__":

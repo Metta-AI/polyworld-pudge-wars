@@ -1,0 +1,10 @@
+{
+  "2026-09-15-scrum-fountain.md": "valid",
+  "2026-09-15-scrum-engagement.md": "valid",
+  "repository_wide_existing_failures": [
+    "2026-09-09-support-spacing.md",
+    "2026-09-10-hp1200-blink.md",
+    "2026-09-15-session-coaching.md",
+    "2026-09-15-v14-coaching.md"
+  ]
+}

@@ -3,7 +3,7 @@
 # Lifecycle:
 #   1. `coworld next-version pudge-wars-basic` allocates the next registry version.
 #   2. `coworld build` builds the linux/amd64 game image from coworld/compose.yaml,
-#      reuses the certified simulator-37 replay viewer, pins source URLs,
+#      reuses the certified simulator-38 replay viewer, pins source URLs,
 #      stamps the version, and writes the hydrated manifest.
 #   3. Upload that exact hydrated manifest. Upload queues hosted certification
 #      and does not patch an existing hosted Coworld.

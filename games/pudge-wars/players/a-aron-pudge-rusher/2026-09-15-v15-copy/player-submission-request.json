@@ -1,0 +1,7 @@
+{
+  "league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+  "policy_version_id": "c053e572-5edb-4882-ba36-a001717f1167",
+  "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+  "auto_champion": "never",
+  "notes": "User requested a-aron copy pudge-wars-rusher:v15 (v16 only if unavailable). This version runs the exact v15 image digest and argv under a-aron."
+}

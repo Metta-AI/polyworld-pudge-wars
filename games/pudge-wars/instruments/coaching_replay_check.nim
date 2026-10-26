@@ -6,7 +6,10 @@ import ../../../examples/pudge_wars/[content, maps, replays, sim]
 for i in 1 .. paramCount():
   let data = loadReplay(paramStr(i))
   let setup = data.header.setup
-  let map = generateMap(setup.mapSeed, setup.pudges.len div 2)
+  # Hosted duels use the three-lane map with a compact two-seat roster.
+  # Roster size alone cannot reconstruct the recorded geometry.
+  let map = generateMapMatching(setup.mapSeed, setup.mapHash)
+  doAssert map.hash == setup.mapHash, "could not reproduce recorded map"
   var game = newGame(map, int32(setup.maximumTicks), true, data)
   game.replayPlayer = initReplayPlayer(data)
   game.historyPlayback = true

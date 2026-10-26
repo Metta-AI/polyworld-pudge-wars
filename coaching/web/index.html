@@ -2,21 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Loom — Pudge Wars coaching</title>
+  <title>Pudge Wars — Play with a coach</title>
   <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/tactical.css">
 </head>
 <body>
   <header>
-    <div class="brand"><span class="mark">◈</span><div><strong>LOOM</strong><small>A teammate you can teach</small></div></div>
-    <div class="session"><span id="status" class="badge">Ready to play</span><button id="start" class="primary">Start 2v2 match</button></div>
+    <strong class="brand">PUDGE WARS</strong>
+    <span class="header-controls">WASD move <span>·</span> Q hook <span>·</span> F blink</span>
+    <div class="session">
+      <span id="status" class="badge">Ready to play</span>
+      <button id="panel-toggle" aria-expanded="true" aria-controls="coach-panel">Coach</button>
+      <button id="lab-open" aria-haspopup="dialog">Loom</button>
+      <button id="guide-expand" title="Full screen" aria-label="Full screen">⛶</button>
+      <button id="start" class="primary">Play 2v2</button>
+    </div>
   </header>
   <main>
-    <section class="game-column">
+    <section class="game-column" aria-label="Game arena">
       <div class="arena" id="arena">
-        <div id="welcome"><div class="eyebrow">PUDGE WARS · COACHING LAB</div><h1>Play together.<br>Build understanding.</h1><p>You and Loom against two opponents.<br>Speak a lesson. See what changes. Keep playing.</p><div class="steps"><span>01 Play</span><span>02 Coach</span><span>03 Inspect</span></div></div>
+        <div id="welcome">
+          <div class="eyebrow">YOU + LOOM / 2v2</div>
+          <h1>Hook. Dodge.<br><span>Do it again.</span></h1>
+          <p>A teammate in the fight. A little help on the side.</p>
+          <button id="welcome-start" class="primary">Let's play</button>
+          <div class="welcome-keys"><span><kbd>WASD</kbd> Move</span><span><kbd>Q</kbd> Hook</span><span><kbd>F</kbd> Blink</span></div>
+        </div>
         <iframe id="game" title="Pudge Wars playable arena" allow="autoplay; fullscreen" hidden></iframe>
+        <div id="guide-overlay" class="guide-overlay" hidden aria-hidden="true">
+          <span id="guide-overlay-label" class="eyebrow">ACT NOW</span>
+          <strong id="guide-overlay-title"></strong><span id="guide-overlay-control"></span>
+        </div>
       </div>
-      <div class="game-meta"><span>Right-click / WASD move · Q hook · F blink · G ping</span><span id="score">West — / East —</span></div>
+    </section>
+    <aside id="coach-panel" aria-label="Live coaching">
+      <div class="panel-heading"><h2>Your corner</h2><button id="guide-toggle" aria-pressed="true" aria-label="Pause coach">Pause</button></div>
+      <section class="human-guide" aria-labelledby="guide-heading">
+        <div class="section-top"><h2 id="guide-heading">Next move</h2><span id="guide-source" class="badge">Standing by</span></div>
+        <h3 id="guide-title" role="status" aria-live="polite">Let's find an opening</h3>
+        <p id="guide-reason">Start a match for a timely nudge.</p>
+        <span id="guide-control" class="guide-key"></span>
+      </section>
+      <section class="intel-panel" aria-labelledby="intel-heading">
+        <div class="section-top"><h2 id="intel-heading">Enemy read</h2><span id="intel-live" class="signal-chip">STANDBY</span></div>
+        <div class="intel-switch" role="group" aria-label="Position estimate horizon"><button data-horizon="now" aria-pressed="false">Now</button><button data-horizon="next" class="active" aria-pressed="true">In 2 seconds</button></div>
+        <div class="tactical-map"><canvas id="intel-map" width="640" height="640" role="img" aria-label="Visible players and estimated enemy regions"></canvas><div id="intel-map-label">WAITING FOR CONTACT</div></div>
+        <div class="map-legend"><span><i class="legend-you"></i>You / ally</span><span><i class="legend-enemy"></i>Seen</span><span><i class="legend-estimate"></i>Likely region</span></div>
+        <div id="intel-enemies" class="intel-enemies"></div>
+        <div class="prediction-heading"><span id="intel-prediction-title">LIKELY REGION</span><span id="intel-age">—</span></div>
+        <div id="intel-probabilities"><p class="intel-empty">Find an enemy to start a read.</p></div>
+      </section>
+      <section class="guide-plan">
+        <h2>The plan</h2><h3 id="guide-strategy">Play together</h3>
+        <p id="guide-strategy-reason">Take separate angles. Follow up on a teammate's catch.</p>
+      </section>
+      <details class="guide-explanation"><summary>About this read</summary>
+        <p id="intel-evidence">Only your team's sightings feed this map.</p>
+        <p>Dots are sightings. Shading is a Jev estimate from what you've seen, not a revealed position. Game accuracy is not yet calibrated.</p>
+        <p id="guide-note"></p><p id="guide-detail"></p>
+      </details>
+      <div id="error" role="alert"></div>
+    </aside>
+  </main>
+  <dialog id="lab-dialog" aria-labelledby="lab-title">
+    <div class="dialog-heading"><h2 id="lab-title">Your teammate, Loom</h2><button id="lab-close">Back to game</button></div>
+    <p class="muted">Give Loom a lesson or look through its playbook. The match keeps running.</p>
+      <details class="coach-lab"><summary>Teach your teammate <span>Voice coaching, playbooks &amp; experiments ↗</span></summary><div>
       <section class="conversation">
         <div class="section-top"><h2>Talk to your teammate</h2><span id="voice-status">OpenAI Realtime</span></div>
         <div class="voice-controls"><button id="voice">Connect voice</button><button id="mute" hidden>Mute microphone</button><button id="disconnect" hidden>Disconnect voice</button><span id="voice-model"></span></div>
@@ -26,7 +77,6 @@
         <div class="suggestions"><button data-lesson="follow up on my hooks">Follow up on my hooks</button><button data-lesson="wait for my hook">Wait for my hook</button><button data-lesson="retreat below 50 percent">Retreat below 50%</button><button data-lesson="follow me">Follow me</button><button data-lesson="good job, keep going">Good job, keep going</button></div>
         <p class="muted tiny">Typed shortcuts use a limited local grammar. OpenAI voice can interpret natural phrasing and propose rules from the supported vocabulary.</p>
         <div id="reply" class="reply" role="status">Loom is ready. Start a match to give your coaching a context.</div>
-        <div id="error" role="alert"></div>
       </section>
       <section class="reasoning-panel">
         <div class="section-top"><h2>How Loom understands the game</h2><span id="semantic-revision" class="badge">Working model v1</span></div>
@@ -54,15 +104,17 @@
         <a class="export-link" href="/api/reasoning/export">Export model and evidence as JSON</a>
       </section>
       <section class="evidence"><div class="section-top"><h2>What changed</h2><button id="undo">Undo last lesson</button></div><div id="changes" class="muted">Your lessons will appear here with a before/after decision comparison.</div></section>
-    </section>
-    <aside>
+      </div></details>
+      <details class="advanced-tools"><summary>Inspect Loom's playbook &amp; context</summary><div>
       <section><div class="section-top"><h2>Loom’s playbook</h2><span id="revision" class="badge">v1</span></div><p class="muted tiny">These rules run the agent. Lower priority numbers act first within each channel; blocked hook rules fall through.</p><div id="rules"></div><details><summary>Inspect semantic IR</summary><pre id="ir"></pre></details></section>
       <section><div class="section-top"><h2>Current decision</h2><span id="tick" class="muted"></span></div><div id="decision">Waiting for the match.</div><p class="muted tiny">Attempted actions and engine acceptance are separate. A legal throw can still miss.</p></section>
       <section><h2>Shared context</h2><p class="muted tiny">Select a visible enemy to ground “focus him.” Context is limited to your team’s view.</p><div id="targets"></div><div id="context" class="muted"></div></section>
       <section><h2>Background checks</h2><div id="jobs" class="muted">No lesson checks yet.</div><p class="muted tiny">Checks compare decisions on recorded inputs. Competitive improvement and unrestricted autoresearch are not yet evaluated.</p></section>
       <p class="scope">First demonstration · Semantic movement and hook policy. Aiming is a conservative primitive. This does not yet represent the champion policy.</p>
-    </aside>
-  </main>
+      </div></details>
+  </dialog>
+  <script src="/assets/human-guide.js"></script>
+  <script src="/assets/tactical.js"></script>
   <script src="/assets/app.js"></script>
   <script src="/assets/reasoning.js"></script>
 </body>

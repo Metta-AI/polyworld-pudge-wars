@@ -1,0 +1,16 @@
+{
+  "variant": "bundle",
+  "policy_sha256": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea",
+  "ir_sha256": "75dab867395bc437d4a9e0e92d38e8312db362f2cb96248796d22593d905af37",
+  "input_hashes": {
+    "parent.ir.md": "9832a5d48bf4ec9da3fd97e5f16c9ab629bb2602b6b5c2cfaf20d96f52359c95",
+    "bundle_skills_v1.py": "a5c5dcc19ffa4bf9f41d8cc0224df01a41d373266cced2291f2e244d24739477",
+    "session_compile.py": "c31163b333ff279cbe2532362151115b9f088a2c039e7924e9a3280d20d847c7",
+    "compiler-contract.json": "3a8fa801834d67723b1723f61b762465e9a0ff0c816dbd1ad1c5f6e8c5ead958",
+    "bundle_ir.py": "931fabdf4203186fbb861e48ecfd5d87cddbd6f85d9a9c395f54e329a15d6fe9",
+    "bundle.ir.md": "75dab867395bc437d4a9e0e92d38e8312db362f2cb96248796d22593d905af37",
+    "oracle.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+    "input.ir.md": "75dab867395bc437d4a9e0e92d38e8312db362f2cb96248796d22593d905af37",
+    "bundle_skills_v2.py": "bc069d4e350cf0d8eb06799d641915b6c3e4dee08447e2ebddf9c30df3a26a1a"
+  }
+}

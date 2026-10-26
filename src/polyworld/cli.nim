@@ -36,6 +36,10 @@ type
       ## Graphical window width. Zero keeps the shared default.
     windowHeight*: int32
       ## Graphical window height. Zero keeps the shared default.
+    windowX*: int32 = -1
+      ## Graphical window left edge in screen points; negative leaves placement to the system.
+    windowY*: int32 = -1
+      ## Graphical window top edge in screen points; negative leaves placement to the system.
     vsync*: bool = true
       ## Graphical window waits for the display when true.
     humanSlots*: seq[int32]
@@ -73,6 +77,19 @@ type
       ## Seat to request when joining. -1 spectates until one is taken.
     joinToken*: string
       ## Seat continuity token from the lobby page, for the web client.
+    practice*: bool
+      ## Jev practice coach on the human seat: HUD cues plus a decision
+      ## trace under `practiceDir`.
+    practiceDir*: string
+      ## Base directory for practice traces. Empty picks the user data dir.
+    coachEndpoint*: string
+      ## Decision-model endpoint for the coach and pilots: `jev`, `d1`,
+      ## `local`, or a base URL. Empty picks Jev (TypeSafe).
+    coachModel*: string
+      ## Model name sent to the coach endpoint. Empty picks its default.
+    pilotSlots*: seq[int32]
+      ## Seats driven by the decision model through the human intent
+      ## path, recorded as `pilot` traces.
     playerName*: string
       ## Display name sent to the host when joining or hosting.
     seatLabels*: seq[string]
@@ -158,6 +175,18 @@ proc botSources*(
       inc slot
   if slot != count:
     fail("bot files do not fill every slot")
+
+proc parseWindowPos*(text, name: string): (int32, int32) =
+  ## Parses one `X,Y` screen position, such as `400,80`.
+  let separator = text.find(',')
+  if separator <= 0 or separator >= text.high:
+    fail(name & " must look like 400,80")
+  result = (
+    parseInt32(text[0 ..< separator], name),
+    parseInt32(text[separator + 1 .. ^1], name)
+  )
+  if result[0] < 0 or result[1] < 0:
+    fail(name & " must not be negative")
 
 proc parseWindowSize*(text, name: string): (int32, int32) =
   ## Parses one `WIDTHxHEIGHT` window size, such as `800x400`.
@@ -273,6 +302,14 @@ proc takeCommonFlag*(
     (options.windowWidth, options.windowHeight) =
       parseWindowSize(argument[13 .. ^1], "--windowSize")
     return true
+  if argument.startsWith("--windowPos:"):
+    (options.windowX, options.windowY) =
+      parseWindowPos(argument[12 .. ^1], "--windowPos")
+    return true
+  if argument.startsWith("--windowPos="):
+    (options.windowX, options.windowY) =
+      parseWindowPos(argument[12 .. ^1], "--windowPos")
+    return true
   if argument.startsWith("--vsync:"):
     options.vsync = parseVsyncFlag(argument[8 .. ^1])
     return true
@@ -317,6 +354,13 @@ proc takeCommonFlag*(
       parseWindowSize(
         arguments.argumentValue(index, "--windowSize"),
         "--windowSize"
+      )
+    result = true
+  of "--windowPos":
+    (options.windowX, options.windowY) =
+      parseWindowPos(
+        arguments.argumentValue(index, "--windowPos"),
+        "--windowPos"
       )
     result = true
   of "--vsync":

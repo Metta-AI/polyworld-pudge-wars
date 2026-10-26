@@ -1,0 +1,16 @@
+{
+  "all_original_inputs_unchanged": true,
+  "checked_files": {
+    "notes.md": true,
+    "session.json": true,
+    "input.ir.md": true,
+    "input.policy.txt": true,
+    "analysis/transcript.json": true,
+    "analysis/index.json": true,
+    "analysis/audio.ogg": true,
+    "recording.webm": true,
+    "interactions.jsonl": true,
+    "synthesis/13d8b670-9bb1-4792-a560-dbc7d7231a7d/report.md": true
+  },
+  "repository_baseline_unchanged": true
+}

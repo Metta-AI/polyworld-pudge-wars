@@ -8,7 +8,7 @@ import
     player, profiles, rtscameras
   ],
   content, maps, netproto, netclient, netsim, netpredict, sim, game, human,
-  keybinds, replays
+  keybinds, practice, replays
 
 when not defined(emscripten):
   import hosting
@@ -181,7 +181,7 @@ var
   alliesOpen = false
   menuOpen = false
   controlsOpen = false
-  chatVisible = true
+  chatVisible = false
   chatTab = ChatTabChat
   chatComposing = false
   chatDraft = ""
@@ -420,6 +420,9 @@ proc matchPhaseName(): string =
       return "dropped"
     of NcReconnecting:
       return "reconnecting"
+    of NcFinished:
+      if run.world.tick >= int32(run.replayPlayer.data.hashes.len):
+        return "over"
     of NcPlaying:
       discard
   if run.world.tick <= 0:
@@ -459,6 +462,8 @@ proc publishMatchState() =
   lastStateTick = tick
   echo "pw-state:", matchStateJson()
 
+proc butcherDisplayName*(index: int): string
+
 proc matchRecapJson(): string =
   let heroSlot = if humanControlActive(): heroIndex() else: -1
   let winner = run.world.winner
@@ -467,10 +472,12 @@ proc matchRecapJson(): string =
     headline =
       if run.world.pudges[heroSlot].team == winner: "victory" else: "defeat"
   var players = newJArray()
-  for pudge in run.world.pudges:
+  for index, pudge in run.world.pudges:
     players.add %*{
       "id": int(pudge.id),
+      "seat": index,
       "slot": pudge.slot,
+      "name": butcherDisplayName(index),
       "team": if pudge.team == WestTeam: "west" else: "east",
       "kills": int(pudge.kills),
       "deaths": int(pudge.deaths),
@@ -479,7 +486,7 @@ proc matchRecapJson(): string =
       "headshots": int(pudge.headshotCount),
       "denies": int(pudge.denyCount),
       "gold": int(pudge.gold),
-      "you": heroSlot >= 0 and pudge.slot == heroSlot
+      "you": index == heroSlot
     }
   $(%*{
     "winner": if winner == WestTeam: "west" else: "east",
@@ -532,8 +539,61 @@ proc hudLayoutFits(layoutSize: Vec2): bool =
 proc hudUiScale*(windowSize: Vec2): float32 =
   fitUiScale(windowSize, hudLayoutFits, HudScaleSteps)
 
+const
+  TouchTransportHeight = 76'f32
+    ## HUD units (CSS pixels in the browser). The 20-unit replay strip is
+    ## a mouse target, too small for a thumb. Touch gets two rows: a
+    ## full-width scrubber over ~40-pixel buttons.
+
+var
+  touchHud*: bool
+    ## The viewer is on a touch screen. Set once per frame.
+  touchHudApplied: bool
+
+when defined(emscripten):
+  proc emscripten_run_script_int(script: cstring): cint {.importc,
+      header: "<emscripten.h>".}
+
+  var coarsePointerCache = -1
+
+  proc coarsePointer(): bool =
+    ## A phone or tablet: the primary pointer is a finger.
+    if coarsePointerCache < 0:
+      coarsePointerCache = emscripten_run_script_int(
+        "+!!(window.matchMedia && matchMedia('(pointer: coarse)').matches)"
+      ).int
+    coarsePointerCache == 1
+else:
+  proc coarsePointer(): bool = false
+
+proc updateTouchHud*(window: Window) =
+  ## Touch screens cannot type into chat, so its panel only covers the
+  ## arena there. Hide it once; the chat toggle still brings it back.
+  touchHud = coarsePointer()
+  if touchHud and not touchHudApplied:
+    touchHudApplied = true
+    chatVisible = false
+
 proc hudUiScale*(window: Window): float32 =
   hudUiScale(vec2(window.size.x.float32, window.size.y.float32))
+
+var pointerProbeWindow*: Window
+  ## The game window, for touch-input.js's HUD hit test.
+
+proc mouseOverUi*(window: Window, mouse: Vec2): bool
+
+when defined(emscripten):
+  {.emit: "/*INCLUDESECTION*/\n#include <emscripten.h>".}
+
+  proc pwPointerOverUi(x, y: cdouble): cint {.exportc,
+      codegenDecl: "EMSCRIPTEN_KEEPALIVE $# $#$#".} =
+    ## True when a CSS-pixel point sits over a HUD widget, so a touch
+    ## drag there scrubs or drags the minimap instead of panning.
+    let window = pointerProbeWindow
+    if window == nil:
+      return 0
+    let px = vec2(x.float32, y.float32) * window.contentScale
+    cint(mouseOverUi(window, px / hudUiScale(window)))
 
 proc currentLayout*(window: Window): GameUiLayout =
   initGameUiLayout(
@@ -2176,7 +2236,7 @@ proc applyMenuChoice(id: int, transport: var Player) =
   of MenuLog:
     menuOpen = false
     controlsOpen = false
-    chatVisible = true
+    chatVisible = false
     chatTab = ChatTabChat
     alliesOpen = false
     transport.playing = true
@@ -2478,7 +2538,7 @@ proc handleChatInput(
   if window.buttonPressed[MouseLeft]:
     if chatVisible and onChat and input.contains(sk.mousePos):
       chatComposing = true
-      chatVisible = true
+      chatVisible = false
     elif chatComposing and (not chatVisible or not panel.contains(sk.mousePos)):
       chatComposing = false
   if window.buttonPressed[KeyEscape] and chatComposing:
@@ -2489,7 +2549,7 @@ proc handleChatInput(
       sendChatDraft()
       chatComposing = false
     else:
-      chatVisible = true
+      chatVisible = false
       chatTab = ChatTabChat
       chatComposing = true
     return
@@ -2978,6 +3038,130 @@ proc drawSpectatorBanner(
     CenterAlign
   )
 
+const
+  CoachPanelW = 300.0'f32
+  CoachPanelPad = 10.0'f32
+  CoachLineSmall = 15.0'f32
+  CoachLineHud = 19.0'f32
+  CoachUrgent = rgbx(236, 92, 70, 255)
+
+proc coachText(
+    sk: Silky, text: string, x: var float32, y: var float32,
+    width: float32, color: ColorRGBX, font: string, maxLines: int
+) =
+  ## Word-wrapped paragraph that advances `y` by what it actually used.
+  let line = if font == "Small": CoachLineSmall else: CoachLineHud
+  let used = sk.drawText(
+    font, text, vec2(x, y), color,
+    maxWidth = width, maxHeight = line * float32(maxLines),
+    wordWrap = true
+  )
+  y += max(line, min(used.y, line * float32(maxLines))) + 2
+
+proc coachPanelTop(layout: GameUiLayout): float32 =
+  ## Below the spectator banner row so the two never collide.
+  layout.margin + 28.0'f32
+
+proc drawPracticePanel*(sk: Silky, layout: GameUiLayout) =
+  ## Jev practice cue plate in the top-left corner: the next move, the
+  ## plan, and how your decisions have lined up with the coach so far.
+  ## P hides it; the trace keeps recording.
+  let p = hudPractice()
+  if p == nil or not p.enabled or not p.visible or debugMenuOpen:
+    return
+  if p.actor == "human" and not humanControlActive():
+    return
+  let
+    width = min(CoachPanelW, layout.size.x * 0.4'f32)
+    inner = width - 2 * CoachPanelPad
+    origin = vec2(layout.margin, coachPanelTop(layout))
+  var
+    x = origin.x + CoachPanelPad
+    y = origin.y + CoachPanelPad
+  # Measure first so the plate hugs its text; draw text after the plate.
+  var lines: seq[tuple[text: string, color: ColorRGBX, font: string, max: int]]
+  let cue = p.cue
+  let model =
+    if p.provider == "liquid": "D1"
+    elif p.provider == "local": "LOCAL D1"
+    else: "JEV"
+  var eyebrow = if p.actor == "pilot": "PILOT SEAT " & $(p.slot + 1)
+    else: "COACH"
+  if p.status == "connected" and cue.source == "jev":
+    eyebrow.add " / " & model & " " & $(cue.confidence div 10) & "%"
+  elif p.status == "connected":
+    eyebrow.add " / " & model & " LIVE"
+  elif p.status == "finished":
+    eyebrow.add " / MATCH COMPLETE"
+  elif p.status == "local":
+    eyebrow.add " / LOCAL"
+  elif p.status == "auth_error":
+    eyebrow.add " / KEY REJECTED"
+  elif p.status == "unavailable":
+    eyebrow.add " / RECONNECTING"
+  else:
+    eyebrow.add " / READY"
+  lines.add((eyebrow, HudGoldDim, "Small", 1))
+  if p.status == "finished":
+    let agree = agreementPercent(p.stats)
+    lines.add(("One more round?", HudText, "Hud", 1))
+    var recap = $p.stats.samples & " reads"
+    if agree >= 0:
+      recap.add ", " & $agree & "% with " & model
+    recap.add ", hooks landed " & $p.stats.hooksLanded & " of " &
+      $p.stats.hooksThrown & ", " & $p.stats.kills & " kills, " &
+      $p.stats.deaths & " deaths"
+    lines.add((recap, HudMuted, "Small", 3))
+    lines.add(("Press R on the end screen to rematch.", HudMuted, "Small", 1))
+  elif cue.source.len == 0:
+    lines.add(("Let's find an opening", HudText, "Hud", 1))
+    lines.add(("One suggestion at a time, as the fight unfolds.", HudMuted,
+      "Small", 2))
+  else:
+    let title = (if cue.tentative: "Consider: " else: "") & cue.option.title
+    lines.add((title, (if cue.option.urgent: CoachUrgent else: HudText),
+      "Hud", 2))
+    lines.add((cue.option.why, HudMuted, "Small", 3))
+    if cue.option.control.len > 0:
+      lines.add((cue.option.control, HudHotkey, "Small", 1))
+    let aim = coachAim(p, run.world)
+    if aim.targetId != 0 and aim.primary:
+      lines.add((aimAdvice(aim),
+        (if aim.ok: HudGold else: HudMuted), "Small", 2))
+    if p.plan.source.len > 0:
+      lines.add(("PLAN / " & p.plan.option.title, HudGoldDim, "Small", 2))
+    if p.stats.samples > 0:
+      let agree = agreementPercent(p.stats)
+      var tally = $p.stats.samples & " reads"
+      if agree >= 0:
+        tally.add ", " & $agree & "% with " & model
+      tally.add ", hooks landed " & $p.stats.hooksLanded & " of " &
+        $p.stats.hooksThrown
+      lines.add((tally, HudMuted, "Small", 2))
+    if p.hasLast and p.last.humanId.len > 0 and p.last.humanId != "none":
+      var verdict = (if p.actor == "pilot": "Last: it chose "
+        else: "Last: you chose ") & p.last.humanId.replace("_", " ")
+      if p.last.agreed == 1:
+        verdict.add ", with " & model
+      elif p.last.agreed == 0:
+        verdict.add ", " & model & " said " & p.last.jevAction.replace("_", " ")
+      lines.add((verdict, HudMuted, "Small", 2))
+  if p.status in ["local", "auth_error", "unavailable"]:
+    lines.add((p.hint, HudMuted, "Small", 3))
+  # Height from the same wrap pass drawText will make, by drawing
+  # transparently first.
+  var probe = y
+  let clear = rgbx(0, 0, 0, 0)
+  for item in lines:
+    sk.coachText(item.text, x, probe, inner, clear, item.font, item.max)
+  let height = probe - origin.y + CoachPanelPad - 2
+  sk.drawEtched(
+    origin, vec2(width, height), HudChipFill,
+    if cue.option.urgent and cue.source.len > 0: CoachUrgent else: HudGold
+  )
+  for item in lines:
+    sk.coachText(item.text, x, y, inner, item.color, item.font, item.max)
+
 proc drawUi*(
     sk: Silky,
     window: Window,
@@ -3069,6 +3253,7 @@ proc drawUi*(
   sk.drawChatPanel(window, layout)
   sk.drawKillStinger(layout)
   sk.drawKillFeed(layout)
+  sk.drawPracticePanel(layout)
   let index = heroIndex()
   if humanControlActive() and isOwnedInspect() and index >= 0 and
       run.world.pudges[index].state == Dying and not run.world.gameOver:

@@ -15,7 +15,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_DIR = ROOT / "examples/pudge_wars/players"
-POLICIES = ("base", "aggressive", "challenger", "denier", "patient", "sniper", "support", "jev")
+POLICIES = ("base", "rusher", "aggressive", "challenger", "denier", "patient", "sniper", "support", "jev")
 
 
 def write_json(path: Path, value: object) -> None:

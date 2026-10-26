@@ -21,9 +21,9 @@ const
     ## Format before seat labels: Setup ended at `pudges`.
   ReplayFormatVersion* = 5'u16
     ## v5: Setup.seatLabels — policy / lobby names for Observatory WASM
-    ##     nameplates. Physics are unchanged; game version stays 37.
+    ##     nameplates. Physics are unchanged; game version stayed 37.
     ##     Load still accepts v4 tapes (empty labels → P1..Pn).
-  ReplayGameVersion* = 37'u16
+  ReplayGameVersion* = 38'u16
     ## Physics the *viewer* runs. Observatory's static wasm must ship at
     ## this same number as the recording image (`pwcoworld`). Load and
     ## live handshake reject any other version; a rebuilt wasm cannot
@@ -31,6 +31,7 @@ const
     ## coworld version in lockstep. Live follow also sends this as
     ## `HelloMsg.simVersion` so host and client agree before the first
     ## tick. `NetProtocolVersion` is the wire framing, not this number.
+    ## v38: default walk 20% faster (`MovePerTick` 27_000 → 32_400).
     ## v37: Lightning throws fly and reel at double hook speed. Fire
     ##      trails come from the charged hook only (not walking/blink)
     ##      and light the thrower's team through fog.

@@ -80,10 +80,10 @@ block:
   for n in [2, 4, 6, 8, 10]:
     doAssert HookCooldownTicks mod n != 0,
       "hook cooldown must not lock to a bank on a " & $n & "-butcher board"
-  doAssert MovePerTick >= 21_600'i32,
-    "walk should be at least the prior 21_600 default"
-  doAssert MovePerTick <= 32_400'i32,
-    "walk should stay at or under 1.5× the prior 21_600 default"
+  doAssert MovePerTick >= 27_000'i32,
+    "walk should be at least the prior 27_000 default"
+  doAssert MovePerTick <= 40_500'i32,
+    "walk should stay at or under 1.5× the prior 27_000 default"
   doAssert TickRate == 32
   doAssert RespawnTicks == TickRate * 4
   doAssert BlinkCooldownTicks == TickRate * 8
@@ -99,7 +99,7 @@ block:
   doAssert RotSlowPercent == 40
   doAssert DrownPeriodTicks == TickRate div 2
   doAssert AttackTicks == 19
-  doAssert MovePerTick == 27_000'i32
+  doAssert MovePerTick == 32_400'i32
   doAssert BaseHookSpeed * TickRate == 48_000'i32 * 24'i32,
     "hook tiles-per-second should match the 24 Hz faster default"
   doAssert hookDamage(MaxUpgradeLevel) == hookDamage(MaxUpgradeLevel + 4)

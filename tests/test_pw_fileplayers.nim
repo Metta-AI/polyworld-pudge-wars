@@ -38,6 +38,29 @@ suite "game-hosted BASIC seats":
       expect FilePlayerError:
         discard openFilePlayers(document, 2, "file://" & root & "/failure")
 
+  test "a play-seats roster seats people only when humans are allowed":
+    let dir = root / "mixed"
+    createDir(dir / "1")
+    writeFile(dir / "1/file", "counter = 1\n")
+    let document = %*{"schema": "coworld-play-seats/1", "seats": [
+      {"slot": 0, "kind": "human"},
+      {"slot": 1, "kind": "policy", "file_uri": "file://" & dir & "/1/file",
+       "size_bytes": 12, "log_uri": "file://" & dir & "/1/log"}],
+      "player_status_uri": "file://" & dir & "/status"}
+    expect FilePlayerError:
+      discard openFilePlayers(document, 2, "file://" & dir & "/failure")
+    let players = openFilePlayers(document, 2, "file://" & dir & "/failure",
+      allowHumans = true)
+    check players.humanSlots == @[0]
+    # A human seat stages nothing: only the policy seat opens a log.
+    check fileExists(dir / "1/log") and not fileExists(dir / "0/log")
+    players.close()
+    expect FilePlayerError:
+      discard openFilePlayers(%*{"schema": "coworld-play-seats/1", "seats": [
+        {"slot": 0, "kind": "spectator"}, {"slot": 1, "kind": "human"}],
+        "player_status_uri": "file://" & dir & "/status"}, 2,
+        "file://" & dir & "/failure", allowHumans = true)
+
   test "extensionless files keep variables, strings, prints and annotations private":
     let f = fixture([
       "counter = counter + 1\nprint \"seat-zero-private\"\n" &

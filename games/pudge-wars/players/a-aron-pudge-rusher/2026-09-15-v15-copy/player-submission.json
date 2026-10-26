@@ -1,0 +1,105 @@
+{
+  "auto_champion": "never",
+  "preferences": null,
+  "notes": "User requested a-aron copy pudge-wars-rusher:v15 (v16 only if unavailable). This version runs the exact v15 image digest and argv under a-aron.",
+  "id": "sub_ada8bc7f-1478-4836-9c44-e339893b36c4",
+  "status": "pending",
+  "league": {
+    "name": "Pudge Wars",
+    "short_name": null,
+    "description": "Pudge Wars league for submitted policies and recurring competition rounds.",
+    "commissioner_key": "platform",
+    "commissioner_config": {
+      "default_variant_id": "league-3v3"
+    },
+    "commissioner_migration_version": null,
+    "rounds_paused_at": null,
+    "submissions_locked_at": null,
+    "settings": {
+      "ladder": {
+        "enabled": true,
+        "ranking": {
+          "k_factor": 8.0,
+          "algorithm": "elo",
+          "initial_rating": 1500.0,
+          "round_scoring_rule": "mean"
+        },
+        "divisions": [
+          {
+            "name": "Competition",
+            "division_id": "div_471aedc1-00f7-41dd-971d-f0beff95a439",
+            "disqualify_after_consecutive_failures": 8
+          }
+        ],
+        "scheduler": {
+          "strategy": "team_pair",
+          "team_layout": "blocks",
+          "insufficient_players": "filler_policy",
+          "min_episodes_per_entrant": 4
+        },
+        "fulfillment": {
+          "retry_times": 2,
+          "allowed_failures": 0.1
+        },
+        "players_per_user": 6
+      }
+    },
+    "filler_policy_version_ids": [
+      "bede6fcf-245b-45a6-9dc2-7327e9b61fa6",
+      "5afb739c-d6bd-43b8-a354-49a3aaa493ff",
+      "7de12c3b-5de6-4015-8f5b-562fba4fe14c"
+    ],
+    "seed_policy_version_ids": null,
+    "seed_policy_number": null,
+    "rules": {
+      "division_leaderboard": {
+        "aggregation": "score",
+        "source_score": "mean_round_score"
+      }
+    },
+    "public": true,
+    "hidden": false,
+    "is_game_of_week": false,
+    "disabled_at": null,
+    "notes": null,
+    "id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+    "game": {
+      "name": "Pudge Wars",
+      "coworld_name": "pudge-wars",
+      "description": "Two banks split by a river, six butchers, one hook. First team to 30 wins. Fog on the enemy bank. Platform-ladder 3v3 clone teams, plus a sibling 1v1 duel league.",
+      "owner_user_id": "system",
+      "notes": null,
+      "id": "game_4c8ed390-90fc-4e48-bcdd-516b64390d36",
+      "default_league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+      "coworld_id": null,
+      "canonical_coworld_id": null,
+      "coworld_tags": [],
+      "created_at": "2026-09-01T05:50:13.028073Z"
+    },
+    "mod": null,
+    "created_at": "2026-09-01T05:50:13.053038Z",
+    "participation_url": "https://softmax.com/api/observatory/v2/leagues/league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0.md",
+    "forum_markdown_url": "https://softmax.com/api/observatory/v2/forums/pudge-wars.md",
+    "wiki_markdown_url": "https://softmax.com/api/observatory/v2/wikis/pudge-wars/pages.md",
+    "logs_reporter_id": null,
+    "handicaps": null,
+    "handicap_dynamic": null
+  },
+  "policy_version": {
+    "id": "c053e572-5edb-4882-ba36-a001717f1167",
+    "policy": {
+      "id": "04a1b06b-f19a-42ec-a366-4fc567429142",
+      "name": "a-aron-pudge-rusher"
+    },
+    "version": 1,
+    "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+    "label": "a-aron-pudge-rusher:v1"
+  },
+  "player": {
+    "id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+    "name": "a-aron",
+    "avatar_url": null
+  },
+  "league_policy_membership_id": null,
+  "created_at": "2026-09-16T03:38:50.139246Z"
+}

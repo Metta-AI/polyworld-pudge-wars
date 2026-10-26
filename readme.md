@@ -57,7 +57,7 @@ Dependency order inside the game:
 | `hosting.nim` | Embedded HTTP + WebSocket lobby |
 | `netclient.nim` / `netpredict.nim` / `netproto.nim` | Follower: transport, client-side prediction + rollback, wire format |
 | `netsim.nim` | Dev network-condition simulator (latency/jitter/loss) — see [NETSIM.md](examples/pudge_wars/NETSIM.md) |
-| `players/*.bas` | Bot personas. `base.bas` documents the whole host API. |
+| `players/*.bas` | Bot personas. Base and Rusher use the retained v16 Python strategy ported to BASIC. |
 
 ## Requirements
 
@@ -103,6 +103,12 @@ ls ../polyworld_data   # characters, terrain, themes, sounds, ...
 
 Always from the repo root. First run compiles; later runs are faster.
 
+For a browser 2v2 with a **live Jev coach and enemy-position likelihood map**, put
+`TYPESAFE_API_KEY` in `.env.local`, run `./scripts/coach_demo.sh`, then open
+**http://127.0.0.1:8787**. You play the human seat with live action cues,
+strategy advice and estimates based only on visible sightings.
+[Demo details](coaching/README.md).
+
 To play alongside the Coworld Python policy with deliberate healing and
 fishing spacing, run `uv run scripts/play_policy.py`. You control P1, with
 Base v13 teammates on P2–P3 and Base v10 opponents on P4–P6. This runs the
@@ -129,7 +135,127 @@ nim c -d:release -d:headless -o:pwheadless examples/pudge_wars/pw.nim
 nim r examples/pudge_wars/pw.nim --replay /tmp/demo.pwr
 ```
 
+## Practice with a decision model, natively
+
+The desktop app and `./pw --human --practice` run a coach on your seat with
+no browser or server. A plate in the top-left corner shows the next move the
+model recommends, why, the key to use, and the plan for the next few
+exchanges. Low-health, hooked and incoming-hook cues are decided locally and
+always win. `P` hides the plate; the trace keeps recording.
+
+When the cue is a hook, the coach also marks **where to throw** in the
+world, every frame: a ring the size of your hook head at the point where a
+throw started now would meet the target, a stroke from where they stand to
+that point showing the lead, and a thin line from you. The ring is green
+when the throw would land (in range, clear line), ember when the line is
+blocked or they are out of reach, and faint when the coach has not called
+that target yet but your hook is ready and an enemy is open. The plate's
+line under the key reads the same marker: "Throw at the marker, 3 tiles
+ahead of them, lands in 0.9 s". The marker steps the real launch profile
+(windup, acceleration to the speed cap) against the target's motion, so a
+hooked enemy being reeled is led along the reel. Pilots aim at the same
+point.
+
+`--coach` picks the model behind the coach and the pilots:
+
+| `--coach` | Endpoint | Key | Default model |
+|---|---|---|---|
+| `jev` (default) | `https://api.typesafe.ai/v1/systemone` | `typesafe.key` or `TYPESAFE_API_KEY` | `jev-latest` (`TYPESAFE_MODEL`) |
+| `d1` | `https://api.liquid.ai/decisions/v1/systemone` | `liquid.key` or `LIQUID_API_KEY` | `d1` (`LIQUID_MODEL`) |
+| `local` | `http://127.0.0.1:8765/v1/systemone` | none | whatever the sidecar serves |
+| a URL | that base URL (loopback or one of the above hosts) | `COACH_API_KEY` | `--coach-model` |
+
+Key files live in `~/Library/Application Support/Pudge Wars/`, one line each
+(a repository `.env.local` also works from the checkout). Without a key the
+coach gives local cues only and says so. `--coach-model NAME` overrides the
+model name. The local sidecar is `d1/serve.py` in the Co-play Notes
+repository: the open `LiquidAI/d1-3B`, or a fine-tune of it, on this machine.
+
+### Pilots: the model plays a seat
+
+`--pilot[:SLOT]` (repeatable) seats the decision model on a butcher. Every
+second it is asked the same two Choice questions as the coach, and its answer
+is executed through the human intent queue: a hook option becomes a
+fine-aimed hook with a little lead, retreat and heal walk home, regroup
+closes toward a teammate, reposition and scout move along the river lip,
+dodge steps off a flying hook's line, upgrade spends the point. Without a
+model (or a confident answer) the pilot takes the first local cue, so it
+always plays. Pilots combine with `--human`, with each other, and with bots
+on the remaining seats; `--human` alone keeps you as the local seat, pilots
+alone spectate.
+
+```bash
+./pw --human --practice --coach local --pilot:1 --pilot:2   # the model as your teammates and coach
+./pw --pilot:0 --pilot:1 --pilot:2 --coach d1 --seconds 120  # headless: D1 vs the stock bots
+```
+
+Headless matches wait for each pilot's answer, so self-play is paced by the
+model, not the clock. The graphical client never blocks a frame: a pilot acts
+when its answer lands.
+
+### Traces
+
+Every coached or piloted seat writes a decision trace under
+`~/Library/Application Support/Pudge Wars/practice/<timestamp>/`
+(`--practice-dir DIR` moves it; pilots write `pilot-<slot>/` inside):
+
+| File | What it holds |
+|---|---|
+| `match.json` | Wall-clock start (`started_ms`), seat, actor (`human` or `pilot`), model, endpoint, map seed. |
+| `samples.jsonl` | One record per one-second window: `at_ms`, the fog-clipped observation, the exact request sent (minus the observation) so the prompt can be re-rendered byte for byte, the eligible options, the model's choice with its probabilities and latency, the cue shown or executed, and the intent the seat actually issued. |
+| `intents.jsonl` | Every drained intent for the seat with its tick, `at_ms` and engine acceptance. |
+| `summary.json` | Reads, agreement with the model, hooks thrown and landed, kills, deaths, requests, failures, and the match result. |
+| `replay.pwr` | The exact action tape for the whole match, so any later observation encoding can be re-simulated from it. |
+
+Human intents come straight from the sim's drained queue, so a sample's
+`human.id` is an exact decision, not an inference from video. Hooks and
+rescues close a window at once; a walk-only window closes with its last walk
+class (retreat, heal, regroup, scout, reposition); a quiet window closes as
+`none`. For a pilot, `cue` is the decision it executed and agreement compares
+that with the model's answer. The wall-clock stamps let Co-play Notes line
+these windows up with spoken or typed coaching and turn a correction into a
+training label; `d1/` in that repository builds the dataset, trains D1 and
+serves it back to `--coach local`.
+
+Headless contracts: `nim r -d:headless tests/test_pw_practice.nim`.
+
+## Mac desktop app
+
+Build a self-contained app with the native game, assets, and BASIC policies:
+
+```bash
+examples/pudge_wars/macos/build_app.sh
+open "tmp/desktop/Pudge Wars.app"
+```
+
+Move the app into Applications or onto your Desktop. Opening it starts a 3v3
+match with you on West and five BASIC bots, at fair difficulty, with the
+practice coach on (see above for the key file). Extra flags pass through:
+`open "tmp/desktop/Pudge Wars.app" --args --coach local --pilot:1`. It works offline
+and does not need this checkout after building. Logs are saved to
+`~/Library/Logs/Pudge Wars/game.log`.
+
 ## Controls
+
+Live matches automatically run at **87.5% speed when a human plays**: 28
+simulation ticks per real second instead of 32. Everyone in that match shares
+the slower clock, including bots. Hooks, movement, cooldowns and the match
+clock all slow together, giving you about 14% more reaction time. The pace stays
+slow through disconnects until the next match. Bot-only matches and normal
+replay playback retain their existing speed. Match limits are simulation time,
+so a human match's wall-clock time limit is 8/7 of the displayed duration.
+
+Native hosts and browser clients must both be rebuilt for this change (network
+protocol 14). `host_party.sh` rebuilds the browser bundle when `emcc` is available.
+
+For choppy native graphics on a laptop, try a smaller window with dynamic
+shadows disabled. This changes rendering cost separately from the game clock:
+
+```sh
+SUN_SHADOWS=0 ./pw --human --windowSize 1280x800
+# Or host the same lighter local game for friends:
+SUN_SHADOWS=0 examples/pudge_wars/host_party.sh --human --name Aaron --windowSize 1280x800
+```
 
 The default players use the customized red and blue butcher. Preview and
 compare all nine motion clips independently with `./char_viewer`; build and
@@ -195,6 +321,7 @@ Tests (headless, no window):
 nim r tests/test_pw_sim.nim
 nim r tests/test_pw_predict.nim     # client prediction + render smoothing
 nim r tests/test_pw_netsim.nim      # latency/jitter/loss simulator
+nim r tests/test_pw_pacing.nim     # human clock, prediction and reconnect pace
 nim c -d:release -r tests/bench_pw_netlag.nim   # prediction quality vs latency
 ```
 

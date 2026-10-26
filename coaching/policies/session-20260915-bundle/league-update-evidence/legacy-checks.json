@@ -1,0 +1,10 @@
+{
+  "checks": 42,
+  "passed": 39,
+  "changed_expectations": [
+    "test_actual_shop_on_both_banks_even_with_visible_enemy",
+    "test_only_one_bot_answers_a_rally",
+    "test_spacing_one_collector_and_separated_targets"
+  ],
+  "explanation": "Retained E06b CurveHook replaces normal shop, rally and fishing walk targets while a hook is active. These legacy v14 assertions conflict with the requested contract; all 1004 complete-package semantic and lifecycle probes pass. No test source or retained policy changed."
+}

@@ -198,16 +198,20 @@ block rimWallsAndTrees:
   doAssert eastLip.impassable
   doAssert westWoods.impassable
   doAssert not isWalkable(WestLayer, PlayWestMin - 4, 64)
-  var trees = 0
+  var
+    westTrees = 0
+    eastTrees = 0
   for z in 0 ..< GridTiles:
     for x in 0 ..< GridTiles:
       if riverTile(x):
         continue
-      let layer =
-        if x < RiverCenterX: WestLayer else: EastLayer
-      if layers[layer].tiles[z * GridTiles + x].kind == TreeTile:
-        inc trees
-  doAssert trees >= 400, "the highland must carry a visible tree line"
+      if x < RiverCenterX:
+        if layers[WestLayer].tiles[z * GridTiles + x].kind == TreeTile:
+          inc westTrees
+      elif layers[EastLayer].tiles[z * GridTiles + x].kind == TreeTile:
+        inc eastTrees
+  doAssert westTrees >= 200, "the west highland must carry a visible tree line"
+  doAssert eastTrees >= 200, "the east highland must carry a visible tree line"
   doAssert rimDist(PlayWestMin, 64) <= 0
   doAssert rimDist(PlayWestMin - 1, 64) == 1
   doAssert rimDist(PlayWestMin - 4, 64) == 4

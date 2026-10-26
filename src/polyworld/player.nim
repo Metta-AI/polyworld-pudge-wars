@@ -43,6 +43,9 @@ type Player* = object
     ## Catch up to this tick at max speed. -1 means none.
   accumulator*: float32
   tickRate: int32
+  scrubbing*: bool
+    ## A press that began on the touch scrubber keeps seeking until it
+    ## lifts, even if the finger drifts off the track.
 
 proc speed*(player: Player): int32 =
   ## Returns the selected realtime multiplier.
@@ -357,6 +360,178 @@ proc drawTransport*(
     hAlign = RightAlign,
     vAlign = MiddleAlign
   )
+
+const
+  TouchJumpSeconds = 10'i32
+  TouchPad = 6.0'f32
+  TouchScrubRowH = 26.0'f32
+  TouchTrackH = 6.0'f32
+  TouchThumbSize = 18.0'f32
+  TouchTimeW = 48.0'f32
+  TouchButtonGap = 6.0'f32
+  TouchTrackBack = rgbx(48, 54, 68, 255)
+  TouchRecorded = rgbx(92, 62, 122, 255)
+  TouchPlayed = rgbx(96, 132, 190, 255)
+  TouchThumb = rgbx(235, 216, 154, 255)
+
+proc addPlayerClock(s: var string, ticks, tickRate: int32) =
+  ## Appends m:ss for a tick count.
+  let seconds = int(max(ticks, 0) div max(tickRate, 1))
+  s.addHudInt(seconds div 60)
+  s.add ':'
+  s.addPad2(seconds mod 60)
+
+proc drawTouchTransport*(
+    player: var Player,
+    sk: Silky,
+    window: Window,
+    panel: GameUiPanel,
+    actionCam: var ActionCam,
+    followSelection: var bool
+) =
+  ## Thumb-sized replay bar for touch screens: a full-width scrubber row
+  ## with elapsed and total time over one row of large buttons. Seeking
+  ## in ten-second jumps replaces single-tick steps, which no finger can
+  ## aim, and one speed button cycles the four multipliers. Sized for a
+  ## HUD unit of one CSS pixel; it fits a 320-unit-wide portrait phone.
+  if panel.size.y <= 0:
+    return
+  sk.drawRibbon(panel)
+  let
+    rate = max(player.tickRate, 1)
+    endTick = max(player.timelineEnd, 1)
+    trackX = TouchPad + TouchTimeW
+    trackW = max(panel.size.x - (TouchPad + TouchTimeW) * 2, 80)
+    rowY = TouchPad * 0.5'f32
+    trackOrigin = panel.origin + vec2(
+      trackX, rowY + (TouchScrubRowH - TouchTrackH) * 0.5'f32
+    )
+    trackSize = vec2(trackW, TouchTrackH)
+    scrubHit = GameUiPanel(
+      origin: panel.origin + vec2(trackX - TouchThumbSize * 0.5'f32, 0),
+      size: vec2(trackW + TouchThumbSize, TouchScrubRowH + TouchPad)
+    )
+
+  # Scrubber: recorded tape behind the played span, a thumb on top.
+  sk.drawRect(trackOrigin, trackSize, TouchTrackBack)
+  let recordedW = trackW * clamp(
+    player.recordedTicks.float32 / endTick.float32, 0'f32, 1'f32)
+  sk.drawRect(trackOrigin, vec2(recordedW, TouchTrackH), TouchRecorded)
+  let playedRatio = clamp(player.tick.float32 / endTick.float32, 0'f32, 1'f32)
+  sk.drawRect(trackOrigin, vec2(trackW * playedRatio, TouchTrackH), TouchPlayed)
+  let thumbCenter = trackOrigin + vec2(
+    trackW * playedRatio, TouchTrackH * 0.5'f32)
+  sk.drawRect(
+    thumbCenter - vec2(TouchThumbSize * 0.5'f32),
+    vec2(TouchThumbSize),
+    TouchThumb
+  )
+  if window.buttonPressed[MouseLeft] and scrubHit.contains(sk.mousePos):
+    player.scrubbing = true
+  if not window.buttonDown[MouseLeft]:
+    player.scrubbing = false
+  if player.scrubbing:
+    let ratio = clamp((sk.mousePos.x - trackOrigin.x) / trackW, 0'f32, 1'f32)
+    # Keep the play state: a paused scrub lands paused, a playing one
+    # resumes from where the finger lifts.
+    player.seekTo(int32(ratio * player.timelineEnd.float32), play = false)
+
+  for side in 0 .. 1:
+    hudScratch.setLen(0)
+    if side == 0:
+      hudScratch.addPlayerClock(player.tick, rate)
+    else:
+      hudScratch.addPlayerClock(player.timelineEnd, rate)
+    discard sk.drawText(
+      "Hud",
+      hudScratch,
+      panel.origin + vec2(
+        if side == 0: TouchPad else: panel.size.x - TouchPad - TouchTimeW,
+        rowY
+      ),
+      rgbx(190, 198, 214, 255),
+      maxWidth = TouchTimeW - 8,
+      maxHeight = TouchScrubRowH,
+      hAlign = (if side == 0: LeftAlign else: RightAlign),
+      vAlign = MiddleAlign
+    )
+
+  # Button row. Playback sits centered; speed and camera sit right.
+  # A narrow window slides playback left instead of overlapping. Loop
+  # stays a desktop control so the row fits a portrait phone.
+  let
+    buttonY = rowY + TouchScrubRowH + TouchPad * 0.5'f32
+    buttonSize = max(panel.size.y - buttonY - TouchPad * 0.5'f32, 24)
+    stride = buttonSize + TouchButtonGap
+    playbackW = stride * 5 - TouchButtonGap
+    optionsW = stride * 2 - TouchButtonGap
+    optionsX = panel.size.x - TouchPad - optionsW
+    playbackX =
+      if (panel.size.x - playbackW) * 0.5'f32 + playbackW + TouchButtonGap <=
+          optionsX:
+        (panel.size.x - playbackW) * 0.5'f32
+      else:
+        TouchPad
+  proc button(x: float32, index: int): GameUiPanel =
+    GameUiPanel(
+      origin: panel.origin + vec2(x + stride * index.float32, buttonY),
+      size: vec2(buttonSize)
+    )
+  proc glyph(box: GameUiPanel, name: string, color = GlyphColor) =
+    if name notin sk.atlas.entries:
+      return
+    let
+      uv = sk.atlas.entries[name]
+      pad = buttonSize * 0.18'f32
+    sk.drawQuad(
+      box.origin + vec2(pad),
+      vec2(buttonSize - pad * 2),
+      vec2(uv.x.float32, uv.y.float32),
+      vec2(uv.width.float32, uv.height.float32),
+      color
+    )
+  proc label(box: GameUiPanel, text: string) =
+    discard sk.drawText(
+      "Hud", text, box.origin, GlyphColor,
+      maxWidth = box.size.x, maxHeight = box.size.y,
+      hAlign = CenterAlign, vAlign = MiddleAlign
+    )
+  let scrubbing = player.scrubbing
+  proc tapped(box: GameUiPanel): bool =
+    not scrubbing and window.buttonPressed[MouseLeft] and
+      box.contains(sk.mousePos)
+
+  let
+    playing = player.playing or player.targetTick >= 0
+    jump = TouchJumpSeconds * rate
+    startBtn = button(playbackX, 0)
+    backBtn = button(playbackX, 1)
+    playBtn = button(playbackX, 2)
+    fwdBtn = button(playbackX, 3)
+    endBtn = button(playbackX, 4)
+    speedBtn = button(optionsX, 0)
+    camBtn = button(optionsX, 1)
+  glyph(startBtn, "skip_to_start")
+  label(backBtn, "-" & $TouchJumpSeconds & "s")
+  glyph(playBtn, if playing: "pause" else: "play", GlyphActive)
+  label(fwdBtn, "+" & $TouchJumpSeconds & "s")
+  glyph(endBtn, "skip_to_end")
+  glyph(speedBtn, SpeedIcons[player.speedIndex], GlyphActive)
+  glyph(camBtn, "action_cam", if actionCam.enabled: GlyphActive else: GlyphColor)
+  if tapped(startBtn):
+    player.skipToStart()
+  elif tapped(backBtn):
+    player.seekTo(player.tick - jump, play = false)
+  elif tapped(playBtn):
+    player.togglePlay()
+  elif tapped(fwdBtn):
+    player.seekTo(player.tick + jump, play = false)
+  elif tapped(endBtn):
+    player.skipToEnd()
+  elif tapped(speedBtn):
+    player.setSpeed((player.speedIndex + 1) mod PlayerSpeeds.len)
+  elif tapped(camBtn):
+    actionCam.toggle(followSelection)
 
 proc handleKey*(player: var Player, button: Button) =
   ## Applies the shared space-to-pause shortcut.

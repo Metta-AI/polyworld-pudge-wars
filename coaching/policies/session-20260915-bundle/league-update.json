@@ -1,0 +1,63 @@
+{
+  "recorded_at": "2026-09-16T02:03:16.320688+00:00",
+  "policy": "pudge-wars-rusher:v16",
+  "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+  "candidate": "E06b",
+  "league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+  "authorization": {
+    "verbatim": "update policy on league",
+    "interpretation": "Publish the retained combined coaching policy discussed immediately before this request to its 3v3 league."
+  },
+  "evidence": {
+    "native_screen_games": 48,
+    "native_screen_wins": 38,
+    "native_confirmation_games": 96,
+    "native_confirmation_wins": 67,
+    "native_confirmation_mean_margin": 7.145833333333333,
+    "native_seed_bootstrap_95": [
+      4.947916666666667,
+      9.197916666666666
+    ],
+    "native_checked_decisions": 6781230,
+    "exact_image_semantic_checks": 1004,
+    "hosted_competitive_effect": "unmeasured",
+    "hosted_smoke_request": "xreq_89c3f929-0f24-4311-8b70-b27cefa9cb3b",
+    "hosted_smoke_purpose": "runtime only: ten 960-tick matches against immutable Richard v7",
+    "statistical_limits": "Native confirmation concerns synchronous head-to-head against v14. No hosted A/B win-rate p-value or broad-field guardrail verdict exists; short smoke results will not be used as competitive evidence."
+  },
+  "workflow": "User-directed league update after disclosure of native-only evidence. The research skill default of obtaining a new hosted verdict before proposing promotion is not being presented as completed. Current explicit publication instruction supplies authorization; deployment is gated on exact-image semantic checks and clean hosted startup/play/exit. No research result or acceptance threshold is changed.",
+  "rollback": {
+    "policy": "pudge-wars-rusher:v14",
+    "policy_version_id": "41212e9a-6383-40f8-b44e-f4ceb64ef9c9",
+    "membership_id": "lpm_a897a072-a07b-4aef-90fe-ef6e256640b5",
+    "method": "POST /v2/league-policy-memberships/lpm_a897a072-a07b-4aef-90fe-ef6e256640b5/champion, followed by independent GET readback; v14 image and membership retained. API call can be made immediately if rollback is requested; completion depends on service availability."
+  },
+  "submission_mode": "auto_champion=never, then explicit one-time champion promotion after competing status",
+  "state": "competing; active champion",
+  "submission_id": "sub_5008e920-16db-42cc-b073-91bf584ce914",
+  "membership_id": "lpm_9ea237d9-25d6-4578-a8a3-7a3620c36a25",
+  "verified_at": "2026-09-16T02:05:57.776453+00:00",
+  "duel_champion_unchanged": true,
+  "policy_sha256": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea",
+  "semantic_ir_sha256": "75dab867395bc437d4a9e0e92d38e8312db362f2cb96248796d22593d905af37",
+  "semantic_ir": "retained.ir.md",
+  "symbolic_policy": "retained.policy.py",
+  "image_digest": "sha256:d8413008c797bd6bb206d0aec735b8b2e12f640b3623d5088e5cd325b75db4d8",
+  "session_id": "2026-09-15t21-41-17-535zc09870",
+  "session_path": "/Users/aaln/Documents/Policy Loops/sessions/2026-09-15t21-41-17-535zc09870",
+  "deployment_export": "/Users/aaln/Documents/Policy Loops/sessions/2026-09-15t21-41-17-535zc09870/autoresearch-20260915-all-coaching/league-update-v16",
+  "research_results": "results.json",
+  "hosted_runtime_report": "league-update-evidence/runtime-smoke-inspection.json",
+  "original_sources_preserved": {
+    "notes.md": true,
+    "session.json": true,
+    "input.ir.md": true,
+    "input.policy.txt": true,
+    "analysis/transcript.json": true,
+    "analysis/index.json": true,
+    "analysis/audio.ogg": true,
+    "recording.webm": true,
+    "interactions.jsonl": true,
+    "synthesis/13d8b670-9bb1-4792-a560-dbc7d7231a7d/report.md": true
+  }
+}

@@ -109,12 +109,21 @@ proc validateBaseUrl(baseUrl: string) {.raises: [LlmError].} =
   if url.username.len > 0 or url.password.len > 0 or
     scheme notin ["http", "https"]:
       raise newException(LlmError, "Invalid host LLM base URL")
-  if not local and not (hostname == "openrouter.ai" and scheme == "https" and
-    url.port in ["", "443"] and url.path.strip(leading = false, trailing = true,
-      chars = {'/'}) == "/api"):
-      raise newException(LlmError,
-        "LLM base URL must be https://openrouter.ai/api or localhost, " &
-        "127.0.0.1, or [::1]")
+  let
+    openRouter = hostname == "openrouter.ai" and scheme == "https" and
+      url.port in ["", "443"] and url.path.strip(leading = false,
+        trailing = true, chars = {'/'}) == "/api"
+    typeSafe = hostname == "api.typesafe.ai" and scheme == "https" and
+      url.port in ["", "443"] and url.path.strip(leading = false,
+        trailing = true, chars = {'/'}).len == 0
+    liquid = hostname == "api.liquid.ai" and scheme == "https" and
+      url.port in ["", "443"] and url.path.strip(leading = false,
+        trailing = true, chars = {'/'}) == "/decisions"
+  if not local and not openRouter and not typeSafe and not liquid:
+    raise newException(LlmError,
+      "LLM base URL must be https://openrouter.ai/api, " &
+      "https://api.typesafe.ai, https://api.liquid.ai/decisions, " &
+      "or localhost, 127.0.0.1, or [::1]")
   if url.port.len > 0:
     try:
       if parseInt(url.port) notin 1 .. 65535:

@@ -2445,16 +2445,23 @@ proc chooseTree(x, z: int): TreeChoice =
       )
     )
 
+iterator treeTileSites(): tuple[layer: QuadLayer, x, z: int, tile: Tile] =
+  ## Yields every planted tree. Banks live on separate layers, so a
+  ## walk of only the first layer would drop the east woods.
+  for layer in layers:
+    for z in 0 ..< layer.depth:
+      for x in 0 ..< layer.width:
+        let tile = layer.tiles[z * layer.width + x]
+        if tile.exists and tile.kind == TreeTile:
+          yield (layer, x, z, tile)
+
 proc treeMeshFloatCount(): int =
   ## Counts the exact float storage needed by the baked tree mesh.
-  if treeModels.len > 0 and layers.len > 0:
-    let ground = layers[0]
-    for z in 0 ..< ground.depth:
-      for x in 0 ..< ground.width:
-        let tile = ground.tiles[z * ground.width + x]
-        if tile.exists and tile.kind == TreeTile:
-          # 8 floats per source vertex become 9 (uv gains the layer).
-          result += treeModels[chooseTree(x, z).model].vertices.len div 8 * 9
+  if treeModels.len == 0:
+    return
+  for site in treeTileSites():
+    # 8 floats per source vertex become 9 (uv gains the layer).
+    result += treeModels[chooseTree(site.x, site.z).model].vertices.len div 8 * 9
 
 proc propMeshFloatCount(): int =
   ## Counts the exact float storage needed by the baked prop mesh.
@@ -2592,31 +2599,26 @@ proc rebuildTexturedBatches() =
     )
 
 proc bakeTreeTiles(writeIndex: var int) =
-  ## Tree tiles carry their tree in the tile data.
-  if treeModels.len == 0 or layers.len == 0:
+  ## Tree tiles carry their tree in the tile data on every layer.
+  if treeModels.len == 0:
     return
-  let ground = layers[0]
-  for z in 0 ..< ground.depth:
-    for x in 0 ..< ground.width:
-      let t = ground.tiles[z * ground.width + x]
-      if not t.exists or t.kind != TreeTile:
-        continue
-      let
-        h = t.tops.unpack
-        choice = chooseTree(x, z)
-      bakeTree(
-        treeModels[choice.model],
-        choice.textureLayer,
-        vec3(
-          (ground.originX + x).float32 - HalfGrid + 0.5,
-          (h[0] + h[1] + h[2] + h[3]) / 4.0,
-          (ground.originZ + z).float32 - HalfGrid + 0.5
-        ),
-        choice.rotation,
-        choice.scale,
-        choice.widthScale,
-        writeIndex
-      )
+  for site in treeTileSites():
+    let
+      h = site.tile.tops.unpack
+      choice = chooseTree(site.x, site.z)
+    bakeTree(
+      treeModels[choice.model],
+      choice.textureLayer,
+      vec3(
+        (site.layer.originX + site.x).float32 - HalfGrid + 0.5,
+        (h[0] + h[1] + h[2] + h[3]) / 4.0,
+        (site.layer.originZ + site.z).float32 - HalfGrid + 0.5
+      ),
+      choice.rotation,
+      choice.scale,
+      choice.widthScale,
+      writeIndex
+    )
 
 proc rebuildTreeMesh() =
   ## Bakes trees, grass, rocks, and props into their colored or textured lists.

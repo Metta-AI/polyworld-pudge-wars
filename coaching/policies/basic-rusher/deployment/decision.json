@@ -1,0 +1,36 @@
+{
+  "authorization": "deploy new policy",
+  "authorization_context": "User requested deployment after seeing local confirmation and broad-field results for this exact BASIC port.",
+  "recorded_at": "2026-10-14T23:39:17.148646+00:00",
+  "league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+  "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+  "policy": {
+    "id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+    "name": "pudge-basic-base",
+    "version": 2,
+    "pools": null,
+    "submit_error": null
+  },
+  "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511",
+  "local_evidence": {
+    "games": 96,
+    "wins": 96,
+    "mean_margin": 23.895833333333332,
+    "seed_bootstrap_95": [
+      23.3125,
+      24.489583333333332
+    ],
+    "all_replays_verified": true
+  },
+  "broad_field": {
+    "games": 48,
+    "wins": 48,
+    "opponents": 6
+  },
+  "hosted_strength": "unmeasured; deployment based on disclosed local evidence",
+  "rollback_membership": "lpm_23d2f18c-6133-4139-b5fd-cac3ed7afa52",
+  "rollback_policy": "pudge-basic-base:v1",
+  "rollback_method": "POST /v2/league-policy-memberships/lpm_23d2f18c-6133-4139-b5fd-cac3ed7afa52/champion, then independent readback",
+  "auto_champion": "always",
+  "smoke_request": "xreq_0f99543d-3738-46ad-934e-ffa3355c1c07"
+}

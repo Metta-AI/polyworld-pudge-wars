@@ -1,0 +1,11 @@
+--- duels/coaching-20260915-scrum/fountain/baseline.py	2026-09-15 16:47:58
++++ duels/coaching-20260915-scrum/fountain/candidate.py	2026-09-15 17:01:31
+@@ -255,6 +255,8 @@
+             if length < 0.01:
+                 return False
+             end = [start[i] + (aim[i] - start[i]) * min(1.0, reach / length) for i in range(2)]
++            if rescue_id == 0 and segment_distance(start, end, [64.5, 64.5]) <= 3.5:
++                return False
+             for ally in allies:
+                 if ally["id"] == rescue_id or ally["shield"] > 9:
+                     continue

@@ -1,0 +1,245 @@
+{
+  "id": "xreq_0f99543d-3738-46ad-934e-ffa3355c1c07",
+  "requester_user_id": "h0835grji1zfy5wakd4i56kn",
+  "requester": "aaronlan95@gmail.com",
+  "coworld_id": "cow_f1a7b216-46e0-487d-bf06-03a54e813210",
+  "coworld_name": "pudge-wars-basic",
+  "coworld_version": "0.1.1",
+  "variant_id": "league-3v3",
+  "title": "BASIC v16 transfer deployment smoke",
+  "description": null,
+  "status": "completed",
+  "episode_count": 1,
+  "pending_count": 0,
+  "submitted_count": 0,
+  "running_count": 0,
+  "completed_count": 1,
+  "failed_count": 0,
+  "error": null,
+  "created_at": "2026-10-14T23:38:40.068603Z",
+  "started_at": "2026-10-14T23:38:41.118774Z",
+  "completed_at": "2026-10-14T23:39:09.376180Z",
+  "episodes": [
+    {
+      "id": "ereq_34dc7f33-169f-41f1-b00d-601f1cf14769",
+      "requester_user_id": "h0835grji1zfy5wakd4i56kn",
+      "round_id": null,
+      "mod_name": null,
+      "env_config_name": null,
+      "coworld_id": "cow_f1a7b216-46e0-487d-bf06-03a54e813210",
+      "seed": null,
+      "max_steps": null,
+      "status": "completed",
+      "policy_version_ids": [
+        "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+        "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+        "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+        "695e980a-5d8d-43cd-b852-5631ce314431",
+        "695e980a-5d8d-43cd-b852-5631ce314431",
+        "695e980a-5d8d-43cd-b852-5631ce314431"
+      ],
+      "participants": [
+        {
+          "position": 0,
+          "kind": "policy",
+          "policy_version_id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+          "policy_id": "cf80b83f-eb4f-4e3b-bc83-4c0068d2e49b",
+          "policy_name": "pudge-basic-base",
+          "version": 2,
+          "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+          "player_name": "A-aron",
+          "is_filler": false,
+          "owner_name": "Aaron L",
+          "is_seed": false,
+          "label": "pudge-basic-base:v2"
+        },
+        {
+          "position": 1,
+          "kind": "policy",
+          "policy_version_id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+          "policy_id": "cf80b83f-eb4f-4e3b-bc83-4c0068d2e49b",
+          "policy_name": "pudge-basic-base",
+          "version": 2,
+          "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+          "player_name": "A-aron",
+          "is_filler": false,
+          "owner_name": "Aaron L",
+          "is_seed": false,
+          "label": "pudge-basic-base:v2"
+        },
+        {
+          "position": 2,
+          "kind": "policy",
+          "policy_version_id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+          "policy_id": "cf80b83f-eb4f-4e3b-bc83-4c0068d2e49b",
+          "policy_name": "pudge-basic-base",
+          "version": 2,
+          "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+          "player_name": "A-aron",
+          "is_filler": false,
+          "owner_name": "Aaron L",
+          "is_seed": false,
+          "label": "pudge-basic-base:v2"
+        },
+        {
+          "position": 3,
+          "kind": "policy",
+          "policy_version_id": "695e980a-5d8d-43cd-b852-5631ce314431",
+          "policy_id": "cf80b83f-eb4f-4e3b-bc83-4c0068d2e49b",
+          "policy_name": "pudge-basic-base",
+          "version": 1,
+          "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+          "player_name": "A-aron",
+          "is_filler": false,
+          "owner_name": "Aaron L",
+          "is_seed": false,
+          "label": "pudge-basic-base:v1"
+        },
+        {
+          "position": 4,
+          "kind": "policy",
+          "policy_version_id": "695e980a-5d8d-43cd-b852-5631ce314431",
+          "policy_id": "cf80b83f-eb4f-4e3b-bc83-4c0068d2e49b",
+          "policy_name": "pudge-basic-base",
+          "version": 1,
+          "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+          "player_name": "A-aron",
+          "is_filler": false,
+          "owner_name": "Aaron L",
+          "is_seed": false,
+          "label": "pudge-basic-base:v1"
+        },
+        {
+          "position": 5,
+          "kind": "policy",
+          "policy_version_id": "695e980a-5d8d-43cd-b852-5631ce314431",
+          "policy_id": "cf80b83f-eb4f-4e3b-bc83-4c0068d2e49b",
+          "policy_name": "pudge-basic-base",
+          "version": 1,
+          "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+          "player_name": "A-aron",
+          "is_filler": false,
+          "owner_name": "Aaron L",
+          "is_seed": false,
+          "label": "pudge-basic-base:v1"
+        }
+      ],
+      "job_id": "95edcb45-5284-4eaa-91b4-1a9e9caeb170",
+      "episode_id": "9c17e2b3-2346-458c-8c8b-3b0f5c0e3dbb",
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/95edcb45-5284-4eaa-91b4-1a9e9caeb170.replay",
+      "live_url": null,
+      "error_type": null,
+      "error": null,
+      "failed_policy_index": null,
+      "failed_agent_index": null,
+      "scores": [
+        {
+          "policy_version_id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+          "score": 1.0
+        },
+        {
+          "policy_version_id": "695e980a-5d8d-43cd-b852-5631ce314431",
+          "score": 0.0
+        }
+      ],
+      "created_at": "2026-10-14T23:38:40.092670Z",
+      "game_config": {
+        "fog": true,
+        "seed": 1014701,
+        "players": [
+          {
+            "name": "Player 1"
+          },
+          {
+            "name": "Player 2"
+          },
+          {
+            "name": "Player 3"
+          },
+          {
+            "name": "Player 4"
+          },
+          {
+            "name": "Player 5"
+          },
+          {
+            "name": "Player 6"
+          }
+        ],
+        "kill_goal": 30,
+        "max_ticks": 2048,
+        "wait_for_llm": true
+      },
+      "coworld_name": "pudge-wars-basic",
+      "coworld_version": "0.1.1",
+      "variant_name": "League 3v3",
+      "job_index": 0,
+      "participant_scores": [
+        {
+          "position": 0,
+          "score": 1.0
+        },
+        {
+          "position": 1,
+          "score": 1.0
+        },
+        {
+          "position": 2,
+          "score": 1.0
+        },
+        {
+          "position": 3,
+          "score": 0.0
+        },
+        {
+          "position": 4,
+          "score": 0.0
+        },
+        {
+          "position": 5,
+          "score": 0.0
+        }
+      ],
+      "dispatched_at": "2026-10-14T23:38:41.097484Z",
+      "running_at": "2026-10-14T23:39:06.281967Z",
+      "completed_at": "2026-10-14T23:39:09.297827Z",
+      "cost_usd": 0.005823,
+      "experience_request_id": "xreq_0f99543d-3738-46ad-934e-ffa3355c1c07",
+      "llm_spend_limit_rejections": null
+    }
+  ],
+  "can_cancel": true,
+  "requested": {
+    "title": "BASIC v16 transfer deployment smoke",
+    "description": null,
+    "notes": "Short runtime validation of exact locally confirmed BASIC v2 against previous Base on pinned live game. No hosted competitive-strength claim.",
+    "num_episodes": 1,
+    "roster": [
+      {
+        "slot": 0,
+        "policy": "A-aron/pudge-basic-base:v2"
+      },
+      {
+        "slot": 1,
+        "policy": "A-aron/pudge-basic-base:v2"
+      },
+      {
+        "slot": 2,
+        "policy": "A-aron/pudge-basic-base:v2"
+      },
+      {
+        "slot": 3,
+        "policy": "A-aron/pudge-basic-base:v1"
+      },
+      {
+        "slot": 4,
+        "policy": "A-aron/pudge-basic-base:v1"
+      },
+      {
+        "slot": 5,
+        "policy": "A-aron/pudge-basic-base:v1"
+      }
+    ]
+  },
+  "cost_preview": null
+}

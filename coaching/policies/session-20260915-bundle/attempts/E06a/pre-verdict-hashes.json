@@ -1,0 +1,21 @@
+{
+  "parent.ir.md": "9832a5d48bf4ec9da3fd97e5f16c9ab629bb2602b6b5c2cfaf20d96f52359c95",
+  "conversion-checks.json": "0ab316c780f62104bad7d6633080f24ec80b3d02fd1c2c6c6732b378e1b40b23",
+  "bundle_skills_v1.py": "a5c5dcc19ffa4bf9f41d8cc0224df01a41d373266cced2291f2e244d24739477",
+  "compiler-contract.json": "d9a43ea968f0fad7732e39c69a0af581ddf51b9b66c83394c467591d514a870b",
+  "session-reference.json": "e0471c9b7b2ff2b805aefddb8a2439a82806f6810594db535bbe39791d07969b",
+  "README.md": "653ccf14e5f9721f45cad420cf452ae5515b8da791b4ae2d8ed784c8bb915449",
+  "ledger.jsonl": "499709c21f1bd28201bb2ae2a89bb3b06adb43a1e7f2bb8d82a44a77e72acc4c",
+  "input-preservation.json": "9bf1897b468d3330a07fd2c61d64119ba7b48db6793add4879c355b72cb50879",
+  "isolated-conversion-check.json": "984fdef0bae7e9c605eb0705600c0cf872798fb818c49f5a22f8b465c3dcef0c",
+  "geometry-checks.json": "7a4fa0cebe1da03ce8ab2585ba7bbe3ae2a8be37c4be994c368563c80ce4a2b6",
+  "bundle.ir.md": "5508321639a24ceecea7c024e95c304fe607d662379b2067aa6395685d57a415",
+  "engine-reference.json": "e10dd87c1edc69e957999c79f22f0aa27ff2715daae9d7a33fe83cbe94934664",
+  "protocol.json": "6c800acba1eef274b1978742fc2cd82428d44333ad33e7241cead21f07dd14f8",
+  "start-state.json": "35d1cc54dbbc9a2aef2f0bca97acdd49387bb5c8a4e3b79bead52fe5b283a5d6",
+  "oracle.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "symbolic.patch": "7e3de9e835fa19ff9988a227d98a6c47afe736a3646c66922cfe1ede655b2ac1",
+  "evidence-review.md": "1434837410c89b8f078b3f5239f1de99ff6ceb9ef6b4989c886639b3f58abf60",
+  "evaluated_candidate": "a957d9382ea1cea86d2c9127a9262d59d5fc64d11aa5a773bdc34d437d4c9168",
+  "regenerated_candidate": "a957d9382ea1cea86d2c9127a9262d59d5fc64d11aa5a773bdc34d437d4c9168"
+}

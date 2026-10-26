@@ -109,6 +109,9 @@ try:
     ws.close()
     pumpStop = true
     joinThread(pumpThread)
+  doAssert pumpGame.humanPaced, "a claimed LAN seat enables human-paced play"
+  pumpHosting(pumpGame)
+  doAssert pumpGame.humanPaced, "a disconnect must not accelerate the match"
 finally:
   stopHosting("test done")
 

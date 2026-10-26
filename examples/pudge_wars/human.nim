@@ -8,7 +8,8 @@
 import
   std/[math, times],
   chroma, vmath, windy,
-  cheats, content, fog, game, keybinds, maps, netclient, netpredict, sim,
+  cheats, content, fog, game, keybinds, maps, netclient, netpredict,
+  practice, sim,
   polyworld/[gameuis, pathing, rtscameras, shapes]
 
 const
@@ -43,6 +44,14 @@ const
   AttackRed = rgbx(236, 92, 70, 220)
   AimGold = rgbx(240, 218, 128, 200)
   RingGold = rgbx(240, 218, 128, 110)
+  CoachMark = rgbx(118, 220, 160, 210)
+    ## Where the coach says the hook meets its target.
+  CoachMarkDim = rgbx(118, 220, 160, 90)
+  CoachMarkHeld = rgbx(236, 120, 96, 190)
+    ## Same marker when the line is blocked or the target is out of reach.
+  CoachMarkHeldDim = rgbx(236, 120, 96, 80)
+  CoachMarkFaint = rgbx(118, 220, 160, 70)
+    ## An opening the coach has not called yet.
   MineHull = rgbx(52, 56, 40, 245)
   MineRim = rgbx(128, 134, 78, 250)
   MinePlate = rgbx(92, 98, 58, 250)
@@ -1580,6 +1589,39 @@ proc addGroundRing(
     )
   renderer.addPolyline(points, color, halfWidth)
 
+proc addCoachAim(
+    renderer: var ShapeRenderer, hero: Pudge, heroCenter: Vec3, now: float
+) =
+  ## The coach's hook marker: a ring the size of the hook head where the
+  ## throw would meet its target, a lead stroke from where the target is
+  ## now, and a faint throw line from the hero. Green when a throw now
+  ## would land, ember when the line is blocked or the target is out of
+  ## reach, faint when the coach has not called that target yet.
+  let p = hudPractice()
+  if p == nil or not p.enabled or not p.visible or p.actor != "human":
+    return
+  let aim = coachAim(p, run.world)
+  if aim.targetId == 0 or hero.hookCooldown > 0 and not aim.primary:
+    return
+  let
+    radius = hookRadius(hero.upgrades[UpgradeRadius]).float32 /
+      WorldScale.float32
+    pulse = 0.5'f32 + 0.5'f32 * sin(float32(now) * 5.0'f32)
+    ring = if not aim.primary: CoachMarkFaint
+      elif aim.ok: CoachMark else: CoachMarkHeld
+    dim = if not aim.primary: CoachMarkFaint
+      elif aim.ok: CoachMarkDim else: CoachMarkHeldDim
+    point = renderPoint(worldAtTiles(aim.aimX, aim.aimZ))
+    lifted = groundLift(point, 0.45'f32)
+  renderer.addGroundRing(point, radius, ring, 0.11'f32 + 0.06'f32 * pulse)
+  renderer.addCircle(lifted, 0.34'f32 + 0.10'f32 * pulse, ring, 12)
+  if aim.moving and aim.leadTiles >= 0.5:
+    let start = groundLift(renderPoint(worldAtTiles(aim.fromX, aim.fromZ)),
+      0.45'f32)
+    renderer.addLine(start, lifted, ring, 0.09'f32)
+  if not aimingHook and not aimingGrapple:
+    renderer.addLine(groundLift(heroCenter, 0.45'f32), lifted, dim, 0.06'f32)
+
 proc addShopOverlays*(renderer: var ShapeRenderer) =
   ## Both base shop pads, always visible: a gold ring marks where
   ## powerups can be bought.
@@ -1782,6 +1824,8 @@ proc drawHumanOverlays*(
     let hero = run.world.pudges[heroIdx]
     if hero.state != Dying:
       let center = renderPoint(hero.position)
+      if hero.state == Alive:
+        renderer.addCoachAim(hero, center, now)
       if aimingHook:
         let radius =
           hookRange(hero.upgrades[UpgradeDistance]).float32 /

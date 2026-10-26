@@ -11,11 +11,12 @@
 
 import
   bassy,
-  std/[os, strutils],
+  std/[os, sha1, strutils],
   polyworld/[annotations, cli, llms, policies, tensors, timings, pathing, profiles, rngs, tapes],
   content,
   maps,
   sim,
+  tactics,
   teammates,
   replays
 
@@ -131,6 +132,23 @@ proc initPudgeHost(pudgeId: int32, annotations: AnnotationSink = nil,
   services.addFunctions(result)
   for name in PudgeDataNames:
     discard result.addData(name)
+
+  proc tacticalField(field: int): int32 =
+    for slot, me in activeGame.world.pudges:
+      if me.id == pudgeId and slot < activeGame.heroVms.len:
+        let vm = activeGame.heroVms[slot]
+        if vm == nil or not vm.tactical: return 0
+        activeGame.validateTactics(slot)
+        case field
+        of 0: return vm.tacticTarget
+        of 1: return vm.tacticLane
+        else: return vm.tacticAggression
+  discard result.addFunction("tacticalTarget", 0,
+    proc(args: openArray[int32]): int32 = tacticalField(0), 4)
+  discard result.addFunction("tacticalLane", 0,
+    proc(args: openArray[int32]): int32 = tacticalField(1), 4)
+  discard result.addFunction("tacticalAggression", 0,
+    proc(args: openArray[int32]): int32 = tacticalField(2), 4)
 
   let objectCountProc: HostProc = proc(
       arguments: openArray[int32]
@@ -622,7 +640,7 @@ proc applySeatLabels*(game: Game, names: openArray[string]) =
     game.seatLabels[i] = names[i]
   uniquifySeatLabels(game.seatLabels)
 
-proc loadBots*(game: Game, groups: openArray[BotGroup]) =
+proc loadBots*(game: Game, groups: openArray[BotGroup], hybridSlots: seq[int] = @[]) =
   ## Compiles bot programs into seats. With one program per seat, human
   ## seats get a VM too, so releasing control falls back to script
   ## autopilot. With one program per non-human seat, human seats stay
@@ -658,8 +676,13 @@ proc loadBots*(game: Game, groups: openArray[BotGroup]) =
       continue
     let llm = newLlmClient(i)
     var host = initPudgeHost(game.world.pudges[i].id, policy = policies[next], llm = llm)
+    let program = if i in hybridSlots:
+        compile(tacticalSource(policies[next].source), schema, limits)
+      else: programs[next]
     game.heroVms[i] = HeroVm(
-      runtime: initRuntime(programs[next], host, limits),
+      runtime: initRuntime(program, host, limits),
+      tactical: i in hybridSlots,
+      policyFingerprint: "sha1:" & $secureHash(policies[next].source),
       limits: limits,
       prepareDecision: llm.decisionCallback(),
       pollRequests: llm.requestPoller(),
@@ -685,6 +708,7 @@ proc loadBotSource*(game: Game, slot: int, source: string,
   game.heroVms.setLen(game.world.pudges.len)
   game.heroVms[slot] = HeroVm(runtime: initRuntime(program, host, limits),
     limits: limits, ready: true, output: output,
+    policyFingerprint: "sha1:" & $secureHash(policy.source),
     prepareDecision: llm.decisionCallback(), pollRequests: llm.requestPoller(),
     closeServices: proc() = llm.close())
   llm.bindRuntime(game.heroVms[slot].runtime)

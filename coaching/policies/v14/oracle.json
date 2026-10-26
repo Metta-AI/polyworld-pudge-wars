@@ -1,0 +1,12 @@
+{
+  "policy_version_id": "41212e9a-6383-40f8-b44e-f4ceb64ef9c9",
+  "version": 14,
+  "sha256": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "runtime_options": {
+    "heal_allies": true,
+    "spread_fishing": true
+  },
+  "frozen_at": "2026-09-15",
+  "game_version": "0.3.17",
+  "simulator": 37
+}

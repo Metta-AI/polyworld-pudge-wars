@@ -1,0 +1,42 @@
+{
+  "id": "E06b-all-coaching-windup",
+  "created_at": "2026-09-16T00:34:04.343492+00:00",
+  "status": "preregistered",
+  "request": "Test all three coaching suggestions together, not one update at a time.",
+  "session_id": "2026-09-15t21-41-17-535zc09870",
+  "hypothesis": "Melee-centroid target selection, cast-to-return lateral movement, and correct fountain avoidance together increase useful hook coverage and improve mean paired-bank kill margin over v14.",
+  "design": "One integrated candidate versus immutable v14 in 3v3 head-to-head matches. No individual-component competitive screens or ablations. Each map runs both banks.",
+  "screen_seeds": [
+    918301,
+    918324
+  ],
+  "screen_games": 48,
+  "confirmation_seeds": [
+    918401,
+    918448
+  ],
+  "confirmation_games": 96,
+  "kill_goal": 30,
+  "max_ticks": 38400,
+  "acceptance": {
+    "screen": "Complete all 48; mean paired-bank kill margin >=1; 95% seed-block bootstrap lower bound >0; zero semantic/reference or round-trip mismatches; all three mechanisms exposed.",
+    "confirmation": "Only if screen passes, complete all 96 fresh games; mean paired-bank margin >=1 and 95% seed-block lower bound >0; zero mismatches.",
+    "retention": "Retain the combined research pair only after both gates; otherwise keep baseline. No extending fixed samples based on the result.",
+    "hosted": "Local result is specific to the native mirror matchup; no league promotion without separately validated hosted transfer."
+  },
+  "predictions": {
+    "true": "All three mechanisms execute and the package clears score gates.",
+    "false_or_harmful": "The combination has no eligible exposure, fails the predeclared margin threshold, or increases losses."
+  },
+  "limitations": [
+    "This tests the package, not the effect of each component or a statistical interaction coefficient.",
+    "Fresh maps avoid recycling prior single-edit results.",
+    "Seed-block intervals account for both banks sharing a map.",
+    "Screen is directional and cannot rule out small gains.",
+    "Enemy visibility, movement constraints and survival can limit legal CurveHook steps.",
+    "Synchronous native decisions do not model hosted scheduling."
+  ],
+  "baseline_sha256": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "prior_results": "E04/E05 are historical context only. Their failed individual gates do not reject E06. This user-directed package test supersedes previous one-edit-at-a-time research guidance.",
+  "prior_attempt": "E06a all-game outcome preserved, but full-skill mechanism gate failed because pending state expired before native windup completed. E06b changes only the pending timeout to12, in IR and execution; uses entirely fresh screen and confirmation maps."
+}

@@ -516,11 +516,21 @@ proc sendChatHistory(ws: WebSocket) =
   for line in chatLog:
     ws.send(chatJson(line))
 
-proc broadcastLobby() =
+proc updateHumanPace(game: Game) =
+  let previous = game.humanPaced
+  if localClaim >= 0 or game.humanSlots.len > 0:
+    game.humanPaced = true
+  for seat in seats:
+    if seat.taken and seat.connected:
+      game.humanPaced = true
+  if game.humanPaced != previous:
+    lobbyDirty = true
+
+proc broadcastLobby(game: Game) =
   refreshStatusSnapshot()
   let
     jsonText = lobbyJson()
-    binary = packLobby(seatRoster(), matchStarted)
+    binary = packLobby(seatRoster(), matchStarted, game.humanPaced)
   for ws, session in sessions:
     case session.mode
     of ModePage:
@@ -535,8 +545,9 @@ proc sendStartAndBacklog(ws: WebSocket, session: var Session, game: Game) =
   ## far. The client fast-forwards to the live tick from this.
   if not matchStarted or game.recorder == nil:
     return
+  updateHumanPace(game)
   ws.send(
-    packStart(game.recorder.data.header.setup),
+    packStart(game.recorder.data.header.setup, game.humanPaced),
     BinaryMessage
   )
   session.started = true
@@ -780,7 +791,7 @@ proc handleGameMessage(
         packSlotGrant(grant.slot, grant.token, grant.reason), BinaryMessage
       )
     sendStartAndBacklog(ws, session, game)
-    ws.send(packLobby(seatRoster(), matchStarted), BinaryMessage)
+    ws.send(packLobby(seatRoster(), matchStarted, game.humanPaced), BinaryMessage)
   of NmPickSlot:
     let grant = tryClaim(
       game, ws, session, message.pickSlot.slot, session.name
@@ -830,9 +841,10 @@ proc pumpHosting*(game: Game) =
           releaseSeat(game, session.slot, keepToken = true)
         sessions.del(event.ws)
         lobbyDirty = true
+  updateHumanPace(game)
   if lobbyDirty:
     lobbyDirty = false
-    broadcastLobby()
+    broadcastLobby(game)
 
 proc hostBroadcastTicks*(game: Game) =
   ## Streams the recorder tail to every caught-up game connection.
@@ -877,6 +889,7 @@ proc hostAnnounceStart*(game: Game) =
   ## game; bound clients rebuild their world.
   if not hostActive or game.recorder == nil:
     return
+  updateHumanPace(game)
   matchStarted = true
   sysChat("The host started the match.")
   let startText = $(%*{"t": "start"})

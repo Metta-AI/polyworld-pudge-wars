@@ -72,8 +72,42 @@ annotation sink is ported from the pinned Polyworld `src/polyworld/annotations.n
 All logs, annotations, status and replay bytes finish before the atomic results
 marker. The process stays available for collection; `/healthz`, the global
 viewer, and WebSocket Ping/Pong remain live. League episodes accept no JSON
-player actions or human seat connections. Native/LAN and the separate
-platform-hosted package continue to support humans.
+player actions or human seat connections.
+
+## Humans alongside BASIC policies
+
+The `human` variant supports 3v3 hosted play with the same BASIC files. The
+hosted-play service must support file policies and set `COGAME_PLAY_SESSION_ID`.
+A league lobby episode a person joined (a ranked match played from the desktop
+client) sets no play session id; its runner stages the same play-seats roster
+with the person's seat marked human, and the host treats a roster with human
+seats as human play too. Either launch enables `/ws` human connections and the
+28 Hz human clock; ordinary league launches still run automated episodes as
+fast as possible.
+
+Hosted play stages `COGAME_PLAYER_SEATS_URI` as `coworld-play-seats/1`. Its
+`seats` array has one entry per configured token, in slot order. Human entries
+contain `slot` and `kind: "human"`. Policy entries contain `kind: "policy"`
+plus the usual verified `file_uri`, `size_bytes`, `content_hash`, `log_uri`,
+and optional `annotations_uri`. `player_status_uri` records policy seats only.
+Policy tokens cannot take over a human connection, and humans can reconnect to
+their own seat.
+
+All policy files load before the match waits for humans. The match starts when
+the human seats connect, without waiting for nonexistent policy containers.
+On completion or policy compilation failure the process exits, allowing the
+hosted-play collector to retain replay, results and private policy outputs.
+
+Run the real mixed-match check with:
+
+```bash
+PUDGE_LEAGUE_BINARY=tmp/pwleague python3 tests/test_pw_basic_play.py
+```
+
+Publish this host and deploy the platform file-policy play support together.
+The previously published `pudge-wars-basic:0.1.1` remains ranked-only. Point
+the site's `COWORLD_ID` at the new release; `ARENA_WSS` remains a direct-host
+override whose roster is configured on that host.
 
 ## League settings
 

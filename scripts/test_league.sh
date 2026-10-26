@@ -10,6 +10,7 @@ nim c --hints:off --threads:on -d:ssl -d:release \
 nim c --hints:off --threads:on -d:ssl -d:release -d:basicLeague \
   -o:tmp/pwleague examples/pudge_wars/coworld_host.nim
 python3 -m unittest discover -s tests -p test_pw_league_host.py -v
+PUDGE_LEAGUE_BINARY=tmp/pwleague python3 tests/test_pw_basic_play.py
 python3 -m unittest discover -s tests -p test_pw_local_episode.py -v
 python3 -m unittest discover -s tests -p test_pw_inference.py -v
 nim c --hints:off -d:release -d:headless -o:tmp/pwtraining \

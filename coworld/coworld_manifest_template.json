@@ -17,12 +17,14 @@
         "pwleague"
       ],
       "env": {
-        "COGAME_PLAYER_SEATS_SCHEMA": "coworld-player-seats/2"
+        "COGAME_PLAYER_SEATS_SCHEMA": "coworld-player-seats/2",
+        "COGAME_PLAY_SEATS_SCHEMA": "coworld-play-seats/1",
+        "PUDGE_WARS_CLIENT_URL": "https://pudge-wars-site-theta.vercel.app/play/bundles/6d690bfc900aadcf/pw.html"
       },
       "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main"
     },
     "replay_viewer": {
-      "bundle": "sha256:bbbd87e990e2779988f308dc3300ab97527923ccc2786d7226606524a6880a12",
+      "bundle": "sha256:6d690bfc900aadcf08ad8937f2b37baf0964d659eb224453e12e5f64b56011ce",
       "replay_compression": "gzip"
     },
     "config_schema": {
@@ -326,6 +328,38 @@
         "seed": 2026,
         "max_ticks": 15360,
         "kill_goal": 10,
+        "fog": true,
+        "wait_for_llm": true
+      }
+    },
+    {
+      "id": "human",
+      "name": "Play with BASIC policies",
+      "description": "Human players and BASIC policies on two teams of three.",
+      "game_config": {
+        "players": [
+          {
+            "name": "Seat 0"
+          },
+          {
+            "name": "Seat 1"
+          },
+          {
+            "name": "Seat 2"
+          },
+          {
+            "name": "Seat 3"
+          },
+          {
+            "name": "Seat 4"
+          },
+          {
+            "name": "Seat 5"
+          }
+        ],
+        "seed": 2026,
+        "max_ticks": 38400,
+        "kill_goal": 30,
         "fog": true,
         "wait_for_llm": true
       }

@@ -13,11 +13,12 @@ type
     size: int64
     log: File
     bytes: int
-    truncated, failed: bool
+    truncated, failed, human: bool
     annotations: AnnotationSink
   FilePlayers* = ref object
     seats: seq[Seat]
     statusPath, failurePath: string
+    humanSlots*: seq[int]
 
 proc localPath*(value: string): string =
   let parsed = parseUri(value)
@@ -72,10 +73,16 @@ proc close*(players: FilePlayers) =
     raise newException(FilePlayerError, "Cannot finalize private player outputs")
 
 proc openFilePlayers*(document: JsonNode, count: int,
-                      failureUri: string): FilePlayers =
+                      failureUri: string, allowHumans = false): FilePlayers =
+  ## A pure policy roster is a `coworld-player-seats` document. A roster with
+  ## people in it (hosted play, or a league lobby a person joined) is a
+  ## `coworld-play-seats/1` document, accepted only with `allowHumans`; its
+  ## human entries become `humanSlots`.
   let schema = document{"schema"}.getStr
-  if document.kind != JObject or
-      schema notin ["coworld-player-seats/1", "coworld-player-seats/2"] or
+  let playSeats = schema == "coworld-play-seats/1"
+  let validSchema = if playSeats: allowHumans
+                    else: schema in ["coworld-player-seats/1", "coworld-player-seats/2"]
+  if document.kind != JObject or not validSchema or
       not document.hasKey("seats") or
       document{"seats"}.kind != JArray or document["seats"].len != count:
     raise newException(FilePlayerError, "Invalid file-player roster")
@@ -88,8 +95,15 @@ proc openFilePlayers*(document: JsonNode, count: int,
   # Validate every destination before opening any output.
   for slot, node in document["seats"].getElems:
     if node.kind != JObject or not node.hasKey("slot") or
-        node["slot"].kind != JInt or node["slot"].getInt != slot or
-        not node.hasKey("size_bytes") or node["size_bytes"].kind != JInt or
+        node["slot"].kind != JInt or node["slot"].getInt != slot:
+      raise newException(FilePlayerError, "Invalid file-player seat")
+    if playSeats and node{"kind"}.getStr == "human":
+      result.seats[slot].human = true
+      result.humanSlots.add slot
+      continue
+    if playSeats and node{"kind"}.getStr != "policy":
+      raise newException(FilePlayerError, "Invalid play seat kind")
+    if not node.hasKey("size_bytes") or node["size_bytes"].kind != JInt or
         node["size_bytes"].getBiggestInt < 0:
       raise newException(FilePlayerError, "Invalid file-player seat")
     let path = localPath(node{"file_uri"}.getStr)
@@ -101,11 +115,12 @@ proc openFilePlayers*(document: JsonNode, count: int,
       size: node["size_bytes"].getBiggestInt)
     let annotationUri = node{"annotations_uri"}.getStr
     if annotationUri.len > 0:
-      if schema != "coworld-player-seats/2":
+      if schema notin ["coworld-player-seats/2", "coworld-play-seats/1"]:
         raise newException(FilePlayerError, "Annotations require seats schema 2")
       result.seats[slot].annotations = newAnnotationSink(localPath(annotationUri))
   try:
     for seat in result.seats.mitems:
+      if seat.human: continue
       createDir(seat.logPath.parentDir)
       seat.log = open(seat.logPath, fmWrite)
   except IOError, OSError:
@@ -117,6 +132,7 @@ proc writeStatus(players: FilePlayers) =
     return
   var statuses = newJArray()
   for slot, seat in players.seats:
+    if seat.human: continue
     statuses.add %*{
       "slot": slot, "state": "exited",
       "exit_code": (if seat.failed: 1 else: 0),
@@ -137,7 +153,9 @@ proc rejectPlayer(players: FilePlayers, slot: int, message: string) =
 
 proc load*(players: FilePlayers, game: Game): bool =
   ## Runner verifies hashes; we independently bound reads and verify lengths.
+  game.heroVms.setLen(players.seats.len)
   for slot, seat in players.seats:
+    if seat.human: continue
     # Missing or mismatched staged bytes are an infrastructure fault, not blame
     # assigned to the policy author.
     if getFileSize(seat.path) != seat.size:
@@ -163,7 +181,7 @@ proc load*(players: FilePlayers, game: Game): bool =
 
 proc captureErrors*(players: FilePlayers, game: Game) =
   for slot, vm in game.heroVms:
-    if vm.failed and not players.seats[slot].failed:
+    if vm != nil and vm.failed and not players.seats[slot].failed:
       players.seats[slot].failed = true
       players.playerLog(slot, "BASIC error: " & vm.lastError & "\n")
 

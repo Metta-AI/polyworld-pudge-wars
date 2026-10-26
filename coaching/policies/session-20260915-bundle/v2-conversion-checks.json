@@ -1,0 +1,5 @@
+{
+  "status": "passed",
+  "policy_sha256": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea",
+  "compile_extract_recompile_byte_identical": true
+}

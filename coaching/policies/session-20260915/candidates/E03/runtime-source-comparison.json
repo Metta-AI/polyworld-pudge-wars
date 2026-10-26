@@ -1,0 +1,18 @@
+{
+  "player/base.py": {
+    "v14_release_source": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+    "v15_context": "d4b6255a68e42aafa738b2f5ca22aca553f1b278cd8696fbee3c95c0d37daaa0"
+  },
+  "player/player.py": {
+    "v14_release_source": "3fbce119738aa235f9c73b3be728136cedc8f70cdf794340092b5b30e1f2a17b",
+    "v15_context": "3fbce119738aa235f9c73b3be728136cedc8f70cdf794340092b5b30e1f2a17b"
+  },
+  "shared/log_shipper.py": {
+    "v14_release_source": "41af6c252283ee81395b78f52ead844ddadf206b87d2cc5d5b59631b95790472",
+    "v15_context": "41af6c252283ee81395b78f52ead844ddadf206b87d2cc5d5b59631b95790472"
+  },
+  "player/Dockerfile": {
+    "v14_release_source": "cf3f4f8f05e96a49bb054c7db0d55e872ab23f7fe97beb56d41734b80aff2b44",
+    "v15_context": "cf3f4f8f05e96a49bb054c7db0d55e872ab23f7fe97beb56d41734b80aff2b44"
+  }
+}

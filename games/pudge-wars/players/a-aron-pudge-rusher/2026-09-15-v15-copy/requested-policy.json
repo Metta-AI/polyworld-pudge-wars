@@ -1,0 +1,34 @@
+{
+  "user_id": "h0835grji1zfy5wakd4i56kn",
+  "user": {
+    "id": "h0835grji1zfy5wakd4i56kn",
+    "name": "Aaron Landy",
+    "email": null,
+    "is_softmax_team_member": null,
+    "discord_id": null,
+    "created_at": null
+  },
+  "owner_coworld_name": null,
+  "id": "d4217dc6-b5a6-4e0d-831c-0cd75572ffe1",
+  "policy_id": "a2c7ed57-06be-4571-a29e-93bff9960a6f",
+  "name": "pudge-wars-rusher",
+  "version": 15,
+  "created_at": "2026-09-15T23:57:29.169121Z",
+  "policy_created_at": "2026-09-01T06:01:33.692506Z",
+  "tags": {
+    "purpose": "coaching-e03-20260915",
+    "status": "candidate"
+  },
+  "attributes": {
+    "run": [
+      "python",
+      "-m",
+      "coworld.examples.pudgewars.player.player"
+    ],
+    "kind": "docker-img"
+  },
+  "internal_id": null,
+  "container_image_id": null,
+  "player_file_content_hash": null,
+  "player_file_size_bytes": null
+}

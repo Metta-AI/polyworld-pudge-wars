@@ -1,0 +1,158 @@
+{
+  "status": "complete",
+  "decision": "retain_combined_research_policy",
+  "selected_candidate": "E06b",
+  "scope": "Local native 3v3 mirror matches versus frozen v14; all three coaching suggestions applied jointly.",
+  "baseline_sha256": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "retained_policy_sha256": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea",
+  "session_reference": "session-reference.json",
+  "protocol": "protocol.json",
+  "screen": {
+    "games": 48,
+    "seed_blocks": 24,
+    "wins": 38,
+    "draws": 0,
+    "win_rate": 0.7916666666666666,
+    "win_rate_wilson_95": [
+      0.6574109872738247,
+      0.8826972704209421
+    ],
+    "mean_paired_bank_margin": 7.5,
+    "margin_seed_bootstrap_95": [
+      4.979166666666667,
+      10.125
+    ],
+    "counts": {
+      "checked_decisions": 2286399,
+      "changed_decisions": 709760,
+      "changed_hook_requests": 58870,
+      "changed_walk_requests": 661454,
+      "both_hook_and_walk_changed": 10564,
+      "candidate_hook_requests": 226837,
+      "parent_hook_requests": 253085,
+      "accepted_walk_to": 1893244,
+      "accepted_hook_to": 23272,
+      "accepted_blink_to": 5211,
+      "accepted_place_ward": 892,
+      "accepted_rot": 5578,
+      "accepted_attack_target": 91096,
+      "engagement_pairs": 113158,
+      "engagement_requests": 18471,
+      "fountain_rejections": 60408,
+      "curve_starts": 13469,
+      "curve_steps": 660757,
+      "curve_flying_steps": 416548,
+      "curve_return_steps": 128724
+    },
+    "interpretation": "Local deterministic engine comparison. Win interval is descriptive across games; the primary margin interval resamples seed blocks. No claim of a hosted leaderboard improvement.",
+    "identities": {
+      "baseline.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+      "candidate.py": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea",
+      "regenerated.py": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea",
+      "json_match": "159adb7f51faae999d6b47c120db69f8ebe4fffe20c7c4c464b4badd769c7850"
+    },
+    "semantic_mismatches": 0,
+    "roundtrip_mismatches": 0,
+    "bank_results": {
+      "0": {
+        "games": 24,
+        "wins": 20,
+        "mean_margin": 8.375
+      },
+      "1": {
+        "games": 24,
+        "wins": 18,
+        "mean_margin": 6.625
+      }
+    },
+    "all_mechanisms_exposed": true,
+    "gate_passed": true
+  },
+  "confirmation": {
+    "games": 96,
+    "seed_blocks": 48,
+    "wins": 67,
+    "draws": 0,
+    "win_rate": 0.6979166666666666,
+    "win_rate_wilson_95": [
+      0.5999149981303185,
+      0.7806884150093523
+    ],
+    "mean_paired_bank_margin": 7.145833333333333,
+    "margin_seed_bootstrap_95": [
+      4.947916666666667,
+      9.197916666666666
+    ],
+    "counts": {
+      "checked_decisions": 4494831,
+      "changed_decisions": 1382256,
+      "changed_hook_requests": 112199,
+      "changed_walk_requests": 1290985,
+      "both_hook_and_walk_changed": 20928,
+      "candidate_hook_requests": 435094,
+      "parent_hook_requests": 485056,
+      "accepted_walk_to": 3707793,
+      "accepted_hook_to": 45784,
+      "accepted_blink_to": 10253,
+      "accepted_place_ward": 1767,
+      "accepted_rot": 10585,
+      "accepted_attack_target": 184997,
+      "engagement_pairs": 225394,
+      "engagement_requests": 35071,
+      "fountain_rejections": 116408,
+      "curve_starts": 26440,
+      "curve_steps": 1289245,
+      "curve_flying_steps": 811297,
+      "curve_return_steps": 251336
+    },
+    "interpretation": "Local deterministic engine comparison. Win interval is descriptive across games; the primary margin interval resamples seed blocks. No claim of a hosted leaderboard improvement.",
+    "identities": {
+      "baseline.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+      "candidate.py": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea",
+      "regenerated.py": "26d787a61bfc20b58dc261965558e50395bf2eb8cee1e21aa2531101333ac7ea",
+      "json_match": "159adb7f51faae999d6b47c120db69f8ebe4fffe20c7c4c464b4badd769c7850"
+    },
+    "semantic_mismatches": 0,
+    "roundtrip_mismatches": 0,
+    "bank_results": {
+      "0": {
+        "games": 48,
+        "wins": 38,
+        "mean_margin": 8.916666666666666
+      },
+      "1": {
+        "games": 48,
+        "wins": 29,
+        "mean_margin": 5.375
+      }
+    },
+    "all_mechanisms_exposed": true,
+    "gate_passed": true
+  },
+  "verification": {
+    "cases": 1004,
+    "sequence_steps": 106,
+    "changed": 152,
+    "scoped_semantic_mismatches": 0,
+    "roundtrip_mismatches": 0,
+    "mechanisms": {
+      "engagement_pairs": 140,
+      "engagement_requests": 24,
+      "fountain_rejections": 178,
+      "curve_starts": 108,
+      "curve_steps": 164,
+      "curve_flying_steps": 30,
+      "curve_return_steps": 10
+    },
+    "scope": "Whole-package actions and memory on authored states and lifecycle sequences; no claim that goals or all inherited prose are empirically recovered."
+  },
+  "total_scored_selected_candidate_games": 144,
+  "total_scored_selected_candidate_decisions": 6781230,
+  "original_captured_inputs": "Empty; preserved without modification. Repository v14 is the explicit baseline, not a verified policy from the recording.",
+  "retention_gate": "All fixed screen and fresh confirmation score/mechanism/fidelity gates passed.",
+  "semantic_lift": "Retains native 9-tick windup via a12-tick pending window; records the raw binary64 fountain comparison in a1e-9-tile boundary band. Exact policy bytes unchanged during confirmation.",
+  "prior_attempt": "E06a38/48 wins is separate and not used in inference; it failed full-skill exposure because state expired before windup completed.",
+  "verification_corrections": "Initial quadratic endpoint reference error and late binary64 boundary discrepancy are archived. Confirmation retained91 passing games and completed exactly5 originally scheduled missing games with reconciled numeric semantics. No sample extension or policy adjustment.",
+  "competitive_attribution": "Whole package only. No per-component benefit or interaction coefficient established.",
+  "deployment": "Research pair retained; no hosted upload, league promotion, or replacement of coworld/player/base.py in this loop."
+}

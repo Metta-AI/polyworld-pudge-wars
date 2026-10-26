@@ -1,0 +1,12 @@
+{
+  "uploaded_at": "2026-10-14T23:38:03.310936+00:00",
+  "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511",
+  "source": "coworld/players/base.bas",
+  "policy": {
+    "id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+    "name": "pudge-basic-base",
+    "version": 2,
+    "pools": null,
+    "submit_error": null
+  }
+}

@@ -1,0 +1,2970 @@
+{
+  "scope": "Local current-engine matches, both banks; no hosted leaderboard claim.",
+  "interval_method": "10,000 seed-block percentile bootstrap draws, random.Random(0).",
+  "campaigns": {
+    "screen": {
+      "games": 48,
+      "wins": 48,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 6.458333333333333,
+      "mean_margin": 23.541666666666668,
+      "seed_bootstrap_95": [
+        22.8125,
+        24.229166666666668
+      ],
+      "seed_blocks": 24,
+      "all_replays_verified": true,
+      "banks": {
+        "west": 23.583333333333332,
+        "east": 23.5
+      },
+      "contract": {
+        "settings": {
+          "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/rusher.bas",
+          "opponent": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/baseline.bas",
+          "output": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/screen",
+          "runner": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+          "first": 1014101,
+          "last": 1014124,
+          "team_size": 3,
+          "goal": 30,
+          "minutes": 20,
+          "difficulty": "fair",
+          "jobs": 4,
+          "record": true
+        },
+        "identities": {
+          "runner": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+            "sha256": "a9e17ee6a52e901e135f9f5dd3a190ec98cb112306329b5417269db48d36a1c9"
+          },
+          "policy": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/rusher.bas",
+            "sha256": "6cc4d9644c65773188537540fd51c037995483b591bfb122f1eeb19d3b6449db"
+          },
+          "opponent": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/baseline.bas",
+            "sha256": "96fd425a95c6284bb97bd97e4154338e976c51d97565a71f38a52abf1985ec90"
+          }
+        }
+      },
+      "outcomes": [
+        {
+          "seed": 1014101,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014101,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014102,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014102,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014103,
+          "side": "west",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014103,
+          "side": "east",
+          "ours": 30,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014104,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014104,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014105,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014105,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014106,
+          "side": "west",
+          "ours": 30,
+          "theirs": 10,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014106,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014107,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014107,
+          "side": "east",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014108,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014108,
+          "side": "east",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014109,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014109,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014110,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014110,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014111,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014111,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014112,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014112,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014113,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014113,
+          "side": "east",
+          "ours": 30,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014114,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014114,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014115,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014115,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014116,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014116,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014117,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014117,
+          "side": "east",
+          "ours": 30,
+          "theirs": 10,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014118,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014118,
+          "side": "east",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014119,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014119,
+          "side": "east",
+          "ours": 30,
+          "theirs": 19,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014120,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014120,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014121,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014121,
+          "side": "east",
+          "ours": 30,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014122,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014122,
+          "side": "east",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014123,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014123,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014124,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014124,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        }
+      ]
+    },
+    "pro-screen": {
+      "games": 24,
+      "wins": 24,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 5.875,
+      "mean_margin": 24.125,
+      "seed_bootstrap_95": [
+        23.333333333333332,
+        24.958333333333332
+      ],
+      "seed_blocks": 12,
+      "all_replays_verified": true,
+      "banks": {
+        "west": 24.583333333333332,
+        "east": 23.666666666666668
+      },
+      "contract": {
+        "settings": {
+          "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/rusher.bas",
+          "opponent": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/baseline.bas",
+          "output": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pro-screen",
+          "runner": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+          "first": 1014201,
+          "last": 1014212,
+          "team_size": 3,
+          "goal": 30,
+          "minutes": 20,
+          "difficulty": "pro",
+          "jobs": 4,
+          "record": true
+        },
+        "identities": {
+          "runner": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+            "sha256": "a9e17ee6a52e901e135f9f5dd3a190ec98cb112306329b5417269db48d36a1c9"
+          },
+          "policy": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/rusher.bas",
+            "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          "opponent": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/baseline.bas",
+            "sha256": "96fd425a95c6284bb97bd97e4154338e976c51d97565a71f38a52abf1985ec90"
+          }
+        }
+      },
+      "outcomes": [
+        {
+          "seed": 1014201,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014201,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014202,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014202,
+          "side": "east",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014203,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014203,
+          "side": "east",
+          "ours": 30,
+          "theirs": 12,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014204,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014204,
+          "side": "east",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014205,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014205,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014206,
+          "side": "west",
+          "ours": 30,
+          "theirs": 15,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014206,
+          "side": "east",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014207,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014207,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014208,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014208,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014209,
+          "side": "west",
+          "ours": 30,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014209,
+          "side": "east",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014210,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014210,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014211,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014211,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014212,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014212,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        }
+      ]
+    },
+    "confirmation": {
+      "games": 96,
+      "wins": 96,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 6.104166666666667,
+      "mean_margin": 23.895833333333332,
+      "seed_bootstrap_95": [
+        23.3125,
+        24.489583333333332
+      ],
+      "seed_blocks": 48,
+      "all_replays_verified": true,
+      "banks": {
+        "west": 23.5625,
+        "east": 24.229166666666668
+      },
+      "contract": {
+        "settings": {
+          "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+          "opponent": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/baseline.bas",
+          "output": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/confirmation",
+          "runner": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+          "first": 1014301,
+          "last": 1014348,
+          "team_size": 3,
+          "goal": 30,
+          "minutes": 20,
+          "difficulty": "pro",
+          "jobs": 4,
+          "record": true
+        },
+        "identities": {
+          "runner": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+            "sha256": "a9e17ee6a52e901e135f9f5dd3a190ec98cb112306329b5417269db48d36a1c9"
+          },
+          "policy": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+            "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          "opponent": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/baseline.bas",
+            "sha256": "96fd425a95c6284bb97bd97e4154338e976c51d97565a71f38a52abf1985ec90"
+          }
+        }
+      },
+      "outcomes": [
+        {
+          "seed": 1014301,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014301,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014302,
+          "side": "west",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014302,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014303,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014303,
+          "side": "east",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014304,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014304,
+          "side": "east",
+          "ours": 30,
+          "theirs": 11,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014305,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014305,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014306,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014306,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014307,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014307,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014308,
+          "side": "west",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014308,
+          "side": "east",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014309,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014309,
+          "side": "east",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014310,
+          "side": "west",
+          "ours": 30,
+          "theirs": 10,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014310,
+          "side": "east",
+          "ours": 30,
+          "theirs": 11,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014311,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014311,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014312,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014312,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014313,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014313,
+          "side": "east",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014314,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014314,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014315,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014315,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014316,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014316,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014317,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014317,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014318,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014318,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014319,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014319,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014320,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014320,
+          "side": "east",
+          "ours": 30,
+          "theirs": 11,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014321,
+          "side": "west",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014321,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014322,
+          "side": "west",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014322,
+          "side": "east",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014323,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014323,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014324,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014324,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014325,
+          "side": "west",
+          "ours": 30,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014325,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014326,
+          "side": "west",
+          "ours": 30,
+          "theirs": 10,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014326,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014327,
+          "side": "west",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014327,
+          "side": "east",
+          "ours": 30,
+          "theirs": 10,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014328,
+          "side": "west",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014328,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014329,
+          "side": "west",
+          "ours": 30,
+          "theirs": 15,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014329,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014330,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014330,
+          "side": "east",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014331,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014331,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014332,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014332,
+          "side": "east",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014333,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014333,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014334,
+          "side": "west",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014334,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014335,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014335,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014336,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014336,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014337,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014337,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014338,
+          "side": "west",
+          "ours": 30,
+          "theirs": 12,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014338,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014339,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014339,
+          "side": "east",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014340,
+          "side": "west",
+          "ours": 30,
+          "theirs": 11,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014340,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014341,
+          "side": "west",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014341,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014342,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014342,
+          "side": "east",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014343,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014343,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014344,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014344,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014345,
+          "side": "west",
+          "ours": 30,
+          "theirs": 13,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014345,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014346,
+          "side": "west",
+          "ours": 30,
+          "theirs": 9,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014346,
+          "side": "east",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014347,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014347,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014348,
+          "side": "west",
+          "ours": 30,
+          "theirs": 10,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014348,
+          "side": "east",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        }
+      ]
+    },
+    "duels": {
+      "games": 24,
+      "wins": 22,
+      "timeLimits": 2,
+      "meanKills": 9.541666666666666,
+      "meanOpponentKills": 0.9166666666666666,
+      "mean_margin": 8.625,
+      "seed_bootstrap_95": [
+        7.916666666666667,
+        9.291666666666666
+      ],
+      "seed_blocks": 12,
+      "all_replays_verified": true,
+      "banks": {
+        "west": 7.916666666666667,
+        "east": 9.333333333333334
+      },
+      "contract": {
+        "settings": {
+          "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+          "opponent": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/baseline.bas",
+          "output": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/duels",
+          "runner": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+          "first": 1014501,
+          "last": 1014512,
+          "team_size": 1,
+          "goal": 10,
+          "minutes": 20,
+          "difficulty": "pro",
+          "jobs": 2,
+          "record": true
+        },
+        "identities": {
+          "runner": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+            "sha256": "a9e17ee6a52e901e135f9f5dd3a190ec98cb112306329b5417269db48d36a1c9"
+          },
+          "policy": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+            "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          "opponent": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/baseline.bas",
+            "sha256": "96fd425a95c6284bb97bd97e4154338e976c51d97565a71f38a52abf1985ec90"
+          }
+        }
+      },
+      "outcomes": [
+        {
+          "seed": 1014501,
+          "side": "west",
+          "ours": 10,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014501,
+          "side": "east",
+          "ours": 10,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014502,
+          "side": "west",
+          "ours": 10,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014502,
+          "side": "east",
+          "ours": 10,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014503,
+          "side": "west",
+          "ours": 10,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014503,
+          "side": "east",
+          "ours": 10,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014504,
+          "side": "west",
+          "ours": 10,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014504,
+          "side": "east",
+          "ours": 10,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014505,
+          "side": "west",
+          "ours": 10,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014505,
+          "side": "east",
+          "ours": 10,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014506,
+          "side": "west",
+          "ours": 4,
+          "theirs": 1,
+          "win": false,
+          "timeLimit": true,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014506,
+          "side": "east",
+          "ours": 10,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014507,
+          "side": "west",
+          "ours": 5,
+          "theirs": 1,
+          "win": false,
+          "timeLimit": true,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014507,
+          "side": "east",
+          "ours": 10,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014508,
+          "side": "west",
+          "ours": 10,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014508,
+          "side": "east",
+          "ours": 10,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014509,
+          "side": "west",
+          "ours": 10,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014509,
+          "side": "east",
+          "ours": 10,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014510,
+          "side": "west",
+          "ours": 10,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014510,
+          "side": "east",
+          "ours": 10,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014511,
+          "side": "west",
+          "ours": 10,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014511,
+          "side": "east",
+          "ours": 10,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014512,
+          "side": "west",
+          "ours": 10,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014512,
+          "side": "east",
+          "ours": 10,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        }
+      ]
+    },
+    "against-aggressive": {
+      "games": 8,
+      "wins": 8,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 2.625,
+      "mean_margin": 27.375,
+      "seed_bootstrap_95": [
+        27,
+        27.75
+      ],
+      "seed_blocks": 4,
+      "all_replays_verified": true,
+      "banks": {
+        "west": 28,
+        "east": 26.75
+      },
+      "contract": {
+        "settings": {
+          "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+          "opponent": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/aggressive.bas",
+          "output": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/against-aggressive",
+          "runner": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+          "first": 1014401,
+          "last": 1014404,
+          "team_size": 3,
+          "goal": 30,
+          "minutes": 20,
+          "difficulty": "pro",
+          "jobs": 2,
+          "record": true
+        },
+        "identities": {
+          "runner": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+            "sha256": "a9e17ee6a52e901e135f9f5dd3a190ec98cb112306329b5417269db48d36a1c9"
+          },
+          "policy": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+            "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          "opponent": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/aggressive.bas",
+            "sha256": "58225fd7bf422fbc618d70247120ebc68c097d57d07823316e43b131aea20b86"
+          }
+        }
+      },
+      "outcomes": [
+        {
+          "seed": 1014401,
+          "side": "west",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014401,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "west",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "east",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "west",
+          "ours": 30,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "east",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        }
+      ]
+    },
+    "against-challenger": {
+      "games": 8,
+      "wins": 8,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 5.875,
+      "mean_margin": 24.125,
+      "seed_bootstrap_95": [
+        23.0,
+        24.875
+      ],
+      "seed_blocks": 4,
+      "all_replays_verified": true,
+      "banks": {
+        "west": 23,
+        "east": 25.25
+      },
+      "contract": {
+        "settings": {
+          "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+          "opponent": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/challenger.bas",
+          "output": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/against-challenger",
+          "runner": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+          "first": 1014401,
+          "last": 1014404,
+          "team_size": 3,
+          "goal": 30,
+          "minutes": 20,
+          "difficulty": "pro",
+          "jobs": 2,
+          "record": true
+        },
+        "identities": {
+          "runner": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+            "sha256": "a9e17ee6a52e901e135f9f5dd3a190ec98cb112306329b5417269db48d36a1c9"
+          },
+          "policy": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+            "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          "opponent": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/challenger.bas",
+            "sha256": "3b624b0bfeeabcd540b221cbbc583a46a424d66f64914c44a6dab53e8e0ed181"
+          }
+        }
+      },
+      "outcomes": [
+        {
+          "seed": 1014401,
+          "side": "west",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014401,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "west",
+          "ours": 30,
+          "theirs": 8,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "east",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        }
+      ]
+    },
+    "against-denier": {
+      "games": 8,
+      "wins": 8,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 3.625,
+      "mean_margin": 26.375,
+      "seed_bootstrap_95": [
+        25.5,
+        27
+      ],
+      "seed_blocks": 4,
+      "all_replays_verified": true,
+      "banks": {
+        "west": 25.5,
+        "east": 27.25
+      },
+      "contract": {
+        "settings": {
+          "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+          "opponent": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/denier.bas",
+          "output": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/against-denier",
+          "runner": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+          "first": 1014401,
+          "last": 1014404,
+          "team_size": 3,
+          "goal": 30,
+          "minutes": 20,
+          "difficulty": "pro",
+          "jobs": 2,
+          "record": true
+        },
+        "identities": {
+          "runner": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+            "sha256": "a9e17ee6a52e901e135f9f5dd3a190ec98cb112306329b5417269db48d36a1c9"
+          },
+          "policy": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+            "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          "opponent": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/denier.bas",
+            "sha256": "93637edaaf7fc8a991cbfaf5f836941814873f6c2b2b1125a0f36d9f1725141d"
+          }
+        }
+      },
+      "outcomes": [
+        {
+          "seed": 1014401,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014401,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "east",
+          "ours": 30,
+          "theirs": 0,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "west",
+          "ours": 30,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        }
+      ]
+    },
+    "against-patient": {
+      "games": 8,
+      "wins": 8,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 4.25,
+      "mean_margin": 25.75,
+      "seed_bootstrap_95": [
+        24.75,
+        26.75
+      ],
+      "seed_blocks": 4,
+      "all_replays_verified": true,
+      "banks": {
+        "west": 25.5,
+        "east": 26
+      },
+      "contract": {
+        "settings": {
+          "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+          "opponent": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/patient.bas",
+          "output": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/against-patient",
+          "runner": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+          "first": 1014401,
+          "last": 1014404,
+          "team_size": 3,
+          "goal": 30,
+          "minutes": 20,
+          "difficulty": "pro",
+          "jobs": 2,
+          "record": true
+        },
+        "identities": {
+          "runner": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+            "sha256": "a9e17ee6a52e901e135f9f5dd3a190ec98cb112306329b5417269db48d36a1c9"
+          },
+          "policy": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+            "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          "opponent": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/patient.bas",
+            "sha256": "c1e48890c62ce74e33eb23d7c4609e1654fda681fb6caa1b82a9783d9380d8c1"
+          }
+        }
+      },
+      "outcomes": [
+        {
+          "seed": 1014401,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014401,
+          "side": "east",
+          "ours": 30,
+          "theirs": 2,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        }
+      ]
+    },
+    "against-sniper": {
+      "games": 8,
+      "wins": 8,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 5.375,
+      "mean_margin": 24.625,
+      "seed_bootstrap_95": [
+        22.75,
+        26.5
+      ],
+      "seed_blocks": 4,
+      "all_replays_verified": true,
+      "banks": {
+        "west": 22.75,
+        "east": 26.5
+      },
+      "contract": {
+        "settings": {
+          "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+          "opponent": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/sniper.bas",
+          "output": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/against-sniper",
+          "runner": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+          "first": 1014401,
+          "last": 1014404,
+          "team_size": 3,
+          "goal": 30,
+          "minutes": 20,
+          "difficulty": "pro",
+          "jobs": 2,
+          "record": true
+        },
+        "identities": {
+          "runner": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+            "sha256": "a9e17ee6a52e901e135f9f5dd3a190ec98cb112306329b5417269db48d36a1c9"
+          },
+          "policy": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+            "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          "opponent": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/sniper.bas",
+            "sha256": "550d5d0d22754d58becdc11bde21b9d0e97cd4aa73d2fd5326975e741339bc90"
+          }
+        }
+      },
+      "outcomes": [
+        {
+          "seed": 1014401,
+          "side": "west",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014401,
+          "side": "east",
+          "ours": 30,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "west",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "east",
+          "ours": 30,
+          "theirs": 6,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "west",
+          "ours": 30,
+          "theirs": 13,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        }
+      ]
+    },
+    "against-support": {
+      "games": 8,
+      "wins": 8,
+      "timeLimits": 0,
+      "meanKills": 30.0,
+      "meanOpponentKills": 3.875,
+      "mean_margin": 26.125,
+      "seed_bootstrap_95": [
+        25.0,
+        27.375
+      ],
+      "seed_blocks": 4,
+      "all_replays_verified": true,
+      "banks": {
+        "west": 27,
+        "east": 25.25
+      },
+      "contract": {
+        "settings": {
+          "policy": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+          "opponent": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/support.bas",
+          "output": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/against-support",
+          "runner": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+          "first": 1014401,
+          "last": 1014404,
+          "team_size": 3,
+          "goal": 30,
+          "minutes": 20,
+          "difficulty": "pro",
+          "jobs": 2,
+          "record": true
+        },
+        "identities": {
+          "runner": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwheadless",
+            "sha256": "a9e17ee6a52e901e135f9f5dd3a190ec98cb112306329b5417269db48d36a1c9"
+          },
+          "policy": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/candidate.bas",
+            "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          "opponent": {
+            "path": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/support.bas",
+            "sha256": "bae5063a2476150947fecd2470055bd9f58ddd90225d5ad1189da05ba0fd053d"
+          }
+        }
+      },
+      "outcomes": [
+        {
+          "seed": 1014401,
+          "side": "west",
+          "ours": 30,
+          "theirs": 1,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014401,
+          "side": "east",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014402,
+          "side": "east",
+          "ours": 30,
+          "theirs": 7,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "west",
+          "ours": 30,
+          "theirs": 3,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014403,
+          "side": "east",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "west",
+          "ours": 30,
+          "theirs": 4,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        },
+        {
+          "seed": 1014404,
+          "side": "east",
+          "ours": 30,
+          "theirs": 5,
+          "win": true,
+          "timeLimit": false,
+          "replayVerified": true
+        }
+      ]
+    }
+  },
+  "retained": true,
+  "initial_screen_is_superseded": true,
+  "game_hosted_integration": [
+    {
+      "name": "league-smoke",
+      "result": {
+        "scores": [
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "winner_team": "west",
+        "west_kills": 30,
+        "east_kills": 6,
+        "end_tick": 10519,
+        "end_reason": "kill_goal",
+        "seed": 1014601,
+        "kill_goal": 30,
+        "per_seat": [
+          {
+            "slot": 0,
+            "team": 0,
+            "kills": 15,
+            "deaths": 2,
+            "hooks_thrown": 114,
+            "hooks_landed": 63
+          },
+          {
+            "slot": 1,
+            "team": 0,
+            "kills": 7,
+            "deaths": 2,
+            "hooks_thrown": 118,
+            "hooks_landed": 61
+          },
+          {
+            "slot": 2,
+            "team": 0,
+            "kills": 8,
+            "deaths": 2,
+            "hooks_thrown": 113,
+            "hooks_landed": 56
+          },
+          {
+            "slot": 3,
+            "team": 1,
+            "kills": 2,
+            "deaths": 7,
+            "hooks_thrown": 112,
+            "hooks_landed": 28
+          },
+          {
+            "slot": 4,
+            "team": 1,
+            "kills": 3,
+            "deaths": 14,
+            "hooks_thrown": 104,
+            "hooks_landed": 37
+          },
+          {
+            "slot": 5,
+            "team": 1,
+            "kills": 1,
+            "deaths": 9,
+            "hooks_thrown": 109,
+            "hooks_landed": 37
+          }
+        ]
+      },
+      "episode": {
+        "config": {
+          "tokens": [
+            "local-0",
+            "local-1",
+            "local-2",
+            "local-3",
+            "local-4",
+            "local-5"
+          ],
+          "players": [
+            {
+              "name": "rusher"
+            },
+            {
+              "name": "rusher"
+            },
+            {
+              "name": "rusher"
+            },
+            {
+              "name": "baseline"
+            },
+            {
+              "name": "baseline"
+            },
+            {
+              "name": "baseline"
+            }
+          ],
+          "seed": 1014601,
+          "max_ticks": 38400,
+          "kill_goal": 30,
+          "fog": true,
+          "wait_for_llm": true
+        },
+        "policies": [
+          {
+            "slot": 0,
+            "team": "west",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/rusher.bas",
+            "content_hash": "sha256:f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          {
+            "slot": 1,
+            "team": "west",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/rusher.bas",
+            "content_hash": "sha256:f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          {
+            "slot": 2,
+            "team": "west",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/rusher.bas",
+            "content_hash": "sha256:f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          {
+            "slot": 3,
+            "team": "east",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/baseline.bas",
+            "content_hash": "sha256:96fd425a95c6284bb97bd97e4154338e976c51d97565a71f38a52abf1985ec90"
+          },
+          {
+            "slot": 4,
+            "team": "east",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/baseline.bas",
+            "content_hash": "sha256:96fd425a95c6284bb97bd97e4154338e976c51d97565a71f38a52abf1985ec90"
+          },
+          {
+            "slot": 5,
+            "team": "east",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/baseline.bas",
+            "content_hash": "sha256:96fd425a95c6284bb97bd97e4154338e976c51d97565a71f38a52abf1985ec90"
+          }
+        ],
+        "binary": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwleague",
+        "binary_sha256": "b8519f9dba02a3d4f71aa8ca5828276cfda19d7342c5bcfd1387a49b12d1056c"
+      },
+      "all_seats_completed": true,
+      "replay_sha256": "e0b7352b5007e404c7b6e0ac2e18bbd4da599596bc799e170a88c783a9f53a3c",
+      "replay_verified": true
+    },
+    {
+      "name": "mixed-smoke",
+      "result": {
+        "scores": [
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "winner_team": "west",
+        "west_kills": 30,
+        "east_kills": 16,
+        "end_tick": 11259,
+        "end_reason": "kill_goal",
+        "seed": 1014602,
+        "kill_goal": 30,
+        "per_seat": [
+          {
+            "slot": 0,
+            "team": 0,
+            "kills": 21,
+            "deaths": 1,
+            "hooks_thrown": 125,
+            "hooks_landed": 79
+          },
+          {
+            "slot": 1,
+            "team": 0,
+            "kills": 3,
+            "deaths": 9,
+            "hooks_thrown": 131,
+            "hooks_landed": 52
+          },
+          {
+            "slot": 2,
+            "team": 0,
+            "kills": 6,
+            "deaths": 6,
+            "hooks_thrown": 127,
+            "hooks_landed": 60
+          },
+          {
+            "slot": 3,
+            "team": 1,
+            "kills": 9,
+            "deaths": 12,
+            "hooks_thrown": 121,
+            "hooks_landed": 64
+          },
+          {
+            "slot": 4,
+            "team": 1,
+            "kills": 4,
+            "deaths": 6,
+            "hooks_thrown": 131,
+            "hooks_landed": 42
+          },
+          {
+            "slot": 5,
+            "team": 1,
+            "kills": 3,
+            "deaths": 12,
+            "hooks_thrown": 127,
+            "hooks_landed": 57
+          }
+        ]
+      },
+      "episode": {
+        "config": {
+          "tokens": [
+            "local-0",
+            "local-1",
+            "local-2",
+            "local-3",
+            "local-4",
+            "local-5"
+          ],
+          "players": [
+            {
+              "name": "rusher"
+            },
+            {
+              "name": "support"
+            },
+            {
+              "name": "aggressive"
+            },
+            {
+              "name": "baseline"
+            },
+            {
+              "name": "support"
+            },
+            {
+              "name": "aggressive"
+            }
+          ],
+          "seed": 1014602,
+          "max_ticks": 38400,
+          "kill_goal": 30,
+          "fog": true,
+          "wait_for_llm": true
+        },
+        "policies": [
+          {
+            "slot": 0,
+            "team": "west",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/rusher.bas",
+            "content_hash": "sha256:f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511"
+          },
+          {
+            "slot": 1,
+            "team": "west",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/support.bas",
+            "content_hash": "sha256:bae5063a2476150947fecd2470055bd9f58ddd90225d5ad1189da05ba0fd053d"
+          },
+          {
+            "slot": 2,
+            "team": "west",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/aggressive.bas",
+            "content_hash": "sha256:58225fd7bf422fbc618d70247120ebc68c097d57d07823316e43b131aea20b86"
+          },
+          {
+            "slot": 3,
+            "team": "east",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/coaching/policies/basic-rusher/baseline.bas",
+            "content_hash": "sha256:96fd425a95c6284bb97bd97e4154338e976c51d97565a71f38a52abf1985ec90"
+          },
+          {
+            "slot": 4,
+            "team": "east",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/support.bas",
+            "content_hash": "sha256:bae5063a2476150947fecd2470055bd9f58ddd90225d5ad1189da05ba0fd053d"
+          },
+          {
+            "slot": 5,
+            "team": "east",
+            "source": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/examples/pudge_wars/players/aggressive.bas",
+            "content_hash": "sha256:58225fd7bf422fbc618d70247120ebc68c097d57d07823316e43b131aea20b86"
+          }
+        ],
+        "binary": "/Users/aaln/experiments/softmax/polyworld-pudge-wars/tmp/rusher-basic-20261014/pwleague",
+        "binary_sha256": "b8519f9dba02a3d4f71aa8ca5828276cfda19d7342c5bcfd1387a49b12d1056c"
+      },
+      "all_seats_completed": true,
+      "replay_sha256": "4a8254c2773b00f63c8adccdc1169d3b5b916ea268085a5e8b36fd327c4e7497",
+      "replay_verified": true
+    }
+  ]
+}

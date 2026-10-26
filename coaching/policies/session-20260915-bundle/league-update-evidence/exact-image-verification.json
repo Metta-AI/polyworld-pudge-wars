@@ -1,0 +1,17 @@
+{
+  "cases": 1004,
+  "sequence_steps": 106,
+  "changed": 152,
+  "scoped_semantic_mismatches": 0,
+  "roundtrip_mismatches": 0,
+  "mechanisms": {
+    "engagement_pairs": 140,
+    "engagement_requests": 24,
+    "fountain_rejections": 178,
+    "curve_starts": 108,
+    "curve_steps": 164,
+    "curve_flying_steps": 30,
+    "curve_return_steps": 10
+  },
+  "scope": "Whole-package actions and memory on authored states and lifecycle sequences; no claim that goals or all inherited prose are empirically recovered."
+}

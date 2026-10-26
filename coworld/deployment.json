@@ -20,14 +20,17 @@
   "inference_validation_episode": "ereq_3789063f-8d50-444e-a5fe-af775829fff0",
   "policies": {
     "base": {
-      "id": "695e980a-5d8d-43cd-b852-5631ce314431",
+      "id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
       "name": "pudge-basic-base",
-      "version": 1,
+      "version": 2,
       "pools": null,
       "submit_error": null,
-      "sha256": "abc4ac1b80d8bbc21f4e52f4f2d6c4c2b55d2d37cda92acfa2ed8a0e5470b1a8",
+      "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511",
       "source": "examples/pudge_wars/players/base.bas",
-      "uploaded_at": "2026-10-09T20:23:14.208490+00:00"
+      "uploaded_at": "2026-10-14T23:38:03.310936+00:00",
+      "membership_id": "lpm_9bcc9096-a938-4748-a801-4da4b7a05855",
+      "is_champion": true,
+      "deployment_record": "coaching/policies/basic-rusher/deployment/release.json"
     },
     "aggressive": {
       "id": "c610add1-523c-46ae-91b5-1f0f73358b88",
@@ -126,5 +129,17 @@
       "src/polyworld/oracles.nim": "46c4c160ce1fe758b8a872db8049848b14539a85a1f65a38df9a7fc82b43901a",
       "src/polyworld/timings.nim": "731717199cf6501c29a7aa68a9a7007bca61166bd738d1864fce801a9aa1b74e"
     }
+  },
+  "last_policy_update_at": "2026-10-14T23:41:19.775513+00:00",
+  "hosted_play_release": {
+    "version": "0.1.2",
+    "coworld_id": "cow_f5f7b20b-db61-4f82-bd9e-16fcc74d4755",
+    "manifest_hash": "sha256:70c0229818ab3de5db532f122b7dc20f3de15e423791a281892199b86619f21e",
+    "image": "public.ecr.aws/q5f4m8t9/cogames@sha256:1d7b15b83f65f7e75e60637b84d0f05d60cec128559dc835de263e3a93c5c90e",
+    "replay_viewer": "sha256:6d690bfc900aadcf08ad8937f2b37baf0964d659eb224453e12e5f64b56011ce",
+    "simulator_version": 38,
+    "certification": "certified",
+    "uploaded_at": "2026-10-21T06:17:57.543245Z",
+    "platform_pr": "https://app.graphite.dev/github/pr/Metta-AI/metta/28141"
   }
 }

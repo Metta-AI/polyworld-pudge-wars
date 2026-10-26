@@ -1,0 +1,17 @@
+{
+  "variant": "engagement",
+  "ir_sha256": "0c5974a158185682ad8116ccc03a1bdf5585045893bb81965a12fa8b706bb653",
+  "policy_sha256": "427da005db3ba969be4378415b5eecc3c0ff0d49bdd757f7df36452a6034289a",
+  "oracle_sha256": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+  "archive_hashes": {
+    "compiler-contract.json": "7c52bc3ea24d537091436719d9a6fce8391a25488ebf9053f9dc987c072c8206",
+    "compiler.py": "b9da1acd4f48bf4ad3976950419f9c7e687f937ecbff433b79d0b27652ad6faa",
+    "engagement.ir.md": "609739127823acb9cb21adbb16999d9046ae8d7e0470c641bb1e5424f60f019b",
+    "engagement_v1.py": "ef954d39f8e5fc7128823f592faac5d33b0f90b5c2a228046be7499661ad270b",
+    "fountain.ir.md": "c8ead27c5aa13bb26770f12e04b0a118b2d57e4c4625eb5549bd1eddf83d7c89",
+    "input.ir.md": "0c5974a158185682ad8116ccc03a1bdf5585045893bb81965a12fa8b706bb653",
+    "oracle.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+    "parent.ir.md": "bac6e6ca6dfe558210a66ad50d336595d1a5d34922eabae145df6ce7b65cf406",
+    "session_compile.py": "c31163b333ff279cbe2532362151115b9f088a2c039e7924e9a3280d20d847c7"
+  }
+}

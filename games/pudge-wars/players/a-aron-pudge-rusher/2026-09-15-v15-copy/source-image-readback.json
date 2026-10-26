@@ -1,0 +1,11 @@
+{
+  "id": "img_05fcb9fe-06aa-4083-a3fc-776b42f0a71b",
+  "name": "pudge-coaching",
+  "version": 1,
+  "client_hash": "sha256:337eb36443048cd094d0f600e09a4e6195ade688517df502585701839caadd53",
+  "status": "ready",
+  "image_uri": null,
+  "image_digest": "sha256:09accd1d1fb8925270ccda487ba6740573ac5171bcaf6e152ae04ec4c273ffd4",
+  "public_image_uri": null,
+  "is_coworld_image": false
+}

@@ -17,12 +17,12 @@
         "pwcoworld"
       ],
       "env": {
-        "PUDGE_WARS_CLIENT_URL": "https://pudge-wars-site-theta.vercel.app/play/bundles/16ee23ead8a7ca64/pw.html"
+        "PUDGE_WARS_CLIENT_URL": "https://pudge-wars-site-theta.vercel.app/play/bundles/6d690bfc900aadcf/pw.html"
       },
       "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main"
     },
     "replay_viewer": {
-      "bundle": "sha256:bbbd87e990e2779988f308dc3300ab97527923ccc2786d7226606524a6880a12",
+      "bundle": "sha256:6d690bfc900aadcf08ad8937f2b37baf0964d659eb224453e12e5f64b56011ce",
       "replay_compression": "gzip"
     },
     "config_schema": {

@@ -19,7 +19,10 @@ import
   sim
 
 const
-  NetProtocolVersion* = 11'u16
+  NetProtocolVersion* = 14'u16
+    ## v14: Human pacing is 28 Hz; reject clients using the old 24 Hz clock.
+    ## v13: Human pacing is 24 Hz; reject clients using the old 16 Hz clock.
+    ## v12: Start and Lobby carry the host's human-paced clock flag.
     ## v11: Start Setup gained `seatLabels` (replay format v5). Host
     ##     and client must rebuild together; names ride the tape.
     ## v10: Hello carries `simVersion` (`ReplayGameVersion`) so a live
@@ -115,6 +118,7 @@ type
   LobbyMsg* = object
     seats*: seq[NetSeat]
     started*: bool
+    humanPaced*: bool
 
   SlotGrantMsg* = object
     slot*: int32
@@ -126,6 +130,7 @@ type
 
   StartMsg* = object
     setup*: Setup
+    humanPaced*: bool
 
   TicksMsg* = object
     firstTick*: uint32
@@ -186,14 +191,14 @@ proc packPickSlot*(slot: int32): string =
 proc packIntent*(intent: HumanIntent, wantedTick: uint32 = 0): string =
   pack(NmIntent, IntentMsg(intent: intent, wantedTick: wantedTick))
 
-proc packLobby*(seats: seq[NetSeat], started: bool): string =
-  pack(NmLobby, LobbyMsg(seats: seats, started: started))
+proc packLobby*(seats: seq[NetSeat], started: bool, humanPaced = false): string =
+  pack(NmLobby, LobbyMsg(seats: seats, started: started, humanPaced: humanPaced))
 
 proc packSlotGrant*(slot: int32, token, reason: string): string =
   pack(NmSlotGrant, SlotGrantMsg(slot: slot, token: token, reason: reason))
 
-proc packStart*(setup: Setup): string =
-  pack(NmStart, StartMsg(setup: setup))
+proc packStart*(setup: Setup, humanPaced = false): string =
+  pack(NmStart, StartMsg(setup: setup, humanPaced: humanPaced))
 
 proc packTicks*(
     firstTick: uint32,

@@ -1,0 +1,10 @@
+{
+  "id": "img_8ede155e-89db-4bee-9ab5-5c3e021853f8",
+  "name": "pudge-coaching",
+  "version": 2,
+  "client_hash": "sha256:96dd9273dec4c4db020cf3aaeceee2a27e235f45eee486be38409e4e7d138c23",
+  "status": "ready",
+  "image_uri": "471879937681.dkr.ecr.us-east-1.amazonaws.com/cogames/h0835grji1zfy5wakd4i56kn-3939e8b7673b/pudge-coaching@sha256:d8413008c797bd6bb206d0aec735b8b2e12f640b3623d5088e5cd325b75db4d8",
+  "image_digest": "sha256:d8413008c797bd6bb206d0aec735b8b2e12f640b3623d5088e5cd325b75db4d8",
+  "public_image_uri": null
+}

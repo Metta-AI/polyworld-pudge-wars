@@ -1,0 +1,63 @@
+{
+  "v14": {
+    "python": "3.12.14 (main, Sep  1 2026, 00:10:07) [GCC 14.2.0]",
+    "websockets": "15.0.1",
+    "environment": {
+      "PUDGE_PERSONALITY": "rusher",
+      "PUDGE_POLICY_ARM": "combined",
+      "PYTHONPATH": "/app"
+    },
+    "sources": {
+      "player/base.py": "b848fa26c978ff1553ef91a00ddc1f85af32b5b2bfd4c67bd983f74cf66232b6",
+      "player/player.py": "3fbce119738aa235f9c73b3be728136cedc8f70cdf794340092b5b30e1f2a17b",
+      "shared/log_shipper.py": "41af6c252283ee81395b78f52ead844ddadf206b87d2cc5d5b59631b95790472"
+    },
+    "image_id": "sha256:678d7c8852d5c7da6f3fa45019660071305e7ff87af9f914106a4bb83e678305",
+    "layers": [
+      "sha256:411a86676185cb54d695a805b238194a64e9b77e0c723f3802fbb87d333ea0b3",
+      "sha256:3070bb8623db07ca38569112f9b296043371a00bfb3ee4d9f8f63ddfd2f2efca",
+      "sha256:3d664d274420a79749a26f9e5115b2120d46037264011773ca4c52e22780b2ca",
+      "sha256:24257af4ce5bde01d3c7ebd6d366ec4a298ed27c794bbd6832ef5ce934a66170",
+      "sha256:7a917df653c9ef80f4a6f10ac6b4af3c0aaea995dd75062325830d35a0983d70",
+      "sha256:2ac49fe2471ea7fc231763f0eace949118520b0e21528991aa4b16727a0ba415",
+      "sha256:6a870891085a09f16dd7d24b5e844f70d42d340cb99dd91d892e946ea268d4a5",
+      "sha256:59eee156b6d96d0a6277ec684fcf19e1216970663aeec6b6334cb7ef2f96a036"
+    ],
+    "command": [
+      "python",
+      "-m",
+      "coworld.examples.pudgewars.player.player"
+    ]
+  },
+  "v15": {
+    "python": "3.12.14 (main, Sep  1 2026, 00:10:07) [GCC 14.2.0]",
+    "websockets": "15.0.1",
+    "environment": {
+      "PUDGE_PERSONALITY": "rusher",
+      "PUDGE_POLICY_ARM": "combined",
+      "PYTHONPATH": "/app"
+    },
+    "sources": {
+      "player/base.py": "d4b6255a68e42aafa738b2f5ca22aca553f1b278cd8696fbee3c95c0d37daaa0",
+      "player/player.py": "3fbce119738aa235f9c73b3be728136cedc8f70cdf794340092b5b30e1f2a17b",
+      "shared/log_shipper.py": "41af6c252283ee81395b78f52ead844ddadf206b87d2cc5d5b59631b95790472"
+    },
+    "image_id": "sha256:d7f8a180df0cecdb28008b42ce1a869d43604d3680398e7177a6a6683845529a",
+    "layers": [
+      "sha256:411a86676185cb54d695a805b238194a64e9b77e0c723f3802fbb87d333ea0b3",
+      "sha256:3070bb8623db07ca38569112f9b296043371a00bfb3ee4d9f8f63ddfd2f2efca",
+      "sha256:3d664d274420a79749a26f9e5115b2120d46037264011773ca4c52e22780b2ca",
+      "sha256:24257af4ce5bde01d3c7ebd6d366ec4a298ed27c794bbd6832ef5ce934a66170",
+      "sha256:7a917df653c9ef80f4a6f10ac6b4af3c0aaea995dd75062325830d35a0983d70",
+      "sha256:2ac49fe2471ea7fc231763f0eace949118520b0e21528991aa4b16727a0ba415",
+      "sha256:c169583864f88ebda56f8f9843b21d0e724ae56f18df9e0ded91eb5efa62d1b9",
+      "sha256:feba46519a6fd2135b616d20bcf169eab1dd43567bc2ed2a7bd7b7fb3072d531"
+    ],
+    "command": [
+      "python",
+      "-m",
+      "coworld.examples.pudgewars.player.player"
+    ]
+  },
+  "result": "Only policy base source differs; runtime Python, websockets, command, policy environment and all other Python source hashes match."
+}
