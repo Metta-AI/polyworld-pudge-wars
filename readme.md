@@ -13,7 +13,7 @@ pinned VM and GotA-style game-hosted execution. The migration includes private
 seat logs/annotations and mixed-team OpenSkill league settings. See
 [the migration guide](coworld/GAME_HOSTED_MIGRATION.md) for local tests, file
 uploads and rollout. The separate `coworld/platform-hosted/` package retains
-Docker players and human play. The 3v3 league runs `pudge-wars-basic:0.1.1`;
+Docker players and human play. The 3v3 league runs `pudge-wars-basic:0.1.4` with mixed human/BASIC seats;
 the sibling 1v1 league retains its existing runtime.
 
 Run local BASIC episodes without Docker:

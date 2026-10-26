@@ -132,14 +132,18 @@
   },
   "last_policy_update_at": "2026-10-14T23:41:19.775513+00:00",
   "hosted_play_release": {
-    "version": "0.1.2",
-    "coworld_id": "cow_f5f7b20b-db61-4f82-bd9e-16fcc74d4755",
-    "manifest_hash": "sha256:70c0229818ab3de5db532f122b7dc20f3de15e423791a281892199b86619f21e",
-    "image": "public.ecr.aws/q5f4m8t9/cogames@sha256:1d7b15b83f65f7e75e60637b84d0f05d60cec128559dc835de263e3a93c5c90e",
-    "replay_viewer": "sha256:6d690bfc900aadcf08ad8937f2b37baf0964d659eb224453e12e5f64b56011ce",
+    "version": "0.1.4",
+    "coworld_id": "cow_1138ecba-2cd6-4115-9194-bc3cb5521643",
+    "manifest_hash": "sha256:7b2bd24443156b38232d45ee87a8f9526da56762fe2b407513f72d8ddfb304ec",
+    "image": "public.ecr.aws/q5f4m8t9/cogames@sha256:01caef1ddfcf33cc83d1be502a2f5cdb0c41d78d3046a3b1e25592240e996bc0",
+    "replay_viewer": "sha256:5fb1947dbfb26bae7c5ebee8167d1d838ce1ef3e7e8a4c22dc76a50e1848c8c6",
     "simulator_version": 38,
+    "wire_protocol": 14,
     "certification": "certified",
-    "uploaded_at": "2026-10-21T06:17:57.543245Z",
-    "platform_pr": "https://app.graphite.dev/github/pr/Metta-AI/metta/28141"
+    "canonical": true,
+    "released_at": "2026-10-26",
+    "engine_commit": "cd8111a",
+    "browser_source_commit": "2ffb5cc",
+    "browser_url": "https://pudge-wars-site-theta.vercel.app/play/bundles/5fb1947dbfb26bae/pw.html"
   }
 }
