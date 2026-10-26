@@ -1,0 +1,92 @@
+{
+  "coworld_id": "cow_38363d7c-d7e7-4559-b2e6-626707f5da39",
+  "name": "hookem",
+  "version": "0.1.0",
+  "source_commit": "b9726ec",
+  "client_url": "https://hookem-polyworld.vercel.app/builds/12c19343500af5e2/index.html",
+  "image": "public.ecr.aws/q5f4m8t9/cogames@sha256:8612b1910b8028655769522a1777ea042dcb44933b09916dc98cade73f38e233",
+  "replay_viewer": {
+    "bundle": "sha256:5fbb88fdb054b6124e8878e6546623b6fd781e3877584f1444c891f0aba77a4a",
+    "replay_compression": "gzip"
+  },
+  "human_tick_rate": 32,
+  "certification": {
+    "coworld_id": "cow_38363d7c-d7e7-4559-b2e6-626707f5da39",
+    "state": "certified",
+    "certified": true,
+    "contract_version": "main-cf254d22905f",
+    "certification_job_id": "17c05df8-c512-413b-9b9f-f274d26563dc",
+    "failed_step": null,
+    "failure": null,
+    "transcript_summary": [
+      {
+        "id": "matriculate",
+        "status": "pass"
+      },
+      {
+        "id": "source-resolves",
+        "status": "pass"
+      },
+      {
+        "id": "images-reachable",
+        "status": "pass"
+      },
+      {
+        "id": "fixture-conforms",
+        "status": "pass"
+      },
+      {
+        "id": "smoke-episode",
+        "status": "pass"
+      },
+      {
+        "id": "results-conform",
+        "status": "pass"
+      },
+      {
+        "id": "replay-present",
+        "status": "pass"
+      },
+      {
+        "id": "replay-loadable",
+        "status": "pass"
+      },
+      {
+        "id": "players-run",
+        "status": "pass"
+      },
+      {
+        "id": "supporting-roles",
+        "status": "pass"
+      }
+    ],
+    "completed_at": "2026-10-26T22:26:09.427062Z"
+  },
+  "hosted_smoke_episodes": [
+    {
+      "id": "ereq_0a064900-58e4-4d73-a3a2-968ee7556749",
+      "status": "completed",
+      "error": null
+    },
+    {
+      "id": "ereq_2913c007-25fe-4ccd-8429-929be30c2fd5",
+      "status": "completed",
+      "error": null
+    },
+    {
+      "id": "ereq_524c40de-a99a-40b1-ad84-1893c7bd56f1",
+      "status": "completed",
+      "error": null
+    },
+    {
+      "id": "ereq_86c6bb9c-39f0-4bb3-9265-3ead65ce988e",
+      "status": "completed",
+      "error": null
+    },
+    {
+      "id": "ereq_f3e80964-814b-4e96-8904-8583f7658200",
+      "status": "completed",
+      "error": null
+    }
+  ]
+}
