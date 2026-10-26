@@ -1,4 +1,4 @@
-## Pudge Wars balance table, upgrade curves, and butcher model names.
+## Fresh Meat balance table, upgrade curves, and butcher model names.
 
 import
   std/[json, os, sets, streams, strformat, strutils],
@@ -189,7 +189,7 @@ block:
     let rel = dataRel(iconPath(name, "items"))
     doAssert packed(rel), "webdata.txt missing " & rel
 
-echo "Testing published Pudge Wars icons resolve"
+echo "Testing published Fresh Meat icons resolve"
 block:
   doAssert fileExists(iconPath(HookAbilityIcon, "abilities")),
     "missing " & iconPath(HookAbilityIcon, "abilities")
@@ -301,7 +301,7 @@ block:
   doAssert RuneNames[RuneLightning] == "Lightning"
   doAssert RuneNames[RuneBounty] == "Bounty"
 
-echo "Testing published Pudge Wars recordings resolve"
+echo "Testing published Fresh Meat recordings resolve"
 block:
   const Clips = [
     "hook_throw", "hook_latch", "hook_clash", "melee", "splash", "kill",

@@ -1,6 +1,6 @@
 version     = "0.1.0"
 author      = "treeform"
-description = "PolyWorld engine + Pudge Wars: a deterministic 3v3 river-arena game."
+description = "PolyWorld engine + Fresh Meat: a deterministic 3v3 river-arena game."
 license     = "MIT"
 
 srcDir = "src"

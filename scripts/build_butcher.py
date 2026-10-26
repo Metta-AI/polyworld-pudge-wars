@@ -412,7 +412,7 @@ def bake(glb):
         report.append({"name": name, "duration": duration, "loop": loop, "description": description,
                        "floorRange": [min(floors), max(floors)], "samples": len(times)})
         print(name, f"{duration:.3f}s", "floor range", np.round([min(floors),max(floors)],4))
-    glb.doc["asset"]["generator"] = "Pudge Wars bespoke butcher motion v5 — edge-down cuts"
+    glb.doc["asset"]["generator"] = "Fresh Meat bespoke butcher motion v5 — edge-down cuts"
     return {"rigHeight": rig.height, "rigFloor": rig.floor, "clips": report}
 
 

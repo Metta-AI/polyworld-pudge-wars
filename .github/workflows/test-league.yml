@@ -1,4 +1,4 @@
-name: Test Pudge Wars BASIC league
+name: Test Fresh Meat BASIC league
 on:
   pull_request:
   push:
