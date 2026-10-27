@@ -552,17 +552,19 @@ var
   touchHudApplied: bool
 
 when defined(emscripten):
-  proc emscripten_run_script_int(script: cstring): cint {.importc,
-      header: "<emscripten.h>".}
+  {.emit: """#include <emscripten.h>""".}
 
   var coarsePointerCache = -1
 
   proc coarsePointer(): bool =
     ## A phone or tablet: the primary pointer is a finger.
     if coarsePointerCache < 0:
-      coarsePointerCache = emscripten_run_script_int(
-        "+!!(window.matchMedia && matchMedia('(pointer: coarse)').matches)"
-      ).int
+      # Compile the probe into the bundle; replay hosting disallows eval.
+      {.emit: """
+      `coarsePointerCache` = EM_ASM_INT({
+        return window.matchMedia && window.matchMedia('(pointer: coarse)').matches ? 1 : 0;
+      });
+      """.}
     coarsePointerCache == 1
 else:
   proc coarsePointer(): bool = false

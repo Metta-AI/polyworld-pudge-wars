@@ -195,7 +195,16 @@
     </script>
     <script src="recap-overlay.js"></script>
     <script src="touch-input.js"></script>
-    <script type="module" src="boot-scene.js"></script>
+    <script type="module">
+      // Observatory's replay sandbox only permits same-origin scripts. The
+      // decorative loader imports Three from a CDN, so use the plain progress
+      // overlay for replays; gameplay itself is entirely bundled.
+      const query = new URLSearchParams(location.search);
+      const fragment = new URLSearchParams(location.hash.replace(/^#/, ''));
+      if (!query.get('replay') && !fragment.get('replay')) {
+        import('./boot-scene.js');
+      }
+    </script>
     <script type='text/javascript'>
       function bootError(text) {
         var boot = document.getElementById('boot');
