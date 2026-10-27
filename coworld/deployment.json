@@ -145,5 +145,16 @@
     "engine_commit": "cd8111a",
     "browser_source_commit": "f1ab29d",
     "browser_url": "https://pudge-wars-site-theta.vercel.app/play/bundles/3115a0709de5c7e3/pw.html"
+  },
+  "replay_viewer_release": {
+    "version": "0.1.9",
+    "coworld_id": "cow_d96d9b33-32d7-4ab3-b41d-6f84a29808a3",
+    "manifest_hash": "sha256:8dca6e73709aaf1a1449224e2565a8bd301e09569c68753c14288a5c309e6e73",
+    "replay_viewer": "sha256:3207f251a64aa8ff246a56a7349d79437353fc7fcb09f07313feb41fff8e0cdf",
+    "certification": "certified",
+    "canonical": true,
+    "released_at": "2026-10-27",
+    "source_commit": "ad1174ef44661d75fc86d688239740c798b4347b",
+    "hosted_smokes_completed": 5
   }
 }
