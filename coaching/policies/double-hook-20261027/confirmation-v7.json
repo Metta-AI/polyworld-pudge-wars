@@ -1,0 +1,42 @@
+{
+  "games": 48,
+  "wins": 21,
+  "timeLimits": 0,
+  "meanKillMargin": -2.0625,
+  "pairedMapBootstrap95": [
+    -4.479166666666667,
+    0.4791666666666667
+  ],
+  "banks": {
+    "west": {
+      "games": 24,
+      "wins": 10
+    },
+    "east": {
+      "games": 24,
+      "wins": 11
+    }
+  },
+  "counts": {
+    "candidate": {
+      "headshots": 462,
+      "hooksThrown": 27901,
+      "hooksLanded": 10312,
+      "kills": 1151,
+      "enemyCatches": 3921
+    },
+    "opponent": {
+      "headshots": 494,
+      "hooksThrown": 27888,
+      "hooksLanded": 10552,
+      "kills": 1250,
+      "enemyCatches": 3976
+    }
+  },
+  "headshotsPerEnemyCatch": {
+    "candidate": 0.11782708492731446,
+    "opponent": 0.12424547283702213
+  },
+  "allReplaysVerified": true,
+  "note": "Ratios are descriptive totals, not independent causal estimates; friendly heals are excluded from enemy catches."
+}

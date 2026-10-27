@@ -1,0 +1,93 @@
+[
+  {
+    "variant": "screen-v1",
+    "games": 12,
+    "wins": 5,
+    "timeLimits": 0,
+    "meanKills": 22.833333333333332,
+    "meanOpponentKills": 27.166666666666668,
+    "meanKillMargin": -4.333333333333336,
+    "headshots": {
+      "candidate": 121,
+      "opponent": 131
+    }
+  },
+  {
+    "variant": "screen-v2",
+    "games": 12,
+    "wins": 2,
+    "timeLimits": 0,
+    "meanKills": 23.25,
+    "meanOpponentKills": 28.166666666666668,
+    "meanKillMargin": -4.916666666666668,
+    "headshots": {
+      "candidate": 105,
+      "opponent": 137
+    }
+  },
+  {
+    "variant": "screen-v5",
+    "games": 12,
+    "wins": 7,
+    "timeLimits": 0,
+    "meanKills": 26.916666666666668,
+    "meanOpponentKills": 27.416666666666668,
+    "meanKillMargin": -0.5,
+    "headshots": {
+      "candidate": 128,
+      "opponent": 131
+    }
+  },
+  {
+    "variant": "screen-v6",
+    "games": 12,
+    "wins": 5,
+    "timeLimits": 0,
+    "meanKills": 24.083333333333332,
+    "meanOpponentKills": 26.416666666666668,
+    "meanKillMargin": -2.3333333333333357,
+    "headshots": {
+      "candidate": 111,
+      "opponent": 127
+    }
+  },
+  {
+    "variant": "screen-v7",
+    "games": 12,
+    "wins": 9,
+    "timeLimits": 0,
+    "meanKills": 28.416666666666668,
+    "meanOpponentKills": 22.0,
+    "meanKillMargin": 6.416666666666668,
+    "headshots": {
+      "candidate": 132,
+      "opponent": 111
+    }
+  },
+  {
+    "variant": "screen-v8",
+    "games": 12,
+    "wins": 7,
+    "timeLimits": 0,
+    "meanKills": 27.416666666666668,
+    "meanOpponentKills": 24.166666666666668,
+    "meanKillMargin": 3.25,
+    "headshots": {
+      "candidate": 132,
+      "opponent": 120
+    }
+  },
+  {
+    "variant": "screen-v9",
+    "games": 12,
+    "wins": 9,
+    "timeLimits": 0,
+    "meanKills": 28.0,
+    "meanOpponentKills": 24.583333333333332,
+    "meanKillMargin": 3.416666666666668,
+    "headshots": {
+      "candidate": 136,
+      "opponent": 120
+    }
+  }
+]

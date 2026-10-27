@@ -1,5 +1,16 @@
 # Winning Python policy transferred to BASIC
 
+## Double-hook update — 2026-10-27
+
+The default now uses the [measured-speed follow-up policy](../double-hook-20261027/README.md)
+selected by the user after reviewing its results. In 48 fresh local 3v3 games it
+landed 498 double-hook kills versus 437 for the prior local baseline and won
+26 games. Overall kills were essentially tied (1,174–1,170), so an overall
+competitive advantage is not established. The source, standalone defaults and
+coworld BASIC copy use the exact tested v9 artifact. This Git update does not
+publish a hosted champion or deploy a coworld. Earlier deployment records below
+are historical.
+
 The default `examples/pudge_wars/players/base.bas`, the standalone
 `examples/pudge_wars/players/rusher.bas`, and `coworld/players/base.bas` now contain
 the same v16-derived controller. No Python process, model weights, extra host

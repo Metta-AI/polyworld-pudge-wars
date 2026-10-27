@@ -1,0 +1,360 @@
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 42, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 42, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 42, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 50, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 50, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 50, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 58, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 58, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 58, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": -12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 0, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 42, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 0, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 42, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 0, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 0, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 50, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 0, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 50, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 0, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 0, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 58, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 0, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 58, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 0, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 42, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 42, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 42, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 50, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 50, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 50, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 58, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 58, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 38, "offset": 24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 58, "aimY": 38}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -24, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -24, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -24, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -24, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -24, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -24, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -24, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -24, "victimX": 92, "speed": 5, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -24, "victimX": 92, "speed": 10, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -12, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -12, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -12, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -12, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -12, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -12, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -12, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -12, "victimX": 92, "speed": 5, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": -12, "victimX": 92, "speed": 10, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 0, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 0, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 0, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 0, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 0, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 0, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 0, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 0, "victimX": 92, "speed": 5, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 0, "victimX": 92, "speed": 10, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 42, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 50, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 0, "lane": 88, "offset": 24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 58, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 84, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 85, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 85, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 77, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 77, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 77, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 69, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 69, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 69, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": -12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 0, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 0, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 0, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 0, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 0, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 0, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 0, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 0, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 0, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 84, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 85, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 85, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 77, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 77, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 77, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 69, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 69, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 38, "offset": 24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 69, "aimY": 38}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -24, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 84, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -24, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -24, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -24, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -24, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -24, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -24, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -24, "victimX": 92, "speed": 5, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -24, "victimX": 92, "speed": 10, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -12, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 84, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -12, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -12, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -12, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -12, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -12, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -12, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -12, "victimX": 92, "speed": 5, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": -12, "victimX": 92, "speed": 10, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 0, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 84, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 0, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 0, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 0, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 0, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 0, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 0, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 0, "victimX": 92, "speed": 5, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 0, "victimX": 92, "speed": 10, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 84, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 85, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 85, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 77, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 69, "aimY": 88}
+{"policy": "baseline", "bank": 1, "lane": 88, "offset": 24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 69, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 40, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 40, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 35, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 44, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 44, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 44, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 49, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 49, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 49, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": -12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 0, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 40, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 0, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 40, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 0, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 0, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 44, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 0, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 44, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 0, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 0, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 49, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 0, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 49, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 0, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 41, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 40, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 34, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 44, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 46, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 46, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 51, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 51, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 38, "offset": 24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 51, "aimY": 38}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -24, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -24, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -24, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -24, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -24, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -24, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -24, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -24, "victimX": 92, "speed": 5, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -24, "victimX": 92, "speed": 10, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -12, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -12, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -12, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -12, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -12, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -12, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -12, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -12, "victimX": 92, "speed": 5, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": -12, "victimX": 92, "speed": 10, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 0, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 0, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 0, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 42, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 0, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 0, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 0, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 50, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 0, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 58, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 0, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 33, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 0, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 35, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 42, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 41, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 35, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 46, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 46, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 46, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 51, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 51, "aimY": 88}
+{"policy": "v9", "bank": 0, "lane": 88, "offset": 24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 51, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 87, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 88, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 92, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 83, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 83, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 83, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 78, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 78, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 78, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": -12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 0, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 0, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 0, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 0, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 0, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 0, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 0, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 0, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 0, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 87, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 88, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 93, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 83, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 83, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 83, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 78, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 78, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 38, "offset": 24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 76, "aimY": 38}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -24, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 84, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -24, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -24, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -24, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -24, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -24, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -24, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -24, "victimX": 92, "speed": 5, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -24, "victimX": 92, "speed": 10, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -12, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 84, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -12, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -12, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -12, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -12, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -12, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -12, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -12, "victimX": 92, "speed": 5, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": -12, "victimX": 92, "speed": 10, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 0, "victimX": 60, "speed": 0, "caught": true, "headshot": 0, "aimX": 84, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 0, "victimX": 60, "speed": 5, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 0, "victimX": 60, "speed": 10, "caught": true, "headshot": 0, "aimX": 85, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 0, "victimX": 76, "speed": 0, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 0, "victimX": 76, "speed": 5, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 0, "victimX": 76, "speed": 10, "caught": true, "headshot": 0, "aimX": 77, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 0, "victimX": 92, "speed": 0, "caught": true, "headshot": 0, "aimX": 69, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 0, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 94, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 0, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 92, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 12, "victimX": 60, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 12, "victimX": 60, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 12, "victimX": 60, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 12, "victimX": 76, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 12, "victimX": 76, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 12, "victimX": 76, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 12, "victimX": 92, "speed": 0, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 12, "victimX": 92, "speed": 5, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 12, "victimX": 92, "speed": 10, "caught": false, "headshot": 0}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 24, "victimX": 60, "speed": 0, "caught": true, "headshot": 1, "aimX": 86, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 24, "victimX": 60, "speed": 5, "caught": true, "headshot": 1, "aimX": 87, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 24, "victimX": 60, "speed": 10, "caught": true, "headshot": 1, "aimX": 92, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 24, "victimX": 76, "speed": 0, "caught": true, "headshot": 1, "aimX": 81, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 24, "victimX": 76, "speed": 5, "caught": true, "headshot": 1, "aimX": 81, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 24, "victimX": 76, "speed": 10, "caught": true, "headshot": 1, "aimX": 81, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 24, "victimX": 92, "speed": 0, "caught": true, "headshot": 1, "aimX": 76, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 24, "victimX": 92, "speed": 5, "caught": true, "headshot": 1, "aimX": 76, "aimY": 88}
+{"policy": "v9", "bank": 1, "lane": 88, "offset": 24, "victimX": 92, "speed": 10, "caught": true, "headshot": 1, "aimX": 76, "aimY": 88}

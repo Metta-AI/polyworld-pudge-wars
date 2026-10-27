@@ -1,0 +1,33 @@
+{
+  "baseline": {
+    "fixtures": 180,
+    "eligible": 144,
+    "headshots": 0,
+    "byBank": {
+      "0": {
+        "eligible": 72,
+        "headshots": 0
+      },
+      "1": {
+        "eligible": 72,
+        "headshots": 0
+      }
+    }
+  },
+  "v8": {
+    "fixtures": 180,
+    "eligible": 144,
+    "headshots": 107,
+    "byBank": {
+      "0": {
+        "eligible": 72,
+        "headshots": 52
+      },
+      "1": {
+        "eligible": 72,
+        "headshots": 55
+      }
+    }
+  },
+  "note": "Development drill, map 2026. Finisher is idle until the allied hook is within 12 tiles of the target. Static victim, real cast and physics, both banks, 3 speeds, 2 lanes, 5 offsets and 3 target distances. Terrain prevents 36/180 fixtures from reaching the approach point; they remain in the raw output. This does not measure natural cooldown readiness or competitive strength."
+}

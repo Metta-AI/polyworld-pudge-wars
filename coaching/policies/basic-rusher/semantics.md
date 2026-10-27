@@ -10,7 +10,7 @@ in README.md, outside the executable contract.
 1. **Situation.** Cache at most ten fighter IDs from the fog-filtered BASIC
    object API. Ignore gadgets as combat targets and shielded enemies. Choose
    the nearest exposed enemy, catch, swimmer, and incoming flying enemy hook
-   (within 22 tiles). Resolve ties by observed object order. All team members,
+   (within 32 tiles). Resolve ties by observed object order. All team members,
    including dead members, retain their lane rank. Never consult hidden enemies.
 2. **Belief and memory.** Sample each fighter's integer tile position at least
    eight ticks apart; normalize displacement to eight ticks. Reset velocity
@@ -20,6 +20,11 @@ in README.md, outside the executable contract.
    hook cooldowns are unavailable; healing arbitration can exclude active
    chains but cannot know readiness. Reset options and cached samples on tick
    rollback or a new spawn shield. Death is skipped by the host.
+   Also sample each visible owner's hook-head displacement at least four ticks
+   apart. Reset hook samples on visibility gaps over eight ticks and phase
+   changes; retain the last speed across a phase change. Estimate end-of-flight
+   speed with a six-centitile acceleration allowance; clamp to 60–180 centitiles
+   per tick. This is observed motion, not access to hidden upgrade levels.
 3. **Goal.** Preserve the game's kill objective. Prioritize emergency ally
    rescue and self-preservation; then prefer ally/enemy melee midpoints to
    either heal the ally or damage the enemy. This goal is authored provenance,
@@ -34,7 +39,12 @@ in README.md, outside the executable contract.
 5. **Strategy.** Hold an existing ally rescue; try native coordinated rescue;
    defend with Blink; try the wounded-ally priority ordering of melee pairs
    (lowest ally health fraction, then distance), close combat, a catch aimed
-   toward its observed reeler, close hook interception, and swimmers. Try one
+   toward its observed reeler, close hook interception, and swimmers. For an
+   existing catch-target shot with measured hook speed, predict the reel and
+   our nine-tick windup plus accelerating flight for up to 80 ticks. Try a
+   three-tile collision allowance within reach, before the victim reaches six
+   tiles from the reeler. Fall back to the original midpoint when no predicted
+   shot is accepted. Keep existing casting priorities and movement. Try one
    deterministic safe healing pair (missing >=120 HP, healer >=60%, distance
    4–24, both >28 from enemies/hooks, at most four tiles forward). Then try
    velocity-led nearest-target combat, runes, and a fog lane. A rejected first
@@ -51,8 +61,9 @@ in README.md, outside the executable contract.
    pending state for 12 ticks; clear when an observed hook ends. Reverse at
    own-bank bounds (X8..west-1 or east+1..119, Y16..111). Recovery, capture,
    death/respawn, off-bank state, Blink, melee, nearby hooks/Rot and ally rescue
-   interrupt it. CurveHook may override fishing, shopping, and rally movement,
-   as in E06b; changing this priority would be a new policy hypothesis.
+   interrupt it. A carried ward also interrupts CurveHook so an idle ward trip
+   reaches placement range. After placement, normal curve eligibility resumes.
+   CurveHook may still override fishing, shopping, and rally movement.
 7. **Update and numeric binding.** No runtime learning. Edit the registered
    parameters, regenerate BASIC, extract and regenerate it, then evaluate on
    fresh paired-bank maps. Coordinates and velocity are integer tiles; division
@@ -60,8 +71,10 @@ in README.md, outside the executable contract.
    to clip range and quantize eight-tile perpendicular steps. Fountain center
    (64.5,64.5), radius 3.5 uses doubled-coordinate integer cross products,
    including segment endpoints; clipped endpoints are integer approximations.
-   Friendly clearance is 6 + ceil(radiusLevel/8), or
-   8 + ceil(3*radiusLevel/16) under Big Hook, conservative integer bounds.
+   Friendly clearance is 5 + ceil(radiusLevel/8), or
+   8 + ceil(3*radiusLevel/16) under Big Hook. The ordinary margin is a measured
+   pressure/safety tradeoff, not a guarantee of collision clearance with integer
+   observations.
    Check current and half-sample
    projected teammate positions, skipping shielded teammates. These differ
    from Python floating positions and exact shield duration. BASIC actions

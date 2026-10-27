@@ -20,6 +20,12 @@ dim carried(9)
 dim air(9)
 dim safe(9)
 dim lanes(9)
+dim reelX(9)
+dim reelY(9)
+dim reelTick(9)
+dim reelSeen(9)
+dim reelPhase(9)
+dim reelSpeed(9)
 
 ' All subroutine scratch variables have distinct prefixes: BASIC scalars are global.
 sub root(n)
@@ -213,6 +219,41 @@ for obj = 0 to objectCount() - 1
     end if
   end if
 next obj
+' Measure visible hook-head speed over four ticks, retaining the last outbound
+' estimate across the catch. Reset samples on phase changes and visibility gaps.
+for reelH = 0 to hookCount() - 1
+  reelSlot = -1
+  for reelI = 0 to count - 1
+    if ids(reelI) = hookOwner(reelH) then reelSlot = reelI
+  next reelI
+  if reelSlot >= 0 then
+    reelPhaseNow = hookFlying(reelH)
+    if reelSeen(reelSlot) = 0 or worldTick - reelSeen(reelSlot) > 8 then
+      reelTick(reelSlot) = worldTick
+      reelX(reelSlot) = hookX(reelH)
+      reelY(reelSlot) = hookY(reelH)
+      reelSpeed(reelSlot) = 0
+    elseif reelPhase(reelSlot) <> reelPhaseNow then
+      reelTick(reelSlot) = worldTick
+      reelX(reelSlot) = hookX(reelH)
+      reelY(reelSlot) = hookY(reelH)
+    elseif worldTick - reelTick(reelSlot) >= 4 then
+      reelDx = hookX(reelH) - reelX(reelSlot)
+      reelDy = hookY(reelH) - reelY(reelSlot)
+      root((reelDx * reelDx + reelDy * reelDy) * 100)
+      reelSpeed(reelSlot) = rootValue * 10 \ (worldTick - reelTick(reelSlot))
+      if reelPhaseNow = 1 then reelSpeed(reelSlot) = reelSpeed(reelSlot) + 6
+      if reelSpeed(reelSlot) < 60 then reelSpeed(reelSlot) = 60
+      if reelSpeed(reelSlot) > 180 then reelSpeed(reelSlot) = 180
+      reelTick(reelSlot) = worldTick
+      reelX(reelSlot) = hookX(reelH)
+      reelY(reelSlot) = hookY(reelH)
+    end if
+    reelPhase(reelSlot) = reelPhaseNow
+    reelSeen(reelSlot) = worldTick
+  end if
+next reelH
+
 peak(me) = selfMaxHp
 if selfHp * 100 >= selfMaxHp * recoverUntilPct then recovering = 0
 if selfHp * 100 < selfMaxHp * retreatPct then recovering = 1
@@ -259,7 +300,7 @@ end if
 threat = -1
 threatX = -1
 threatY = -1
-threatD2 = 485
+threatD2 = 1025
 ownHook = -1
 ownRescue = 0
 for h = 0 to hookCount() - 1
@@ -331,7 +372,7 @@ distanceLevel = upgradeLevel(1)
 speedLevel = upgradeLevel(2)
 radiusLevel = upgradeLevel(3)
 reach = 60 + 4 * distanceLevel
-clearance = 6 + (radiusLevel + 7) \ 8
+clearance = 5 + (radiusLevel + 7) \ 8
 if selfBuff = 4 then
   reach = reach * 3 \ 2
   clearance = 8 + (radiusLevel * 3 + 15) \ 16
@@ -476,6 +517,34 @@ if catchTarget >= 0 then
       next i
     end if
   next h
+  comboFound = 0
+  if thrown = 0 and hookReady = 1 and selfHooked = 0 and reeler <> catchTarget and reelSpeed(reeler) > 0 and worldTick = reelSeen(reeler) then
+    comboDx = px(reeler) - px(catchTarget)
+    comboDy = py(reeler) - py(catchTarget)
+    root(comboDx * comboDx + comboDy * comboDy)
+    comboLen = rootValue
+    comboPull = reelSpeed(reeler)
+    comboSpeed = 60 + 3 * speedLevel
+    if selfBuff = 5 then comboSpeed = comboSpeed * 2
+    comboFlight = 50
+    comboTravel = 0
+    comboT = 0
+    while comboT < 80 and comboTravel < (comboLen - 6) * 100 and comboFound = 0
+      comboT = comboT + 1
+      comboTravel = comboTravel + comboPull
+      if comboT >= 9 then
+        if comboSpeed < 180 then comboSpeed = comboSpeed + 3
+        comboFlight = comboFlight + comboSpeed
+        comboX = px(catchTarget) + comboDx * comboTravel \ (comboLen * 100)
+        comboY = py(catchTarget) + comboDy * comboTravel \ (comboLen * 100)
+        root((comboX - originX) * (comboX - originX) + (comboY - originY) * (comboY - originY))
+        if comboFlight + 300 >= rootValue * 100 and comboFlight <= reach * 100 then
+          throwAt(comboX, comboY, 0)
+          comboFound = 1
+        end if
+      end if
+    wend
+  end if
   throwAt((px(catchTarget) + px(reeler)) \ 2, (py(catchTarget) + py(reeler)) \ 2, 0)
 end if
 if threat >= 0 and threatD2 <= 196 then throwAt(hookX(threat), hookY(threat), 0)
@@ -689,7 +758,7 @@ if itemRank(4) > 0 and selfLayer = selfTeam then
 end if
 
 ' E06b CurveHook: remember the original perpendicular through windup/flight/return.
-if curveEnabled = 0 or selfLayer <> selfTeam or recovering = 1 or attacking = 1 or threat >= 0 or foreignRot = 1 or ownRescue = 1 or worldTick < rescueUntil then
+if itemRank(4) > 0 or curveEnabled = 0 or selfLayer <> selfTeam or recovering = 1 or attacking = 1 or threat >= 0 or foreignRot = 1 or ownRescue = 1 or worldTick < rescueUntil then
   curveActive = 0
   end
 end if

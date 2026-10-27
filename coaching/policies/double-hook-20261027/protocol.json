@@ -1,0 +1,69 @@
+{
+  "hypothesis": "A windup-and-flight interception estimate converts more visible allied reels into double-hook headshots than aiming at the chain midpoint.",
+  "baseline": "Frozen current local base.bas, including the existing October 26 experimental changes",
+  "engine": "Canonical Pudge Wars at 32 ticks per second; no engine or observation changes",
+  "mechanism": "Completed headshots in a fixed moving-reel scenario grid, and headshots per enemy catch in full matches",
+  "selection_seeds": [
+    1027111,
+    1027116
+  ],
+  "confirmation_seeds": [
+    1027201,
+    1027224
+  ],
+  "match_settings": {
+    "banks": "both",
+    "team_size": 3,
+    "difficulty": "pro",
+    "kill_goal": 30,
+    "minutes": 20,
+    "verify_replays": true
+  },
+  "promotion_gate": "At least 25% more scenario headshots, more natural-game headshots per enemy catch, positive paired-map mean kill margin with a positive 95% bootstrap lower bound on fresh confirmation, no VM failures, verified replays, and stock/mixed-team/duel regression checks.",
+  "scope": "Local policy development only; hosted competitive strength and deployment require separate evidence. Failed variants remain archived; confirmation seeds are not reused for tuning.",
+  "reactive_verdict": "Rejected: improved some controlled cases but lost both full-match screens. No promotion.",
+  "anticipatory_followup": {
+    "hypothesis": "Start a second hook during the final approach of a visible allied hook, aiming at the predicted reel after contact; keep ordinary movement and all baseline fallback skills.",
+    "controlled_gate": "At least 25% more completed double hooks on the development grid; confirm with real allied casts rather than only injected hook snapshots.",
+    "competitive_gate": "Freeze before 48 fresh games. Positive paired-map mean kill margin with positive 95% bootstrap lower bound, higher headshots per enemy catch, no VM failures, every replay verified, then stock/mixed/duel guardrails.",
+    "confirmation_seeds": [
+      1027201,
+      1027224
+    ],
+    "note": "Selection used the same six development maps on both banks. These are used evidence, not confirmation.",
+    "verdict": "Rejected: 21/48 wins, mean kill margin -2.0625, 95% paired-map interval [-4.4792, 0.4792], lower headshots per enemy catch. Default unchanged."
+  },
+  "guarded_followup": {
+    "hypothesis": "Only anticipate allied catches while free, away from close combat and enemy rot; preserve defensive decisions.",
+    "selection": "7/12 wins on used development maps; mean kill margin +3.25",
+    "confirmation_seeds": [
+      1027301,
+      1027324
+    ],
+    "gate": "Same competitive promotion gate; these maps were not used in prior variants.",
+    "candidate_sha256": "7251ea839f423019330814fffc5fb4172639735694555fc0f62fff69f11df273",
+    "verdict": "Rejected: 22/48 wins, mean kill margin -1.3958. Not promoted."
+  },
+  "aim_only_followup": {
+    "hypothesis": "Measure hook-head velocity from visible frames, improve only the existing catch-target aim, preserve all casting priorities and movement; fall back to the original midpoint when unobserved.",
+    "selection_seeds": [
+      1027111,
+      1027116
+    ],
+    "candidate_sha256": "2bf33639da719663a785f4599aed9ec890c4a983d94dbfc5d90ef4de9d452f0d",
+    "gate": "Same competitive gate, no promotion from selection maps alone.",
+    "selection": "9/12 wins on used development maps; mean kill margin +3.4167.",
+    "confirmation_seeds": [
+      1027401,
+      1027424
+    ],
+    "verdict": "Not promoted: 26/48 wins, +0.0833 mean kill margin, 95% paired-map interval [-2.0833, 2.0417]. Headshots 498 vs 437; follow-up drill 64/114 vs 60/114, below 25% controlled improvement gate. Combat tests pass."
+  },
+  "final_verdict": "No candidate cleared the promotion gate. Default, semantic source, coworld copy and hosted champion unchanged. Retain v9 for further double-hook research.",
+  "repository_release": {
+    "authorization": "User requested: push new policy, after results and no-promotion recommendation were reported.",
+    "selected": "candidate-v9.bas",
+    "scope": "Repository default and coworld BASIC source only; no hosted champion publication or coworld deployment.",
+    "gate_status": "Original competitive promotion gate failed; selection is explicitly user-directed, not a newly established match advantage."
+  }
+}

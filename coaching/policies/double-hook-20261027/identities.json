@@ -1,0 +1,15 @@
+{
+  "engine_git_head": "46820c4bccf9a47e42ac0a66ed4ff4583274d8c0",
+  "tick_rate": 32,
+  "baseline_note": "Frozen pre-task dirty local default, not deployed v2.",
+  "sha256": {
+    "coaching/policies/double-hook-20261027/precast.bas": "ada16b947f1bdea144b888bf28b083f8828528a96e9e1e6bcaa7d150cb06c0d7",
+    "coaching/policies/double-hook-20261027/candidate.bas": "7251ea839f423019330814fffc5fb4172639735694555fc0f62fff69f11df273",
+    "coaching/policies/double-hook-20261027/candidate-v9.bas": "2bf33639da719663a785f4599aed9ec890c4a983d94dbfc5d90ef4de9d452f0d",
+    "coaching/policies/double-hook-20261027/aim-v9.bas": "1adf4b703cca969aea1b3762d96b1bfa5fcdffa14bc1cfd366b17fac3be5cc4a",
+    "coaching/policies/double-hook-20261027/candidate-v7.bas": "d476dd4843877dd0ca6f7685eca4cc19383fd9ac19e120c268c1dfa4bb03f112",
+    "coaching/policies/double-hook-20261027/observe-v9.bas": "9c02009db3ecd78698e3350f0609dd99220d8df5bd327e542407833d9835d6bc",
+    "coaching/policies/double-hook-20261027/baseline.bas": "5177ddc1320467946e44fba8aa0ae31b0eea767c72e3d6e6a3f99e4d393cd7e0",
+    "tmp/double-hook-20261027/pwheadless": "549626bcc9a63a85d30e7d38205fcbba04836fba92b2634a6981df5aad4c7b05"
+  }
+}
