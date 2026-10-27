@@ -332,3 +332,8 @@ notices next to the files.
 
 Neural ZIP policies and Jev judgments are supported through the shared GotA
 interfaces; see [inference setup and examples](coworld/INFERENCE.md).
+# Agent policy development
+
+Start with [COWORLD.md](COWORLD.md) for the BASIC runtime source map, relevant
+documentation, and [policy development skill](skills/pudge-wars-policy/SKILL.md).
+Hermes reads this guide from the selected Coworld's pinned source commit.
