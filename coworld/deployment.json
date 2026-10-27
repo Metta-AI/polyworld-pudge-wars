@@ -20,17 +20,17 @@
   "inference_validation_episode": "ereq_3789063f-8d50-444e-a5fe-af775829fff0",
   "policies": {
     "base": {
-      "id": "2e7567f3-e290-4fe2-aa68-775dfab623d5",
+      "id": "11b5f918-cb84-4291-b14b-a8b3e676bc82",
       "name": "pudge-basic-base",
-      "version": 2,
+      "version": 3,
       "pools": null,
       "submit_error": null,
-      "sha256": "f38ba2929c91f985d73afa5a54ec3e5da582e5e71122069cbc2847b19fc48511",
+      "sha256": "2bf33639da719663a785f4599aed9ec890c4a983d94dbfc5d90ef4de9d452f0d",
       "source": "examples/pudge_wars/players/base.bas",
-      "uploaded_at": "2026-10-14T23:38:03.310936+00:00",
-      "membership_id": "lpm_9bcc9096-a938-4748-a801-4da4b7a05855",
+      "uploaded_at": "2026-10-27T23:32:35.924682+00:00",
+      "membership_id": "lpm_08379cc1-3b09-429e-96bf-932ed8151e6c",
       "is_champion": true,
-      "deployment_record": "coaching/policies/basic-rusher/deployment/release.json"
+      "deployment_record": "coaching/policies/double-hook-20261027/deployment/release.json"
     },
     "aggressive": {
       "id": "c610add1-523c-46ae-91b5-1f0f73358b88",
@@ -130,7 +130,7 @@
       "src/polyworld/timings.nim": "731717199cf6501c29a7aa68a9a7007bca61166bd738d1864fce801a9aa1b74e"
     }
   },
-  "last_policy_update_at": "2026-10-14T23:41:19.775513+00:00",
+  "last_policy_update_at": "2026-10-27T23:43:32.836345+00:00",
   "hosted_play_release": {
     "version": "0.1.6",
     "coworld_id": "cow_c026028d-8796-40fc-83a4-97e0a1007dae",

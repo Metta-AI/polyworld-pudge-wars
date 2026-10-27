@@ -1,0 +1,51 @@
+{
+  "idempotency_key": "pudge-double-hook-v9-release-20261027-2bf33639da71",
+  "private": true,
+  "coworld_id": "cow_d96d9b33-32d7-4ab3-b41d-6f84a29808a3",
+  "variant_id": "league-3v3",
+  "game_config_overrides": {
+    "max_ticks": 2048,
+    "seed": 1027801
+  },
+  "num_episodes": 1,
+  "roster": [
+    {
+      "slot": 0,
+      "player": {
+        "policy_ref": "11b5f918-cb84-4291-b14b-a8b3e676bc82"
+      }
+    },
+    {
+      "slot": 1,
+      "player": {
+        "policy_ref": "11b5f918-cb84-4291-b14b-a8b3e676bc82"
+      }
+    },
+    {
+      "slot": 2,
+      "player": {
+        "policy_ref": "11b5f918-cb84-4291-b14b-a8b3e676bc82"
+      }
+    },
+    {
+      "slot": 3,
+      "player": {
+        "policy_ref": "2e7567f3-e290-4fe2-aa68-775dfab623d5"
+      }
+    },
+    {
+      "slot": 4,
+      "player": {
+        "policy_ref": "2e7567f3-e290-4fe2-aa68-775dfab623d5"
+      }
+    },
+    {
+      "slot": 5,
+      "player": {
+        "policy_ref": "2e7567f3-e290-4fe2-aa68-775dfab623d5"
+      }
+    }
+  ],
+  "title": "Double-hook policy deployment smoke",
+  "notes": "Runtime check of exact v9 BASIC artifact before user-requested champion promotion. Not a competitive-strength test."
+}

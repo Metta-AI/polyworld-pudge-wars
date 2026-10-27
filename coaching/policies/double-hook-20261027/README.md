@@ -1,6 +1,6 @@
 # Double-hook policy experiments — October 27, 2026
 
-**Selected for the repository default on user request after evaluation.** The strongest full-match result is
+**Deployed as `pudge-basic-base:v3`, A-aron’s 3v3 champion, on user request.** The strongest full-match result is
 [`candidate-v9.bas`](candidate-v9.bas): it measures visible hook speed and improves
 an existing follow-up shot without changing casting priorities or movement.
 Across 48 fresh 3v3 matches it produced **498 headshots versus 437** for the frozen
@@ -11,7 +11,9 @@ competitive policy overall.
 The default BASIC sources, semantic policy, coworld copy and hosted champion were
 left unchanged during evaluation. After reviewing these results, the user requested
 “push new policy”: the repository defaults now use the exact v9 artifact. The
-hosted champion remains unchanged; pushing Git does not deploy the coworld. `baseline.bas` freezes the already-modified local default at the
+hosted champion was subsequently updated after the explicit request “deploy new
+policy to the league”; see [release evidence](deployment/release.json). The game
+itself was not redeployed. `baseline.bas` freezes the already-modified local default at the
 start of this task; it is **not** the deployed `pudge-basic-base:v2` champion.
 Canonical Pudge Wars physics runs at 32 TPS; no engine, observation, or server
 changes were made.
@@ -58,7 +60,7 @@ probability of converting an allied catch.
 The preregistered overall promotion gate required a positive lower confidence
 bound on kill margin as well as a mechanism improvement. None cleared it.
 Stock-opponent, mixed-team and duel promotion checks were therefore not run.
-No hosted leaderboard evaluation or deployment occurred. The later user-requested
+During development, no hosted leaderboard evaluation or deployment occurred. The later user-requested
 repository default replacement does not change this failed-gate result.
 
 The seven full-match development screens reused seeds 1027111–1027116, both banks
@@ -146,3 +148,12 @@ artifact. Semantic round-trip, default combat, rusher, and double-hook regressio
 suites pass. The v9 follow-up regression now targets the shipped default.
 The frozen experiment policies and original promotion-gate outcomes stay intact.
 Unrelated earlier research remains outside this commit.
+
+## Hosted release
+
+After the explicit league-deployment request, v3 passed a 2,048-tick hosted smoke
+on canonical Pudge Wars 0.1.9. All three candidate seats ran cleanly; all 17,271
+replay actions and every tick verified. A separate API read confirmed v3 as
+A-aron's active, competing champion. See [release.json](deployment/release.json)
+for immutable IDs, hashes and rollback. This runtime check does not establish
+hosted competitive strength.

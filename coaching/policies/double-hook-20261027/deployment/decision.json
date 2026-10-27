@@ -1,0 +1,11 @@
+{
+  "authorization": "deploy new policy to the league",
+  "recorded_at": "2026-10-27T23:36:24.815432+00:00",
+  "league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0",
+  "player_id": "ply_cec02b42-a653-4253-be4b-602ba5acacc4",
+  "policy_version_id": "11b5f918-cb84-4291-b14b-a8b3e676bc82",
+  "auto_champion": "always",
+  "hosted_runtime_validation": "Completed 2048-tick smoke, 3 candidate seats, all 17271 replay actions verified.",
+  "competitive_evidence": "Local 498 vs 437 headshots; 26/48 wins. Overall and hosted strength not established.",
+  "rollback_membership_id": "lpm_9bcc9096-a938-4748-a801-4da4b7a05855"
+}

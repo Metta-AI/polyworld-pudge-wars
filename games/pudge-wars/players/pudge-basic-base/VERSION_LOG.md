@@ -27,3 +27,15 @@ Hosted runtime validation passed: `xreq_0f99543d-3738-46ad-934e-ffa3355c1c07`, e
 - Rollback: promote prior Base v1 membership `lpm_23d2f18c-6133-4139-b5fd-cac3ed7afa52` and verify champion readback. No game, filler pool, schedule or 1v1 league changes.
 
 Verified 2026-10-14T23:41:19.775513+00:00: submission placed; membership `lpm_9bcc9096-a938-4748-a801-4da4b7a05855` is active, `competing`, and `is_champion=true`. A separate player-scoped champions-only read returned v2 as the sole champion. Release evidence: `coaching/policies/basic-rusher/deployment/release.json`.
+
+## v3 — 2026-10-27T23:43:32.836345+00:00
+
+- Policy version: `11b5f918-cb84-4291-b14b-a8b3e676bc82`; source commit `9b0ced7`.
+- Change: measure visible hook speed and predict follow-up reel interception; preserve casting and movement priorities.
+- Runtime: raw BASIC, SHA-256 `2bf33639da719663a785f4599aed9ec890c4a983d94dbfc5d90ef4de9d452f0d` on canonical Pudge Wars `0.1.9`.
+- Local evidence: 498 versus 437 double-hook kills, 26/48 wins; overall match advantage remains inconclusive.
+- Hosted runtime smoke: 2,048 ticks, three clean candidate seats; every tick and all 17,271 replay actions verified. This is not hosted competitive evidence.
+- User explicitly requested league deployment. Submission `sub_85e14781-97c0-4efd-8dd8-8012e78a090e`.
+- Independent readback: A-aron's active, competing champion, membership `lpm_08379cc1-3b09-429e-96bf-932ed8151e6c`.
+- Rollback: promote v2 membership `lpm_9bcc9096-a938-4748-a801-4da4b7a05855` and verify readback.
+- Evidence: `coaching/policies/double-hook-20261027/deployment/release.json`. Game, filler policies and other players were not changed.
