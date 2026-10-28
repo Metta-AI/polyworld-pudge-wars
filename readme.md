@@ -8,6 +8,16 @@ join from a native client or the browser (WASM).
 
 Engine design: [docs/engine-design.md](docs/engine-design.md).
 
+## IDE, Hermes and fast-XP context
+
+Start with the [CoWorld agent guide](coworld/README.md) for the game-owned site,
+published IDE/Hermes context and the dedicated BASIC fast-XP service. The live
+[context index](https://pudge-wars-site-theta.vercel.app/llms.txt) links the complete
+experiment workflow and a JSON bundle with document hashes. Fast-XP runs through
+https://fast-xp-k8s-prod.tail0f4a29.ts.net/ with Softmax Tailscale access.
+
+## CoWorld package
+
 The league package now supports **Bassy BASIC file players**, using Polyworld's
 pinned VM and GotA-style game-hosted execution. The migration includes private
 seat logs/annotations and mixed-team OpenSkill league settings. See
