@@ -86,7 +86,9 @@ jobs:
           } > nim.cfg
 
       - name: Test BASIC league contracts
-        run: bash scripts/test_league.sh
+        run: |
+          python3 -m pip install websockets==15.0.1
+          bash scripts/test_league.sh
 
       - uses: docker/setup-buildx-action@v3
 

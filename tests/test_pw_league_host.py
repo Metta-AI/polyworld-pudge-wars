@@ -162,10 +162,14 @@ class LeagueHostTest(unittest.TestCase):
                             (ROOT / "examples/pudge_wars/replays.nim").read_text())
         self.assertEqual(version.group(1), "38",
                          "Rebuild and certify a viewer when the simulator version changes")
-        for project in ["coworld", "coworld/platform-hosted"]:
-            manifest = json.loads((ROOT / project / "coworld_manifest_template.json").read_text())
-            self.assertEqual(manifest["game"]["replay_viewer"]["bundle"],
-                             "sha256:5fb1947dbfb26bae7c5ebee8167d1d838ce1ef3e7e8a4c22dc76a50e1848c8c6")
+        certified_viewers = {
+            "coworld": "sha256:3207f251a64aa8ff246a56a7349d79437353fc7fcb09f07313feb41fff8e0cdf",
+            "coworld/platform-hosted": "sha256:3115a0709de5c7e300a201a742f9b83c238c9086ef98189c3ddc52bc30f45223",
+        }
+        for project, viewer in certified_viewers.items():
+            with self.subTest(project=project):
+                manifest = json.loads((ROOT / project / "coworld_manifest_template.json").read_text())
+                self.assertEqual(manifest["game"]["replay_viewer"]["bundle"], viewer)
 
 
 if __name__ == "__main__":

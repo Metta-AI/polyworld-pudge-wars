@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import struct
 import sys
 import tempfile
 import unittest
@@ -10,6 +11,22 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts/run_episode.py"
 POLICIES = ("base", "aggressive", "challenger", "denier", "patient", "sniper", "support")
+
+
+def replay_without_creation_time(data):
+    magic = b"POLYWORLDREPLAY"
+    if not data.startswith(magic):
+        raise ValueError("Not a Polyworld replay")
+    file_version, game_version, game_length = struct.unpack_from("<HHH", data, len(magic))
+    payload = len(magic) + 6 + game_length
+    if file_version != 1 or game_version != 38 or data[len(magic) + 6:payload] != b"pudge_wars":
+        raise ValueError("Unexpected replay header")
+    format_version, payload_game_version = struct.unpack_from("<HH", data, payload)
+    if format_version != 5 or payload_game_version != game_version:
+        raise ValueError("Unexpected replay payload version")
+    # The Flatty tape header stores an int64 creation time after its two versions.
+    timestamp = payload + 4
+    return data[:timestamp] + bytes(8) + data[timestamp + 8:]
 
 
 class LocalEpisodeTest(unittest.TestCase):
@@ -73,7 +90,7 @@ class LocalEpisodeTest(unittest.TestCase):
                 self.assertNotIn("PRIVATE_CUSTOM", (output / "game.log").read_text())
                 self.assertEqual(len((output / "players/0/annotations.jsonl").read_text().splitlines()), 128)
                 results.append((output / "results.json").read_bytes())
-                replays.append((output / "replay.pwr").read_bytes())
+                replays.append(replay_without_creation_time((output / "replay.pwr").read_bytes()))
             self.assertEqual(results[0], results[1])
             self.assertEqual(replays[0], replays[1])
 
