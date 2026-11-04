@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p tmp
-for test in bots sim runes replays coworld_record human duel fileplayers; do
+for test in bots sim ejection runes replays coworld_record human duel fileplayers; do
   nim c --hints:off -d:release -o:"tmp/test_pw_${test}" -r "tests/test_pw_${test}.nim"
 done
 nim c --hints:off --threads:on -d:ssl -d:release \

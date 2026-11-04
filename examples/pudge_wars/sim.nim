@@ -1914,9 +1914,9 @@ proc ejectPudge(world: World, index: int) =
   var
     tx = 0'i32
     tz = 0'i32
-  let layer =
-    if pudge.layer == int32(RiverLayer): int32(RiverLayer)
-    else: homeLayer(pudge.team)
+  # Terrain correction preserves the layer occupied before the correction.
+  # A hooked or blinked visitor may legally be on the opposing bank.
+  let layer = pudge.layer
   if not snapWalkTarget(layer, int32(tile.x), int32(tile.z), tx, tz):
     if layer == int32(RiverLayer):
       tx = int32(RiverCenterX)
