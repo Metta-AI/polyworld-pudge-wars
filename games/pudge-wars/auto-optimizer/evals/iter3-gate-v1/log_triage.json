@@ -1,0 +1,973 @@
+{
+  "event_per_game": {
+    "recovered": 3.0,
+    "recovery_start": 15.9
+  },
+  "event_totals": {
+    "recovered": 177,
+    "recovery_start": 957
+  },
+  "logs": 60,
+  "nonparticipating": [],
+  "policy": "pudge-auto-optimizer:v1",
+  "rows": [
+    {
+      "bytes": 404,
+      "connected": true,
+      "events": {
+        "recovery_start": 5
+      },
+      "id": "ereq_f16c47cf-115c-4342-9b8e-a9535822eede",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1492,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 19
+      },
+      "id": "ereq_092c85e6-c136-4888-90b4-9d300313362c",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1295,
+      "connected": true,
+      "events": {
+        "recovered": 4,
+        "recovery_start": 15
+      },
+      "id": "ereq_4cd47735-4d36-4a9a-b279-398afa1cacef",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1245,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 17
+      },
+      "id": "ereq_b9fd5616-b587-409e-98cb-87a7cb97823b",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 781,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 8
+      },
+      "id": "ereq_700439e5-d8a4-483a-a308-1f59063089e0",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1241,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 17
+      },
+      "id": "ereq_2026dd34-00a7-463f-b50c-ee43f42b58ae",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 2000,
+      "connected": true,
+      "events": {
+        "recovered": 4,
+        "recovery_start": 26
+      },
+      "id": "ereq_6eac059d-4f3a-4b86-b7cf-0a07d1c57d45",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 860,
+      "connected": true,
+      "events": {
+        "recovery_start": 12
+      },
+      "id": "ereq_0b4ea97c-376e-4a8a-9b02-b1df917ffd7c",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1674,
+      "connected": true,
+      "events": {
+        "recovered": 6,
+        "recovery_start": 19
+      },
+      "id": "ereq_34809914-aacc-4c6f-8c3c-9d46c1d162fd",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1305,
+      "connected": true,
+      "events": {
+        "recovered": 2,
+        "recovery_start": 17
+      },
+      "id": "ereq_1047146f-259b-4372-9790-c8dc8d7d19e1",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1361,
+      "connected": true,
+      "events": {
+        "recovered": 4,
+        "recovery_start": 16
+      },
+      "id": "ereq_5ba7956d-201d-43ea-8ae5-09a25d6c6008",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1814,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 24
+      },
+      "id": "ereq_732aed37-54d6-4f27-b230-85ecf58f0508",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1621,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 21
+      },
+      "id": "ereq_a9a09a60-d92a-4cc6-a956-4f761228f262",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1172,
+      "connected": true,
+      "events": {
+        "recovery_start": 17
+      },
+      "id": "ereq_07941a69-d91a-4d90-a7e2-999a8b0def13",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 654,
+      "connected": true,
+      "events": {
+        "recovered": 2,
+        "recovery_start": 7
+      },
+      "id": "ereq_54980e1d-594a-48b2-b428-5f268b8e9a54",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 973,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 11
+      },
+      "id": "ereq_fb6b18e1-42de-4940-9809-3dec96feb801",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 397,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 4
+      },
+      "id": "ereq_647adfa4-a780-45df-b32a-b213b7923ca6",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1179,
+      "connected": true,
+      "events": {
+        "recovery_start": 17
+      },
+      "id": "ereq_bfe7705e-b5eb-491a-adfb-4e09ecd6ec86",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1987,
+      "connected": true,
+      "events": {
+        "recovered": 8,
+        "recovery_start": 22
+      },
+      "id": "ereq_e58b2f7d-4c03-41c1-8c92-0c5460acfdd4",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1563,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 22
+      },
+      "id": "ereq_b97ae5bc-fd1e-48c1-a0a4-7a1f1c8135d7",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1181,
+      "connected": true,
+      "events": {
+        "recovery_start": 17
+      },
+      "id": "ereq_d05f5458-ff60-4d6b-b3ee-4ac1f98680db",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1628,
+      "connected": true,
+      "events": {
+        "recovered": 2,
+        "recovery_start": 22
+      },
+      "id": "ereq_83fca097-6f9c-4457-9742-e35b9327d914",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1424,
+      "connected": true,
+      "events": {
+        "recovered": 4,
+        "recovery_start": 17
+      },
+      "id": "ereq_39e0ccc1-4c21-4dfe-937f-943f2170b81a",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 2068,
+      "connected": true,
+      "events": {
+        "recovered": 5,
+        "recovery_start": 26
+      },
+      "id": "ereq_69245b85-3e7d-4a0a-9654-82095656d22f",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1102,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 13
+      },
+      "id": "ereq_c7839421-c888-4d06-874f-4ec0c6cd7eb9",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1044,
+      "connected": true,
+      "events": {
+        "recovered": 2,
+        "recovery_start": 13
+      },
+      "id": "ereq_17684f0d-25b9-4bf6-b7e4-93779928875f",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 462,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 5
+      },
+      "id": "ereq_9f325a9f-7814-4c1d-adb0-91640b456f3e",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 2447,
+      "connected": true,
+      "events": {
+        "recovered": 7,
+        "recovery_start": 30
+      },
+      "id": "ereq_4ccff141-6853-4798-8d4c-da510758d567",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1619,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 21
+      },
+      "id": "ereq_b542d06f-2330-4a2f-8c0a-eb31e2decc6b",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 982,
+      "connected": true,
+      "events": {
+        "recovered": 2,
+        "recovery_start": 12
+      },
+      "id": "ereq_8e815dcc-e3d5-4b20-83a3-ada332b46197",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 398,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 4
+      },
+      "id": "ereq_aafbc366-aff0-4b5e-96f4-8ff5d9b6d46a",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1687,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 22
+      },
+      "id": "ereq_5bf18e4d-f4c8-4eef-b743-a741ea6cdab6",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 400,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 4
+      },
+      "id": "ereq_2b046efe-cce2-467f-9015-e39bf930122e",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1738,
+      "connected": true,
+      "events": {
+        "recovered": 6,
+        "recovery_start": 20
+      },
+      "id": "ereq_ba85b073-23a6-44c5-bb1e-c7727736853c",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 2186,
+      "connected": true,
+      "events": {
+        "recovered": 8,
+        "recovery_start": 25
+      },
+      "id": "ereq_7ef4daff-4c04-4f0c-894f-1b955fe38a01",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 850,
+      "connected": true,
+      "events": {
+        "recovered": 2,
+        "recovery_start": 10
+      },
+      "id": "ereq_5d0e02cd-0ac0-4487-9a96-b67773b5adcd",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 1.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1611,
+      "connected": true,
+      "events": {
+        "recovered": 6,
+        "recovery_start": 18
+      },
+      "id": "ereq_3620e4a8-3857-48c8-85a5-6dcdd405ce0f",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1375,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 19
+      },
+      "id": "ereq_64da1618-0c34-4f56-bc5b-367dec709e3b",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 531,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 6
+      },
+      "id": "ereq_61942a80-b0ae-4fe4-9547-dd8d385c3600",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 2314,
+      "connected": true,
+      "events": {
+        "recovered": 8,
+        "recovery_start": 27
+      },
+      "id": "ereq_987a5dc2-874b-47bd-8152-390ef1ffa1af",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1872,
+      "connected": true,
+      "events": {
+        "recovered": 5,
+        "recovery_start": 23
+      },
+      "id": "ereq_1d4d3ee0-0ac3-419f-a4e9-bc5ca9300b72",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1437,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 20
+      },
+      "id": "ereq_3e3b48b3-685b-4b91-923c-f13c39e66b8f",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1354,
+      "connected": true,
+      "events": {
+        "recovered": 5,
+        "recovery_start": 15
+      },
+      "id": "ereq_efe5abbd-4f70-427e-a8b5-6d4dd00c2b34",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1493,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 19
+      },
+      "id": "ereq_827628d2-9d74-4a9c-be07-0b1db2a22241",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 593,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 7
+      },
+      "id": "ereq_01e97c7a-57f0-4059-aafe-9377bb4a934a",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 2196,
+      "connected": true,
+      "events": {
+        "recovered": 6,
+        "recovery_start": 27
+      },
+      "id": "ereq_c76b702d-a8f2-47aa-a757-de5ca279f800",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1683,
+      "connected": true,
+      "events": {
+        "recovered": 4,
+        "recovery_start": 21
+      },
+      "id": "ereq_8068ccde-f6d2-4b0a-a0ad-05747cb965ff",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1496,
+      "connected": true,
+      "events": {
+        "recovered": 2,
+        "recovery_start": 20
+      },
+      "id": "ereq_daffbbf1-d0ec-4fca-9bd0-1247643f381f",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 843,
+      "connected": true,
+      "events": {
+        "recovered": 4,
+        "recovery_start": 8
+      },
+      "id": "ereq_7aa03b2d-6f69-4200-bb09-9cd217728350",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1110,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 15
+      },
+      "id": "ereq_41e6662d-0d75-4f3a-b1b5-980d7a20ab4a",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 2053,
+      "connected": true,
+      "events": {
+        "recovered": 8,
+        "recovery_start": 23
+      },
+      "id": "ereq_54d01a4c-4221-486f-9ee6-cc4f05435948",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 781,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 8
+      },
+      "id": "ereq_f68c8eca-ffce-4e15-aad0-cbe37abc8d36",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 1.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1682,
+      "connected": true,
+      "events": {
+        "recovered": 5,
+        "recovery_start": 20
+      },
+      "id": "ereq_4f85e242-32ab-451b-988b-421f842aba5e",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1171,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 14
+      },
+      "id": "ereq_e691ce98-e7af-4dc3-b2bd-fecb21962e80",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 1.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 402,
+      "connected": true,
+      "events": {
+        "recovery_start": 5
+      },
+      "id": "ereq_2be19a41-1fa2-4e87-8565-452b1254b74d",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1175,
+      "connected": true,
+      "events": {
+        "recovered": 2,
+        "recovery_start": 15
+      },
+      "id": "ereq_8a2ecbdc-febb-467a-ae25-ac9c63d381f3",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 1.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 399,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 4
+      },
+      "id": "ereq_b1e7931f-43c4-4e8b-9669-ef30f36b8df3",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1556,
+      "connected": true,
+      "events": {
+        "recovered": 3,
+        "recovery_start": 20
+      },
+      "id": "ereq_99fa26d4-c43d-422c-a35c-be0bf8f67187",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 596,
+      "connected": true,
+      "events": {
+        "recovered": 1,
+        "recovery_start": 7
+      },
+      "id": "ereq_577db5f9-5dae-49a5-86fa-e640ef028de8",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 1553,
+      "connected": true,
+      "events": {
+        "recovered": 4,
+        "recovery_start": 19
+      },
+      "id": "ereq_4365f220-6df0-4bee-b8a4-c7f8965ef844",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    }
+  ],
+  "threat_class_per_game": {},
+  "threat_class_totals": {},
+  "tracebacks": 0,
+  "xreq": null
+}

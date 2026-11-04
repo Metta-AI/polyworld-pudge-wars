@@ -1,0 +1,23 @@
+{
+  "idempotency_key": "pudge-auto-optimizer:iter7-smoke-v9",
+  "notes": "pudge-auto-optimizer iter7-smoke-v9: pudge-auto-optimizer:v9 vs top_n=3",
+  "num_episodes": 3,
+  "private": false,
+  "roster": [
+    {
+      "player": {
+        "policy_ref": "5acc2a73-0077-4e5d-a82a-e30241e76676"
+      },
+      "slot": -1
+    },
+    {
+      "player": {
+        "top_n": 3
+      },
+      "slot": -1
+    }
+  ],
+  "target": {
+    "league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0"
+  }
+}

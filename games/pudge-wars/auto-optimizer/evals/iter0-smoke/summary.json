@@ -1,0 +1,83 @@
+{
+  "by_opponent": {
+    "a-aron-pudge-rusher:v1": {
+      "n": 2,
+      "se": 0.3535533905932738,
+      "win_rate": 0.5
+    },
+    "co-gas-pudge-blind-hook-richard:v7": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 1.0
+    }
+  },
+  "by_team": {
+    "east": {
+      "n": 1,
+      "se": 0.0,
+      "win_rate": 1.0
+    },
+    "west": {
+      "n": 2,
+      "se": 0.3535533905932738,
+      "win_rate": 0.5
+    }
+  },
+  "clean": 3,
+  "clean_rows": [
+    {
+      "cost_usd": 0.206481,
+      "episode_id": "f3933e24-8ca1-4cda-ad1d-a3e913c5eecd",
+      "id": "ereq_ad073369-ddd6-4e18-9a7b-1340b1a02ed5",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/b085f4b1-54cd-4153-a3f7-f0caf71e7666.replay",
+      "score": 0.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.206311,
+      "episode_id": "ec6b36e8-d014-48a7-b29b-b90c5c155b61",
+      "id": "ereq_170c807d-6561-46c5-9a2b-a3c2bd397cd2",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/3c785fab-f1b0-474e-8b75-87faa40683b3.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 1,
+      "team": "east",
+      "variant": "League 3v3"
+    },
+    {
+      "cost_usd": 0.206311,
+      "episode_id": "b93cc27b-f3c6-4831-9b10-33210ec2b1da",
+      "id": "ereq_b4f6608a-3a21-4754-a00a-94cd33e27022",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "replay_url": "https://softmax-public.s3.amazonaws.com/replays/51afe576-112f-41b7-870c-3474ea71715c.replay",
+      "score": 1.0,
+      "seats": 2,
+      "slot": 0,
+      "team": "west",
+      "variant": "League 3v3"
+    }
+  ],
+  "hosted_cost_usd": 0.6191,
+  "overall": {
+    "n": 3,
+    "se": 0.2721655269759087,
+    "win_rate": 0.6666666666666666
+  },
+  "policy": "pudge-auto-optimizer:v1",
+  "taint_rate": 0.0,
+  "taint_reasons": [],
+  "tainted": 0,
+  "tainted_rows": [],
+  "xreq_id": "xreq_8e48fa28-9057-4727-b626-8cef4770cd1e"
+}

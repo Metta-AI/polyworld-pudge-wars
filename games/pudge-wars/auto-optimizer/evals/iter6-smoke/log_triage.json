@@ -1,0 +1,82 @@
+{
+  "event_per_game": {
+    "edge_clamp": 496.0,
+    "hook_lead": 505.0,
+    "pull_skip": 132.0,
+    "recovered": 4.3,
+    "recovery_start": 17.7
+  },
+  "event_totals": {
+    "edge_clamp": 1488,
+    "hook_lead": 1515,
+    "pull_skip": 396,
+    "recovered": 13,
+    "recovery_start": 53
+  },
+  "logs": 3,
+  "nonparticipating": [],
+  "policy": "pudge-auto-optimizer:v7",
+  "rows": [
+    {
+      "bytes": 75200,
+      "connected": true,
+      "events": {
+        "edge_clamp": 512,
+        "hook_lead": 614,
+        "pull_skip": 25,
+        "recovered": 4,
+        "recovery_start": 13
+      },
+      "id": "ereq_61c8d92d-8f56-4ee6-95d4-2e537d471cef",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 71526,
+      "connected": true,
+      "events": {
+        "edge_clamp": 510,
+        "hook_lead": 257,
+        "pull_skip": 226,
+        "recovered": 4,
+        "recovery_start": 20
+      },
+      "id": "ereq_fb995a22-681c-447c-8d45-41197ecb0c76",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 87051,
+      "connected": true,
+      "events": {
+        "edge_clamp": 466,
+        "hook_lead": 644,
+        "pull_skip": 145,
+        "recovered": 5,
+        "recovery_start": 20
+      },
+      "id": "ereq_ffbc4f0a-e874-4b6e-91ba-2d0041ef5428",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    }
+  ],
+  "threat_class_per_game": {},
+  "threat_class_totals": {},
+  "tracebacks": 0,
+  "xreq": null
+}

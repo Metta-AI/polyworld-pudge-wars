@@ -1,0 +1,85 @@
+{
+  "event_per_game": {
+    "bank_escape": 22.7,
+    "edge_clamp": 514.7,
+    "hook_lead": 503.3,
+    "pull_landed": 47.3,
+    "recovered": 5.7,
+    "recovery_start": 17.0
+  },
+  "event_totals": {
+    "bank_escape": 68,
+    "edge_clamp": 1544,
+    "hook_lead": 1510,
+    "pull_landed": 142,
+    "recovered": 17,
+    "recovery_start": 51
+  },
+  "logs": 3,
+  "nonparticipating": [],
+  "policy": "pudge-auto-optimizer:v8",
+  "rows": [
+    {
+      "bytes": 93844,
+      "connected": true,
+      "events": {
+        "bank_escape": 12,
+        "edge_clamp": 464,
+        "hook_lead": 821,
+        "pull_landed": 65,
+        "recovered": 9,
+        "recovery_start": 22
+      },
+      "id": "ereq_4eec4cd4-6324-43b6-accd-606241ea269a",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 90218,
+      "connected": true,
+      "events": {
+        "bank_escape": 56,
+        "edge_clamp": 458,
+        "hook_lead": 676,
+        "pull_landed": 75,
+        "recovered": 8,
+        "recovery_start": 28
+      },
+      "id": "ereq_163e6b69-8809-46c9-aceb-9353e526b256",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 37640,
+      "connected": true,
+      "events": {
+        "edge_clamp": 622,
+        "hook_lead": 13,
+        "pull_landed": 2,
+        "recovery_start": 1
+      },
+      "id": "ereq_9e219bd8-f7ca-41ff-adbd-185c6f05fbcf",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    }
+  ],
+  "threat_class_per_game": {},
+  "threat_class_totals": {},
+  "tracebacks": 0,
+  "xreq": "xreq_700c9ae9-41e9-4b21-9992-70b841795a57"
+}

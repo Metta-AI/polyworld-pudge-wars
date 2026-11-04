@@ -1,0 +1,1 @@
+No logs collected for pod job-db01b4cd-game-player-1 container player: the pod was deleted before log collection.

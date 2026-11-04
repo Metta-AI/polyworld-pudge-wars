@@ -1,0 +1,272 @@
+[
+  {
+    "completed_at": "2026-09-17T19:41:47.497780Z",
+    "cost_usd": 0.248166,
+    "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
+    "coworld_name": "pudge-wars",
+    "coworld_version": "0.3.21",
+    "created_at": "2026-09-17T19:15:45.200342Z",
+    "dispatched_at": "2026-09-17T19:17:17.199512Z",
+    "episode_id": "4665fca3-460f-46be-8fc4-2a19882cd0d4",
+    "error": null,
+    "error_type": null,
+    "failed_agent_index": null,
+    "failed_policy_index": null,
+    "game_config": {
+      "fog": true,
+      "kill_goal": 30,
+      "max_ticks": 38400,
+      "player_connect_timeout_seconds": 180,
+      "players": [
+        {
+          "name": "Player 1"
+        },
+        {
+          "name": "Player 2"
+        }
+      ],
+      "tick_rate": 32
+    },
+    "id": "ereq_6644a463-0328-4b67-9bac-929f7bb2b726",
+    "job_id": "14f7a0ad-784d-42da-94c1-f7495c4b7252",
+    "job_index": 0,
+    "live_url": null,
+    "max_steps": null,
+    "participant_scores": [
+      {
+        "position": 0,
+        "score": 1.0
+      },
+      {
+        "position": 1,
+        "score": 0.0
+      }
+    ],
+    "participants": [
+      {
+        "is_filler": false,
+        "is_seed": false,
+        "kind": "policy",
+        "player_id": "ply_594ec24d-d7f3-4370-a000-468354ec41c9",
+        "player_name": "Aaron's Co-play Coach",
+        "policy_id": "056cacf7-cd4f-4d4c-84ae-13b84d2ff0fa",
+        "policy_name": "pudge-auto-optimizer",
+        "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+        "position": 0,
+        "version": 10
+      },
+      {
+        "is_filler": false,
+        "is_seed": false,
+        "kind": "policy",
+        "player_id": "ply_630a768f-d623-44b2-80fa-36968d6fa75a",
+        "player_name": "Aaron",
+        "policy_id": "a2c7ed57-06be-4571-a29e-93bff9960a6f",
+        "policy_name": "pudge-wars-rusher",
+        "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+        "position": 1,
+        "version": 16
+      }
+    ],
+    "policy_version_ids": [
+      "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+      "bdc7ac29-743d-4ace-b1cc-3b0529cef552"
+    ],
+    "replay_url": "https://softmax-public.s3.amazonaws.com/replays/14f7a0ad-784d-42da-94c1-f7495c4b7252.replay",
+    "requester_user_id": "h0835grji1zfy5wakd4i56kn",
+    "round_id": null,
+    "running_at": "2026-09-17T19:21:30.608324Z",
+    "scores": [
+      {
+        "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+        "score": 1.0
+      },
+      {
+        "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+        "score": 0.0
+      }
+    ],
+    "status": "completed",
+    "variant_name": "League 3v3"
+  },
+  {
+    "completed_at": "2026-09-17T19:41:39.152096Z",
+    "cost_usd": 0.247826,
+    "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
+    "coworld_name": "pudge-wars",
+    "coworld_version": "0.3.21",
+    "created_at": "2026-09-17T19:15:45.200763Z",
+    "dispatched_at": "2026-09-17T19:17:17.199512Z",
+    "episode_id": "2318fe26-5686-4671-be53-0cf8136f9656",
+    "error": null,
+    "error_type": null,
+    "failed_agent_index": null,
+    "failed_policy_index": null,
+    "game_config": {
+      "fog": true,
+      "kill_goal": 30,
+      "max_ticks": 38400,
+      "player_connect_timeout_seconds": 180,
+      "players": [
+        {
+          "name": "Player 1"
+        },
+        {
+          "name": "Player 2"
+        }
+      ],
+      "tick_rate": 32
+    },
+    "id": "ereq_eb0263b6-2df7-4914-9441-b3a38835c8e4",
+    "job_id": "639299c6-08cb-42c2-88ac-c7a2f0038a4e",
+    "job_index": 1,
+    "live_url": null,
+    "max_steps": null,
+    "participant_scores": [
+      {
+        "position": 0,
+        "score": 0.0
+      },
+      {
+        "position": 1,
+        "score": 1.0
+      }
+    ],
+    "participants": [
+      {
+        "is_filler": false,
+        "is_seed": false,
+        "kind": "policy",
+        "player_id": "ply_630a768f-d623-44b2-80fa-36968d6fa75a",
+        "player_name": "Aaron",
+        "policy_id": "a2c7ed57-06be-4571-a29e-93bff9960a6f",
+        "policy_name": "pudge-wars-rusher",
+        "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+        "position": 0,
+        "version": 16
+      },
+      {
+        "is_filler": false,
+        "is_seed": false,
+        "kind": "policy",
+        "player_id": "ply_594ec24d-d7f3-4370-a000-468354ec41c9",
+        "player_name": "Aaron's Co-play Coach",
+        "policy_id": "056cacf7-cd4f-4d4c-84ae-13b84d2ff0fa",
+        "policy_name": "pudge-auto-optimizer",
+        "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+        "position": 1,
+        "version": 10
+      }
+    ],
+    "policy_version_ids": [
+      "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+      "6cc36a18-5a4e-499d-8aca-75e21ca9bf07"
+    ],
+    "replay_url": "https://softmax-public.s3.amazonaws.com/replays/639299c6-08cb-42c2-88ac-c7a2f0038a4e.replay",
+    "requester_user_id": "h0835grji1zfy5wakd4i56kn",
+    "round_id": null,
+    "running_at": "2026-09-17T19:21:30.633235Z",
+    "scores": [
+      {
+        "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+        "score": 0.0
+      },
+      {
+        "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+        "score": 1.0
+      }
+    ],
+    "status": "completed",
+    "variant_name": "League 3v3"
+  },
+  {
+    "completed_at": "2026-09-17T19:41:39.332045Z",
+    "cost_usd": 0.08269,
+    "coworld_id": "cow_01b9f22d-5255-4d22-a111-af7ed5861fac",
+    "coworld_name": "pudge-wars",
+    "coworld_version": "0.3.21",
+    "created_at": "2026-09-17T19:15:45.201055Z",
+    "dispatched_at": "2026-09-17T19:17:17.199512Z",
+    "episode_id": "1d233a04-5d09-461e-9832-bcabfe78ee02",
+    "error": null,
+    "error_type": null,
+    "failed_agent_index": null,
+    "failed_policy_index": null,
+    "game_config": {
+      "fog": true,
+      "kill_goal": 30,
+      "max_ticks": 38400,
+      "player_connect_timeout_seconds": 180,
+      "players": [
+        {
+          "name": "Player 1"
+        },
+        {
+          "name": "Player 2"
+        }
+      ],
+      "tick_rate": 32
+    },
+    "id": "ereq_7edb6d91-b087-419b-8e8a-785e434a86d1",
+    "job_id": "954111bc-f3cd-4d39-8808-6282f7076f55",
+    "job_index": 2,
+    "live_url": null,
+    "max_steps": null,
+    "participant_scores": [
+      {
+        "position": 0,
+        "score": 0.0
+      },
+      {
+        "position": 1,
+        "score": 1.0
+      }
+    ],
+    "participants": [
+      {
+        "is_filler": false,
+        "is_seed": false,
+        "kind": "policy",
+        "player_id": "ply_594ec24d-d7f3-4370-a000-468354ec41c9",
+        "player_name": "Aaron's Co-play Coach",
+        "policy_id": "056cacf7-cd4f-4d4c-84ae-13b84d2ff0fa",
+        "policy_name": "pudge-auto-optimizer",
+        "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+        "position": 0,
+        "version": 10
+      },
+      {
+        "is_filler": false,
+        "is_seed": false,
+        "kind": "policy",
+        "player_id": "ply_630a768f-d623-44b2-80fa-36968d6fa75a",
+        "player_name": "Aaron",
+        "policy_id": "a2c7ed57-06be-4571-a29e-93bff9960a6f",
+        "policy_name": "pudge-wars-rusher",
+        "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+        "position": 1,
+        "version": 16
+      }
+    ],
+    "policy_version_ids": [
+      "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+      "bdc7ac29-743d-4ace-b1cc-3b0529cef552"
+    ],
+    "replay_url": "https://softmax-public.s3.amazonaws.com/replays/954111bc-f3cd-4d39-8808-6282f7076f55.replay",
+    "requester_user_id": "h0835grji1zfy5wakd4i56kn",
+    "round_id": null,
+    "running_at": "2026-09-17T19:21:30.603505Z",
+    "scores": [
+      {
+        "policy_version_id": "6cc36a18-5a4e-499d-8aca-75e21ca9bf07",
+        "score": 0.0
+      },
+      {
+        "policy_version_id": "bdc7ac29-743d-4ace-b1cc-3b0529cef552",
+        "score": 1.0
+      }
+    ],
+    "status": "completed",
+    "variant_name": "League 3v3"
+  }
+]

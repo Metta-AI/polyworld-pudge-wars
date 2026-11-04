@@ -1,0 +1,89 @@
+{
+  "event_per_game": {
+    "bank_escape": 1.3,
+    "edge_clamp": 507.7,
+    "fountain_escape": 0.3,
+    "hook_lead": 378.3,
+    "pull_landed": 33.7,
+    "recovered": 3.7,
+    "recovery_start": 12.0
+  },
+  "event_totals": {
+    "bank_escape": 4,
+    "edge_clamp": 1523,
+    "fountain_escape": 1,
+    "hook_lead": 1135,
+    "pull_landed": 101,
+    "recovered": 11,
+    "recovery_start": 36
+  },
+  "logs": 3,
+  "nonparticipating": [],
+  "policy": "pudge-auto-optimizer:v10",
+  "rows": [
+    {
+      "bytes": 53258,
+      "connected": true,
+      "events": {
+        "edge_clamp": 502,
+        "hook_lead": 273,
+        "pull_landed": 31,
+        "recovered": 5,
+        "recovery_start": 12
+      },
+      "id": "ereq_6644a463-0328-4b67-9bac-929f7bb2b726",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 60658,
+      "connected": true,
+      "events": {
+        "bank_escape": 3,
+        "edge_clamp": 494,
+        "fountain_escape": 1,
+        "hook_lead": 361,
+        "pull_landed": 41,
+        "recovered": 5,
+        "recovery_start": 13
+      },
+      "id": "ereq_eb0263b6-2df7-4914-9441-b3a38835c8e4",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 1.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 69681,
+      "connected": true,
+      "events": {
+        "bank_escape": 1,
+        "edge_clamp": 527,
+        "hook_lead": 501,
+        "pull_landed": 29,
+        "recovered": 1,
+        "recovery_start": 11
+      },
+      "id": "ereq_7edb6d91-b087-419b-8e8a-785e434a86d1",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    }
+  ],
+  "threat_class_per_game": {},
+  "threat_class_totals": {},
+  "tracebacks": 0,
+  "xreq": "xreq_e844ef81-349d-4861-8458-9c374ff1e6b1"
+}

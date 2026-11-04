@@ -1,0 +1,57 @@
+
+== overall: v5 n=39  v4 n=40
+  win           v5   0.590±0.080   v4   0.650±0.076   delta -0.060 (-0.5 pooled SE)
+  kills         v5  15.949±1.100   v4  15.975±1.166   delta -0.026 (-0.0 pooled SE)
+  deaths        v5  13.256±1.131   v4  11.750±1.205   delta +1.506 (+0.9 pooled SE)
+  hooks_landed  v5  60.000±3.433   v4  57.000±3.695   delta +3.000 (+0.6 pooled SE)
+  hooks_thrown  v5 389.923±4.338   v4 383.400±2.870   delta +6.523 (+1.3 pooled SE)
+  acc           v5   0.156±0.010   v4   0.150±0.010   delta +0.006 (+0.4 pooled SE)
+  opp_acc       v5   0.154±0.011   v4   0.139±0.010   delta +0.015 (+1.0 pooled SE)
+
+== west: v5 n=20  v4 n=20
+  win           v5   0.800±0.092   v4   0.750±0.099   delta +0.050 (+0.4 pooled SE)
+  kills         v5  17.200±1.651   v4  15.000±1.796   delta +2.200 (+0.9 pooled SE)
+  deaths        v5   9.800±1.191   v4   8.750±1.393   delta +1.050 (+0.6 pooled SE)
+  hooks_landed  v5  59.200±5.421   v4  50.550±5.449   delta +8.650 (+1.1 pooled SE)
+  hooks_thrown  v5 392.850±7.934   v4 383.200±3.597   delta +9.650 (+1.1 pooled SE)
+  acc           v5   0.154±0.015   v4   0.133±0.015   delta +0.021 (+1.0 pooled SE)
+  opp_acc       v5   0.128±0.014   v4   0.114±0.013   delta +0.014 (+0.8 pooled SE)
+
+== east: v5 n=19  v4 n=20
+  win           v5   0.368±0.114   v4   0.550±0.114   delta -0.182 (-1.1 pooled SE)
+  kills         v5  14.632±1.423   v4  16.950±1.502   delta -2.318 (-1.1 pooled SE)
+  deaths        v5  16.895±1.591   v4  14.750±1.752   delta +2.145 (+0.9 pooled SE)
+  hooks_landed  v5  60.842±4.284   v4  63.450±4.687   delta -2.608 (-0.4 pooled SE)
+  hooks_thrown  v5 386.842±3.252   v4 383.600±4.569   delta +3.242 (+0.6 pooled SE)
+  acc           v5   0.159±0.012   v4   0.168±0.013   delta -0.009 (-0.5 pooled SE)
+  opp_acc       v5   0.181±0.015   v4   0.165±0.014   delta +0.017 (+0.8 pooled SE)
+
+== vs a-aron-pudge-rusher:v1: v5 n=13  v4 n=14
+  win           v5   0.846±0.104   v4   0.500±0.139   delta +0.346 (+2.0 pooled SE)
+  kills         v5  21.000±1.915   v4  16.571±1.660   delta +4.429 (+1.7 pooled SE)
+  deaths        v5  12.846±1.576   v4  14.786±2.333   delta -1.940 (-0.7 pooled SE)
+  hooks_landed  v5  72.154±5.812   v4  62.571±5.142   delta +9.582 (+1.2 pooled SE)
+  hooks_thrown  v5 381.077±3.964   v4 386.000±4.614   delta -4.923 (-0.8 pooled SE)
+  acc           v5   0.191±0.016   v4   0.164±0.014   delta +0.027 (+1.2 pooled SE)
+  opp_acc       v5   0.154±0.017   v4   0.147±0.017   delta +0.006 (+0.3 pooled SE)
+
+== vs co-gas-pudge-blind-hook-richard:v7: v5 n=10  v4 n=12
+  win           v5   0.700±0.153   v4   0.750±0.131   delta -0.050 (-0.2 pooled SE)
+  kills         v5  16.100±1.149   v4  21.333±1.768   delta -5.233 (-2.5 pooled SE)
+  deaths        v5  11.700±2.290   v4  12.917±1.885   delta -1.217 (-0.4 pooled SE)
+  hooks_landed  v5  58.700±5.239   v4  70.833±4.988   delta -12.133 (-1.7 pooled SE)
+  hooks_thrown  v5 402.500±13.388   v4 377.833±5.371   delta +24.667 (+1.7 pooled SE)
+  acc           v5   0.150±0.016   v4   0.189±0.015   delta -0.039 (-1.8 pooled SE)
+  opp_acc       v5   0.131±0.021   v4   0.160±0.018   delta -0.029 (-1.0 pooled SE)
+
+== vs pudge-wars-rusher:v16: v5 n=16  v4 n=14
+  win           v5   0.312±0.120   v4   0.714±0.125   delta -0.402 (-2.3 pooled SE)
+  kills         v5  11.750±1.424   v4  10.786±1.625   delta +0.964 (+0.4 pooled SE)
+  deaths        v5  14.562±2.023   v4   7.714±1.539   delta +6.848 (+2.7 pooled SE)
+  hooks_landed  v5  50.938±5.195   v4  39.571±5.845   delta +11.366 (+1.5 pooled SE)
+  hooks_thrown  v5 389.250±5.285   v4 385.571±5.048   delta +3.679 (+0.5 pooled SE)
+  acc           v5   0.132±0.014   v4   0.104±0.016   delta +0.028 (+1.3 pooled SE)
+  opp_acc       v5   0.169±0.018   v4   0.114±0.017   delta +0.055 (+2.2 pooled SE)
+
+seeds shared: 0 / 39
+seats per episode v5: [2] v4: [2]

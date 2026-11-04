@@ -1,0 +1,23 @@
+{
+  "idempotency_key": "pudge-auto-optimizer:iter8-directional",
+  "notes": "pudge-auto-optimizer iter8-directional: pudge-auto-optimizer:v11 vs top_n=3",
+  "num_episodes": 40,
+  "private": false,
+  "roster": [
+    {
+      "player": {
+        "policy_ref": "3bc6cbba-bb4e-444f-8fc8-c2b09459fa43"
+      },
+      "slot": -1
+    },
+    {
+      "player": {
+        "top_n": 3
+      },
+      "slot": -1
+    }
+  ],
+  "target": {
+    "league_id": "league_84ab9f1e-5fb8-4b62-a3ac-e49026bd12d0"
+  }
+}

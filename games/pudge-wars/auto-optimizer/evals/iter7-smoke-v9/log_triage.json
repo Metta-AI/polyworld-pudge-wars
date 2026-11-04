@@ -1,0 +1,87 @@
+{
+  "event_per_game": {
+    "bank_escape": 13.7,
+    "edge_clamp": 458.0,
+    "hook_lead": 553.0,
+    "pull_landed": 58.3,
+    "recovered": 4.0,
+    "recovery_start": 19.3
+  },
+  "event_totals": {
+    "bank_escape": 41,
+    "edge_clamp": 1374,
+    "hook_lead": 1659,
+    "pull_landed": 175,
+    "recovered": 12,
+    "recovery_start": 58
+  },
+  "logs": 3,
+  "nonparticipating": [],
+  "policy": "pudge-auto-optimizer:v9",
+  "rows": [
+    {
+      "bytes": 71534,
+      "connected": true,
+      "events": {
+        "bank_escape": 3,
+        "edge_clamp": 497,
+        "hook_lead": 516,
+        "pull_landed": 43,
+        "recovered": 5,
+        "recovery_start": 13
+      },
+      "id": "ereq_044a2285-fb3d-409c-a26a-2e9c6eb7e8ba",
+      "opponents": [
+        "co-gas-pudge-blind-hook-richard:v7"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 54787,
+      "connected": true,
+      "events": {
+        "bank_escape": 35,
+        "edge_clamp": 418,
+        "hook_lead": 200,
+        "pull_landed": 76,
+        "recovered": 2,
+        "recovery_start": 28
+      },
+      "id": "ereq_e0a91641-f01d-471c-8693-9a53aefedfc9",
+      "opponents": [
+        "pudge-wars-rusher:v16"
+      ],
+      "score": 0.0,
+      "team": "east",
+      "threat_class": {},
+      "tracebacks": 0
+    },
+    {
+      "bytes": 100608,
+      "connected": true,
+      "events": {
+        "bank_escape": 3,
+        "edge_clamp": 459,
+        "hook_lead": 943,
+        "pull_landed": 56,
+        "recovered": 5,
+        "recovery_start": 17
+      },
+      "id": "ereq_621c1580-a2bf-4546-b611-75be5de75857",
+      "opponents": [
+        "a-aron-pudge-rusher:v1"
+      ],
+      "score": 1.0,
+      "team": "west",
+      "threat_class": {},
+      "tracebacks": 0
+    }
+  ],
+  "threat_class_per_game": {},
+  "threat_class_totals": {},
+  "tracebacks": 0,
+  "xreq": "xreq_fb4870cb-6c9e-489d-aa58-272dc24029a5"
+}
