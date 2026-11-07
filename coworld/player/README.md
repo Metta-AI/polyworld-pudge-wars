@@ -114,7 +114,7 @@ live manifest's `tags`; the tested Docker CLI is pinned to the public mirror at
 `4c26e519040ffe7182104f3417035020acea607b`:
 
 ```sh
-uvx --from 'coworld[auth] @ git+https://github.com/Metta-AI/coworld.git@4c26e519040ffe7182104f3417035020acea607b' \
+uvx --from 'coworld[auth] @ git+https://github.com/softmax-universe/coworld.git@4c26e519040ffe7182104f3417035020acea607b' \
   coworld download cow_548c1ac0-e9af-483e-bc7c-7048991ad267
 ```
 

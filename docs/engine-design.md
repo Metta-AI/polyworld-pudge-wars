@@ -28,7 +28,7 @@ Games also accept a sibling `../polyworld_data` checkout. Each game ships
 the files it needs as its own data file. Upstream development still uses:
 
 ```
-git clone git@github.com:Metta-AI/polyworld-data.git ../polyworld_data
+git clone git@github.com:softmax-universe/polyworld-data.git ../polyworld_data
 ```
 
 ## Commands

@@ -260,6 +260,6 @@ a hash-exact downloaded replay. [Deployment record](deployment.json) and
 [release notes](../docs/hosted-release-basic-0.1.1-2026-10-09.md) retain the IDs.
 
 Platform references:
-[Player runtimes](https://github.com/Metta-AI/metta/blob/d92408b26a/packages/coworld/src/coworld/docs/PLAYER_RUNTIMES.md),
-[player seats](https://github.com/Metta-AI/metta/blob/d92408b26a/packages/coworld/src/coworld/docs/artifacts/PLAYER_SEATS.md),
-[GotA guide](https://github.com/Metta-AI/polyworld/blob/743f108091ca20b78f7e3fdc1a42f59ddb4ac795/coworld/gota/guide.md).
+[Player runtimes](https://github.com/softmax-universe/softmax/blob/d92408b26a/packages/coworld/src/coworld/docs/PLAYER_RUNTIMES.md),
+[player seats](https://github.com/softmax-universe/softmax/blob/d92408b26a/packages/coworld/src/coworld/docs/artifacts/PLAYER_SEATS.md),
+[GotA guide](https://github.com/softmax-universe/polyworld/blob/743f108091ca20b78f7e3fdc1a42f59ddb4ac795/coworld/gota/guide.md).

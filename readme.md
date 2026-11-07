@@ -79,7 +79,7 @@ Dependency order inside the game:
 ## Setup
 
 ```bash
-git clone git@github.com:Metta-AI/polyworld-pudge-wars.git
+git clone git@github.com:softmax-universe/polyworld-pudge-wars.git
 cd polyworld-pudge-wars
 scripts/setup.sh
 export PATH="$HOME/.nimby/nim/bin:$HOME/.local/bin:$PATH"
@@ -94,7 +94,7 @@ in your shell profile.
 
 ```bash
 cd ..
-git clone https://github.com/Metta-AI/polyworld-data.git polyworld_data
+git clone https://github.com/softmax-universe/polyworld-data.git polyworld_data
 cd polyworld-pudge-wars
 ```
 

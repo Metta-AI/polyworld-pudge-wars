@@ -19,7 +19,7 @@ if [[ -d "${polyworld_root}/polyworld_data" ]]; then
 elif [[ -d "${polyworld_root}/../polyworld_data" ]]; then
   data_dir="${polyworld_root}/../polyworld_data"
 else
-  echo "polyworld_data not found next to ${polyworld_root}; clone Metta-AI/polyworld-data" >&2
+  echo "polyworld_data not found next to ${polyworld_root}; clone softmax-universe/polyworld-data" >&2
   exit 1
 fi
 webdata="${polyworld_root}/examples/pudge_wars/webdata.txt"
@@ -35,7 +35,7 @@ if [[ -f "${webdata}" ]]; then
     fi
   done < "${webdata}"
   if [[ "${missing}" -ne 0 ]]; then
-    echo "commit the missing files to Metta-AI/polyworld-data (atlas pngs need a gitignore exception)" >&2
+    echo "commit the missing files to softmax-universe/polyworld-data (atlas pngs need a gitignore exception)" >&2
     exit 1
   fi
 fi

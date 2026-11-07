@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/Metta-AI/coworld/main/src/coworld/coworld_manifest_schema.json",
+  "$schema": "https://raw.githubusercontent.com/softmax-universe/coworld/main/src/coworld/coworld_manifest_schema.json",
   "tags": [
     "strategy",
     "real-time",
@@ -21,7 +21,7 @@
         "COGAME_PLAY_SEATS_SCHEMA": "coworld-play-seats/1",
         "PUDGE_WARS_CLIENT_URL": "https://pudge-wars-site-theta.vercel.app/play/bundles/3115a0709de5c7e3/pw.html"
       },
-      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main"
+      "source_url": "https://github.com/softmax-universe/polyworld-pudge-wars/tree/main"
     },
     "replay_viewer": {
       "bundle": "sha256:3207f251a64aa8ff246a56a7349d79437353fc7fcb09f07313feb41fff8e0cdf",
@@ -270,7 +270,7 @@
       "type": "player",
       "file": "players/base.bas",
       "description": "Editable base BASIC policy.",
-      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/players"
+      "source_url": "https://github.com/softmax-universe/polyworld-pudge-wars/tree/main/coworld/players"
     },
     {
       "id": "aggressive",
@@ -278,7 +278,7 @@
       "type": "player",
       "file": "players/aggressive.bas",
       "description": "Editable aggressive BASIC policy.",
-      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/players"
+      "source_url": "https://github.com/softmax-universe/polyworld-pudge-wars/tree/main/coworld/players"
     },
     {
       "id": "sniper",
@@ -286,7 +286,7 @@
       "type": "player",
       "file": "players/sniper.bas",
       "description": "Editable sniper BASIC policy.",
-      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/coworld/players"
+      "source_url": "https://github.com/softmax-universe/polyworld-pudge-wars/tree/main/coworld/players"
     },
     {
       "id": "neural",
@@ -294,7 +294,7 @@
       "type": "player",
       "file": "players/neural.zip",
       "description": "Illustrative tensor MLP policy (hand-authored weights).",
-      "source_url": "https://github.com/Metta-AI/polyworld-pudge-wars/tree/main/examples/pudge_wars/players"
+      "source_url": "https://github.com/softmax-universe/polyworld-pudge-wars/tree/main/examples/pudge_wars/players"
     }
   ],
   "variants": [
