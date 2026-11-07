@@ -13,7 +13,7 @@
 #                               reads its bearer token from ~/.softmax/credentials.yaml,
 #                               NOT from this env var, so the workflow seeds it
 #                               headlessly via `softmax set-token`. Reuse the same
-#                               token as Metta-AI/coworld-crewrift.
+#                               token as softmax-universe/coworld-crewrift.
 #
 # The Coworld CLI is installed from the public package repo so deploys use the
 # current registry/version allocator without waiting for a PyPI release.
@@ -36,7 +36,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  COWORLD_CLI: "coworld[auth] @ git+https://github.com/Metta-AI/coworld.git@main"
+  COWORLD_CLI: "coworld[auth] @ git+https://github.com/softmax-universe/coworld.git@main"
 
 jobs:
   deploy:

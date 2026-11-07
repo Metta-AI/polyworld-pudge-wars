@@ -118,7 +118,7 @@ Both fit Pudge's 250,000-work-unit decision budget, including initial loading.
 
 ## Architecture examples
 
-GotA's [tensor implementations](https://github.com/Metta-AI/polyworld/tree/743f108091ca20b78f7e3fdc1a42f59ddb4ac795/examples/gods_of_the_arena/neural/tensors)
+GotA's [tensor implementations](https://github.com/softmax-universe/polyworld/tree/743f108091ca20b78f7e3fdc1a42f59ddb4ac795/examples/gods_of_the_arena/neural/tensors)
 show recurrent gates, highway mixtures, sparse updates and readouts in BASIC.
 Adapt their observation and action code to Pudge; their game-specific bots are
 not directly compatible. Convolution, attention and training are outside this

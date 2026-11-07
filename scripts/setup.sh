@@ -114,7 +114,7 @@ write_nim_cfg
 if [[ ! -d "$repo_root/polyworld_data" && ! -d "$repo_root/../polyworld_data" ]]; then
   echo "error: no art folder. This snapshot should include ./polyworld_data." >&2
   echo "  If you are on the upstream polyworld tree, clone:" >&2
-  echo "  git clone git@github.com:Metta-AI/polyworld-data.git ../polyworld_data" >&2
+  echo "  git clone git@github.com:softmax-universe/polyworld-data.git ../polyworld_data" >&2
   exit 1
 fi
 
